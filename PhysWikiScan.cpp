@@ -223,6 +223,126 @@ int FindInline(vector<int>& ind, const CString& str, vector<int>& indEq)
 	return N;
 }
 
+// Pair right brace to left one
+// ind is inddex of left brace
+// return index of right brace, -1 if failed
+int PairBraceR(const CString& str, int ind)
+{
+	TCHAR c, c0 = ' ';
+	int Nleft = 1;
+	for (int i{ ind+1 }; i < str.GetLength(); i++)
+	{
+		c = str.GetAt(i);
+		if (c == '{' && c0 != '\\')
+			++Nleft;
+		else if (c == '}' && c0 != '\\')
+		{
+			--Nleft;
+			if (Nleft == 0)
+				return i;
+		}
+		c0 = c;
+	}
+	return -1;
+}
+
+// Find all \texttt{} environment in str
+// index pairs of \texttt scope (ind).
+// return number of \texttt{} found, return -1 if failed.
+int FindTT(vector<int>& ind, CString& str)
+{
+	ind.resize(0);
+	int ind0{};
+	while (true)
+	{
+		ind0 = str.Find(_T("\texttt"));
+		if (ind0 < 0)
+			return ind.size() / 2;
+		ind0 += 7;
+		ind0 = ExpectKey(str, _T("{"), ind0);
+		if (ind0 < 0)
+			return -1;
+		ind.push_back(ind0);
+		ind0 = PairBraceR(str, ind0 - 1);
+		if (ind0 < 0)
+			cout << "error!"; return -1;
+		ind.push_back(ind0 - 1);
+	}
+}
+
+// sort x in descending order while keeping the index
+void sort(vector<int>& x, vector<int>& ind)
+{
+	int i, temp;
+	int N = x.size();
+	// initialize ind
+	ind.resize(0);
+	for (i = 0; i < N; ++i)
+		ind.push_back(i);
+
+	bool changed{ true };
+	while (changed == true)
+	{
+		changed = false;
+		for (i = 0; i < N - 1; i++)
+		{
+			if (x[i] > x[i + 1])
+			{
+				temp = x[i];
+				x[i] = x[i + 1];
+				x[i + 1] = temp;
+				temp = ind[i];
+				ind[i] = ind[i + 1];
+				ind[i + 1] = temp;
+				changed = true;
+			}
+		}
+	}
+}
+
+// combine scopes ind1 and ind1
+// ind1 or ind 2 must be be in order and not overlap with themselves
+// ind1 can overlap ind2
+int CombineScope(vector<int>& ind, vector<int> ind1, vector<int> ind2)
+{
+	int i, N1 = ind1.size(), N2 = ind2.size();
+	vector<int> start, end, order;
+	for (i = 0; i < N1; i += 2)
+		start.push_back(ind1[i]);
+	for (i = 1; i < N1; i += 2)
+		end.push_back(ind1[i]);
+	for (i = 0; i < N2; i += 2)
+		start.push_back(ind2[i]);
+	for (i = 1; i < N2; i += 2)
+		end.push_back(ind2[i]);
+	int N = start.size();
+	sort(start, order);
+	vector<int> temp;
+	temp.resize(N);
+	for (i = 0; i < N; ++i)
+		temp[i] = end[order[i]];
+	end = temp;
+	ind.push_back(start[0]);
+	i = 0;
+	while(i < N - 1)
+	{
+		if (end[i] >= start[i + 1])
+		{ ++i; continue; }
+		else
+		{
+			ind.push_back(end[i]);
+			ind.push_back(start[i+1]);
+			++i;
+		}
+	}
+	ind.push_back(end.back());
+}
+
+// Find normal text
+int FindNormalText(vector<int>& ind, CString& str)
+{
+
+}
 
 // match braces
 // return -1 means failure, otherwise return number of {} paired
@@ -357,8 +477,9 @@ int OneFile2(CString path)
 
 void main()
 {
-	CString path0 = _T("C:\\Users\\addis\\Desktop\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//_T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
+	//_T("C:\\Users\\addis\\Desktop\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
 	for (int i{}; i < names.size(); ++i)
