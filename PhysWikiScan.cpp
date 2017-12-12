@@ -72,7 +72,7 @@ CString ReadUTF8(CString path)
 		return _T("error");
 	}
 
-	char buffer[100 * 1024] = {};
+	char buffer[1024 * 1024] = {};
 	fin.read(buffer, 1024 * 1024);
 	fin.close();
 
