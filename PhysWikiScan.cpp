@@ -1,4 +1,4 @@
-#include <atlstr.h>
+ï»¿#include <atlstr.h>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -477,7 +477,7 @@ int MatchBraces(vector<int>& ind_left, vector<int>& ind_right,
 	return Nleft;
 }
 
-// detect and unnecessary braces and add "É¾³ı±ê¼Ç"
+// detect and unnecessary braces and add "åˆ é™¤æ ‡è®°"
 // return the number of braces pairs removed
 int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	vector<int>& ind_RmatchL, CString& str)
@@ -498,7 +498,7 @@ int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	sort(ind.begin(), ind.end());
 	for (i = ind.size() - 1; i >= 0; --i)
 	{
-		str.Insert(ind[i], _T("É¾³ı±ê¼Ç"));
+		str.Insert(ind[i], _T("åˆ é™¤æ ‡è®°"));
 	}
 	return N;
 }
@@ -576,8 +576,8 @@ int OneFile3(CString path)
 	// test the result of indNorm
 	/*for (int i{ NNorm*2-1 }; i >= 0; i -= 2)
 	{
-		str.Insert(indNorm[i] + 1, _T("ÕıÎÄ½áÊø"));
-		str.Insert(indNorm[i-1], _T("ÕıÎÄ¿ªÊ¼"));
+		str.Insert(indNorm[i] + 1, _T("æ­£æ–‡ç»“æŸ"));
+		str.Insert(indNorm[i-1], _T("æ­£æ–‡å¼€å§‹"));
 		++N;
 	}*/
 
@@ -589,7 +589,7 @@ int OneFile3(CString path)
 		{
 			c = str[j];
 			if (c == '(' || c == ')' || c == ',' || c == '.' || c == '?' || c == ':' || c == '!')
-				{ str.Insert(j, _T("É¾³ı±ê¼Ç")); ++N; }
+				{ str.Insert(j, _T("åˆ é™¤æ ‡è®°")); ++N; }
 		}
 	}
 
