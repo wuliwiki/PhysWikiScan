@@ -313,7 +313,7 @@ void sort(vector<int>& x, vector<int>& ind)
 }
 
 // combine ranges ind1 and ind2
-// no range in ind1 or ind2 should overlap with others.
+// a range can contain another range, but not partial overlap
 // return total range number, or -1 if failed.
 int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 {
@@ -342,10 +342,15 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 	i = 0;
 	while(i < N - 1)
 	{
-		if (end[i] >= start[i + 1])
-			{ cout << "error! range overlap!"; return -1; }
+		if (end[i] > start[i + 1])
+		{
+			if (end[i] > end[i + 1])
+				{ end[i + 1] = end[i]; ++i; }
+			else
+				{ cout << "error! range overlap!"; return -1; }
+		}
 		else if (end[i] == start[i+1] - 1)
-			{ ++i; continue; }
+			++i;
 		else
 		{
 			ind.push_back(end[i]);
@@ -380,8 +385,9 @@ int InvertRange(vector<int>& ind, const vector<int>& ind0, int Nstr)
 // Find normal text range
 int FindNormalText(vector<int>& indNorm, CString& str)
 {
-	vector<int> ind, indEq, indInline, indCom, indGath, indAli, indTT, indFig, indInp;
-	int NEq, NInline, NCom, NGath, NAli, NTT, NFig, NInp;
+	vector<int> ind, indEq, indInline, indCom, indGath, indAli, 
+		indTT, indFig, indInp, indTable, indSSub;
+	int NEq, NInline, NCom, NGath, NAli, NTT, NFig, NInp, NTable, NSSub;
 	// inline equation environments
 	NInline = FindInline(indInline, str, indEq, 'o');
 	ind = indInline;
@@ -413,7 +419,14 @@ int FindNormalText(vector<int>& indNorm, CString& str)
 	NFig = FindEnv(indFig, str, _T("figure"), 'o');
 	if (NFig > 0)
 		CombineRange(ind, ind, indFig);
-
+	// Table environments
+	NTable = FindEnv(indTable, str, _T("table"), 'o');
+	if (NTable > 0)
+		CombineRange(ind, ind, indTable);
+	// subsubsection command
+	NSSub = FindComBrace(indSSub, _T("\\subsubsection"), str, 'o');
+	if (NSSub > 0)
+		CombineRange(ind, ind, indSSub);
 	// invert range
 	return InvertRange(indNorm, ind, str.GetLength());
 }
@@ -584,13 +597,14 @@ int OneFile3(CString path)
 
 void main()
 {
-	CString path0 = _T("C:\\Users\\addis\\Desktop\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//_T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//_T("C:\\Users\\addis\\Desktop\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
 	for (int i{}; i < names.size(); ++i)
 	{
+		cout << i << " ";
 		wcout << names[i].GetString() << _T("...");
 		N = OneFile3(path0 + names[i]);
 		cout << N << endl;
