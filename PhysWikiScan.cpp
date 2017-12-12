@@ -4,6 +4,8 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
+#include <io.h> // for console unicode output
+#include <fcntl.h> // for console unicode output
 
 using namespace std;
 
@@ -213,7 +215,7 @@ int FindInline(vector<int>& ind, const CString& str, vector<int>& indEq, char op
 		N = FindInline0(ind, str, 0, str.GetLength() - 1);
 		if (N < 0)
 		{
-			cout << "error!"; return -1;
+			wcout << L"error!"; return -1;
 		}
 	}
 	else
@@ -277,7 +279,7 @@ int FindComBrace(vector<int>& ind, const CString& key, const CString& str, char 
 		ind.push_back(option == 'i'? ind0 : ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (ind0 < 0)
-			{ cout << "error!"; return -1; }
+			{ wcout << L"error!"; return -1; }
 		ind.push_back(option == 'i'? ind0 - 1 : ind0);
 	}
 }
@@ -347,7 +349,7 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 			if (end[i] > end[i + 1])
 				{ end[i + 1] = end[i]; ++i; }
 			else
-				{ cout << "error! range overlap!"; return -1; }
+				{ wcout << L"error! range overlap!"; return -1; }
 		}
 		else if (end[i] == start[i+1] - 1)
 			++i;
@@ -512,7 +514,7 @@ int OneFile1(CString path)
 	vector<int> eqscope;
 	if (FindEnv(eqscope, str, _T("equation")) < 0)
 	{
-		cout << "error!"; return 0;
+		wcout << L"error!"; return 0;
 	}
 	// match  and remove braces
 	vector<int> ind_left, ind_right, ind_RmatchL;
@@ -539,7 +541,7 @@ int OneFile2(CString path)
 	vector<int> indEq;
 	if (FindEnv(indEq, str, _T("equation")) < 0)
 	{
-		cout << "error!"; return 0;
+		wcout << L"error!"; return 0;
 	}
 	vector<int> ind; // indices for all the $.
 	if (FindInline(ind, str, indEq) == 0)
@@ -568,6 +570,7 @@ int OneFile3(CString path)
 	int NNorm, N{};
 	vector<int> indNorm;
 	CString str = ReadUTF8(path); // read file
+
 	NNorm = FindNormalText(indNorm, str);
 
 	// test the result of indNorm
@@ -597,16 +600,18 @@ int OneFile3(CString path)
 
 void main()
 {
-	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
+	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
+
+	CString path0 = _T("C:\\Users\\addis\\Desktop\\");
 	//_T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//_T("C:\\Users\\addis\\Desktop\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
 	for (int i{}; i < names.size(); ++i)
 	{
-		cout << i << " ";
+		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
 		N = OneFile3(path0 + names[i]);
-		cout << N << endl;
+		wcout << N << endl;
 	}
 }
