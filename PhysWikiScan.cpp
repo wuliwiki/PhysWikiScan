@@ -125,7 +125,7 @@ int ExpectKey(const CString& str, CString key, int start)
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
 int FindEnv(vector<int>& ind, const CString& str, CString env, char option = 'i')
 {
-	int ind0 = 0, i, ind1, ind2, ind3;
+	int ind0{}, ind1{}, ind2{}, ind3{};
 	int N{}; // number of environments found
 	ind.resize(0);
 	while (true)
@@ -320,6 +320,11 @@ void sort(vector<int>& x, vector<int>& ind)
 int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 {
 	int i, N1 = ind1.size(), N2 = ind2.size();
+	if (N1 == 0)
+		{ ind = ind2; return N2/2; }
+	else if (N2 == 0)
+		{ ind = ind1; return N1/2; }
+
 	// load start and end, and sort
 	vector<int> start, end, order;
 	for (i = 0; i < N1; i += 2)
@@ -361,6 +366,7 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 		}
 	}
 	ind.push_back(end.back());
+	return ind.size() / 2;
 }
 
 // invert ranges in ind0, output to ind1
@@ -373,7 +379,7 @@ int InvertRange(vector<int>& ind, const vector<int>& ind0, int Nstr)
 	int N{}; // total num of ranges output
 	if (ind0[0] > 0)
 		{ ind.push_back(0); ind.push_back(ind0[0] - 1); ++N; }
-	for (int i{ 1 }; i < ind0.size() - 1; i += 2)
+	for (unsigned int i{ 1 }; i < ind0.size() - 1; i += 2)
 	{
 		ind.push_back(ind0[i] + 1);
 		ind.push_back(ind0[i + 1] - 1);
@@ -482,7 +488,7 @@ int MatchBraces(vector<int>& ind_left, vector<int>& ind_right,
 int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	vector<int>& ind_RmatchL, CString& str)
 {
-	int i, N{};
+	unsigned int i, N{};
 	//bool continuous{ false };
 	vector<int> ind; // redundent right brace index
 	for (i = 1; i < ind_right.size(); ++i)
@@ -607,7 +613,7 @@ void main()
 	//_T("C:\\Users\\addis\\Desktop\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
-	for (int i{}; i < names.size(); ++i)
+	for (unsigned int i{}; i < names.size(); ++i)
 	{
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
