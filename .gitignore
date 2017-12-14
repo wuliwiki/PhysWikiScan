@@ -1,10 +1,5 @@
-﻿*.ipch
-*.db
-*.exe
-*.ilk
-*.log
-*.obj
-*.pdb
-*.idb
-*.tlog
-*.lastbuildstate
+﻿.vs/PhysWikiScan/v15/ipch
+.vs/PhysWikiScan/v15/Browse.VC.db
+Debug/
+Release/
+x64/
