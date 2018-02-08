@@ -62,6 +62,7 @@ CString from_utf8(string str)
 }
 
 // read a UTF8 file to CString
+char buffer[1024 * 1024] = {};
 CString ReadUTF8(CString path)
 {
 	ifstream fin;
@@ -71,8 +72,7 @@ CString ReadUTF8(CString path)
 		printf("open input file error\n");
 		return _T("error");
 	}
-
-	char buffer[1024 * 1024] = {};
+	memset(buffer, 0, 1024 * 1024);
 	fin.read(buffer, 1024 * 1024);
 	fin.close();
 
@@ -379,7 +379,7 @@ int InvertRange(vector<int>& ind, const vector<int>& ind0, int Nstr)
 	int N{}; // total num of ranges output
 	if (ind0[0] > 0)
 		{ ind.push_back(0); ind.push_back(ind0[0] - 1); ++N; }
-	for (unsigned int i{ 1 }; i < ind0.size() - 1; i += 2)
+	for (unsigned i{ 1 }; i < ind0.size() - 1; i += 2)
 	{
 		ind.push_back(ind0[i] + 1);
 		ind.push_back(ind0[i + 1] - 1);
@@ -483,12 +483,12 @@ int MatchBraces(vector<int>& ind_left, vector<int>& ind_right,
 	return Nleft;
 }
 
-// detect and unnecessary braces and add "删除标记"
+// detect unnecessary braces and add "删除标记"
 // return the number of braces pairs removed
 int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	vector<int>& ind_RmatchL, CString& str)
 {
-	unsigned int i, N{};
+	unsigned i, N{};
 	//bool continuous{ false };
 	vector<int> ind; // redundent right brace index
 	for (i = 1; i < ind_right.size(); ++i)
@@ -501,10 +501,11 @@ int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 			++N;
 		}
 
-	sort(ind.begin(), ind.end());
-	for (i = ind.size() - 1; i >= 0; --i)
-	{
-		str.Insert(ind[i], _T("删除标记"));
+	if (N > 0) {
+		sort(ind.begin(), ind.end());
+		for (int i = ind.size() - 1; i >= 0; --i) {
+			str.Insert(ind[i], _T("删除标记"));
+		}
 	}
 	return N;
 }
@@ -514,9 +515,7 @@ int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 int OneFile1(CString path)
 {
 	CString str = ReadUTF8(path); // read file
-
-								  // get all the equation environment scopes
-
+	// get all the equation environment scopes
 	vector<int> eqscope;
 	if (FindEnv(eqscope, str, _T("equation")) < 0)
 	{
@@ -532,8 +531,10 @@ int OneFile1(CString path)
 		if (Npair > 0)
 			N += RemoveBraces(ind_left, ind_right, ind_RmatchL, str);
 	}
-	if (N > 0)
+	if (N > 0) {
+		//wcout << str.GetString() << endl;
 		WriteUTF8(str, path); // write file
+	}
 	return N;
 }
 
@@ -608,16 +609,16 @@ void main()
 {
 	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
 
-	CString path0 = _T("C:\\Users\\addis\\Desktop\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents1\\");
 	//_T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//_T("C:\\Users\\addis\\Desktop\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
-	for (unsigned int i{}; i < names.size(); ++i)
+	for (unsigned i{}; i < names.size(); ++i)
 	{
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
-		N = OneFile3(path0 + names[i]);
+		N = OneFile2(path0 + names[i]);
 		wcout << N << endl;
 	}
 }
