@@ -615,6 +615,64 @@ int ParagraphTag(CString& str)
 	return N;
 }
 
+// replace \nameComm{...} with strLeft...strRight
+// {} cannot be omitted
+// must remove comments first
+int Command2Tag(CString nameComm, CString strLeft, CString strRight, CString& str)
+{
+	int N{}, ind0{}, ind1{}, ind2{};
+	while (true) {
+		ind0 = str.Find(_T("\\") + nameComm, ind0);
+		if (ind0 < 0) break;
+		ind1 = ind0 + nameComm.GetLength() + 1;
+		ind1 = ExpectKey(str, '{', ind1); --ind1;
+		ind2 = PairBraceR(str, ind1);
+		str.Delete(ind2, 1);
+		str.Insert(ind2, strRight);
+		str.Delete(ind0, ind1 - ind0 + 1);
+		str.Insert(ind0, strLeft);
+		++N;
+	}
+	return N;
+}
+
+// replace nameEnv environment with strLeft...strRight
+// must remove comments first
+int Env2Tag(CString nameEnv, CString strLeft, CString strRight, CString& str)
+{
+	int i{}, N{}, Nenv;
+	vector<int> indEnvOut, indEnvIn;
+	Nenv = FindEnv(indEnvIn, str, nameEnv, 'i');
+	Nenv = FindEnv(indEnvOut, str, nameEnv, 'o');
+	for (i = 2 * Nenv - 2; i >= 0; i -= 2) {
+		str.Delete(indEnvIn[i+1] + 1, indEnvOut[i+1] - indEnvIn[i+1]);
+		str.Insert(indEnvIn[i + 1] + 1, strRight);
+		str.Delete(indEnvOut[i], indEnvIn[i] - indEnvOut[i]);
+		str.Insert(indEnvOut[i], strLeft);
+		++N;
+	}
+	return N;
+}
+
+// ensure space around (CString)name
+// return number of spaces added
+int EnsureSpace(CString name, CString& str)
+{
+	int N{}, ind0{};
+	while (true) {
+		ind0 = str.Find(name, ind0);
+		if (ind0 < 0) break;
+		if (ind0 == 0 || str.GetAt(ind0 - 1) != ' ') {
+			str.Insert(ind0, ' '); ++ind0; ++N;
+		}
+		ind0 += name.GetLength();
+		if (ind0 == str.GetLength() || str.GetAt(ind0) != ' ') {
+			str.Insert(ind0, ' '); ++N;
+		}
+	}
+	return N;
+}
+
 // detect \name* command and replace with \nameStar
 // return number of commmands replaced
 // must remove comments first
@@ -850,6 +908,8 @@ int tex2html1(CString path)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
+	// ensure '<' and '>' has spaces around them
+	EnsureSpace('<', str); EnsureSpace('>', str);
 	// add paragraph tags
 	ParagraphTag(str);
 	// Replace \nameStar commands
@@ -865,22 +925,25 @@ int tex2html1(CString path)
 	// replace \name() and \name[] with \nameRound{} and \nameRound and \nameSquare
 	RoundSquareCommand(_T("qty"), str);
 	// replace \namd() and \name[]() with \nameRound{} and \nameRound[]{}
-	MathFunction(_T("\sin"), str);    MathFunction(_T("\cos"), str);
-	MathFunction(_T("\tan"), str);    MathFunction(_T("\csc"), str);
-	MathFunction(_T("\sec"), str);    MathFunction(_T("\cot"), str);
-	MathFunction(_T("\sinh"), str);   MathFunction(_T("\cosh"), str);
-	MathFunction(_T("\tanh"), str);   MathFunction(_T("\arcsin"), str);
-	MathFunction(_T("\arccos"), str); MathFunction(_T("\arctan"), str);
-	MathFunction(_T("\exp"), str);    MathFunction(_T("\log"), str);
-	MathFunction(_T("\ln"), str);
+	MathFunction(_T("sin"), str);    MathFunction(_T("cos"), str);
+	MathFunction(_T("tan"), str);    MathFunction(_T("csc"), str);
+	MathFunction(_T("sec"), str);    MathFunction(_T("cot"), str);
+	MathFunction(_T("sinh"), str);   MathFunction(_T("cosh"), str);
+	MathFunction(_T("tanh"), str);   MathFunction(_T("arcsin"), str);
+	MathFunction(_T("arccos"), str); MathFunction(_T("arctan"), str);
+	MathFunction(_T("exp"), str);    MathFunction(_T("log"), str);
+	MathFunction(_T("ln"), str);
+	// replace \name{} with html tags
+	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>"), str);
+	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
+	// replace environments with html tags
+	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
 
-	wcout << endl << str.GetString() << endl;
+	//wcout << endl << str.GetString() << endl;
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);
 	html.Insert(ind0, str);
-	
-	
 	
 
 	// save html file
@@ -897,7 +960,7 @@ void main()
 
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
-	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\contents\\");
 
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	int N;
@@ -910,5 +973,6 @@ void main()
 		//wcout << N << endl;
 
 		tex2html1(path0 + names[i]);
+		wcout << endl;
 	}
 }
