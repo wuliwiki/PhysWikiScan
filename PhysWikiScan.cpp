@@ -960,9 +960,10 @@ void main()
 
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
-	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\contents\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
 
 	vector<CString> names = GetFileNames(path0, _T("tex"));
+	if (names.size() < 0) return;
 	int N;
 	for (unsigned i{}; i < names.size(); ++i)
 	{
