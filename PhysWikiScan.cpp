@@ -600,6 +600,35 @@ int ParagraphTag(CString& str)
 	return N;
 }
 
+// detect \name{} variable parameter parameters
+// replace \name{}{} with \nameTwo and \name{}{}{} with \nameThree
+// return number of macros replaced
+// maxVars  = 2 or 3
+// must remove comments first
+int VarCommand(CString name, CString& str, int maxVars)
+{
+	int i{}, N{}, Nvar{}, ind0{}, ind1{};
+
+	while (true) {
+		ind0 = str.Find(_T("\\") + name, ind0 + 1);
+		if (ind0 < 0) break;
+		ind0 += name.GetLength() + 1;
+		ind1 = ExpectKey(str, _T("{"), ind0);
+		if (ind1 < 0) continue;
+		ind1 = PairBraceR(str, ind1 - 1);
+		ind1 = ExpectKey(str, _T("{"), ind1 + 1);
+		if (ind1 < 0) continue;
+		ind1 = PairBraceR(str, ind1 - 1);
+		if (maxVars == 2) { str.Insert(ind0, _T("Two")); ++N; continue; }
+		ind1 = ExpectKey(str, _T("{"), ind1 + 1);
+		if (ind1 < 0) {
+			str.Insert(ind0, _T("Two")); ++N; continue;
+		}
+		str.Insert(ind0, _T("Three")); ++N; continue;
+	}
+	return N;
+}
+
 // remove extra {} from equation environment and rewrite file
 // return total {} deleted
 int OneFile1(CString path)
@@ -726,6 +755,13 @@ int tex2html1(CString path)
 	}
 	// add paragraph tags
 	ParagraphTag(str);
+	// Replace \nameStar commands
+	//StarCommand();
+	// Replace \nameTwo and \nameThree commands
+	VarCommand(_T("pdv"), str, 3);
+	VarCommand(_T("dv"), str, 2);
+	VarCommand(_T("ev"), str, 2);
+
 	wcout << endl << str.GetString() << endl;
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
@@ -733,7 +769,7 @@ int tex2html1(CString path)
 	html.Insert(ind0, str);
 	
 	
-	wcout << endl << html.GetString() << endl;
+	
 
 	// save html file
 	path.Delete(path.GetLength() - 3, 3);
