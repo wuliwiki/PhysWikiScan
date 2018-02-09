@@ -293,19 +293,34 @@ int FindInline(vector<int>& ind, const CString& str, char option = 'i')
 	return N;
 }
 
-// Pair right brace to left one
+// Pair right brace to left one (default)
+// or () or [] or anying single character
 // ind is inddex of left brace
 // return index of right brace, -1 if failed
-int PairBraceR(const CString& str, int ind)
+int PairBraceR(const CString& str, int ind, TCHAR type = '{')
 {
+	TCHAR left, right;
+	if (type == '{' || type == '}') {
+		left = '{'; right = '}';
+	}
+	else if (type == '(' || type == ')') {
+		left = '('; right = ')';
+	}
+	else if (ind == '[' || type == ']') {
+		left = '['; right = ']';
+	}
+	else {// anything else
+		left = type; right = type;
+	}
+
 	TCHAR c, c0 = ' ';
 	int Nleft = 1;
 	for (int i{ ind+1 }; i < str.GetLength(); i++)
 	{
 		c = str.GetAt(i);
-		if (c == '{' && c0 != '\\')
+		if (c == left && c0 != '\\')
 			++Nleft;
-		else if (c == '}' && c0 != '\\')
+		else if (c == right && c0 != '\\')
 		{
 			--Nleft;
 			if (Nleft == 0)
@@ -600,9 +615,28 @@ int ParagraphTag(CString& str)
 	return N;
 }
 
+// detect \name* command and replace with \nameStar
+// return number of commmands replaced
+// must remove comments first
+int StarCommand(CString name, CString& str)
+{
+	int N{}, ind0{}, ind1{};
+	while (true) {
+		ind0 = str.Find(_T("\\") + name, ind0 + 1);
+		if (ind0 < 0) break;
+		ind0 += name.GetLength() + 1;
+		ind1 = ExpectKey(str, _T("*"), ind0);
+		if (ind1 < 0) continue;
+		str.Delete(ind0, ind1 - ind0); // delete * and spaces
+		str.Insert(ind0, _T("Star"));
+		++N;
+	}
+	return N;
+}
+
 // detect \name{} variable parameter parameters
 // replace \name{}{} with \nameTwo and \name{}{}{} with \nameThree
-// return number of macros replaced
+// return number of commmands replaced
 // maxVars  = 2 or 3
 // must remove comments first
 int VarCommand(CString name, CString& str, int maxVars)
@@ -625,6 +659,69 @@ int VarCommand(CString name, CString& str, int maxVars)
 			str.Insert(ind0, _T("Two")); ++N; continue;
 		}
 		str.Insert(ind0, _T("Three")); ++N; continue;
+	}
+	return N;
+}
+
+// detect \name() commands and replace with \nameRound{}
+// also replace \name[]() with \nameRound[]{}
+// must remove comments first
+int RoundSquareCommand(CString name, CString& str)
+{
+	int N{}, ind0{}, ind1{}, ind2{}, ind3;
+	while (true) {
+		ind0 = str.Find(_T("\\") + name, ind0);
+		if (ind0 < 0) break;
+		ind0 += name.GetLength() + 1;
+		ind2 = ExpectKey(str, _T("("), ind0);
+		if (ind2 > 0) {
+			--ind2;
+			ind3 = PairBraceR(str, ind2, ')');
+			str.Delete(ind3, 1); str.Insert(ind3, '}');
+			str.Delete(ind2, 1); str.Insert(ind2, '{');
+			str.Insert(ind0, _T("Round"));
+			++N;
+		}
+		else {
+			ind2 = ExpectKey(str, _T("["), ind0);
+			if (ind2 < 0) break;
+			--ind2;
+			ind3 = PairBraceR(str, ind2, ']');
+			str.Delete(ind3, 1); str.Insert(ind3, '}');
+			str.Delete(ind2, 1); str.Insert(ind2, '{');
+			str.Insert(ind0, _T("Square"));
+			++N;
+		}
+	}
+	return N;
+}
+
+// detect \name() commands and replace with \nameRound{}
+// also replace \name[]() with \nameRound[]{}
+// must remove comments first
+int MathFunction(CString name, CString& str)
+{
+	int N{}, ind0{}, ind1{}, ind2{}, ind3;
+	while (true) {
+		ind0 = str.Find(_T("\\") + name, ind0);
+		if (ind0 < 0) break;
+		ind0 += name.GetLength() + 1;
+		ind1 = ExpectKey(str, _T("["), ind0);
+		if (ind1 > 0) {
+			--ind2;
+			ind1 = PairBraceR(str, ind1, ']');
+			ind2 = ind1 + 1;
+		}
+		else
+			ind2 = ind0;
+		ind2 = ExpectKey(str, _T("("), ind0);
+		if (ind2 < 0) continue;
+		--ind2;
+		ind3 = PairBraceR(str, ind2, ')');
+		str.Delete(ind3, 1); str.Insert(ind3, '}');
+		str.Delete(ind2, 1); str.Insert(ind2, '{');
+		str.Insert(ind0, _T("Round"));
+		++N;
 	}
 	return N;
 }
@@ -756,11 +853,26 @@ int tex2html1(CString path)
 	// add paragraph tags
 	ParagraphTag(str);
 	// Replace \nameStar commands
-	//StarCommand();
+	StarCommand(_T("comm"), str);   StarCommand(_T("pb"), str);
+	StarCommand(_T("dv"), str);     StarCommand(_T("pdv"), str);
+	StarCommand(_T("bra"), str);    StarCommand(_T("ket"), str);
+	StarCommand(_T("braket"), str); StarCommand(_T("ev"), str);
+	StarCommand(_T("mel"), str);
 	// Replace \nameTwo and \nameThree commands
-	VarCommand(_T("pdv"), str, 3);
-	VarCommand(_T("dv"), str, 2);
-	VarCommand(_T("ev"), str, 2);
+	VarCommand(_T("pdv"), str, 3);   VarCommand(_T("pdvStar"), str, 3);
+	VarCommand(_T("dv"), str, 2);    VarCommand(_T("dvStar"), str, 2);
+	VarCommand(_T("ev"), str, 2);    VarCommand(_T("evStar"), str, 2);
+	// replace \name() and \name[] with \nameRound{} and \nameRound and \nameSquare
+	RoundSquareCommand(_T("qty"), str);
+	// replace \namd() and \name[]() with \nameRound{} and \nameRound[]{}
+	MathFunction(_T("\sin"), str);    MathFunction(_T("\cos"), str);
+	MathFunction(_T("\tan"), str);    MathFunction(_T("\csc"), str);
+	MathFunction(_T("\sec"), str);    MathFunction(_T("\cot"), str);
+	MathFunction(_T("\sinh"), str);   MathFunction(_T("\cosh"), str);
+	MathFunction(_T("\tanh"), str);   MathFunction(_T("\arcsin"), str);
+	MathFunction(_T("\arccos"), str); MathFunction(_T("\arctan"), str);
+	MathFunction(_T("\exp"), str);    MathFunction(_T("\log"), str);
+	MathFunction(_T("\ln"), str);
 
 	wcout << endl << str.GetString() << endl;
 	// insert HTML body
