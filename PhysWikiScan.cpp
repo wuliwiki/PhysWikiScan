@@ -923,8 +923,9 @@ int OneFile3(CString path)
 }
 
 // generate html from tex
+// output the chinese title of the file
 // return 0 if successful, -1 if failed
-int tex2html1(CString path)
+int tex2html1(CString& title, CString path)
 {
 	// read template file from local folder
 	int i{}, N{}, ind0;
@@ -935,7 +936,6 @@ int tex2html1(CString path)
 	//path += _T("\\template.html");
 	CString html = ReadUTF8(_T("template.html")); // read html template
 	CString newcomm = ReadUTF8(_T("newcommand.html"));
-	CString title; // chinese title of an entry
 	if (GetTitle(title, str) < 0) return -1;
 	// insert \newcommand
 	ind0 = html.Find(_T("PhysWikiCommand"), 0);
@@ -988,8 +988,10 @@ int tex2html1(CString path)
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);
-	html.Insert(ind0, str);
 	
+	html.Insert(ind0, str);// insert notice
+	html.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\".. / \">《小时物理百科》PDF 版</a>。</span></p>\n"));
+	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 
 	// save html file
 	path.Delete(path.GetLength() - 3, 3);
@@ -1003,13 +1005,25 @@ void main()
 {
 	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
 
+	int ind0{};
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
 	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
 
 	vector<CString> names = GetFileNames(path0, _T("tex"));
+	CString title;
 	if (names.size() < 0) return;
 	//int N;
+
+	CString toc = ReadUTF8(_T("template.html")); // read html template
+	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
+	toc.Delete(ind0, 15);
+	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0); --ind0;
+	toc.Insert(ind0, _T("<h1>《小时物理百科》网页版目录</h1>\n\n"));// insert notice
+	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
+	toc.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"));
+	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
+
 	for (unsigned i{}; i < names.size(); ++i)
 	{
 		wcout << i << " ";
@@ -1018,7 +1032,19 @@ void main()
 		//N = OneFile3(path0 + names[i]);
 		//wcout << N << endl;
 
-		tex2html1(path0 + names[i]);
+		tex2html1(title, path0 + names[i]);
 		wcout << endl;
+		// add to table of content
+		toc.Insert(ind0, _T("<a href=\""));// insert notice
+		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
+		names[i].Delete(names[i].GetLength() - 3, 3);
+		toc.Insert(ind0, names[i] + _T("html"));
+		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
+		toc.Insert(ind0, _T("\">") + title + _T("</a><br>\n"));
+		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
+		//wcout << toc.GetString() << _T("\n\n\n\n\n") << endl;
 	}
+	toc.Insert(ind0, _T("</p>"));
+	++ind0; toc.Delete(ind0, 16);
+	WriteUTF8(toc, path0 + _T("index.html"));
 }
