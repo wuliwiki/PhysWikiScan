@@ -656,12 +656,13 @@ int Env2Tag(CString nameEnv, CString strLeft, CString strRight, CString& str)
 
 // ensure space around (CString)name
 // return number of spaces added
-int EnsureSpace(CString name, CString& str)
+// will only check equation env. and inline equations
+int EnsureSpace(CString name, CString& str, int start, int end)
 {
-	int N{}, ind0{};
+	int N{}, ind0{start};
 	while (true) {
 		ind0 = str.Find(name, ind0);
-		if (ind0 < 0) break;
+		if (ind0 < 0 || ind0 > end) break;
 		if (ind0 == 0 || str.GetAt(ind0 - 1) != ' ') {
 			str.Insert(ind0, ' '); ++ind0; ++N;
 		}
@@ -669,6 +670,48 @@ int EnsureSpace(CString name, CString& str)
 		if (ind0 == str.GetLength() || str.GetAt(ind0) != ' ') {
 			str.Insert(ind0, ' '); ++N;
 		}
+	}
+	return N;
+}
+
+// ensure space around '<' and '>' in equation env. and $$ env
+// return number of spaces added
+int EqOmitTag(CString& str)
+{
+	int i{}, N{}, Nrange{};
+	vector<int> ind, indInline;
+	FindEnv(ind, str, _T("equation"));
+	FindInline(indInline, str);
+	Nrange = CombineRange(ind, ind, indInline);
+	for (i = 2 * Nrange - 2; i >= 0; i -= 2) {
+		N += EnsureSpace('<', str, ind[i], ind[i + 1]);
+		N += EnsureSpace('>', str, ind[i], ind[i + 1]);
+	}
+	return N;
+}
+
+// replace figure environment with html image
+// convert vector graph to SVG, font must set to "convert to outline"
+int FigureEnvironment(CString& str)
+{
+	int i{}, N{}, Nfig{}, ind0{}, indName1{}, indName2{};
+	vector<int> indFig{};
+	CString figName;
+	Nfig = FindEnv(indFig, str, _T("figure"), 'o');
+	for (i = 2*Nfig - 2; i >= 0; i-=2) {
+		indName1 = str.Find(_T("figures/"), indFig[i]) + 8;
+		indName2 = str.Find(_T(".pdf"), indFig[i]) - 1;
+		figName = str.Mid(indName1, indName2 - indName1 + 1);
+		// TODO: get and set figure size and 45pt per cm
+		str.Delete(indFig[i], indFig[i + 1] - indFig[i] + 1);
+		// insert html code
+		//TODO: set figure size in pt
+		str.Insert(indFig[i], _T("<div class = \"w3 - cell\" style = \"width:300px\">\n"));
+		ind0 = str.Find(_T("\n"), indFig[i]) + 1;
+		str.Insert(ind0, _T("<img src = \"")); ind0 += 12;
+		str.Insert(ind0, figName); ind0 += figName.GetLength();
+		str.Insert(ind0, _T(".svg\" alt=\"图\" style=\"width:100% ;\">\n</div>"));
+		++N;
 	}
 	return N;
 }
@@ -908,8 +951,10 @@ int tex2html1(CString path)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
+	// process figure environment
+	wcout << FigureEnvironment(str);
 	// ensure '<' and '>' has spaces around them
-	EnsureSpace('<', str); EnsureSpace('>', str);
+	EqOmitTag(str);
 	// add paragraph tags
 	ParagraphTag(str);
 	// Replace \nameStar commands
@@ -964,7 +1009,7 @@ void main()
 
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	if (names.size() < 0) return;
-	int N;
+	//int N;
 	for (unsigned i{}; i < names.size(); ++i)
 	{
 		wcout << i << " ";
