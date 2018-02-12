@@ -983,6 +983,7 @@ int tex2html1(CString& title, CString path)
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
+	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
 
 	//wcout << endl << str.GetString() << endl;
 	// insert HTML body
@@ -990,7 +991,7 @@ int tex2html1(CString& title, CString path)
 	html.Delete(ind0, 16);
 	
 	html.Insert(ind0, str);// insert notice
-	html.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\".. / \">《小时物理百科》PDF 版</a>。</span></p>\n"));
+	html.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p>\n"));
 	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 
 	// save html file
