@@ -103,6 +103,36 @@ bool IndexInRange(int i, vector<int> ind)
 	return false;
 }
 
+// reverse find, starting from "start"
+// return the location of the first character of "key", return -1 if not found
+// use CString::ReverseFind instead if start from the end
+int ReverseFind(const CString& key, const CString& str, int start)
+{
+	int i{}, k{}, end{};
+	bool match{ false };
+	end = key.GetLength() - 1;
+	k = end;
+	for (i = start; i >= 0; --i) {
+		if (match == true) {
+			if (str.GetAt(i) == key.GetAt(k)) {
+				if (k == 0) return i;
+				--k;
+			}
+			else {
+				match = false; k = end;
+			}
+		}
+		else {// match == false
+			if (str.GetAt(i) == key.GetAt(k)) {
+				match = true;
+				if (k == 0) return i;
+				--k;
+			}
+		}
+	}
+	return -1;
+}
+
 // find comments
 // output: ind is index in pairs
 // return number of comments found. return -1 if failed
@@ -174,6 +204,7 @@ int GetTitle(CString& title, const CString& str)
 	title = str.Mid(ind0, ind1 - ind0);
 	return 0;
 }
+
 
 // see if a key appears followed only with only white space
 // return the next index, return -1 if nothing found.
@@ -615,6 +646,105 @@ int ParagraphTag(CString& str)
 	return N;
 }
 
+// Find the next number
+// return -1 if not found
+int FindNum(const CString& str, int start)
+{
+	int i{}, end{ str.GetLength() - 1 };
+	unsigned char c;
+	for (i = start; i <= end; ++i) {
+		c = str.GetAt(i);
+		if (c >= '0' && c <= '9')
+			return i;
+	}
+}
+
+// expect and convert int in CString, no negative number!
+// return the index after the last digit, return -1 if failed
+// 
+// CString.GetAt(start) must be a number
+int CString2int(int& num, const CString& str, int start)
+{
+	int i{};
+	unsigned char c;
+	c = str.GetAt(start);
+	if (c < '0' || c > '9') {
+		wcout << _T("not a number!"); return -1;
+	}
+	for (i = start + 1; i < str.GetLength(); ++i) {
+		c = str.GetAt(i);
+		if (c >= '0' && c <= '9')
+			num = 10 * num + (int)(c - '0');
+		else
+			return i;
+	}
+	return i;
+}
+
+
+// add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
+// output html id and corresponding label for future reference
+// "gather" and "align" environments has id = "ga" and "ali"
+// idNum is in the idNum-th environment of the same name (not necessarily equal to displayed number)
+// no comment allowed
+// return number of labels processed, or -1 if failed
+int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryName, CString& str)
+{
+	int ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp;
+	CString idName; // "eq" or "fig" or "ex"...
+	CString labelName; // same with idName except "eq" for "gather", "align"
+	CString envName; // "equation" or "figure" or "exam"...
+	CString idNum{}; // id = idName + idNum
+	vector<int> indEnv;
+	while (true) {
+		ind5 = str.Find(_T("\\label"), ind0);
+		if (ind5 < 0) return N;
+		// make sure label is inside an environment
+		ind2 = ReverseFind(_T("\\end"), str, ind5);
+		ind4 = ReverseFind(_T("\\begin"), str, ind5);
+		if (ind2 >= ind4) {
+			wcout << "label not in an environment!";
+			return -1;
+		}
+		// detect environment kind
+		ind1 = ExpectKey(str, '{', ind4 + 6);
+		if (ExpectKey(str, _T("equation"), ind1) > 0)
+			{ idName = _T("eq"); envName = _T("equation"); }
+		else if (ExpectKey(str, _T("figure"), ind1) > 0)
+			{ idName = _T("fig"); envName = _T("figure"); }
+		else if (ExpectKey(str, _T("exam"), ind1) > 0)
+			{ idName = _T("ex"); envName = _T("exam"); }
+		else if (ExpectKey(str, _T("table"), ind1) > 0)
+			{ idName = _T("tab"); envName = _T("table"); }
+		else if (ExpectKey(str, _T("gather"), ind1) > 0)
+			{ idName = _T("ga"); envName = _T("gather"); }
+		else if (ExpectKey(str, _T("align"), ind1) > 0)
+			{ idName = _T("ali"); envName = _T("align"); }
+		else
+			{ wcout << "environment not supported for label!"; return -1; }
+		// check label format and save label
+		ind0 = ExpectKey(str, '{', ind5 + 6);
+		if (idName == _T("ga") || idName == _T("ali"))
+			labelName = _T("eq");
+		else
+			labelName = idName;
+		ind3 = ExpectKey(str, entryName + _T('_') + labelName, ind0);
+		if (ind3 < 0) {
+			wcout << "label format error!"; return -1;
+		}
+		ind3 = str.Find('}', ind3);
+		label.push_back(str.Mid(ind0, ind3 - ind0));
+		label.back().TrimLeft(' '); label.back().TrimRight(' ');
+		// count idNum, insert html id tag, delete label
+		temp = FindEnv(indEnv, str.Left(ind4), envName) + 1;
+		idNum.Format(_T("%d"), temp);
+		id.push_back(idName + idNum);
+		str.Delete(ind5, ind3 - ind5 + 1);
+		str.Insert(ind4, _T("<span id = \"") + id.back() + _T("\"></span>"));
+		ind0 = str.Find(str, ind4) + 6;
+	}
+}
+
 // replace \nameComm{...} with strLeft...strRight
 // {} cannot be omitted
 // must remove comments first
@@ -923,9 +1053,10 @@ int OneFile3(CString path)
 }
 
 // generate html from tex
-// output the chinese title of the file
+// output the chinese title of the file, id-label pairs in the file
 // return 0 if successful, -1 if failed
-int tex2html1(CString& title, CString path)
+// entry name is "xxx.tex"
+int tex2html1(CString& title, vector<CString>& id, vector<CString>& label, CString entryName, CString path)
 {
 	// read template file from local folder
 	int i{}, N{}, ind0;
@@ -981,6 +1112,9 @@ int tex2html1(CString& title, CString path)
 	// replace \name{} with html tags
 	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>"), str);
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
+	// add html id for links
+	entryName.Delete(entryName.GetLength() - 4, 4);
+	EnvLabel(id, label, entryName, str);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
 	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
@@ -991,7 +1125,7 @@ int tex2html1(CString& title, CString path)
 	html.Delete(ind0, 16);
 	
 	html.Insert(ind0, str);// insert notice
-	html.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p>\n"));
+	html.Insert(ind0, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p>\n"));
 	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 
 	// save html file
@@ -1016,13 +1150,15 @@ void main()
 	if (names.size() < 0) return;
 	//int N;
 
+	vector<CString> IdList, LabelList; // all id-label pairs
+	vector<CString> id, label; // from one entry
 	CString toc = ReadUTF8(_T("template.html")); // read html template
 	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
 	toc.Delete(ind0, 15);
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0); --ind0;
 	toc.Insert(ind0, _T("<h1>《小时物理百科》网页版目录</h1>\n\n"));// insert notice
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-	toc.Insert(ind0, _T("<p><span class=\"w3-tag\">公告</span><span class=\"w3-tag w3-yellow\">《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"));
+	toc.Insert(ind0, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"));
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
 
 	for (unsigned i{}; i < names.size(); ++i)
@@ -1033,7 +1169,7 @@ void main()
 		//N = OneFile3(path0 + names[i]);
 		//wcout << N << endl;
 
-		tex2html1(title, path0 + names[i]);
+		tex2html1(title, IdList, LabelList, names[i], path0 + names[i]);
 		wcout << endl;
 		// add to table of content
 		toc.Insert(ind0, _T("<a href=\""));// insert notice
