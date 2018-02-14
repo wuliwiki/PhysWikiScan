@@ -18,5 +18,31 @@
     <ClCompile Include="PhysWikiScan.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="macrouniverse.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="macrouniverseS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tex2html.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="macrouniverse.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="macrouniverseS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="tex2html.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

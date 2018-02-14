@@ -147,7 +147,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="macrouniverseS.cpp" />
+    <ClCompile Include="macrouniverse.cpp" />
     <ClCompile Include="PhysWikiScan.cpp" />
+    <ClCompile Include="tex.cpp" />
+    <ClCompile Include="tex2html.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="macrouniverseS.h" />
+    <ClInclude Include="macrouniverse.h" />
+    <ClInclude Include="tex.h" />
+    <ClInclude Include="tex2html.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
