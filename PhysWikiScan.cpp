@@ -126,6 +126,59 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 	}
 }
 
+// replace autoref with html link
+// no comment allowed
+// return number of autoref replaced, or -1 if failed
+int autoref(const vector<CString>& id, const vector<CString>& label, const CString& entryName, CString& str)
+{
+	int i{}, ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{};
+	CString entry, label0, idName, idNum, kind, X, newtab, file;
+	while (true) {
+		X.Empty(); newtab.Empty(); file.Empty();
+		ind0 = str.Find(_T("\\autoref"), ind0);
+		if (ind0 < 0) return N;
+		ind1 = ExpectKey(str, '{', ind0 + 8);
+		ind1 = NextNoSpace(entry, str, ind1);
+		ind2 = str.Find('_', ind1);
+		ind3 = FindNum(str, ind2);
+		idName = str.Mid(ind2 + 1, ind3 - ind2 - 1);
+		if (idName == _T("eq")) kind = _T("式");
+		else if (idName == _T("fig")) kind = _T("图");
+		else if (idName == _T("ex")) kind = _T("例");
+		else if (idName == _T("tab")) kind = _T("表");
+		else {
+			wcout << _T("unknown id name!"); return -1;
+		}
+		
+		ind3 = str.Find('}', ind3);
+		// find id of the label
+		label0 = str.Mid(ind1, ind3 - ind1); label0.TrimLeft(' '); label0.TrimRight(' ');
+		for (i = 0; i < label.size(); ++i) {
+			if (label0 == label[i]) break;
+		}
+		if (i == label.size()) {
+			wcout << _T("label not found!"); return -1;
+		}
+		ind4 = FindNum(id[i], 0);
+		idNum = id[i].Right(id[i].GetLength() - ind4);
+		// deal with \upref after \label
+		ind5 = ExpectKey(str, _T("\\upref"), ind3 + 1);
+		if (ind5 > 0) {
+			X = 'X';
+			ind5 = str.Find('}', ind5);
+			str.Delete(ind3 + 1, ind5 - ind3);
+		}
+		entry = str.Mid(ind1, ind2 - ind1);
+		if (entry != entryName) {// reference the same entry
+			newtab = _T("target = \"_blank\"");
+			file = entry + _T(".html");
+		}
+		str.Insert(ind3 + 1, kind + _T(' ') + X + idNum + _T(" </a>"));
+		str.Insert(ind3 + 1, _T("<a href = \"") + file + _T("#") + id[i] + _T("\" ") + newtab + _T(">"));
+		str.Delete(ind0, ind3 - ind0 + 1);
+		++N;
+	}
+}
 
 // replace figure environment with html image
 // convert vector graph to SVG, font must set to "convert to outline"
@@ -251,12 +304,13 @@ int OneFile3(CString path)
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // return 0 if successful, -1 if failed
-// entry name is "xxx.tex"
-int tex2html1(CString& title, vector<CString>& id, vector<CString>& label, CString entryName, CString path)
+// entryName does not include ".tex"
+// path0 is the parent folder of entryName.tex, ending with '\\'
+int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label, CString entryName, CString path0)
 {
 	// read template file from local folder
 	int i{}, N{}, ind0;
-	CString str = ReadUTF8(path); // read tex file
+	CString str = ReadUTF8(path0 + entryName + _T(".tex")); // read tex file
 	//// read template from the same folder as path
 	//ind0 = path.ReverseFind('\\');
 	//path.Delete(ind0, str.GetLength() - ind0);
@@ -309,7 +363,6 @@ int tex2html1(CString& title, vector<CString>& id, vector<CString>& label, CStri
 	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>"), str);
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
 	// add html id for links
-	entryName.Delete(entryName.GetLength() - 4, 4);
 	EnvLabel(id, label, entryName, str);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
@@ -325,21 +378,19 @@ int tex2html1(CString& title, vector<CString>& id, vector<CString>& label, CStri
 	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 
 	// save html file
-	path.Delete(path.GetLength() - 3, 3);
-	path.Insert(path.GetLength(), _T("html"));
-	WriteUTF8(html, path);
+	WriteUTF8(html, path0 + entryName + _T(".html"));
 	return 0;
 }
 
 // the main file
-void tex2html()
+void PhysWikiOnline()
 {
 	int ind0{};
 	CString title; // the Chinese title of an entry
 	// set path
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
-	CString path0 = _T("C:\\Users\\addis\\Desktop\\");
-	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
+	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
 	if (names.size() < 0) return;
 
@@ -357,13 +408,13 @@ void tex2html()
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
+		names[i].Delete(names[i].GetLength() - 4, 4);
 		// main process
-		tex2html1(title, IdList, LabelList, names[i], path0 + names[i]);
+		PhysWikiOnline1(title, IdList, LabelList, names[i], path0);
 		wcout << endl;
 		// add to table of content
 		toc.Insert(ind0, _T("<a href=\""));// insert notice
 		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-		names[i].Delete(names[i].GetLength() - 3, 3);
 		toc.Insert(ind0, names[i] + _T("html"));
 		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
 		toc.Insert(ind0, _T("\">") + title + _T("</a><br>\n"));
@@ -373,6 +424,15 @@ void tex2html()
 	toc.Insert(ind0, _T("</p>"));
 	++ind0; toc.Delete(ind0, 16);
 	WriteUTF8(toc, path0 + _T("index.html"));
+
+	// 2nd loop through tex files
+	CString html;
+	for (unsigned i{}; i < names.size(); ++i) {
+		html = ReadUTF8(path0 + names[i] + _T(".html")); // read html file
+		// process autoref command
+		autoref(IdList, LabelList, names[i], html);
+		WriteUTF8(html, path0 + names[i] + _T(".html")); // save html file
+	}
 }
 
 void PhysWikiCheck()
@@ -383,6 +443,6 @@ void PhysWikiCheck()
 void main()
 {
 	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
-	tex2html();
+	PhysWikiOnline();
 	// PhysWikiCheck
 }

@@ -65,7 +65,7 @@ int ParagraphTag(CString& str)
 		str.Insert(ind[i] + 1, _T("<p>"));
 		str.Insert(ind[i], _T("\n</p>"));
 	}
-	str.Insert(str.GetLength() - 1, _T("</p>"));
+	str.Insert(str.GetLength(), _T("</p>"));
 	str.Insert(0, _T("<p>"));
 	return N;
 }
