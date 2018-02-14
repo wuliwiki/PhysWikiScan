@@ -56,32 +56,25 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		}
 		// detect environment kind
 		ind1 = ExpectKey(str, '{', ind4 + 6);
-		if (ExpectKey(str, _T("equation"), ind1) > 0)
-		{
+		if (ExpectKey(str, _T("equation"), ind1) > 0) {
 			idName = _T("eq"); envName = _T("equation");
 		}
-		else if (ExpectKey(str, _T("figure"), ind1) > 0)
-		{
+		else if (ExpectKey(str, _T("figure"), ind1) > 0) {
 			idName = _T("fig"); envName = _T("figure");
 		}
-		else if (ExpectKey(str, _T("exam"), ind1) > 0)
-		{
+		else if (ExpectKey(str, _T("exam"), ind1) > 0) {
 			idName = _T("ex"); envName = _T("exam");
 		}
-		else if (ExpectKey(str, _T("table"), ind1) > 0)
-		{
+		else if (ExpectKey(str, _T("table"), ind1) > 0) {
 			idName = _T("tab"); envName = _T("table");
 		}
-		else if (ExpectKey(str, _T("gather"), ind1) > 0)
-		{
+		else if (ExpectKey(str, _T("gather"), ind1) > 0) {
 			idName = _T("eq"); envName = _T("gather");
 		}
-		else if (ExpectKey(str, _T("align"), ind1) > 0)
-		{
+		else if (ExpectKey(str, _T("align"), ind1) > 0) {
 			idName = _T("eq"); envName = _T("align");
 		}
-		else
-		{
+		else {
 			wcout << "environment not supported for label!"; return -1;
 		}
 		// check label format and save label
@@ -140,6 +133,9 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		ind1 = ExpectKey(str, '{', ind0 + 8);
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.Find('_', ind1);
+		if (ind2 < 0) {
+			wcout << _T("autoref format error!"); return -1;
+		}
 		ind3 = FindNum(str, ind2);
 		idName = str.Mid(ind2 + 1, ind3 - ind2 - 1);
 		if (idName == _T("eq")) kind = _T("式");
@@ -182,11 +178,13 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 
 // replace figure environment with html image
 // convert vector graph to SVG, font must set to "convert to outline"
-int FigureEnvironment(CString& str)
+// if svg image doesn't exist, use png, if doesn't exist, return -1
+// path must end with '\\'
+int FigureEnvironment(CString& str, const CString& path)
 {
 	int i{}, N{}, Nfig{}, ind0{}, indName1{}, indName2{};
 	vector<int> indFig{};
-	CString figName;
+	CString figName, format;
 	Nfig = FindEnv(indFig, str, _T("figure"), 'o');
 	for (i = 2*Nfig - 2; i >= 0; i-=2) {
 		indName1 = str.Find(_T("figures/"), indFig[i]) + 8;
@@ -196,11 +194,20 @@ int FigureEnvironment(CString& str)
 		str.Delete(indFig[i], indFig[i + 1] - indFig[i] + 1);
 		// insert html code
 		//TODO: set figure size in pt
+		// test img file existence
+		if (FileExist(path, figName + _T(".svg")))
+			format = _T(".svg");
+		else if (FileExist(path, figName + _T(".png")))
+			format = _T(".png");
+		else{
+			wcout << _T("figure not found!"); return -1;
+		}
+			
 		str.Insert(indFig[i], _T("<div class = \"w3 - cell\" style = \"width:300px\">\n"));
 		ind0 = str.Find(_T("\n"), indFig[i]) + 1;
 		str.Insert(ind0, _T("<img src = \"")); ind0 += 12;
 		str.Insert(ind0, figName); ind0 += figName.GetLength();
-		str.Insert(ind0, _T(".svg\" alt=\"图\" style=\"width:100% ;\">\n</div>"));
+		str.Insert(ind0, format + _T("\" alt=\"图\" style=\"width:100% ;\">\n</div>"));
 		++N;
 	}
 	return N;
@@ -332,8 +339,10 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
+	// add html id for links
+	EnvLabel(id, label, entryName, str);
 	// process figure environment
-	wcout << FigureEnvironment(str);
+	FigureEnvironment(str, path0);
 	// ensure '<' and '>' has spaces around them
 	EqOmitTag(str);
 	// add paragraph tags
@@ -362,13 +371,9 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	// replace \name{} with html tags
 	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>"), str);
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
-	// add html id for links
-	EnvLabel(id, label, entryName, str);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
 	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
-
-	//wcout << endl << str.GetString() << endl;
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);
@@ -426,12 +431,15 @@ void PhysWikiOnline()
 	WriteUTF8(toc, path0 + _T("index.html"));
 
 	// 2nd loop through tex files
+	wcout << _T("\n\n\n\n\n") << endl << _T("2nd Loop:") << endl;
 	CString html;
 	for (unsigned i{}; i < names.size(); ++i) {
+		wcout << i << ' ' << names[i].GetString() << _T("...");
 		html = ReadUTF8(path0 + names[i] + _T(".html")); // read html file
 		// process autoref command
 		autoref(IdList, LabelList, names[i], html);
 		WriteUTF8(html, path0 + names[i] + _T(".html")); // save html file
+		wcout << endl;
 	}
 }
 

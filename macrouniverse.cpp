@@ -11,7 +11,7 @@ vector<CString> GetFileNames(CString path, CString extension)
 	HANDLE hfile;
 	file = path + _T("*.") + extension;
 	hfile = FindFirstFile(file, &data);
-	if (data.cFileName[0] == 52428)
+	if (data.cFileName[0] == 52428) // not found
 		return names;
 	names.push_back(data.cFileName);
 	while (true) {
@@ -24,6 +24,22 @@ vector<CString> GetFileNames(CString path, CString extension)
 		}
 	}
 	return names;
+}
+
+// check if a file exist in a path
+// path must end with "\\"
+// name must include extension
+bool FileExist(const CString& path, const CString& name)
+{
+	CString file;
+	WIN32_FIND_DATA data;
+	HANDLE hfile;
+	file = path + name;
+	hfile = FindFirstFile(file, &data);
+	if (data.cFileName[0] == 52428) // not found
+		return false;
+	else
+		return true;
 }
 
 // sort x in descending order while tracking the original index
