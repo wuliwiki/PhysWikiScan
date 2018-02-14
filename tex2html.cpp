@@ -62,11 +62,11 @@ int ParagraphTag(CString& str)
 	}
 	N = ind.size();
 	for (i = N - 2; i > 0; --i) {
-		str.Insert(ind[i] + 1, _T("<p>"));
+		str.Insert(ind[i] + 1, _T("<p>　　"));// <p> is indented by unicode white space
 		str.Insert(ind[i], _T("\n</p>"));
 	}
 	str.Insert(str.GetLength(), _T("</p>"));
-	str.Insert(0, _T("<p>"));
+	str.Insert(0, _T("<p>　　"));// <p> is indented by unicode white space
 	return N;
 }
 

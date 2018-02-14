@@ -230,7 +230,7 @@ int FindInline(vector<int>& ind, const CString& str, char option)
 
 // Find all <key>{} environment in str
 // output ranges to ind
-// if option = 'i', range does not include {}, if 'o', range from first letter of <key> to '}'
+// if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
 // return number of <key>{} found, return -1 if failed.
 int FindComBrace(vector<int>& ind, const CString& key, const CString& str, char option)
 {

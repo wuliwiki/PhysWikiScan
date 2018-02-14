@@ -133,7 +133,7 @@ int CString2int(int& num, const CString& str, int start)
 	return i;
 }
 
-// see if a key appears followed only with only white space
+// see if a key appears followed only by only white space
 // return the next index, return -1 if nothing found.
 int ExpectKey(const CString& str, CString key, int start)
 {
@@ -142,12 +142,10 @@ int ExpectKey(const CString& str, CString key, int start)
 	int L = str.GetLength();
 	int L0 = key.GetLength();
 	TCHAR c0, c;
-	while (true)
-	{
+	while (true) {
 		c0 = key.GetAt(ind0);
 		c = str.GetAt(ind);
-		if (c == c0)
-		{
+		if (c == c0) {
 			++ind0;
 			if (ind0 == L0)
 				return ind + 1;
@@ -157,6 +155,31 @@ int ExpectKey(const CString& str, CString key, int start)
 		++ind;
 		if (ind == L)
 			return -1;
+	}
+}
+
+// reverse version of Expect key
+// return the next index, return -2 if nothing found.
+int ExpectKeyReverse(const CString& str, CString key, int start)
+{
+	int ind = start;
+	int L = str.GetLength();
+	int L0 = key.GetLength();
+	int ind0 = L0 - 1;
+	TCHAR c0, c;
+	while (true) {
+		c0 = key.GetAt(ind0);
+		c = str.GetAt(ind);
+		if (c == c0) {
+			--ind0;
+			if (ind0 < 0)
+				return ind - 1;
+		}
+		else if (c != ' ')
+			return -2;
+		--ind;
+		if (ind < 0)
+			return -2;
 	}
 }
 

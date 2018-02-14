@@ -119,6 +119,32 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 	}
 }
 
+// replace \pentry comman with html round panel
+int pentry(CString& str)
+{
+	bool moveP{ false };
+	int i{}, N{}, ind0;
+	vector<int> indIn, indOut;
+	FindComBrace(indIn, _T("\\pentry"), str);
+	N = FindComBrace(indOut, _T("\\pentry"), str, 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		// if there is <p> fllowed by two unicode spaces before, move it behind
+		ind0 = ExpectKeyReverse(str, _T("<p>　　\n"), indOut[i] - 1) + 1;
+		if (ind0 >= 0) {
+			moveP = true;
+			str.Insert(indOut[i + 1] + 1, _T("\n<p>　　"));
+		}
+		str.Delete(indOut[i + 1]);
+		str.Insert(indOut[i + 1], _T("</div>"));
+		str.Delete(indOut[i], indIn[i] - indOut[i]);
+		str.Insert(indOut[i], _T("<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　"));
+		if (moveP) {
+			str.Delete(ind0, indOut[i] - ind0);
+		}
+	}
+	return N;
+}
+
 // replace autoref with html link
 // no comment allowed
 // return number of autoref replaced, or -1 if failed
@@ -173,6 +199,26 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		str.Insert(ind3 + 1, _T("<a href = \"") + file + _T("#") + id[i] + _T("\" ") + newtab + _T(">"));
 		str.Delete(ind0, ind3 - ind0 + 1);
 		++N;
+	}
+}
+
+// process upref
+// path must end with '\\'
+int upref(CString& str, CString path)
+{
+	int i{}, N{};
+	vector<int> indIn, indOut;
+	CString entryName;
+	FindComBrace(indIn, _T("\\upref"), str);
+	N = FindComBrace(indOut, _T("\\upref"), str, 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		entryName = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		entryName.TrimLeft(' '); entryName.TrimRight(' ');
+		if (!FileExist(path, entryName + _T(".tex"))) {
+			wcout << _T("file not found!"); return -1;
+		}
+		str.Delete(indOut[i], indOut[i + 1] - indOut[i] + 1);
+		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + entryName + _T(".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>"));
 	}
 }
 
@@ -347,6 +393,8 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	EqOmitTag(str);
 	// add paragraph tags
 	ParagraphTag(str);
+	// process \pentry{}
+	wcout << pentry(str);
 	// Replace \nameStar commands
 	StarCommand(_T("comm"), str);   StarCommand(_T("pb"), str);
 	StarCommand(_T("dv"), str);     StarCommand(_T("pdv"), str);
@@ -369,8 +417,10 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	MathFunction(_T("exp"), str);    MathFunction(_T("log"), str);
 	MathFunction(_T("ln"), str);
 	// replace \name{} with html tags
-	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>"), str);
+	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>　　"), str); // <p> is indented by unicode white space
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
+	// replace \upref{} with "[x]" link
+	upref(str, path0);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
 	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
@@ -420,7 +470,7 @@ void PhysWikiOnline()
 		// add to table of content
 		toc.Insert(ind0, _T("<a href=\""));// insert notice
 		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-		toc.Insert(ind0, names[i] + _T("html"));
+		toc.Insert(ind0, names[i] + _T(".html\" target = \"_blank\""));
 		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
 		toc.Insert(ind0, _T("\">") + title + _T("</a><br>\n"));
 		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
@@ -436,7 +486,7 @@ void PhysWikiOnline()
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << ' ' << names[i].GetString() << _T("...");
 		html = ReadUTF8(path0 + names[i] + _T(".html")); // read html file
-		// process autoref command
+		// process \autoref and \upref
 		autoref(IdList, LabelList, names[i], html);
 		WriteUTF8(html, path0 + names[i] + _T(".html")); // save html file
 		wcout << endl;
