@@ -145,6 +145,105 @@ int pentry(CString& str)
 	return N;
 }
 
+// process Matlab code (\code command)
+// https://www.artefact.tk/software/matlab/highlight/
+// to allow unicode:
+// first save .tex code to .m code in ANSI encoding
+// then use the program in this website to convert to html
+// then save the html files as UTF-8 encoding
+// path must end with '\\', code files (html) must be in "<path>\codes\" folder
+// no comment allowed, must use after ParagraphTag()
+int MatlabCode(CString& str, const CString& path)
+{
+	int i{}, N{}, ind0{}, ind1{}, ind2{};
+	CString name; // code file name without extension
+	CString code;
+	vector<int> indIn, indOut;
+	// \code commands
+	FindComBrace(indIn, _T("\\code"), str);
+	N = FindComBrace(indOut, _T("\\code"), str, 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		// delete following </p><p>
+		ind2 = ExpectKey(str, _T("</p>\n<p>　　"), indOut[i + 1] + 1);
+		if (ind2 > 0) {
+			str.Delete(indOut[i + 1], ind2 - indOut[i + 1]);
+		}
+		// get code file name
+		name = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		name.TrimLeft(' '); name.TrimRight(' ');
+		// read file
+		if (!FileExist(path + _T("codes\\"), name + _T(".html"))) {
+			wcout << _T("code file not found!"); return -1;
+		}
+		code = ReadUTF8(path + _T("codes\\") + name + _T(".html"));
+		ind0 = code.Find(_T("<pre"), 0);
+		ind1 = code.Find(_T("</pre>"), ind0);
+		code = code.Mid(ind0, ind1 - ind0 + 6);
+		// insert code
+		str.Delete(indOut[i], indOut[i + 1] - indOut[i] + 1);
+		str.Insert(indOut[i], _T("</div></div>"));
+		str.Insert(indOut[i], code);
+		str.Insert(indOut[i], _T("<div class = \"nospace\">"));
+		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + name 
+			+ _T(".m\"> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
+		str.Insert(indOut[i], _T("<div class = \"w3-code notranslate w3-pale-yellow\">"));
+		// delete preceding </p><p>
+		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
+		if (ind2 >= 0) {
+			str.Delete(ind2, indOut[i] - ind2);
+		}
+	}
+	return N;
+}
+
+// same with MatlabCode, for \Code command
+int MatlabCodeTitle(CString& str, const CString& path)
+{
+	int i{}, N{}, ind0{}, ind1{}, ind2{};
+	CString name; // code file name without extension
+	CString code;
+	vector<int> indIn, indOut;
+	// \code commands
+	FindComBrace(indIn, _T("\\Code"), str);
+	N = FindComBrace(indOut, _T("\\Code"), str, 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		// delete following </p><p>
+		ind2 = ExpectKey(str, _T("</p>\n<p>　　"), indOut[i + 1] + 1);
+		if (ind2 > 0) {
+			str.Delete(indOut[i + 1], ind2 - indOut[i + 1]);
+		}
+		// get code file name
+		name = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		name.TrimLeft(' '); name.TrimRight(' ');
+		// read file
+		if (!FileExist(path + _T("codes\\"), name + _T(".html"))) {
+			wcout << _T("code file not found!"); return -1;
+		}
+		code = ReadUTF8(path + _T("codes\\") + name + _T(".html"));
+		ind0 = code.Find(_T("<pre"), 0);
+		ind1 = code.Find(_T("</pre>"), ind0);
+		code = code.Mid(ind0, ind1 - ind0 + 6);
+		// insert code
+		str.Delete(indOut[i], indOut[i + 1] - indOut[i] + 1);
+		str.Insert(indOut[i], _T("</div></div>"));
+		str.Insert(indOut[i], code);
+		str.Insert(indOut[i], _T("<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">"));
+		// insert title with download link
+		if (!FileExist(path, name + _T(".m"))) {
+			wcout << ".m file not found!"; return -1;
+		}
+		str.Insert(indOut[i], _T("<b>") + name + _T(".m</b>\n"));
+		str.Insert(indOut[i], _T("<br><br><span class = \"icon\"><a href = \"") + name 
+					+ _T(".m\"> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
+		// delete preceding </p><p>
+		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
+		if (ind2 >= 0) {
+			str.Delete(ind2, indOut[i] - ind2);
+		}
+	}
+	return N;
+}
+
 // replace autoref with html link
 // no comment allowed
 // return number of autoref replaced, or -1 if failed
@@ -424,6 +523,8 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
 	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
+	// insert code
+	MatlabCode(str, path0); MatlabCodeTitle(str, path0);
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);

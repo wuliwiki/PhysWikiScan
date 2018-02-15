@@ -133,7 +133,7 @@ int CString2int(int& num, const CString& str, int start)
 	return i;
 }
 
-// see if a key appears followed only by only white space
+// see if a key appears followed only by only white space or '\n'
 // return the next index, return -1 if nothing found.
 int ExpectKey(const CString& str, CString key, int start)
 {
@@ -150,7 +150,7 @@ int ExpectKey(const CString& str, CString key, int start)
 			if (ind0 == L0)
 				return ind + 1;
 		}
-		else if (c != ' ')
+		else if (c != ' ' && c != '\n')
 			return -1;
 		++ind;
 		if (ind == L)
@@ -175,7 +175,7 @@ int ExpectKeyReverse(const CString& str, CString key, int start)
 			if (ind0 < 0)
 				return ind - 1;
 		}
-		else if (c != ' ')
+		else if (c != ' ' && c != '\n')
 			return -2;
 		--ind;
 		if (ind < 0)
