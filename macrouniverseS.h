@@ -15,6 +15,7 @@ int FindNum(const CString& str, int start);
 int CString2int(int& num, const CString& str, int start);
 int ExpectKey(const CString& str, CString key, int start);
 int ExpectKeyReverse(const CString& str, CString key, int start);
+int DeleteSpaceReturn(CString& str, int start);
 int PairBraceR(const CString& str, int ind, TCHAR type = '{');
 int MatchBraces(std::vector<int>& ind_left, std::vector<int>& ind_right,
 	std::vector<int>& ind_RmatchL, CString& str, int start, int end);

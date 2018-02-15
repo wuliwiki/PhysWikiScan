@@ -11,3 +11,5 @@ int StarCommand(CString name, CString& str);
 int VarCommand(CString name, CString& str, int maxVars);
 int RoundSquareCommand(CString name, CString& str);
 int MathFunction(CString name, CString& str);
+int TextEscape(CString& str);
+int NormalTextEscape(CString& str);

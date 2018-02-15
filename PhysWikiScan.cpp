@@ -98,9 +98,10 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 			if (Ngather > 0) {
 				for (i = 0; i < 2 * Ngather; i += 2) {
 					for (j = indEnv[i]; j < indEnv[i + 1]; ++j) {
-						if (str.GetAt(j) == '\\')
+						if (str.GetAt(j) == '\\' && str.GetAt(j+1) == '\\')
 							++idN;
 					}
+					++idN;
 				}
 			}
 			if (envName == _T("gather")) {
@@ -185,7 +186,7 @@ int MatlabCode(CString& str, const CString& path)
 		str.Insert(indOut[i], code);
 		str.Insert(indOut[i], _T("<div class = \"nospace\">"));
 		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + name 
-			+ _T(".m\"> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
+			+ _T(".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
 		str.Insert(indOut[i], _T("<div class = \"w3-code notranslate w3-pale-yellow\">"));
 		// delete preceding </p><p>
 		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
@@ -234,7 +235,7 @@ int MatlabCodeTitle(CString& str, const CString& path)
 		}
 		str.Insert(indOut[i], _T("<b>") + name + _T(".m</b>\n"));
 		str.Insert(indOut[i], _T("<br><br><span class = \"icon\"><a href = \"") + name 
-					+ _T(".m\"> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
+					+ _T(".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
 		// delete preceding </p><p>
 		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
 		if (ind2 >= 0) {
@@ -355,6 +356,44 @@ int FigureEnvironment(CString& str, const CString& path)
 		str.Insert(ind0, format + _T("\" alt=\"图\" style=\"width:100% ;\">\n</div>"));
 		++N;
 	}
+	return N;
+}
+
+// process \Command{} to display Matlab Code
+// TODO: generate one .m file to be processed by "highlight()" function in Matlab
+// return the number of \Command{} processed, return -1 if failed
+int Command(CString& str)
+{
+	int i{}, j{}, N{}, ind0{}, ind1{}, Ncolor;
+	vector<int> ind, indColor;
+	CString temp;
+	N = FindEnv(ind, str, _T("Command"));
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		temp = str.Mid(ind[i], ind[i + 1] - ind[i] + 1);
+		temp.Replace(_T("\\\\"), _T(""));
+		// deal with color
+		Ncolor = FindComBrace(indColor, _T("\\color"), temp, 'o');
+		for (j = 2 * Ncolor - 2; j >= 0; j -= 2) {
+			temp.Delete(indColor[j], indColor[j + 1] - indColor[j] + 1);
+			ind0 = ExpectKeyReverse(temp, '{', indColor[j] - 1) + 1;
+			ind1 = PairBraceR(temp, ind0);
+			temp.Delete(ind1); temp.Insert(ind1, _T("</span>"));
+			temp.Delete(ind0); temp.Insert(ind0, _T("<span class = \"string\">"));
+		}
+		// process \par
+		while (true) {
+			ind0 = temp.Find(_T("\\par"));
+			if (ind0 < 0) break;
+			temp.Delete(ind0, 4);
+			DeleteSpaceReturn(temp, ind0);
+			temp.Insert(ind0, _T("\n　　"));
+		}
+		
+		str.Delete(ind[i], ind[i + 1] - ind[i] + 1);
+		str.Insert(ind[i], temp);
+	}
+	Env2Tag(_T("Command"), _T("<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">"),
+		_T("</pre></div></div>"), str);
 	return N;
 }
 
@@ -484,6 +523,8 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
+	// escape characters
+	wcout << NormalTextEscape(str);
 	// add html id for links
 	EnvLabel(id, label, entryName, str);
 	// process figure environment
@@ -493,7 +534,7 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	// add paragraph tags
 	ParagraphTag(str);
 	// process \pentry{}
-	wcout << pentry(str);
+	pentry(str);
 	// Replace \nameStar commands
 	StarCommand(_T("comm"), str);   StarCommand(_T("pb"), str);
 	StarCommand(_T("dv"), str);     StarCommand(_T("pdv"), str);
@@ -522,9 +563,16 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	upref(str, path0);
 	// replace environments with html tags
 	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
-	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"), _T("\\end{equation}\n</div></div>"), str);
-	// insert code
+	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"),
+						_T("\\end{equation}\n</div></div>"), str);
+	Env2Tag(_T("gather"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{gather}"),
+		_T("\\end{gather}\n</div></div>"), str);
+	Env2Tag(_T("align"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{align}"),
+		_T("\\end{align}\n</div></div>"), str);
+	// Matlab code
 	MatlabCode(str, path0); MatlabCodeTitle(str, path0);
+	Command(str);
+	Command2Tag('x', _T("<span class = \"w3-text-teal\">"), _T("</span>"), str);
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);

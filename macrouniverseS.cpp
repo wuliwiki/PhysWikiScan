@@ -183,6 +183,25 @@ int ExpectKeyReverse(const CString& str, CString key, int start)
 	}
 }
 
+// delete any following ' ' or '\n' characters starting from "start"
+// return the number of characters deleted
+int DeleteSpaceReturn(CString& str, int start)
+{
+	int i{}, Nstr{};
+	Nstr = str.GetLength();
+	for (i = start; i < Nstr; ++i) {
+		if (str.GetAt(i) == ' ' || str.GetAt(i) == '\n') {
+			continue;
+		}
+		else if (i > start) {
+			str.Delete(start, i - start);
+			return (i - start);
+		}
+		else
+			return 0;
+	}
+}
+
 // Pair right brace to left one (default)
 // or () or [] or anying single character
 // ind is inddex of left brace

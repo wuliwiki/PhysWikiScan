@@ -345,6 +345,9 @@ int Command2Tag(CString nameComm, CString strLeft, CString strRight, CString& st
 		if (ind0 < 0) break;
 		ind1 = ind0 + nameComm.GetLength() + 1;
 		ind1 = ExpectKey(str, '{', ind1); --ind1;
+		if (ind1 < 0) {
+			++ind0; continue;
+		}
 		ind2 = PairBraceR(str, ind1);
 		str.Delete(ind2, 1);
 		str.Insert(ind2, strRight);

@@ -180,3 +180,49 @@ int MathFunction(CString name, CString& str)
 	}
 	return N;
 }
+
+// deal with escape simbols in normal text
+// str must be normal text
+int TextEscape(CString& str)
+{
+	int N{};
+	N += str.Replace(_T("\\ "), _T(" "));
+	N += str.Replace(_T("{}"), _T(""));
+	N += str.Replace(_T("\\^"), _T("^"));
+	N += str.Replace(_T("\\%"), _T("%"));
+	N += str.Replace(_T("\\&"), _T("&amp"));
+	N += str.Replace(_T("<"), _T("&lt"));
+	N += str.Replace(_T(">"), _T("&gt"));
+	N += str.Replace(_T("\\{"), _T("{"));
+	N += str.Replace(_T("\\}"), _T("}"));
+	N += str.Replace(_T("\\#"), _T("#"));
+	N += str.Replace(_T("\\~"), _T("~"));
+	N += str.Replace(_T("\\_"), _T("_"));
+	N += str.Replace(_T("\\,"), _T(" "));
+	N += str.Replace(_T("\\;"), _T(" "));
+	N += str.Replace(_T("\\textbackslash"), _T("&bsol;"));
+	//N += str.Replace(_T(""), _T(""));
+	return N;
+}
+
+// deal with escape simbols in normal text, \x{} commands, Command environments
+// must be done before \command{} and environments are replaced with html tags
+int NormalTextEscape(CString& str)
+{
+	int i{}, N1{}, N{}, Nnorm{};
+	CString temp;
+	vector<int> ind, ind1;
+	FindNormalText(ind, str);
+	FindComBrace(ind1, _T("\\x"), str);
+	Nnorm = CombineRange(ind, ind, ind1);
+	FindEnv(ind1, str, _T("Command"));
+	Nnorm = CombineRange(ind, ind, ind1);
+	for (i = 2 * Nnorm - 2; i >= 0; i -= 2) {
+		temp = str.Mid(ind[i], ind[i + 1] - ind[i] + 1);
+		N1 = TextEscape(temp); if (N1 < 0) continue;
+		N += N1;
+		str.Delete(ind[i], ind[i + 1] - ind[i] + 1);
+		str.Insert(ind[i], temp);
+	}
+	return N;
+}
