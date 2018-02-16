@@ -524,10 +524,12 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
 	// escape characters
-	wcout << NormalTextEscape(str);
+	NormalTextEscape(str);
 	// add html id for links
 	EnvLabel(id, label, entryName, str);
-	// process figure environment
+	// process table environments
+	wcout << Table(str);
+	// process figure environments
 	FigureEnvironment(str, path0);
 	// ensure '<' and '>' has spaces around them
 	EqOmitTag(str);

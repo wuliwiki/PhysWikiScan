@@ -13,3 +13,4 @@ int RoundSquareCommand(CString name, CString& str);
 int MathFunction(CString name, CString& str);
 int TextEscape(CString& str);
 int NormalTextEscape(CString& str);
+int Table(CString& str);

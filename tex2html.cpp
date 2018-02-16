@@ -226,3 +226,64 @@ int NormalTextEscape(CString& str)
 	}
 	return N;
 }
+
+// process table
+// return number of tables processed, return -1 if failed
+// must be used after EnvLabel()
+int Table(CString& str)
+{
+	int i{}, j{}, N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
+	vector<int> ind;
+	vector<int> indLine; // stores the position of "\hline"
+	CString caption;
+	N = FindEnv(ind, str, _T("table"), 'o');
+	if (N == 0) return 0;
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		ind0 = str.Find(_T("\\caption")); 
+		if (ind0 < 0 || ind0 > ind[i + 1]) {
+			wcout << "table no caption!"; return -1;
+		}
+		ind0 += 8; ind0 = ExpectKey(str, '{', ind0);
+		ind1 = PairBraceR(str, ind0 -1);
+		caption = str.Mid(ind0, ind1 - ind0);
+		// recognize \hline and replace with tags, also deletes '\\'
+		while (true) {
+			ind0 = str.Find(_T("\\hline"), ind0);
+			if (ind0 < 0 || ind0 > ind[i + 1]) break;
+			indLine.push_back(ind0);
+			ind0 += 5;
+		}
+		Nline = indLine.size();
+		str.Delete(indLine[Nline - 1], 6);
+		str.Insert(indLine[Nline - 1], _T("</td></tr></table>"));
+		ind0 = ExpectKeyReverse(str, _T("\\\\"), indLine[Nline - 1] - 1);
+		str.Delete(ind0 + 1, 2);
+		for (j = Nline - 2; j > 0; --j) {
+			str.Delete(indLine[j], 6);
+			str.Insert(indLine[j], _T("</td></tr><tr><td>"));
+			ind0 = ExpectKeyReverse(str, _T("\\\\"), indLine[j] - 1);
+			str.Delete(ind0 + 1, 2);
+		}
+		str.Delete(indLine[0], 6);
+		str.Insert(indLine[0], _T("<table><tr><td>"));
+	}
+	// second round, replace '&' with tags
+	// delete latex code
+	// TODO: add title
+	FindEnv(ind, str, _T("table"), 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		ind0 = ind[i] + 12; ind1 = ind[i + 1];
+		while (true) {
+			ind0 = str.Find('&', ind0);
+			if (ind0 < 0 || ind0 > ind1) break;
+			str.Delete(ind0);
+			str.Insert(ind0, _T("</td><td>"));
+			ind1 += 8;
+		}
+		ind0 = ReverseFind(_T("</table>"), str, ind1) + 8;
+		str.Delete(ind0, ind1 - ind0 + 1);
+		ind0 = str.Find(_T("<table>"), ind[i]) - 1;
+		str.Delete(ind[i], ind0 - ind[i] + 1);
+	}
+	return N;
+}
