@@ -14,3 +14,4 @@ int MathFunction(CString name, CString& str);
 int TextEscape(CString& str);
 int NormalTextEscape(CString& str);
 int Table(CString& str);
+int Itemize(CString& str);

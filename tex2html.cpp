@@ -287,3 +287,35 @@ int Table(CString& str)
 	}
 	return N;
 }
+
+// process Itemize environments
+// return number processed, or -1 if failed
+int Itemize(CString& str)
+{
+	int i{}, j{}, N{}, Nitem{}, ind0{};
+	vector<int> indIn, indOut;
+	vector<int> indItem; // positions of each "\item"
+	N = FindEnv(indIn, str, "itemize");
+	FindEnv(indOut, str, "itemize", 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		indItem.resize(0);
+		str.Delete(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
+		str.Insert(indIn[i + 1] + 1, _T("</li></ul>"));
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("\\item"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1]) break;
+			indItem.push_back(ind0); ind0 += 5;
+		}
+		Nitem = indItem.size();
+		
+		for (j = Nitem - 1; j > 0; --j) {
+			str.Delete(indItem[j], 5);
+			str.Insert(indItem[j], _T("</li><li>"));
+		}
+		str.Delete(indItem[0], 5);
+		str.Insert(indItem[0], _T("<ul><li>"));
+		str.Delete(indOut[i], indItem[0] - indOut[i]);
+	}
+	return N;
+}

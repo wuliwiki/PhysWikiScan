@@ -112,6 +112,25 @@ int FindNum(const CString& str, int start)
 	}
 }
 
+// Fiind the next appearance of
+// output the ikey of key[ikey] found
+// return the first index of key[ikey], return -1 if nothing found
+// TODO: temporary algorithm, can be more efficient
+int FindMultiple(int& ikey, const CString& str, const vector<CString>& key, int start)
+{
+	int i{}, ind0{}, Nkey{}, imin;
+	Nkey = key.size();
+	imin = str.GetLength();
+	for (i = 0; i < Nkey; ++i) {
+		ind0 = str.Find(key[i], start);
+		if (ind0 >= start && ind0 < imin) {
+			imin = ind0; ikey = i;
+		}
+	}
+	if (imin == str.GetLength()) imin = -1;
+	return imin;
+}
+
 // expect and convert int in CString, no negative number!
 // return the index after the last digit, return -1 if failed
 // CString.GetAt(start) must be a number

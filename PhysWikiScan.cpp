@@ -492,6 +492,118 @@ int OneFile3(CString path)
 	return N;
 }
 
+// remove special .tex files from a list of name
+// return number of names removed
+// names has ".tex" extension
+int RemoveNoEntry(vector<CString>& names)
+{
+	int i{}, j{}, N{}, Nnames{}, Nnames0;
+	vector<CString> names0; // names to remove
+	names0.push_back(_T("PhysWiki1"));
+	names0.push_back(_T("Sample"));
+	// add other names here
+	Nnames = names.size();
+	Nnames0 = names0.size();
+	for (i = 0; i < Nnames0; ++i) {
+		names0[i] = names0[i] + _T(".tex");
+	}
+	for (i = 0; i < Nnames; ++i) {
+		for (j = 0; j < Nnames0; ++j) {
+			if (names[i] == names0[j]) {
+				names.erase(names.begin() + i);
+				++N; --Nnames; break;
+			}
+		}
+	}
+	return N;
+}
+
+// create table of content from PhysWiki1.tex
+// path must end with '\\'
+// return the number of entries
+int TableOfContent(const CString& path)
+{
+	int i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
+	vector<CString> keys{ _T("\\entry"), _T("\\chapter"), _T("\\part") };
+	vector<CString> chineseNo{_T("一"), _T("二"), _T("三"), _T("四"), _T("五"), _T("六"), _T("七"), _T("八"), _T("九"),
+							_T("十"), _T("十一"), _T("十二"), _T("十三"), _T("十四"), _T("十五") };
+	//keys.push_back(_T("\\entry")); keys.push_back(_T("\\chapter")); keys.push_back(_T("\\part"));
+	CString title; // chinese entry name, chapter name, or part name
+	CString entryName; // entry label
+	CString str = ReadUTF8(path + _T("PhysWiki1.tex"));
+	CString toc = ReadUTF8(_T("template.html")); // read html template
+	ind0 = toc.Find(_T("PhysWikiHTMLtitle"));
+	toc.Delete(ind0, 17);
+	toc.Insert(ind0, _T("《小时物理百科》目录"));
+	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
+	toc.Delete(ind0, 15);
+	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
+	toc.Delete(ind0, 16);
+	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
+	ind0 = Insert(toc, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"), ind0);
+	// remove comments
+	vector<int> indComm;
+	N = FindComment(indComm, str);
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
+	}
+	while (true) {
+		ind1 = FindMultiple(ikey, str, keys, ind1);
+		if (ind1 < 0) break;
+		if (ikey == 0) { // found "\entry"
+			// get chinese title and entry label
+			ind1 += 6; ++N;
+			ind1 = ExpectKey(str, '{', ind1);
+			ind2 = str.Find('}', ind1);
+			title = str.Mid(ind1, ind2 - ind1);
+			title.TrimLeft(' '); title.TrimRight(' ');
+			title.Replace(_T("\\ "), _T(" "));
+			ind1 = ExpectKey(str, '{', ind2 + 1);
+			ind2 = str.Find('}', ind1);
+			entryName = str.Mid(ind1, ind2 - ind1);
+			ind1 = ind2;
+			// insert entry into html table of contents
+			ind0 = Insert(toc, _T("<a href = \"") + entryName + _T(".html") + _T("\" target = \"_blank\">")
+				+ title + _T("</a>　\n"), ind0);
+		}
+		else if (ikey == 1) { // found "\chapter"
+			// get chinese chapter name
+			ind1 += 8;
+			ind1 = ExpectKey(str, '{', ind1);
+			ind2 = str.Find('}', ind1);
+			title = str.Mid(ind1, ind2 - ind1);
+			title.TrimLeft(' '); title.TrimRight(' ');
+			title.Replace(_T("\\ "), _T(" "));
+			ind1 = ind2;
+			// insert chapter into html table of contents
+			++chapNo;
+			ind0 = Insert(toc, _T("<h5><b>第") + chineseNo[chapNo] + _T("章 ") + title
+				+ _T("</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p>\n"), ind0);
+		}
+		else { // found "\part"
+			// get chinese part name
+			ind1 += 5; chapNo = -1;
+			ind1 = ExpectKey(str, '{', ind1);
+			ind2 = str.Find('}', ind1);
+			title = str.Mid(ind1, ind2 - ind1);
+			title.TrimLeft(' '); title.TrimRight(' ');
+			title.Replace(_T("\\ "), _T(" "));
+			ind1 = ind2;
+			// insert part into html table of contents
+			++partNo;
+			if (partNo > 0)
+				ind0 = Insert(toc, _T("<p>　</p>\n"), ind0);
+			ind0 = Insert(toc, _T("<h3 align = \"center\">第") + chineseNo[partNo] + _T("部分 ")
+				+ title + _T("</h3>\n"), ind0);
+		}
+	}
+	toc.Insert(ind0, _T("</p>"));
+	++ind0; toc.Delete(ind0, 16);
+	WriteUTF8(toc, path + _T("index.html"));
+	return N;
+}
+
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // return 0 if successful, -1 if failed
@@ -525,10 +637,12 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	}
 	// escape characters
 	NormalTextEscape(str);
+	// \itemize
+	wcout << Itemize(str);
 	// add html id for links
 	EnvLabel(id, label, entryName, str);
 	// process table environments
-	wcout << Table(str);
+	Table(str);
 	// process figure environments
 	FigureEnvironment(str, path0);
 	// ensure '<' and '>' has spaces around them
@@ -598,18 +712,11 @@ void PhysWikiOnline()
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
 	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"));
-	if (names.size() < 0) return;
+	RemoveNoEntry(names);
+	if (names.size() <= 0) return;
 
+	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
-	// table of content
-	CString toc = ReadUTF8(_T("template.html")); // read html template
-	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
-	toc.Delete(ind0, 15);
-	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0); --ind0;
-	toc.Insert(ind0, _T("<h1>《小时物理百科》网页版目录</h1>\n\n"));
-	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-	toc.Insert(ind0, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"));
-	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
 	// 1st loop through tex files
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
@@ -618,18 +725,7 @@ void PhysWikiOnline()
 		// main process
 		PhysWikiOnline1(title, IdList, LabelList, names[i], path0);
 		wcout << endl;
-		// add to table of content
-		toc.Insert(ind0, _T("<a href=\""));// insert notice
-		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-		toc.Insert(ind0, names[i] + _T(".html\" target = \"_blank\""));
-		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-		toc.Insert(ind0, _T("\">") + title + _T("</a><br>\n"));
-		ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0); --ind0;
-		//wcout << toc.GetString() << _T("\n\n\n\n\n") << endl;
 	}
-	toc.Insert(ind0, _T("</p>"));
-	++ind0; toc.Delete(ind0, 16);
-	WriteUTF8(toc, path0 + _T("index.html"));
 
 	// 2nd loop through tex files
 	wcout << _T("\n\n\n\n\n") << endl << _T("2nd Loop:") << endl;
