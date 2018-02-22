@@ -10,6 +10,8 @@ int CombineRange(std::vector<int>& ind, std::vector<int> ind1, std::vector<int> 
 int InvertRange(std::vector<int>& ind, const std::vector<int>& ind0, int Nstr);
 int FindComment(std::vector<int>& ind, const CString& str);
 int FindEnv(std::vector<int>& ind, const CString& str, CString env, char option = 'i');
+int FindBegin(std::vector<int>& ind, const CString& env, const CString& str, char option = '1');
+int FindEnd(std::vector<int>& ind, const CString& env, const CString& str);
 int FindInline(std::vector<int>& ind, const CString& str, char option = 'i');
 int FindComBrace(std::vector<int>& ind, const CString& key, const CString& str, char option = 'i');
 int FindNormalText(std::vector<int>& indNorm, CString& str);

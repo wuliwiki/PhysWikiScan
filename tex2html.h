@@ -6,7 +6,6 @@
 
 int EnsureSpace(CString name, CString& str, int start, int end);
 int EqOmitTag(CString& str);
-int ParagraphTag(CString& str);
 int StarCommand(CString name, CString& str);
 int VarCommand(CString name, CString& str, int maxVars);
 int RoundSquareCommand(CString name, CString& str);

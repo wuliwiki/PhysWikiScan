@@ -131,7 +131,7 @@ int FindMultiple(int& ikey, const CString& str, const vector<CString>& key, int 
 	return imin;
 }
 
-// expect and convert int in CString, no negative number!
+// convert int in CString, no negative number!
 // return the index after the last digit, return -1 if failed
 // CString.GetAt(start) must be a number
 int CString2int(int& num, const CString& str, int start)
@@ -142,6 +142,7 @@ int CString2int(int& num, const CString& str, int start)
 	if (c < '0' || c > '9') {
 		wcout << _T("not a number!"); return -1;
 	}
+	num = c - '0';
 	for (i = start + 1; i < str.GetLength(); ++i) {
 		c = str.GetAt(i);
 		if (c >= '0' && c <= '9')
@@ -150,6 +151,25 @@ int CString2int(int& num, const CString& str, int start)
 			return i;
 	}
 	return i;
+}
+
+// convert double in CString, no negative number!
+// return the index after the last digit, return -1 if failed
+// CString.GetAt(start) must be a number
+int CString2double(double& num, const CString& str, int start)
+{
+	int ind0{}, num1{}, num2{};
+	ind0 = CString2int(num1, str, start);
+	if (str.GetAt(ind0) != '.') {
+		num = (double)num1;
+		return ind0;
+	}
+	ind0 = CString2int(num2, str, ind0 + 1);
+	num = num2;
+	while (num >= 1)
+		num /= 10;
+	num += (double)num1;
+	return ind0;
 }
 
 // see if a key appears followed only by only white space or '\n'

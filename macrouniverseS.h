@@ -14,6 +14,7 @@ int NextNoSpace(CString& c, const CString& str, int start);
 int FindNum(const CString& str, int start);
 int FindMultiple(int& ikey, const CString& str, const std::vector<CString>& key, int start);
 int CString2int(int& num, const CString& str, int start);
+int CString2double(double& num, const CString& str, int start);
 int ExpectKey(const CString& str, CString key, int start);
 int ExpectKeyReverse(const CString& str, CString key, int start);
 int DeleteSpaceReturn(CString& str, int start);

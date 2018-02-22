@@ -201,6 +201,7 @@ int FindEnv(vector<int>& ind, const CString& str, CString env, char option)
 	}
 }
 
+
 // find the range of inline equations using $$
 // if option = 'i', range does not include $, if 'o', it does.
 // return the number of $$ environments found.
@@ -229,6 +230,7 @@ int FindInline(vector<int>& ind, const CString& str, char option)
 }
 
 // Find all <key>{} environment in str
+// find <key>{}{} when option = '2'
 // output ranges to ind
 // if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
 // return number of <key>{} found, return -1 if failed.
@@ -242,68 +244,118 @@ int FindComBrace(vector<int>& ind, const CString& key, const CString& str, char 
 		if (ind1 < 0)
 			return ind.size() / 2;
 		ind0 = ind1 + key.GetLength();
-		ind0 = ExpectKey(str, _T("{"), ind0);
-		if (ind0 < 0)
-			return -1;
+		ind0 = ExpectKey(str, '{', ind0);
+		if (ind0 < 0) {
+			ind0 = ind1 + key.GetLength(); continue;
+		}
 		ind.push_back(option == 'i' ? ind0 : ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
-		if (ind0 < 0)
-		{
-			wcout << L"error!"; return -1;
+		if (option != '2') {
+			ind.push_back(option == 'i' ? ind0 - 1 : ind0);
 		}
-		ind.push_back(option == 'i' ? ind0 - 1 : ind0);
+		else {
+			ind0 = ExpectKey(str, '{', ind0 + 1);
+			if (ind0 < 0)
+				continue;
+			ind0 = PairBraceR(str, ind0 - 1);
+			ind.push_back(ind0);
+		}
+	}
+}
+
+// Find "\begin{env}" or "\begin{env}{}" (option = '2')
+// output ranges to ind, from '\' to '}'
+// return number found, return -1 if failed
+int FindBegin(vector<int>& ind, const CString& env, const CString& str, char option)
+{
+	ind.resize(0);
+	int N{}, ind0{}, ind1;
+	while (true) {
+		ind1 = str.Find(_T("\\begin"), ind0);
+		if (ind1 < 0)
+			return N;
+		ind0 = ExpectKey(str, '{', ind1 + 6);
+		if (ExpectKey(str, env, ind0) < 0)
+			continue;
+		++N; ind.push_back(ind1);
+		ind0 = PairBraceR(str, ind0 - 1);
+		if (option == '1')
+			ind.push_back(ind0);
+		ind0 = ExpectKey(str, '{', ind0 + 1);
+		if (ind0 < 0) {
+			wcout << _T("expecting {}{}!"); return -1;
+		}
+		ind0 = PairBraceR(str, ind0 - 1);
+		ind.push_back(ind0);
+	}
+}
+
+// Find "\end{env}"
+// output ranges to ind, from '\' to '}'
+// return number found, return -1 if failed
+int FindEnd(vector<int>& ind, const CString& env, const CString& str)
+{
+	ind.resize(0);
+	int N{}, ind0{}, ind1{};
+	while (true) {
+		ind1 = str.Find(_T("\\end"), ind0);
+		if (ind1 < 0)
+			return N;
+		ind0 = ExpectKey(str, '{', ind1 + 4);
+		if (ExpectKey(str, env, ind0) < 0)
+			continue;
+		++N; ind.push_back(ind1);
+		ind0 = PairBraceR(str, ind0 - 1);
+		ind.push_back(ind0);
 	}
 }
 
 // Find normal text range
 int FindNormalText(vector<int>& indNorm, CString& str)
 {
-	vector<int> ind, indComm, indEq, indInline, indCom, indGath, indAli,
-		indTT, indFig, indInp, indTable, indSSub;
-	int NComm, NEq, NInline, NCom, NGath, NAli, NTT, NFig, NInp, NTable, NSSub;
+	vector<int> ind, ind1;
 	// comments
-	NComm = FindComment(indComm, str);
-	ind = indComm;
+	FindComment(ind, str);
 	// inline equation environments
-	NInline = FindInline(indInline, str, 'o');
-	if (NInline > 0)
-		CombineRange(ind, ind, indInline);
+	FindInline(ind1, str, 'o');
+	CombineRange(ind, ind, ind1);
 	// equation environments
-	NEq = FindEnv(indEq, str, _T("equation"), 'o');
-	if (NEq > 0)
-		CombineRange(ind, ind, indEq);
+	FindEnv(ind1, str, _T("equation"), 'o');
+	CombineRange(ind, ind, ind1);
 	// command environments
-	NCom = FindEnv(indCom, str, _T("Command"), 'o');
-	if (NCom > 0)
-		CombineRange(ind, ind, indCom);
+	FindEnv(ind1, str, _T("Command"), 'o');
+	CombineRange(ind, ind, ind1);
 	// gather environments
-	NGath = FindEnv(indGath, str, _T("gather"), 'o');
-	if (NGath > 0)
-		CombineRange(ind, ind, indGath);
+	FindEnv(ind1, str, _T("gather"), 'o');
+	CombineRange(ind, ind, ind1);
 	// align environments (not "aligned")
-	NAli = FindEnv(indAli, str, _T("align"), 'o');
-	if (NAli > 0)
-		CombineRange(ind, ind, indAli);
+	FindEnv(ind1, str, _T("align"), 'o');
+	CombineRange(ind, ind, ind1);
 	// texttt command
-	NTT = FindComBrace(indTT, _T("\\texttt"), str, 'o');
-	if (NTT > 0)
-		CombineRange(ind, ind, indTT);
+	FindComBrace(ind1, _T("\\texttt"), str, 'o');
+	CombineRange(ind, ind, ind1);
 	// input command
-	NInp = FindComBrace(indInp, _T("\\input"), str, 'o');
-	if (NInp > 0)
-		CombineRange(ind, ind, indInp);
+	FindComBrace(ind1, _T("\\input"), str, 'o');
+	CombineRange(ind, ind, ind1);
 	// Figure environments
-	NFig = FindEnv(indFig, str, _T("figure"), 'o');
-	if (NFig > 0)
-		CombineRange(ind, ind, indFig);
+	FindEnv(ind1, str, _T("figure"), 'o');
+	CombineRange(ind, ind, ind1);
 	// Table environments
-	NTable = FindEnv(indTable, str, _T("table"), 'o');
-	if (NTable > 0)
-		CombineRange(ind, ind, indTable);
+	FindEnv(ind1, str, _T("table"), 'o');
+	CombineRange(ind, ind, ind1);
 	// subsubsection command
-	NSSub = FindComBrace(indSSub, _T("\\subsubsection"), str, 'o');
-	if (NSSub > 0)
-		CombineRange(ind, ind, indSSub);
+	FindComBrace(ind1, _T("\\subsubsection"), str, 'o');
+	CombineRange(ind, ind, ind1);
+	//  \begin{exam}{} and \end{exam}
+	FindBegin(ind1, _T("exam"), str, '2');
+	CombineRange(ind, ind, ind1);
+	FindEnd(ind1, _T("exam"), str);
+	CombineRange(ind, ind, ind1);
+	//  exer\begin{exer}{} and \end{exer}
+	FindBegin(ind1, _T("exer"), str, '2');
+	CombineRange(ind, ind, ind1);
+	FindEnd(ind1, _T("exer"), str);
+	CombineRange(ind, ind, ind1);
 	// invert range
 	return InvertRange(indNorm, ind, str.GetLength());
 }

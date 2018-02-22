@@ -30,6 +30,156 @@ int GetTitle(CString& title, const CString& str)
 	return 0;
 }
 
+// add <p> tags to paragraphs
+// return number of tag pairs added
+int ParagraphTag(CString& str)
+{
+	int i{}, N{}, N1{}, ind0{}, ind2{};
+	vector<int> ind, ind1;
+	str.TrimLeft('\n'); str.TrimRight('\n');
+	// delete extra '\n' (more than two continuous)
+	while (true) {
+		ind0 = str.Find(_T("\n\n\n"), ind0);
+		if (ind0 < 0) break;
+		str.Delete(ind0, 1);
+	}
+	// remove "\n\n" and add <p> tags
+	ind0 = 0;
+	while (true) {
+		ind0 = str.Find(_T("\n\n"), ind0);
+		if (ind0 < 0) break;
+		ind.push_back(ind0); ++N; ind0 += 2;
+	}
+	N = ind.size();
+	for (i = N - 2; i >= 0; --i) {
+		str.Insert(ind[i] + 1, _T("<p>　　"));// <p> is indented by unicode white space
+		str.Insert(ind[i], _T("\n</p>"));
+	}
+	str.Insert(str.GetLength(), _T("\n</p>"));
+	str.Insert(0, _T("<p>　　\n"));// <p> is indented by unicode white space
+
+	// deal with ranges that should not be in <p>...</p>
+	// if there is "<p>" before range, delete it, otherwise, add "</p>"
+	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
+	FindComBrace(ind, _T("\\subsection"), str, 'o');
+	FindComBrace(ind1, _T("\\subsubsection"), str, 'o');
+	CombineRange(ind, ind, ind1);
+	FindComBrace(ind1, _T("\\pentry"), str, 'o');
+	CombineRange(ind, ind, ind1);
+	for (i = ind.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, _T("</p>"), ind[i + 1] + 1);
+		if (ind0 >= 0) {
+			str.Delete(ind0 - 4, 4);
+		}
+		else {
+			str.Insert(ind[i + 1] + 1, _T("\n<p>　　")); ++N;
+		}
+		ind0 = ExpectKeyReverse(str, _T("<p>　　"), ind[i] - 1);
+		ind2 = ExpectKeyReverse(str, _T("<p>"), ind[i] - 1);
+		if (ind0 > -2) {
+			str.Delete(ind0 + 1, 5); --N;
+		}
+		else if (ind2 > -2) {
+			str.Delete(ind2 + 1, 3); --N;
+		}
+		else {
+			str.Insert(ind[i], _T("</p>\n\n"));
+		}
+	}
+
+	// deal with ranges that should not be in <p>...</p>
+	// if there is "<p>" before range, delete it, otherwise, add "</p>"
+	// if there is "</p>" after range, delete it, otherwise, add "<p>"
+	FindEnv(ind, str, _T("figure"), 'o');
+	FindComBrace(ind1, _T("\\code"), str, 'o');
+	CombineRange(ind, ind, ind1);
+	FindComBrace(ind1, _T("\\Code"), str, 'o');
+	CombineRange(ind, ind, ind1);
+	for (i = ind.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, _T("</p>"), ind[i + 1] + 1);
+		if (ind0 >= 0) {
+			str.Delete(ind0 - 4, 4);
+		}
+		else {
+			str.Insert(ind[i + 1] + 1, _T("\n<p>")); ++N;
+		}
+		ind0 = ExpectKeyReverse(str, _T("<p>　　"), ind[i] - 1);
+		ind2 = ExpectKeyReverse(str, _T("<p>"), ind[i] - 1);
+		if (ind0 > -2) {
+			str.Delete(ind0 + 1, 5); --N;
+		}
+		else if (ind2 > -2) {
+			str.Delete(ind2 + 1, 3); --N;
+		}
+		else {
+			str.Insert(ind[i], _T("</p>\n\n"));
+		}
+	}
+
+	// deal with equation environments alike
+	// if there is "</p>\n<p>　　" before range, delete it
+	// if there is "<p>　　" before range, delete "　　"
+	FindEnv(ind, str, _T("equation"), 'o');
+	FindEnv(ind1, str, _T("gather"), 'o');
+	CombineRange(ind, ind, ind1);
+	FindEnv(ind1, str, _T("align"), 'o');
+	CombineRange(ind, ind, ind1);
+	for (i = ind.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), ind[i] - 1);
+		ind2 = ExpectKeyReverse(str, _T("<p>　　"), ind[i] - 1);
+		if (ind0 > -2) {
+			str.Delete(ind0 + 1, 10); --N;
+		}
+		else if (ind2 > -2) {
+			str.Delete(ind2 + 4, 2);
+		}
+	}
+	// deal with \noindent
+	ind0 = 0;
+	while (true) {
+		ind0 = str.Find(_T("\\noindent"), ind0);
+		if (ind0 < 0) break;
+		str.Delete(ind0, 9);
+		ind2 = ExpectKeyReverse(str, _T("　　"), ind0 - 1);
+		if (ind2 > -2)
+			str.Delete(ind2 + 1, 2);
+	}
+
+	// deal with ranges that should not be in <p>...</p>
+	// if there is "<p>" before \begin{}{}, delete it, otherwise, add "</p>"
+	// if there is "</p>" after \begin{}{}, delete it, otherwise, add "<p>　　"
+	// if there is "<p>" before \end{}, delete it, otherwise, add "</p>"
+	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
+	FindBegin(ind, _T("exam"), str, '2');
+	FindEnd(ind1, _T("exam"), str);
+	CombineRange(ind, ind, ind1);
+	FindBegin(ind1, _T("exer"), str, '2');
+	CombineRange(ind, ind, ind1);
+	FindEnd(ind1, _T("exer"), str);
+	CombineRange(ind, ind, ind1);
+	for (i = ind.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, _T("</p>"), ind[i + 1] + 1);
+		if (ind0 >= 0) {
+			str.Delete(ind0 - 4, 4);
+		}
+		else {
+			str.Insert(ind[i + 1] + 1, _T("\n<p>　　")); ++N;
+		}
+		ind0 = ExpectKeyReverse(str, _T("<p>　　"), ind[i] - 1);
+		ind2 = ExpectKeyReverse(str, _T("<p>"), ind[i] - 1);
+		if (ind0 > -2) {
+			str.Delete(ind0 + 1, 5); --N;
+		}
+		else if (ind2 > -2) {
+			str.Delete(ind2 + 1, 3); --N;
+		}
+		else {
+			str.Insert(ind[i], _T("</p>\n\n"));
+		}
+	}
+	return N;
+}
+
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
 // output html id and corresponding label for future reference
 // "gather" and "align" environments has id = "ga" and "ali"
@@ -123,25 +273,15 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 // replace \pentry comman with html round panel
 int pentry(CString& str)
 {
-	bool moveP{ false };
 	int i{}, N{}, ind0;
 	vector<int> indIn, indOut;
 	FindComBrace(indIn, _T("\\pentry"), str);
 	N = FindComBrace(indOut, _T("\\pentry"), str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		// if there is <p> fllowed by two unicode spaces before, move it behind
-		ind0 = ExpectKeyReverse(str, _T("<p>　　\n"), indOut[i] - 1) + 1;
-		if (ind0 >= 0) {
-			moveP = true;
-			str.Insert(indOut[i + 1] + 1, _T("\n<p>　　"));
-		}
 		str.Delete(indOut[i + 1]);
 		str.Insert(indOut[i + 1], _T("</div>"));
 		str.Delete(indOut[i], indIn[i] - indOut[i]);
 		str.Insert(indOut[i], _T("<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　"));
-		if (moveP) {
-			str.Delete(ind0, indOut[i] - ind0);
-		}
 	}
 	return N;
 }
@@ -164,11 +304,6 @@ int MatlabCode(CString& str, const CString& path)
 	FindComBrace(indIn, _T("\\code"), str);
 	N = FindComBrace(indOut, _T("\\code"), str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		// delete following </p><p>
-		ind2 = ExpectKey(str, _T("</p>\n<p>　　"), indOut[i + 1] + 1);
-		if (ind2 > 0) {
-			str.Delete(indOut[i + 1], ind2 - indOut[i + 1]);
-		}
 		// get code file name
 		name = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		name.TrimLeft(' '); name.TrimRight(' ');
@@ -188,11 +323,6 @@ int MatlabCode(CString& str, const CString& path)
 		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + name 
 			+ _T(".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
 		str.Insert(indOut[i], _T("<div class = \"w3-code notranslate w3-pale-yellow\">"));
-		// delete preceding </p><p>
-		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
-		if (ind2 >= 0) {
-			str.Delete(ind2, indOut[i] - ind2);
-		}
 	}
 	return N;
 }
@@ -208,11 +338,6 @@ int MatlabCodeTitle(CString& str, const CString& path)
 	FindComBrace(indIn, _T("\\Code"), str);
 	N = FindComBrace(indOut, _T("\\Code"), str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		// delete following </p><p>
-		ind2 = ExpectKey(str, _T("</p>\n<p>　　"), indOut[i + 1] + 1);
-		if (ind2 > 0) {
-			str.Delete(indOut[i + 1], ind2 - indOut[i + 1]);
-		}
 		// get code file name
 		name = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		name.TrimLeft(' '); name.TrimRight(' ');
@@ -234,13 +359,8 @@ int MatlabCodeTitle(CString& str, const CString& path)
 			wcout << ".m file not found!"; return -1;
 		}
 		str.Insert(indOut[i], _T("<b>") + name + _T(".m</b>\n"));
-		str.Insert(indOut[i], _T("<br><br><span class = \"icon\"><a href = \"") + name 
+		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + name 
 					+ _T(".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"));
-		// delete preceding </p><p>
-		ind2 = ExpectKeyReverse(str, _T("</p>\n<p>　　"), indOut[i] - 1) + 1;
-		if (ind2 >= 0) {
-			str.Delete(ind2, indOut[i] - ind2);
-		}
 	}
 	return N;
 }
@@ -328,18 +448,31 @@ int upref(CString& str, CString path)
 // path must end with '\\'
 int FigureEnvironment(CString& str, const CString& path)
 {
-	int i{}, N{}, Nfig{}, ind0{}, indName1{}, indName2{};
+	int i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
+	double width{}; // figure width in cm
 	vector<int> indFig{};
-	CString figName, format;
+	CString figName, format, caption, widthPt, figNo;
 	Nfig = FindEnv(indFig, str, _T("figure"), 'o');
 	for (i = 2*Nfig - 2; i >= 0; i-=2) {
-		indName1 = str.Find(_T("figures/"), indFig[i]) + 8;
+		// get width of figure
+		ind0 = str.Find(_T("width"), indFig[i]) + 5;
+		ind0 = ExpectKey(str, '=', ind0);
+		ind0 = FindNum(str, ind0);
+		CString2double(width, str, ind0);
+		// get file name of figure
+		indName1 = str.Find(_T("figures/"), ind0) + 8;
 		indName2 = str.Find(_T(".pdf"), indFig[i]) - 1;
 		figName = str.Mid(indName1, indName2 - indName1 + 1);
-		// TODO: get and set figure size and 45pt per cm
-		str.Delete(indFig[i], indFig[i + 1] - indFig[i] + 1);
-		// insert html code
-		//TODO: set figure size in pt
+		// get caption of figure
+		ind0 = str.Find(_T("\\caption"), ind0);
+		if (ind0 < 0) {
+			wcout << _T("fig caption not found!"); return -1;
+		}
+		ind0 = ExpectKey(str, '{', ind0 + 8);
+		ind1 = PairBraceR(str, ind0);
+		caption = str.Mid(ind0, ind1 - ind0);
+		str.Delete(indFig[i], indFig[i + 1] - indFig[i] + 1); // delete environment
+		ind0 = ExpectKey(str, _T("\n</p>"), indFig[i]);
 		// test img file existence
 		if (FileExist(path, figName + _T(".svg")))
 			format = _T(".svg");
@@ -348,13 +481,40 @@ int FigureEnvironment(CString& str, const CString& path)
 		else{
 			wcout << _T("figure not found!"); return -1;
 		}
-			
-		str.Insert(indFig[i], _T("<div class = \"w3 - cell\" style = \"width:300px\">\n"));
-		ind0 = str.Find(_T("\n"), indFig[i]) + 1;
-		str.Insert(ind0, _T("<img src = \"")); ind0 += 12;
-		str.Insert(ind0, figName); ind0 += figName.GetLength();
-		str.Insert(ind0, format + _T("\" alt=\"图\" style=\"width:100% ;\">\n</div>"));
+		// insert html code
+		widthPt.Format(_T("%d"), (int)(33.4 * width));
+		figNo.Format(_T("%d"), i/2 + 1);
+		ind0 = Insert(str, _T("<div class = \"w3-content\" style = \"max-width:") + widthPt
+			+ _T("pt;\">\n") + _T("<img src = \"") + figName + format
+			+ _T("\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图") + figNo
+			+ _T("：") + caption + _T("</div>"), indFig[i]);
 		++N;
+	}
+	return N;
+}
+
+// example is already not in a paragraph
+// return number of examples processed, return -1 if failed
+int ExampleEnvironment(CString& str, const CString& path0)
+{
+	int i{}, N{}, ind0{}, ind1{};
+	vector<int> indIn, indOut;
+	CString exName, exNo;
+	FindEnv(indIn, str, _T("exam"));
+	N = FindEnv(indOut, str, _T("exam"), 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		ind0 = str.Find('{', indOut[i]);
+		ind0 = PairBraceR(str, ind0);
+		ind0 = ExpectKey(str, '{', ind0 + 1);
+		ind1 = PairBraceR(str, ind0 - 1);
+		exName = str.Mid(ind0, ind1 - ind0);
+		// replace with html tags
+		str.Delete(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
+		str.Insert(indIn[i + 1] + 1, _T("</div>\n"));
+		str.Delete(indOut[i], ind1 - indOut[i] + 1);
+		exNo.Format(_T("%d"), i/2 + 1);
+		str.Insert(indOut[i], _T("<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例")
+				+ exNo + _T("</b>　") + exName + _T("</h5>"));
 	}
 	return N;
 }
@@ -500,6 +660,7 @@ int RemoveNoEntry(vector<CString>& names)
 	int i{}, j{}, N{}, Nnames{}, Nnames0;
 	vector<CString> names0; // names to remove
 	names0.push_back(_T("PhysWiki1"));
+	names0.push_back(_T("PhysWiki"));
 	names0.push_back(_T("Sample"));
 	// add other names here
 	Nnames = names.size();
@@ -511,7 +672,7 @@ int RemoveNoEntry(vector<CString>& names)
 		for (j = 0; j < Nnames0; ++j) {
 			if (names[i] == names0[j]) {
 				names.erase(names.begin() + i);
-				++N; --Nnames; break;
+				++N; --Nnames; --i; break;
 			}
 		}
 	}
@@ -540,7 +701,7 @@ int TableOfContent(const CString& path)
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
 	toc.Delete(ind0, 16);
 	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
-	ind0 = Insert(toc, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p><hr>\n\n<p>\n"), ind0);
+	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p><hr>\n\n<p>\n"), ind0);
 	// remove comments
 	vector<int> indComm;
 	N = FindComment(indComm, str);
@@ -637,18 +798,20 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	}
 	// escape characters
 	NormalTextEscape(str);
+	// add paragraph tags
+	ParagraphTag(str);
 	// \itemize
-	wcout << Itemize(str);
+	Itemize(str);
 	// add html id for links
 	EnvLabel(id, label, entryName, str);
 	// process table environments
 	Table(str);
-	// process figure environments
-	FigureEnvironment(str, path0);
 	// ensure '<' and '>' has spaces around them
 	EqOmitTag(str);
-	// add paragraph tags
-	ParagraphTag(str);
+	// process figure environments
+	FigureEnvironment(str, path0);
+	// process example environments
+	wcout << ExampleEnvironment(str, path0);
 	// process \pentry{}
 	pentry(str);
 	// Replace \nameStar commands
@@ -673,17 +836,17 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	MathFunction(_T("exp"), str);    MathFunction(_T("log"), str);
 	MathFunction(_T("ln"), str);
 	// replace \name{} with html tags
-	Command2Tag(_T("subsection"), _T("</p><h4>"), _T("</h4><hr>\n<p>　　"), str); // <p> is indented by unicode white space
+	Command2Tag(_T("subsection"), _T("<h5 class = \"w3-text-indigo\"><b>"), _T("</b></h5>"), str);
+	Command2Tag(_T("subsubsection"), _T("<h5><b>"), _T("</b></h5>"), str);
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
 	// replace \upref{} with "[x]" link
 	upref(str, path0);
 	// replace environments with html tags
-	Env2Tag(_T("exam"), _T("</p><h5> 例：</h5>\n<p>"), _T(""), str);
-	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{equation}"),
+	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}"),
 						_T("\\end{equation}\n</div></div>"), str);
-	Env2Tag(_T("gather"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{gather}"),
+	Env2Tag(_T("gather"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{gather}"),
 		_T("\\end{gather}\n</div></div>"), str);
-	Env2Tag(_T("align"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:730px\">\n\\begin{align}"),
+	Env2Tag(_T("align"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}"),
 		_T("\\end{align}\n</div></div>"), str);
 	// Matlab code
 	MatlabCode(str, path0); MatlabCodeTitle(str, path0);
@@ -694,7 +857,7 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	html.Delete(ind0, 16);
 	
 	html.Insert(ind0, str);// insert notice
-	html.Insert(ind0, _T("<p><span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span></p>\n"));
+	html.Insert(ind0, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p>\n"));
 	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 
 	// save html file
@@ -724,6 +887,7 @@ void PhysWikiOnline()
 		names[i].Delete(names[i].GetLength() - 4, 4);
 		// main process
 		PhysWikiOnline1(title, IdList, LabelList, names[i], path0);
+		//PhysWikiOnline1(title, IdList, LabelList, _T("FSTri"), path0); //debug
 		wcout << endl;
 	}
 

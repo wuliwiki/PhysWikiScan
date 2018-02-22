@@ -41,35 +41,6 @@ int EqOmitTag(CString& str)
 	return N;
 }
 
-// add <p> tags to paragraphs
-// return number of tag pairs added
-int ParagraphTag(CString& str)
-{
-	int i{}, N{}, ind0{};
-	vector<int> ind;
-	// delete extra '\n' (more than two continuous)
-	while (true) {
-		ind0 = str.Find(_T("\n\n\n"), ind0);
-		if (ind0 < 0) break;
-		str.Delete(ind0, 1);
-	}
-	// remove "\n\n" and add <p> tags
-	ind0 = 0;
-	while (true) {
-		ind0 = str.Find(_T("\n\n"), ind0);
-		if (ind0 < 0) break;
-		ind.push_back(ind0); ++N; ind0 += 2;
-	}
-	N = ind.size();
-	for (i = N - 2; i > 0; --i) {
-		str.Insert(ind[i] + 1, _T("<p>　　"));// <p> is indented by unicode white space
-		str.Insert(ind[i], _T("\n</p>"));
-	}
-	str.Insert(str.GetLength(), _T("</p>"));
-	str.Insert(0, _T("<p>　　"));// <p> is indented by unicode white space
-	return N;
-}
-
 // detect \name* command and replace with \nameStar
 // return number of commmands replaced
 // must remove comments first
