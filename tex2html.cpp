@@ -269,6 +269,22 @@ int Itemize(CString& str)
 	N = FindEnv(indIn, str, "itemize");
 	FindEnv(indOut, str, "itemize", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		// delete paragraph tags
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("<p>　　"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1])
+				break;
+			str.Delete(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;
+		}
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("</p>"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1])
+				break;
+			str.Delete(ind0, 4); indIn[i + 1] -= 4;  indOut[i + 1] -= 4;
+		}
+		// replace tags
 		indItem.resize(0);
 		str.Delete(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
 		str.Insert(indIn[i + 1] + 1, _T("</li></ul>"));
@@ -286,6 +302,54 @@ int Itemize(CString& str)
 		}
 		str.Delete(indItem[0], 5);
 		str.Insert(indItem[0], _T("<ul><li>"));
+		str.Delete(indOut[i], indItem[0] - indOut[i]);
+	}
+	return N;
+}
+
+// process enumerate environments
+// similar to Itemize()
+int Enumerate(CString& str)
+{
+	int i{}, j{}, N{}, Nitem{}, ind0{};
+	vector<int> indIn, indOut;
+	vector<int> indItem; // positions of each "\item"
+	N = FindEnv(indIn, str, "enumerate");
+	FindEnv(indOut, str, "enumerate", 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		// delete paragraph tags
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("<p>　　"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1])
+				break;
+			str.Delete(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;
+		}
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("</p>"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1])
+				break;
+			str.Delete(ind0, 4); indIn[i + 1] -= 4; indOut[i + 1] -= 4;
+		}
+		// replace tags
+		indItem.resize(0);
+		str.Delete(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
+		str.Insert(indIn[i + 1] + 1, _T("</li></ol>"));
+		ind0 = indIn[i];
+		while (true) {
+			ind0 = str.Find(_T("\\item"), ind0);
+			if (ind0 < 0 || ind0 > indIn[i + 1]) break;
+			indItem.push_back(ind0); ind0 += 5;
+		}
+		Nitem = indItem.size();
+
+		for (j = Nitem - 1; j > 0; --j) {
+			str.Delete(indItem[j], 5);
+			str.Insert(indItem[j], _T("</li><li>"));
+		}
+		str.Delete(indItem[0], 5);
+		str.Insert(indItem[0], _T("<ol><li>"));
 		str.Delete(indOut[i], indItem[0] - indOut[i]);
 	}
 	return N;

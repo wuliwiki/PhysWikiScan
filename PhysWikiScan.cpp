@@ -91,6 +91,10 @@ int ParagraphTag(CString& str)
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
 	FindEnv(ind, str, _T("figure"), 'o');
+	FindEnv(ind1, str, _T("itemize"), 'o');
+	CombineRange(ind, ind, ind1);
+	FindEnv(ind1, str, _T("enumerate"), 'o');
+	CombineRange(ind, ind, ind1);
 	FindComBrace(ind1, _T("\\code"), str, 'o');
 	CombineRange(ind, ind, ind1);
 	FindComBrace(ind1, _T("\\Code"), str, 'o');
@@ -666,7 +670,7 @@ int RemoveNoEntry(vector<CString>& names)
 	Nnames = names.size();
 	Nnames0 = names0.size();
 	for (i = 0; i < Nnames0; ++i) {
-		names0[i] = names0[i] + _T(".tex");
+		names0[i] = names0[i];
 	}
 	for (i = 0; i < Nnames; ++i) {
 		for (j = 0; j < Nnames0; ++j) {
@@ -800,8 +804,8 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	NormalTextEscape(str);
 	// add paragraph tags
 	ParagraphTag(str);
-	// \itemize
-	Itemize(str);
+	// itemize and enumerate
+	Itemize(str); Enumerate(str);
 	// add html id for links
 	EnvLabel(id, label, entryName, str);
 	// process table environments
@@ -874,20 +878,18 @@ void PhysWikiOnline()
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
 	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
-	vector<CString> names = GetFileNames(path0, _T("tex"));
+	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-
+	//names.resize(0); names.push_back(_T("Deter")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
-		names[i].Delete(names[i].GetLength() - 4, 4);
 		// main process
 		PhysWikiOnline1(title, IdList, LabelList, names[i], path0);
-		//PhysWikiOnline1(title, IdList, LabelList, _T("FSTri"), path0); //debug
 		wcout << endl;
 	}
 

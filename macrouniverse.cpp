@@ -3,8 +3,10 @@ using namespace std;
 
 // search all file names of a certain file extension
 // path must end with "\\"
-vector<CString> GetFileNames(CString path, CString extension)
+// if ext == false, does not include extension in return
+vector<CString> GetFileNames(CString path, CString extension, bool ext)
 {
+	int extLen{};
 	vector<CString> names;
 	CString file, name;
 	WIN32_FIND_DATA data;
@@ -13,10 +15,18 @@ vector<CString> GetFileNames(CString path, CString extension)
 	hfile = FindFirstFile(file, &data);
 	if (data.cFileName[0] == 52428) // not found
 		return names;
-	names.push_back(data.cFileName);
+	name = data.cFileName;
+	if (!ext) {
+		extLen = extension.GetLength();
+		name.Delete(name.GetLength() - extLen - 1, extLen + 1);
+	}
+	names.push_back(name);
 	while (true) {
 		FindNextFile(hfile, &data);
 		name = data.cFileName;
+		if (!ext) {
+			name.Delete(name.GetLength() - extLen - 1, extLen + 1);
+		}
 		if (!name.Compare(names.back())) //if name == names.back()
 			break;
 		else {
