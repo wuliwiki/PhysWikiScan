@@ -134,13 +134,13 @@ int MathFunction(CString name, CString& str)
 		ind0 += name.GetLength() + 1;
 		ind1 = ExpectKey(str, _T("["), ind0);
 		if (ind1 > 0) {
-			--ind2;
+			--ind1;
 			ind1 = PairBraceR(str, ind1, ']');
 			ind2 = ind1 + 1;
 		}
 		else
 			ind2 = ind0;
-		ind2 = ExpectKey(str, _T("("), ind0);
+		ind2 = ExpectKey(str, _T("("), ind2);
 		if (ind2 < 0) continue;
 		--ind2;
 		ind3 = PairBraceR(str, ind2, ')');

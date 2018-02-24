@@ -254,7 +254,7 @@ int PairBraceR(const CString& str, int ind, TCHAR type)
 	else if (type == '(' || type == ')') {
 		left = '('; right = ')';
 	}
-	else if (ind == '[' || type == ']') {
+	else if (type == '[' || type == ']') {
 		left = '['; right = ']';
 	}
 	else {// anything else
