@@ -656,6 +656,33 @@ int OneFile3(CString path)
 	return N;
 }
 
+// find \bra{}\ket{} and mark
+int OneFile4(CString path)
+{
+	int ind0{}, ind1{}, N{};
+	CString str = ReadUTF8(path); // read file
+	while (true) {
+		ind0 = str.Find(_T("\\bra"), ind0);
+		if (ind0 < 0) break;
+		ind1 = ind0 + 4;
+		ind1 = ExpectKey(str, '{', ind1);
+		if (ind1 < 0) {
+			++ind0; continue;
+		}
+		ind1 = PairBraceR(str, ind1 - 1);
+		ind1 = ExpectKey(str, _T("\\ket"), ind1 + 1);
+		if (ind1 > 0) {
+			str.Insert(ind0, _T("删除标记")); ++N;
+			ind0 = ind1 + 4;
+		}
+		else
+			++ind0;
+	}
+	if (N > 0)
+		WriteUTF8(str, path);
+	return N;
+}
+
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
@@ -881,7 +908,7 @@ void PhysWikiOnline()
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	names.resize(0); names.push_back(_T("FSTri")); // debug
+	//names.resize(0); names.push_back(_T("FSTri")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
@@ -908,12 +935,25 @@ void PhysWikiOnline()
 
 void PhysWikiCheck()
 {
-	// insert OneFile1 etc.
+	int ind0{};
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents1\\");
+	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
+	vector<CString> names = GetFileNames(path0, _T("tex"), false);
+	//RemoveNoEntry(names);
+	if (names.size() <= 0) return;
+	//names.resize(0); names.push_back(_T("Sample")); // debug
+	for (unsigned i{}; i < names.size(); ++i) {
+		wcout << i << " ";
+		wcout << names[i].GetString() << _T("...");
+		// main process
+		wcout << OneFile4(path0 + names[i] + _T(".tex"));
+		wcout << endl;
+	}
 }
 
 void main()
 {
 	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
 	PhysWikiOnline();
-	// PhysWikiCheck
+	//PhysWikiCheck();
 }
