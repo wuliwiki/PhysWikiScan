@@ -51,7 +51,7 @@ int ParagraphTag(CString& str)
 		ind.push_back(ind0); ++N; ind0 += 2;
 	}
 	N = ind.size();
-	for (i = N - 2; i >= 0; --i) {
+	for (i = N - 1; i >= 0; --i) {
 		str.Insert(ind[i] + 1, _T("<p>　　"));// <p> is indented by unicode white space
 		str.Insert(ind[i], _T("\n</p>"));
 	}
@@ -908,7 +908,7 @@ void PhysWikiOnline()
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("FSTri")); // debug
+	//names.resize(0); names.push_back(_T("CM")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
@@ -941,7 +941,7 @@ void PhysWikiCheck()
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	//RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("Sample")); // debug
+	//names.resize(0); names.push_back(_T("Sample"));
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
