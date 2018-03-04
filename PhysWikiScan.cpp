@@ -219,6 +219,9 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		else if (ExpectKey(str, _T("exam"), ind1) > 0) {
 			idName = _T("ex"); envName = _T("exam");
 		}
+		else if (ExpectKey(str, _T("exer"), ind1) > 0) {
+			idName = _T("exe"); envName = _T("exer");
+		}
 		else if (ExpectKey(str, _T("table"), ind1) > 0) {
 			idName = _T("tab"); envName = _T("table");
 		}
@@ -391,6 +394,7 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		if (idName == _T("eq")) kind = _T("式");
 		else if (idName == _T("fig")) kind = _T("图");
 		else if (idName == _T("ex")) kind = _T("例");
+		else if (idName == _T("exe")) kind = _T("练习");
 		else if (idName == _T("tab")) kind = _T("表");
 		else {
 			wcout << _T("unknown id name!"); return -1;
@@ -523,6 +527,32 @@ int ExampleEnvironment(CString& str, const CString& path0)
 	return N;
 }
 
+// example is already not in a paragraph
+// return number of examples processed, return -1 if failed
+int ExerciseEnvironment(CString& str, const CString& path0)
+{
+	int i{}, N{}, ind0{}, ind1{};
+	vector<int> indIn, indOut;
+	CString exName, exNo;
+	FindEnv(indIn, str, _T("exer"));
+	N = FindEnv(indOut, str, _T("exer"), 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		ind0 = str.Find('{', indOut[i]);
+		ind0 = PairBraceR(str, ind0);
+		ind0 = ExpectKey(str, '{', ind0 + 1);
+		ind1 = PairBraceR(str, ind0 - 1);
+		exName = str.Mid(ind0, ind1 - ind0);
+		// replace with html tags
+		str.Delete(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
+		str.Insert(indIn[i + 1] + 1, _T("</div>\n"));
+		str.Delete(indOut[i], ind1 - indOut[i] + 1);
+		exNo.Format(_T("%d"), i / 2 + 1);
+		str.Insert(indOut[i], _T("<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题")
+			+ exNo + _T("</b>　") + exName + _T("</h5>"));
+	}
+	return N;
+}
+
 // process \Command{} to display Matlab Code
 // TODO: generate one .m file to be processed by "highlight()" function in Matlab
 // return the number of \Command{} processed, return -1 if failed
@@ -583,7 +613,6 @@ int OneFile1(CString path)
 			N += RemoveBraces(ind_left, ind_right, ind_RmatchL, str);
 	}
 	if (N > 0) {
-		//wcout << str.GetString() << endl;
 		WriteUTF8(str, path); // write file
 	}
 	return N;
@@ -597,8 +626,7 @@ int OneFile2(CString path)
 
 	// get all the equation environment scopes
 	vector<int> indEq;
-	if (FindEnv(indEq, str, _T("equation")) < 0)
-	{
+	if (FindEnv(indEq, str, _T("equation")) < 0) {
 		wcout << L"error!"; return 0;
 	}
 	vector<int> ind; // indices for all the $.
@@ -716,13 +744,13 @@ int RemoveNoEntry(vector<CString>& names)
 int TableOfContent(const CString& path)
 {
 	int i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
-	vector<CString> keys{ _T("\\entry"), _T("\\chapter"), _T("\\part") };
+	vector<CString> keys{ _T("\\part"), _T("\\chapter"), _T("\\entry"), _T("\\Entry"), _T("\\laserdog")};
 	vector<CString> chineseNo{_T("一"), _T("二"), _T("三"), _T("四"), _T("五"), _T("六"), _T("七"), _T("八"), _T("九"),
 							_T("十"), _T("十一"), _T("十二"), _T("十三"), _T("十四"), _T("十五") };
 	//keys.push_back(_T("\\entry")); keys.push_back(_T("\\chapter")); keys.push_back(_T("\\part"));
 	CString title; // chinese entry name, chapter name, or part name
 	CString entryName; // entry label
-	CString str = ReadUTF8(path + _T("PhysWiki1.tex"));
+	CString str = ReadUTF8(path + _T("PhysWiki.tex"));
 	CString toc = ReadUTF8(_T("template.html")); // read html template
 	ind0 = toc.Find(_T("PhysWikiHTMLtitle"));
 	toc.Delete(ind0, 17);
@@ -732,7 +760,7 @@ int TableOfContent(const CString& path)
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
 	toc.Delete(ind0, 16);
 	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
-	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p><hr>\n\n<p>\n"), ind0);
+	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p><hr>\n\n"), ind0);
 	// remove comments
 	vector<int> indComm;
 	N = FindComment(indComm, str);
@@ -742,9 +770,11 @@ int TableOfContent(const CString& path)
 	while (true) {
 		ind1 = FindMultiple(ikey, str, keys, ind1);
 		if (ind1 < 0) break;
-		if (ikey == 0) { // found "\entry"
+		if (ikey >= 2) { // found "\entry"
 			// get chinese title and entry label
-			ind1 += 6; ++N;
+			if (ikey == 2 || ikey == 3) ind1 += 6;
+			else if (ikey == 4) ind1 += 9;
+			++N;
 			ind1 = ExpectKey(str, '{', ind1);
 			ind2 = str.Find('}', ind1);
 			title = str.Mid(ind1, ind2 - ind1);
@@ -769,10 +799,12 @@ int TableOfContent(const CString& path)
 			ind1 = ind2;
 			// insert chapter into html table of contents
 			++chapNo;
-			ind0 = Insert(toc, _T("<h5><b>第") + chineseNo[chapNo] + _T("章 ") + title
+			if (chapNo > 0)
+				ind0 = Insert(toc, _T("</p>"), ind0);
+			ind0 = Insert(toc, _T("\n\n<h5><b>第") + chineseNo[chapNo] + _T("章 ") + title
 				+ _T("</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p>\n"), ind0);
 		}
-		else { // found "\part"
+		else if (ikey == 0){ // found "\part"
 			// get chinese part name
 			ind1 += 5; chapNo = -1;
 			ind1 = ExpectKey(str, '{', ind1);
@@ -784,13 +816,12 @@ int TableOfContent(const CString& path)
 			// insert part into html table of contents
 			++partNo;
 			if (partNo > 0)
-				ind0 = Insert(toc, _T("<p>　</p>\n"), ind0);
+				ind0 = Insert(toc, _T("</p><p>　</p>\n"), ind0);
 			ind0 = Insert(toc, _T("<h3 align = \"center\">第") + chineseNo[partNo] + _T("部分 ")
 				+ title + _T("</h3>\n"), ind0);
 		}
 	}
 	toc.Insert(ind0, _T("</p>"));
-	++ind0; toc.Delete(ind0, 16);
 	WriteUTF8(toc, path + _T("index.html"));
 	return N;
 }
@@ -841,8 +872,9 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	EqOmitTag(str);
 	// process figure environments
 	FigureEnvironment(str, path0);
-	// process example environments
-	wcout << ExampleEnvironment(str, path0);
+	// process example and exercise environments
+	ExampleEnvironment(str, path0);
+	ExerciseEnvironment(str, path0);
 	// process \pentry{}
 	pentry(str);
 	// Replace \nameStar commands
@@ -904,11 +936,11 @@ void PhysWikiOnline()
 	// set path
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
-	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\\PhysWikiOnline\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("CM")); // debug
+	//names.resize(0); names.push_back(_T("SHOSph")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
