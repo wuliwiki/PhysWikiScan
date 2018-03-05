@@ -60,8 +60,9 @@ int StarCommand(CString name, CString& str)
 	return N;
 }
 
-// detect \name{} variable parameter parameters
-// replace \name{}{} with \nameTwo and \name{}{}{} with \nameThree
+// detect \name{} with variable parameters
+// replace \name{}{} with \nameTwo{}{} and \name{}{}{} with \nameThree{}{}{}
+// replace \name[]{}{} with \nameTwo[]{}{} and \name[]{}{}{} with \nameThree[]{}{}{}
 // return number of commmands replaced
 // maxVars  = 2 or 3
 // must remove comments first
@@ -73,14 +74,19 @@ int VarCommand(CString name, CString& str, int maxVars)
 		ind0 = str.Find(_T("\\") + name, ind0 + 1);
 		if (ind0 < 0) break;
 		ind0 += name.GetLength() + 1;
-		ind1 = ExpectKey(str, _T("{"), ind0);
+		ind1 = ExpectKey(str, '[', ind0);
+		if (ind1 > 0)
+			ind1 = PairBraceR(str, ind1 - 1, ']') + 1;
+		else
+			ind1 = ind0;
+		ind1 = ExpectKey(str, '{', ind1);
 		if (ind1 < 0) continue;
 		ind1 = PairBraceR(str, ind1 - 1);
-		ind1 = ExpectKey(str, _T("{"), ind1 + 1);
+		ind1 = ExpectKey(str, '{', ind1 + 1);
 		if (ind1 < 0) continue;
 		ind1 = PairBraceR(str, ind1 - 1);
 		if (maxVars == 2) { str.Insert(ind0, _T("Two")); ++N; continue; }
-		ind1 = ExpectKey(str, _T("{"), ind1 + 1);
+		ind1 = ExpectKey(str, '{', ind1 + 1);
 		if (ind1 < 0) {
 			str.Insert(ind0, _T("Two")); ++N; continue;
 		}

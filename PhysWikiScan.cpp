@@ -940,7 +940,7 @@ void PhysWikiOnline()
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("SHOSph")); // debug
+	//names.resize(0); names.push_back(_T("Keple1")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
