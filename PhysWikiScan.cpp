@@ -192,7 +192,7 @@ int ParagraphTag(CString& str)
 // return number of labels processed, or -1 if failed
 int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryName, CString& str)
 {
-	int ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{}, Ngather{}, i{}, j{};
+	int ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{}, Ngather{}, Nalign{}, i{}, j{};
 	CString idName; // "eq" or "fig" or "ex"...
 	CString envName; // "equation" or "figure" or "exam"...
 	CString idNum{}; // id = idName + idNum
@@ -246,11 +246,9 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		// count idNum, insert html id tag, delete label
 		if (idName != _T("eq")) {
 			idN = FindEnv(indEnv, str.Left(ind4), envName) + 1;
-
 		}
 		else { // count equations
 			idN = FindEnv(indEnv, str.Left(ind4), _T("equation"));
-			idN += FindEnv(indEnv, str.Left(ind4), _T("align"));
 			Ngather = FindEnv(indEnv, str.Left(ind4), _T("gather"));
 			if (Ngather > 0) {
 				for (i = 0; i < 2 * Ngather; i += 2) {
@@ -261,7 +259,17 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 					++idN;
 				}
 			}
-			if (envName == _T("gather")) {
+			Nalign = FindEnv(indEnv, str.Left(ind4), _T("align"));
+			if (Nalign > 0) {
+				for (i = 0; i < 2 * Nalign; i += 2) {
+					for (j = indEnv[i]; j < indEnv[i + 1]; ++j) {
+						if (str.GetAt(j) == '\\' && str.GetAt(j + 1) == '\\')
+							++idN;
+					}
+					++idN;
+				}
+			}
+			if (envName == _T("gather") || envName == _T("align")) {
 				for (i = ind4; i < ind5; ++i) {
 					if (str.GetAt(i) == '\\' && str.GetAt(i + 1) == '\\')
 						++idN;
@@ -273,7 +281,7 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		id.push_back(idName + idNum);
 		str.Delete(ind5, ind3 - ind5 + 1);
 		str.Insert(ind4, _T("<span id = \"") + id.back() + _T("\"></span>"));
-		ind0 = str.Find(str, ind4) + 6;
+		ind0 = ind4 + 6;
 	}
 }
 
@@ -940,7 +948,7 @@ void PhysWikiOnline()
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("Keple1")); // debug
+	//names.resize(0); names.push_back(_T("Binet")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
