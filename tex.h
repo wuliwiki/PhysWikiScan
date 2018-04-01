@@ -6,6 +6,7 @@
 #include "macrouniverseS.h"
 
 bool IndexInRange(int i, std::vector<int> ind);
+bool IndexInEnv(int& iname, int ind, const std::vector<CString>& names, const CString& str);
 int CombineRange(std::vector<int>& ind, std::vector<int> ind1, std::vector<int> ind2);
 int InvertRange(std::vector<int>& ind, const std::vector<int>& ind0, int Nstr);
 int FindComment(std::vector<int>& ind, const CString& str);

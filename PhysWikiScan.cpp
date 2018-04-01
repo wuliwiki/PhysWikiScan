@@ -288,7 +288,7 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 // replace \pentry comman with html round panel
 int pentry(CString& str)
 {
-	int i{}, N{}, ind0;
+	int i{}, N{};
 	vector<int> indIn, indOut;
 	FindComBrace(indIn, _T("\\pentry"), str);
 	N = FindComBrace(indOut, _T("\\pentry"), str, 'o');
@@ -382,15 +382,19 @@ int MatlabCodeTitle(CString& str, const CString& path)
 
 // replace autoref with html link
 // no comment allowed
+// does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
 int autoref(const vector<CString>& id, const vector<CString>& label, const CString& entryName, CString& str)
 {
-	int i{}, ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{};
-	CString entry, label0, idName, idNum, kind, X, newtab, file;
+	int i{}, ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
+	bool inEq;
+	CString entry, label0, idName, idNum, kind, newtab, file;
+	vector<CString> envNames{_T("equation"), _T("align"), _T("gather")};
 	while (true) {
-		X.Empty(); newtab.Empty(); file.Empty();
+		newtab.Empty(); file.Empty();
 		ind0 = str.Find(_T("\\autoref"), ind0);
 		if (ind0 < 0) return N;
+		inEq = IndexInEnv(ienv, ind0, envNames, str);
 		ind1 = ExpectKey(str, '{', ind0 + 8);
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.Find('_', ind1);
@@ -407,32 +411,25 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		else {
 			wcout << _T("unknown id name!"); return -1;
 		}
-		
 		ind3 = str.Find('}', ind3);
 		// find id of the label
 		label0 = str.Mid(ind1, ind3 - ind1); label0.TrimLeft(' '); label0.TrimRight(' ');
-		for (i = 0; i < label.size(); ++i) {
+		for (unsigned i{}; i < label.size(); ++i) {
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
 			wcout << _T("label not found!"); return -1;
 		}
 		ind4 = FindNum(id[i], 0);
-		idNum = id[i].Right(id[i].GetLength() - ind4);
-		// deal with \upref after \label
-		ind5 = ExpectKey(str, _T("\\upref"), ind3 + 1);
-		if (ind5 > 0) {
-			X = 'X';
-			ind5 = str.Find('}', ind5);
-			str.Delete(ind3 + 1, ind5 - ind3);
-		}
+		idNum = id[i].Right(id[i].GetLength() - ind4);		
 		entry = str.Mid(ind1, ind2 - ind1);
 		if (entry != entryName) {// reference the same entry
 			newtab = _T("target = \"_blank\"");
 			file = entry + _T(".html");
 		}
-		str.Insert(ind3 + 1, kind + _T(' ') + X + idNum + _T(" </a>"));
-		str.Insert(ind3 + 1, _T("<a href = \"") + file + _T("#") + id[i] + _T("\" ") + newtab + _T(">"));
+		if (!inEq) str.Insert(ind3 + 1, _T(" </a>"));
+		str.Insert(ind3 + 1, kind + _T(' ') + idNum);
+		if (!inEq) str.Insert(ind3 + 1, _T("<a href = \"") + file + _T("#") + id[i] + _T("\" ") + newtab + _T(">"));
 		str.Delete(ind0, ind3 - ind0 + 1);
 		++N;
 	}
@@ -910,7 +907,7 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	Command2Tag(_T("subsection"), _T("<h5 class = \"w3-text-indigo\"><b>"), _T("</b></h5>"), str);
 	Command2Tag(_T("subsubsection"), _T("<h5><b>"), _T("</b></h5>"), str);
 	Command2Tag(_T("bb"), _T("<b>"), _T("</b>"), str);
-	// replace \upref{} with "[x]" link
+	// replace \upref{} with link icon
 	upref(str, path0);
 	// replace environments with html tags
 	Env2Tag(_T("equation"), _T("<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}"),
@@ -944,11 +941,11 @@ void PhysWikiOnline()
 	// set path
 	//CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\PhysWiki\\contents\\");
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
-	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\\PhysWikiOnline\\");
+	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\PhysWikiOnline\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("Binet")); // debug
+	//names.resize(0); names.push_back(_T("ITable")); // debug
 	TableOfContent(path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files

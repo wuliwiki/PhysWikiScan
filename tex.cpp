@@ -13,6 +13,34 @@ bool IndexInRange(int i, vector<int> ind)
 	return false;
 }
 
+// see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
+// output iname of name[iname], -1 if return false
+// TODO: check if this function works.
+bool IndexInEnv(int& iname, int ind, const vector<CString>& names, const CString& str)
+{
+	int j{}, ikey{}, ind0{ ind + 1 }, ind1{}, Nname{};
+	Nname = names.size(); iname = -1;
+	vector<CString> key{_T("\\begin"), _T("\\end")};
+	// find next \begin{name} or \end{name}
+	while (true) {
+		ind0 = FindMultiple(ikey, str, key, ind0);
+		if (ind0 < 0) return false;
+		ind0 = ExpectKey(str, '{', ind0 + key[ikey].GetLength());
+		for (j = 0; j < Nname; ++j) {
+			ind1 = ExpectKey(str, names[j], ind0);
+			if (ind1 >= 0) {
+				iname = j;  break;
+			}
+		}
+		if (ind1 < 0)
+			return false;
+		else if (ikey == 0)
+			return false;
+		else
+			return true;
+	}
+}
+
 // combine ranges ind1 and ind2
 // a range can contain another range, but not partial overlap
 // return total range number, or -1 if failed.
