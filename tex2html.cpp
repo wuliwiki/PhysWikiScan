@@ -360,3 +360,28 @@ int Enumerate(CString& str)
 	}
 	return N;
 }
+
+// process \footnote{}, return number of \footnote{} found
+int footnote(CString& str)
+{
+	int ind0{}, ind1{}, ind2{}, N{};
+	CString note, idNo;
+	while (true) {
+		ind0 = str.Find(_T("\\footnote"), ind0);
+		if (ind0 < 0) break;
+		N++;
+		if (N == 1)
+			str += _T("\n<hr><p>\n");
+		ind1 = ExpectKey(str, '{', ind0 + 9);
+		ind2 = PairBraceR(str, ind1 - 1);
+		note = str.Mid(ind1, ind2 - ind1);
+		str.Delete(ind0, ind2 - ind0 + 1);
+		ind0 -= DeleteSpaceReturn(str, ind0 - 1, 'l');
+		idNo.Format(_T("%d"), N);
+		str.Insert(ind0, _T("<sup><a href = \"#footnote") + idNo + _T("\">") + idNo + _T("</a></sup>"));
+		str += _T("<span id = \"footnote") + idNo + _T("\"></span>") + idNo + _T(". ") + note + _T("<br>\n");
+	}
+	if (N > 0)
+		str += _T("</p>");
+	return N;
+}

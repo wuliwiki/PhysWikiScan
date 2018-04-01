@@ -921,11 +921,13 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	MatlabCode(str, path0); MatlabCodeTitle(str, path0);
 	Command(str);
 	Command2Tag('x', _T("<span class = \"w3-text-teal\">"), _T("</span>"), str);
+	// footnote
+	footnote(str);
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);
-	
-	html.Insert(ind0, str);// insert notice
+	html.Insert(ind0, str);
+	// insert notice
 	html.Insert(ind0, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p>\n"));
 	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
 

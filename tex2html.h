@@ -15,3 +15,4 @@ int NormalTextEscape(CString& str);
 int Table(CString& str);
 int Itemize(CString& str);
 int Enumerate(CString& str);
+int footnote(CString& str);

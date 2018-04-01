@@ -222,23 +222,36 @@ int ExpectKeyReverse(const CString& str, CString key, int start)
 	}
 }
 
-// delete any following ' ' or '\n' characters starting from "start"
+// delete any following ' ' or '\n' characters starting from "start" (including "start")
 // return the number of characters deleted
-int DeleteSpaceReturn(CString& str, int start)
+// when option = 'r' (right), will only delete ' ' or '\n' at "start" or to the right
+// when option = 'l' (left), will only delete ' ' or '\n' at "start" or to the left
+// when option = 'a' (all), will delete both direction
+int DeleteSpaceReturn(CString& str, int start, char option)
 {
-	int i{}, Nstr{};
+	int i{}, Nstr{}, left{start}, right{start};
 	Nstr = str.GetLength();
-	for (i = start; i < Nstr; ++i) {
-		if (str.GetAt(i) == ' ' || str.GetAt(i) == '\n') {
-			continue;
+	if (str.GetAt(start) != ' ' && str.GetAt(start) != '\n')
+		return 0;
+	if (option == 'r' || option == 'a') {
+		for (i = start + 1; i < Nstr; ++i) {
+			if (str.GetAt(i) == ' ' || str.GetAt(i) == '\n')
+				continue;
+			else {
+				right = i - 1; break;
+			}
 		}
-		else if (i > start) {
-			str.Delete(start, i - start);
-			return (i - start);
-		}
-		else
-			return 0;
 	}
+	if (option == 'l' || option == 'a') {
+		for (i = start - 1; i >= 0; --i) {
+			if (str.GetAt(i) == ' ' || str.GetAt(i) == '\n')
+				continue;
+			else
+				left = i + 1; break;
+		}
+	}
+	str.Delete(left, right - left + 1);
+	return right - left + 1;
 }
 
 // Pair right brace to left one (default)
