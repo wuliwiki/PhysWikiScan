@@ -755,6 +755,7 @@ int TableOfContent(const CString& path)
 	vector<CString> chineseNo{_T("一"), _T("二"), _T("三"), _T("四"), _T("五"), _T("六"), _T("七"), _T("八"), _T("九"),
 							_T("十"), _T("十一"), _T("十二"), _T("十三"), _T("十四"), _T("十五") };
 	//keys.push_back(_T("\\entry")); keys.push_back(_T("\\chapter")); keys.push_back(_T("\\part"));
+	CString newcomm = ReadUTF8(_T("newcommand.html"));
 	CString title; // chinese entry name, chapter name, or part name
 	CString entryName; // entry label
 	CString str = ReadUTF8(path + _T("PhysWiki.tex"));
@@ -764,6 +765,7 @@ int TableOfContent(const CString& path)
 	toc.Insert(ind0, _T("《小时物理百科》目录"));
 	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
 	toc.Delete(ind0, 15);
+	toc.Insert(ind0, newcomm);
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
 	toc.Delete(ind0, 16);
 	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
