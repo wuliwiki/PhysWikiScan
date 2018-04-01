@@ -928,6 +928,8 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	Command2Tag('x', _T("<span class = \"w3-text-teal\">"), _T("</span>"), str);
 	// footnote
 	footnote(str);
+	// delete redundent commands
+	str.Replace(_T("\\dfracH"), _T(""));
 	// insert HTML body
 	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
 	html.Delete(ind0, 16);
