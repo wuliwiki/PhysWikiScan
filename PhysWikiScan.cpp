@@ -727,6 +727,7 @@ int RemoveNoEntry(vector<CString>& names)
 	names0.push_back(_T("PhysWiki1"));
 	names0.push_back(_T("PhysWiki"));
 	names0.push_back(_T("Sample"));
+	names0.push_back(_T("FrontMatters"));
 	// add other names here
 	Nnames = names.size();
 	Nnames0 = names0.size();
@@ -766,7 +767,11 @@ int TableOfContent(const CString& path)
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
 	toc.Delete(ind0, 16);
 	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
-	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p><hr>\n\n"), ind0);
+	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，"), ind0);
+	ind0 = Insert(toc, _T("请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n"), ind0);
+	ind0 = Insert(toc, _T("</p>\n<p>\n<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"about.html\" target = \"_blank\">关于本书</a>　\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"readme.html\" target = \"_blank\">网页版使用说明</a>\n</p><hr>\n\n"), ind0);
 	// remove comments
 	vector<int> indComm;
 	N = FindComment(indComm, str);
