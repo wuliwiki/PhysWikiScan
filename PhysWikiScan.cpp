@@ -386,7 +386,8 @@ int MatlabCodeTitle(CString& str, const CString& path)
 // return number of autoref replaced, or -1 if failed
 int autoref(const vector<CString>& id, const vector<CString>& label, const CString& entryName, CString& str)
 {
-	int i{}, ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
+	unsigned i{};
+	int ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
 	bool inEq;
 	CString entry, label0, idName, idNum, kind, newtab, file;
 	vector<CString> envNames{_T("equation"), _T("align"), _T("gather")};
@@ -414,7 +415,7 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		ind3 = str.Find('}', ind3);
 		// find id of the label
 		label0 = str.Mid(ind1, ind3 - ind1); label0.TrimLeft(' '); label0.TrimRight(' ');
-		for (unsigned i{}; i < label.size(); ++i) {
+		for (i = 0; i < label.size(); ++i) {
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
