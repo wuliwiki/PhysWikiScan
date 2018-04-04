@@ -763,7 +763,6 @@ int TableOfContent(const CString& path)
 	ind0 = toc.Find(_T("PhysWikiHTMLtitle"));
 	toc.Delete(ind0, 17);
 	toc.Insert(ind0, _T("小时物理百科在线"));
-	ind0 = toc.Find(_T("w3-container"), ind0); toc.Delete(ind0, 12);
 	ind0 = toc.Find(_T("PhysWikiCommand"), ind0);
 	toc.Delete(ind0, 15); toc.Insert(ind0, newcomm);
 	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0);
@@ -938,14 +937,19 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	footnote(str);
 	// delete redundent commands
 	str.Replace(_T("\\dfracH"), _T(""));
+	// insert title and notice
+	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0); html.Delete(ind0, 16);
+	ind0 = Insert(html, _T("<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"), ind0);
+	ind0 = Insert(html, _T("<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"), ind0);
+	ind0 = Insert(html, _T("<h3>") + title + _T("</h3>\n</div>\n\n<div class = \"w3-container\">\n"), ind0);
+	ind0 = Insert(html, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，"), ind0);
+	ind0 = Insert(html, _T("请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p>\n"), ind0);
 	// insert HTML body
-	ind0 = html.Find(_T("PhysWikiHTMLbody"), ind0);
-	html.Delete(ind0, 16);
-	html.Insert(ind0, str);
-	// insert notice
-	html.Insert(ind0, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p>\n"));
-	html.Insert(ind0, _T("<h1>") + title + _T("</h1><hr>\n")); // insert title
-
+	ind0 = Insert(html, str, ind0);
+	ind0 = Insert(html, _T("\n</div>\n"), ind0);
+	ind0 = Insert(html, _T("<div class = \"w3-container w3-gray\">"), ind0);
+	ind0 = Insert(html, _T("<p>\n<a href = \"/online\">返回目录</a>　<a href = \"/\">返回主页</a></p>\n"), ind0);
+	ind0 = Insert(html, _T("</div>"), ind0);
 	// save html file
 	WriteUTF8(html, path0 + entryName + _T(".html"));
 	return 0;
