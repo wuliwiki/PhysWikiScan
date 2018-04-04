@@ -762,18 +762,23 @@ int TableOfContent(const CString& path)
 	CString toc = ReadUTF8(_T("template.html")); // read html template
 	ind0 = toc.Find(_T("PhysWikiHTMLtitle"));
 	toc.Delete(ind0, 17);
-	toc.Insert(ind0, _T("《小时物理百科》目录"));
-	ind0 = toc.Find(_T("PhysWikiCommand"), 0);
-	toc.Delete(ind0, 15);
-	toc.Insert(ind0, newcomm);
-	ind0 = toc.Find(_T("PhysWikiHTMLbody"), 0);
+	toc.Insert(ind0, _T("小时物理百科在线"));
+	ind0 = toc.Find(_T("w3-container"), ind0); toc.Delete(ind0, 12);
+	ind0 = toc.Find(_T("PhysWikiCommand"), ind0);
+	toc.Delete(ind0, 15); toc.Insert(ind0, newcomm);
+	ind0 = toc.Find(_T("PhysWikiHTMLbody"), ind0);
 	toc.Delete(ind0, 16);
-	ind0 = Insert(toc, _T("<h1>《小时物理百科》目录</h1>\n\n"), ind0);
-	ind0 = Insert(toc, _T("<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，"), ind0);
-	ind0 = Insert(toc, _T("请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n"), ind0);
-	ind0 = Insert(toc, _T("</p>\n<p>\n<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"), ind0);
+
+	ind0 = Insert(toc, _T("<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"), ind0);
+	ind0 = Insert(toc, _T("<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"), ind0);
+	ind0 = Insert(toc, _T("<h1>小时物理百科在线</h1>\n</div>\n\n"), ind0);
+
+	ind0 = Insert(toc, _T("<div class = \"w3-container\"><p>\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"), ind0);
 	ind0 = Insert(toc, _T("<a href = \"about.html\" target = \"_blank\">关于本书</a>　\n"), ind0);
-	ind0 = Insert(toc, _T("<a href = \"readme.html\" target = \"_blank\">网页版使用说明</a>\n</p><hr>\n\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"readme.html\" target = \"_blank\">网页版使用说明</a>　\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"../\">返回主页</a>\n"), ind0);
+
 	// remove comments
 	vector<int> indComm;
 	N = FindComment(indComm, str);
@@ -828,13 +833,14 @@ int TableOfContent(const CString& path)
 			ind1 = ind2;
 			// insert part into html table of contents
 			++partNo;
-			if (partNo > 0)
-				ind0 = Insert(toc, _T("</p><p>　</p>\n"), ind0);
+			
+			ind0 = Insert(toc, _T("</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"), ind0);
 			ind0 = Insert(toc, _T("<h3 align = \"center\">第") + chineseNo[partNo] + _T("部分 ")
 				+ title + _T("</h3>\n"), ind0);
+			ind0 = Insert(toc, _T("</div>\n\n<div class = \"w3-container\">\n"), ind0);
 		}
 	}
-	toc.Insert(ind0, _T("</p>"));
+	toc.Insert(ind0, _T("</p>\n</div>"));
 	WriteUTF8(toc, path + _T("index.html"));
 	return N;
 }
