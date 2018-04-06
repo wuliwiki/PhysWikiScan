@@ -774,8 +774,8 @@ int TableOfContent(const CString& path)
 
 	ind0 = Insert(toc, _T("<div class = \"w3-container\"><p>\n"), ind0);
 	ind0 = Insert(toc, _T("<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"), ind0);
-	ind0 = Insert(toc, _T("<a href = \"about.html\" target = \"_blank\">关于本书</a>　\n"), ind0);
-	ind0 = Insert(toc, _T("<a href = \"readme.html\" target = \"_blank\">网页版使用说明</a>　\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"), ind0);
+	ind0 = Insert(toc, _T("<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n"), ind0);
 	ind0 = Insert(toc, _T("<a href = \"../\">返回主页</a>\n"), ind0);
 
 	// remove comments
@@ -948,7 +948,9 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	ind0 = Insert(html, str, ind0);
 	ind0 = Insert(html, _T("\n</div>\n"), ind0);
 	ind0 = Insert(html, _T("<div class = \"w3-container w3-gray\">"), ind0);
-	ind0 = Insert(html, _T("<p>\n<a href = \"/online\">返回目录</a>　<a href = \"/\">返回主页</a></p>\n"), ind0);
+	ind0 = Insert(html, _T("<p>\n<a href = \"../online\">返回目录</a>　"), ind0);
+	ind0 = Insert(html, _T("<a href = \"../\">返回主页</a>　"), ind0);
+	ind0 = Insert(html, _T("<a href = \"../#donation\">捐助项目</a>　</p>\n"), ind0);
 	ind0 = Insert(html, _T("</div>"), ind0);
 	// save html file
 	WriteUTF8(html, path0 + entryName + _T(".html"));
