@@ -905,6 +905,7 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	VarCommand(_T("pdv"), str, 3);   VarCommand(_T("pdvStar"), str, 3);
 	VarCommand(_T("dv"), str, 2);    VarCommand(_T("dvStar"), str, 2);
 	VarCommand(_T("ev"), str, 2);    VarCommand(_T("evStar"), str, 2);
+	VarCommand(_T("braket"), str, 2);
 	// replace \name() and \name[] with \nameRound{} and \nameRound and \nameSquare
 	RoundSquareCommand(_T("qty"), str);
 	// replace \namd() and \name[]() with \nameRound{} and \nameRound[]{}
