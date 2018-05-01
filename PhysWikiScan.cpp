@@ -748,7 +748,9 @@ int RemoveNoEntry(vector<CString>& names)
 // create table of content from PhysWiki1.tex
 // path must end with '\\'
 // return the number of entries
-int TableOfContent(const CString& path)
+// names is a list of filenames
+// output chinese titles,  titles[i] is the chinese title of names[i]
+int TableOfContent(vector<CString>& titles, const vector<CString>& names, const CString& path)
 {
 	int i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<CString> keys{ _T("\\part"), _T("\\chapter"), _T("\\entry"), _T("\\Entry"), _T("\\laserdog")};
@@ -760,6 +762,7 @@ int TableOfContent(const CString& path)
 	CString entryName; // entry label
 	CString str = ReadUTF8(path + _T("PhysWiki.tex"));
 	CString toc = ReadUTF8(_T("template.html")); // read html template
+	titles.resize(names.size());
 	ind0 = toc.Find(_T("PhysWikiHTMLtitle"));
 	toc.Delete(ind0, 17);
 	toc.Insert(ind0, _T("小时物理百科在线"));
@@ -804,6 +807,14 @@ int TableOfContent(const CString& path)
 			// insert entry into html table of contents
 			ind0 = Insert(toc, _T("<a href = \"") + entryName + _T(".html") + _T("\" target = \"_blank\">")
 				+ title + _T("</a>　\n"), ind0);
+			// record Chinese title
+			for (i = 0; i < (int)names.size(); ++i) {
+				if (entryName == names[i]) break;
+			}
+			if (i == names.size()) {
+				wcout << _T("entry name not in file list!"); return -1;
+			}
+			titles[i] = title;
 		}
 		else if (ikey == 1) { // found "\chapter"
 			// get chinese chapter name
@@ -850,11 +861,13 @@ int TableOfContent(const CString& path)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label, CString entryName, CString path0)
+int PhysWikiOnline1(vector<CString>& id, vector<CString>& label, CString entryName ,CString path0, const vector<CString>& names, const vector<CString>& titles)
 {
 	// read template file from local folder
 	int i{}, N{}, ind0;
+	unsigned j{};
 	CString str = ReadUTF8(path0 + entryName + _T(".tex")); // read tex file
+	CString title;
 	//// read template from the same folder as path
 	//ind0 = path.ReverseFind('\\');
 	//path.Delete(ind0, str.GetLength() - ind0);
@@ -862,6 +875,13 @@ int PhysWikiOnline1(CString& title, vector<CString>& id, vector<CString>& label,
 	CString html = ReadUTF8(_T("template.html")); // read html template
 	CString newcomm = ReadUTF8(_T("newcommand.html"));
 	if (GetTitle(title, str) < 0) return -1;
+	for (j = 0; j < names.size(); ++j) {
+		if (entryName == names[j])
+			break;
+	}
+	if (title != titles[j]) {
+		wcout << _T("title different!"); return -1;
+	}
 	// insert \newcommand
 	ind0 = html.Find(_T("PhysWikiCommand"), 0);
 	html.Delete(ind0, 15);
@@ -968,17 +988,18 @@ void PhysWikiOnline()
 	//CString path0 = _T("C:\\Users\\addis\\Desktop\\");
 	CString path0 = _T("C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\PhysWikiOnline\\");
 	vector<CString> names = GetFileNames(path0, _T("tex"), false);
+	vector<CString> titles;
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
 	//names.resize(0); names.push_back(_T("ITable")); // debug
-	TableOfContent(path0);
+	TableOfContent(titles, names, path0);
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
 		// main process
-		PhysWikiOnline1(title, IdList, LabelList, names[i], path0);
+		PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles);
 		wcout << endl;
 	}
 
