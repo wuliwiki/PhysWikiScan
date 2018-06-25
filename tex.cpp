@@ -388,7 +388,7 @@ int FindNormalText(vector<int>& indNorm, CString& str)
 	return InvertRange(indNorm, ind, str.GetLength());
 }
 
-// detect unnecessary braces and add "删除标记"
+// detect unnecessary braces and add "鍒犻櫎鏍囪"
 // return the number of braces pairs removed
 int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	vector<int>& ind_RmatchL, CString& str)
@@ -408,7 +408,7 @@ int RemoveBraces(vector<int>& ind_left, vector<int>& ind_right,
 	if (N > 0) {
 		sort(ind.begin(), ind.end());
 		for (int i = ind.size() - 1; i >= 0; --i) {
-			str.Insert(ind[i], _T("删除标记"));
+			str.Insert(ind[i], _T("鍒犻櫎鏍囪"));
 		}
 	}
 	return N;

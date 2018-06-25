@@ -278,7 +278,7 @@ int Itemize(CString& str)
 		// delete paragraph tags
 		ind0 = indIn[i];
 		while (true) {
-			ind0 = str.Find(_T("<p>¡¡¡¡"), ind0);
+			ind0 = str.Find(_T("<p>ã€€ã€€"), ind0);
 			if (ind0 < 0 || ind0 > indIn[i + 1])
 				break;
 			str.Delete(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;
@@ -326,7 +326,7 @@ int Enumerate(CString& str)
 		// delete paragraph tags
 		ind0 = indIn[i];
 		while (true) {
-			ind0 = str.Find(_T("<p>¡¡¡¡"), ind0);
+			ind0 = str.Find(_T("<p>ã€€ã€€"), ind0);
 			if (ind0 < 0 || ind0 > indIn[i + 1])
 				break;
 			str.Delete(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;

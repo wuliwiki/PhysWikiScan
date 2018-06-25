@@ -1,4 +1,4 @@
-﻿#include <io.h> // for console unicode output
+#include <io.h> // for console unicode output
 #include <fcntl.h> // for console unicode output
 #include "macrouniverse.h"
 #include "macrouniverseS.h"
