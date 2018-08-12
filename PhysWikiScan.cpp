@@ -13,18 +13,18 @@ using namespace std;
 int GetTitle(CString& title, const CString& str)
 {
 	if (str.GetAt(0) != '%') {
-		wcout << _T("Need a title!");
+		wcout << _T("Need a title!"); // break point here
 		return -1;
 	}
 	CString c;
 	int ind0 = NextNoSpace(c, str, 1);
 	if (ind0 < 0) {
-		wcout << _T("Title is empty!");
+		wcout << _T("Title is empty!"); // break point here
 		return -1;
 	}
 	int ind1 = str.Find('\n', ind0);
 	if (ind1 < 0) {
-		wcout << _T("Body is empty!");
+		wcout << _T("Body is empty!"); // break point here
 	}
 	title = str.Mid(ind0, ind1 - ind0);
 	return 0;
@@ -205,7 +205,7 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		ind2 = ReverseFind(_T("\\end"), str, ind5);
 		ind4 = ReverseFind(_T("\\begin"), str, ind5);
 		if (ind2 >= ind4) {
-			wcout << "label not in an environment!";
+			wcout << "label not in an environment!"; // break point here
 			return -1;
 		}
 		// detect environment kind
@@ -232,7 +232,7 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 			idName = _T("eq"); envName = _T("align");
 		}
 		else {
-			wcout << "environment not supported for label!"; return -1;
+			wcout << "environment not supported for label!"; return -1; // break point here
 		}
 		// check label format and save label
 		ind0 = ExpectKey(str, '{', ind5 + 6);
@@ -324,7 +324,7 @@ int MatlabCode(CString& str, const CString& path)
 		name.TrimLeft(' '); name.TrimRight(' ');
 		// read file
 		if (!FileExist(path + _T("codes\\"), name + _T(".html"))) {
-			wcout << _T("code file not found!"); return -1;
+			wcout << _T("code file not found!"); return -1; // break point here
 		}
 		code = ReadUTF8(path + _T("codes\\") + name + _T(".html"));
 		ind0 = code.Find(_T("<pre"), 0);
@@ -358,7 +358,7 @@ int MatlabCodeTitle(CString& str, const CString& path)
 		name.TrimLeft(' '); name.TrimRight(' ');
 		// read file
 		if (!FileExist(path + _T("codes\\"), name + _T(".html"))) {
-			wcout << _T("code file not found!"); return -1;
+			wcout << _T("code file not found!"); return -1; // break point here
 		}
 		code = ReadUTF8(path + _T("codes\\") + name + _T(".html"));
 		ind0 = code.Find(_T("<pre"), 0);
@@ -371,7 +371,7 @@ int MatlabCodeTitle(CString& str, const CString& path)
 		str.Insert(indOut[i], _T("<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">"));
 		// insert title with download link
 		if (!FileExist(path, name + _T(".m"))) {
-			wcout << ".m file not found!"; return -1;
+			wcout << ".m file not found!"; return -1; // break point here
 		}
 		str.Insert(indOut[i], _T("<b>") + name + _T(".m</b>\n"));
 		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + name 
@@ -400,7 +400,7 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.Find('_', ind1);
 		if (ind2 < 0) {
-			wcout << _T("autoref format error!"); return -1;
+			wcout << _T("autoref format error!"); return -1; // break point here
 		}
 		ind3 = FindNum(str, ind2);
 		idName = str.Mid(ind2 + 1, ind3 - ind2 - 1);
@@ -410,7 +410,7 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 		else if (idName == _T("exe")) kind = _T("练习");
 		else if (idName == _T("tab")) kind = _T("表");
 		else {
-			wcout << _T("unknown id name!"); return -1;
+			wcout << _T("unknown id name!"); return -1; // break point here
 		}
 		ind3 = str.Find('}', ind3);
 		// find id of the label
@@ -419,7 +419,7 @@ int autoref(const vector<CString>& id, const vector<CString>& label, const CStri
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
-			wcout << _T("label not found!"); return -1;
+			wcout << _T("label not found!"); return -1; // break point here
 		}
 		ind4 = FindNum(id[i], 0);
 		idNum = id[i].Right(id[i].GetLength() - ind4);		
@@ -449,7 +449,7 @@ int upref(CString& str, CString path)
 		entryName = str.Mid(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		entryName.TrimLeft(' '); entryName.TrimRight(' ');
 		if (!FileExist(path, entryName + _T(".tex"))) {
-			wcout << _T("file not found!"); return -1;
+			wcout << _T("upref file not found!"); return -1; // break point here
 		}
 		str.Delete(indOut[i], indOut[i + 1] - indOut[i] + 1);
 		str.Insert(indOut[i], _T("<span class = \"icon\"><a href = \"") + entryName + _T(".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>"));
@@ -480,7 +480,7 @@ int FigureEnvironment(CString& str, const CString& path)
 		// get caption of figure
 		ind0 = str.Find(_T("\\caption"), ind0);
 		if (ind0 < 0) {
-			wcout << _T("fig caption not found!"); return -1;
+			wcout << _T("fig caption not found!"); return -1; // break point here
 		}
 		ind0 = ExpectKey(str, '{', ind0 + 8);
 		ind1 = PairBraceR(str, ind0);
@@ -604,9 +604,8 @@ int OneFile1(CString path)
 	CString str = ReadUTF8(path); // read file
 	// get all the equation environment scopes
 	vector<int> eqscope;
-	if (FindEnv(eqscope, str, _T("equation")) < 0)
-	{
-		wcout << L"error!"; return 0;
+	if (FindEnv(eqscope, str, _T("equation")) < 0) {
+		wcout << L"error!"; return 0; // break point here
 	}
 	// match  and remove braces
 	vector<int> ind_left, ind_right, ind_RmatchL;
@@ -633,7 +632,7 @@ int OneFile2(CString path)
 	// get all the equation environment scopes
 	vector<int> indEq;
 	if (FindEnv(indEq, str, _T("equation")) < 0) {
-		wcout << L"error!"; return 0;
+		wcout << L"error!"; return 0;  // break point here
 	}
 	vector<int> ind; // indices for all the $.
 	if (FindInline(ind, str) == 0)
@@ -731,9 +730,6 @@ int RemoveNoEntry(vector<CString>& names)
 	// add other names here
 	Nnames = names.size();
 	Nnames0 = names0.size();
-	for (i = 0; i < Nnames0; ++i) {
-		names0[i] = names0[i];
-	}
 	for (i = 0; i < Nnames; ++i) {
 		for (j = 0; j < Nnames0; ++j) {
 			if (names[i] == names0[j]) {
@@ -783,10 +779,8 @@ int TableOfContent(vector<CString>& titles, const vector<CString>& names, const 
 
 	// remove comments
 	vector<int> indComm;
-	N = FindComment(indComm, str);
-	for (i = 2 * N - 2; i >= 0; i -= 2) {
+	for (i = 2*FindComment(indComm, str)-2; i >= 0; i -= 2)
 		str.Delete(indComm[i], indComm[i + 1] - indComm[i] + 1);
-	}
 	while (true) {
 		ind1 = FindMultiple(ikey, str, keys, ind1);
 		if (ind1 < 0) break;
@@ -800,6 +794,9 @@ int TableOfContent(vector<CString>& titles, const vector<CString>& names, const 
 			title = str.Mid(ind1, ind2 - ind1);
 			title.TrimLeft(' '); title.TrimRight(' ');
 			title.Replace(_T("\\ "), _T(" "));
+			if (title.IsEmpty()) {
+				wcout << _T("Chinese title is empty in PhysWiki.tex!"); return -1;  // break point here
+			}
 			ind1 = ExpectKey(str, '{', ind2 + 1);
 			ind2 = str.Find('}', ind1);
 			entryName = str.Mid(ind1, ind2 - ind1);
@@ -812,7 +809,7 @@ int TableOfContent(vector<CString>& titles, const vector<CString>& names, const 
 				if (entryName == names[i]) break;
 			}
 			if (i == names.size()) {
-				wcout << _T("entry name not in file list!"); return -1;
+				wcout << _T("File not found for an entry in PhysWiki.tex!"); return -1; // break point here
 			}
 			titles[i] = title;
 		}
@@ -852,6 +849,12 @@ int TableOfContent(vector<CString>& titles, const vector<CString>& names, const 
 	}
 	toc.Insert(ind0, _T("</p>\n</div>"));
 	WriteUTF8(toc, path + _T("index.html"));
+	wcout << "\n\nWarning: the following files are not used by PhysWiki.tex: " << endl;
+	for (i = 0; i < titles.size(); ++i) {
+		if (titles[i].IsEmpty())
+			wcout << names[i].GetString() << ".tex" << endl;
+	}
+	wcout << endl;
 	return N;
 }
 
@@ -879,8 +882,8 @@ int PhysWikiOnline1(vector<CString>& id, vector<CString>& label, CString entryNa
 		if (entryName == names[j])
 			break;
 	}
-	if (title != titles[j]) {
-		wcout << _T("title different!"); return -1;
+	if (!titles[j].IsEmpty() && title != titles[j]) {
+		wcout << _T("Chinese title different from toc!"); return -1; // break point here
 	}
 	// insert \newcommand
 	ind0 = html.Find(_T("PhysWikiCommand"), 0);
@@ -991,13 +994,16 @@ void PhysWikiOnline()
 	vector<CString> titles;
 	RemoveNoEntry(names);
 	if (names.size() <= 0) return;
-	//names.resize(0); names.push_back(_T("ITable")); // debug
+	wcout << "toc PhysWiki.tex...";
 	TableOfContent(titles, names, path0);
+	wcout << endl;
 	vector<CString> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
+		if (names[i] == "ITable")
+			int Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles);
 		wcout << endl;
@@ -1009,6 +1015,8 @@ void PhysWikiOnline()
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << ' ' << names[i].GetString() << _T("...");
 		html = ReadUTF8(path0 + names[i] + _T(".html")); // read html file
+		if (names[i] == "ITable")
+			int Set_Break_Point_Here = 1000; // one file debug
 		// process \autoref and \upref
 		autoref(IdList, LabelList, names[i], html);
 		WriteUTF8(html, path0 + names[i] + _T(".html")); // save html file
@@ -1039,4 +1047,5 @@ void main()
 	_setmode(_fileno(stdout), _O_U16TEXT); // for console unicode output
 	PhysWikiOnline();
 	//PhysWikiCheck();
+	wcout << "Program Finished!" << endl; getchar();
 }

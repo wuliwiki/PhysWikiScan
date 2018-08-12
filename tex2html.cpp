@@ -218,7 +218,7 @@ int Table(CString& str)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		ind0 = str.Find(_T("\\caption")); 
 		if (ind0 < 0 || ind0 > ind[i + 1]) {
-			wcout << "table no caption!"; return -1;
+			wcout << "table no caption!"; return -1;  // break point here
 		}
 		ind0 += 8; ind0 = ExpectKey(str, '{', ind0);
 		ind1 = PairBraceR(str, ind0 -1);
