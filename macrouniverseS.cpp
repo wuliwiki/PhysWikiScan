@@ -2,6 +2,8 @@
 
 #include "macrouniverseS.h"
 using namespace std;
+#define error(str) {wcout << "error: " << __FILE__ << ": line " << __LINE__ << ": " << _T(str) << endl; getchar();}
+
 // convert CString to UTF-8
 string to_utf8(CString cstr)
 {
@@ -32,7 +34,7 @@ CString ReadUTF8(CString path)
 	ifstream fin;
 	fin.open(path, ios::in);
 	if (!fin.is_open()) {
-		wcout << _T("open input file error");  // break point here
+		error("open input file error");  // break point here
 		return _T("error");
 	}
 	memset(buffer, 0, 1024 * 1024);
@@ -140,7 +142,7 @@ int CString2int(int& num, const CString& str, int start)
 	unsigned char c;
 	c = str.GetAt(start);
 	if (c < '0' || c > '9') {
-		wcout << _T("not a number!"); return -1;  // break point here
+		error("not a number!"); return -1;  // break point here
 	}
 	num = c - '0';
 	for (i = start + 1; i < str.GetLength(); ++i) {

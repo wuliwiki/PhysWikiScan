@@ -1,5 +1,6 @@
 # include "tex.h"
 using namespace std;
+#define error(str) {wcout << "error: " << __FILE__ << ": line " << __LINE__ << ": " << _T(str) << endl; getchar();}
 
 // see if an index i falls into the scopes of ind
 bool IndexInRange(int i, vector<int> ind)
@@ -88,7 +89,7 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 			}
 			else
 			{
-				wcout << L"error! range overlap!"; return -1;  // break point here
+				error("error! range overlap!"); return -1;  // break point here
 			}
 		}
 		else if (end[i] == start[i + 1] - 1)
@@ -311,7 +312,7 @@ int FindBegin(vector<int>& ind, const CString& env, const CString& str, char opt
 			ind.push_back(ind0);
 		ind0 = ExpectKey(str, '{', ind0 + 1);
 		if (ind0 < 0) {
-			wcout << _T("expecting {}{}!"); return -1;  // break point here
+			error("expecting {}{}!"); return -1;  // break point here
 		}
 		ind0 = PairBraceR(str, ind0 - 1);
 		ind.push_back(ind0);

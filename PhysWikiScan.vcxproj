@@ -23,7 +23,7 @@
     <ProjectGuid>{539979A7-819C-4CA7-8ADC-21F40970B5C9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>PhysWikiScan</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

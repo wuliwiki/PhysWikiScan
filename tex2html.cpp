@@ -4,6 +4,7 @@
 
 #include "tex2html.h"
 using namespace std;
+#define error(str) {wcout << "error: " << __FILE__ << ": line " << __LINE__ << ": " << _T(str) << endl; getchar();}
 
 // ensure space around (CString)name
 // return number of spaces added
@@ -218,7 +219,7 @@ int Table(CString& str)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		ind0 = str.Find(_T("\\caption")); 
 		if (ind0 < 0 || ind0 > ind[i + 1]) {
-			wcout << "table no caption!"; return -1;  // break point here
+			error("table no caption!"); return -1;  // break point here
 		}
 		ind0 += 8; ind0 = ExpectKey(str, '{', ind0);
 		ind1 = PairBraceR(str, ind0 -1);
