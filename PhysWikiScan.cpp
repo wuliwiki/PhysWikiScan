@@ -239,7 +239,7 @@ int EnvLabel(vector<CString>& id, vector<CString>& label, const CString& entryNa
 		ind0 = ExpectKey(str, '{', ind5 + 6);
 		ind3 = ExpectKey(str, entryName + _T('_') + idName, ind0);
 		if (ind3 < 0) {
-			wcout << "label format error!"; return -1;
+			error("label format error!"); return -1; // break point here
 		}
 		ind3 = str.Find('}', ind3);
 		label.push_back(str.Mid(ind0, ind3 - ind0));
@@ -477,6 +477,10 @@ int FigureEnvironment(CString& str, const CString& path)
 		// get file name of figure
 		indName1 = str.Find(_T("figures/"), ind0) + 8;
 		indName2 = str.Find(_T(".pdf"), indFig[i]) - 1;
+		if (indName2 < 0)
+			indName2 = str.Find(_T(".png"), indFig[i]) - 1;
+		if (indName2 < 0)
+			error("error when reading figure name!"); // breakpoint here
 		figName = str.Mid(indName1, indName2 - indName1 + 1);
 		// get caption of figure
 		ind0 = str.Find(_T("\\caption"), ind0);
@@ -494,7 +498,7 @@ int FigureEnvironment(CString& str, const CString& path)
 		else if (FileExist(path, figName + _T(".png")))
 			format = _T(".png");
 		else{
-			error("figure not found!"); return -1;
+			error("figure not found!"); return -1; // break point here
 		}
 		// insert html code
 		widthPt.Format(_T("%d"), (int)(33.4 * width));
@@ -1003,7 +1007,7 @@ void PhysWikiOnline()
 	for (unsigned i{}; i < names.size(); ++i) {
 		wcout << i << " ";
 		wcout << names[i].GetString() << _T("...");
-		if (names[i] == "ITable")
+		if (names[i] == "Basics")
 			int Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles);

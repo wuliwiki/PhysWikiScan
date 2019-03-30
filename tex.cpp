@@ -48,6 +48,8 @@ bool IndexInEnv(int& iname, int ind, const vector<CString>& names, const CString
 int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 {
 	int i, N1 = ind1.size(), N2 = ind2.size();
+	if (ind1.size() % 2 != 0 || ind2.size() % 2 != 0)
+		error("size error, must be even!"); // break point here
 	if (N1 == 0)
 	{
 		ind = ind2; return N2 / 2;
@@ -71,8 +73,11 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 	sort(start, order);
 	vector<int> temp;
 	temp.resize(N);
-	for (i = 0; i < N; ++i)
+	for (i = 0; i < N; ++i) {
+		if (order[i] >= end.size())
+			error("out of bound!");
 		temp[i] = end[order[i]];
+	}
 	end = temp;
 
 	// load ind
@@ -102,6 +107,8 @@ int CombineRange(vector<int>& ind, vector<int> ind1, vector<int> ind2)
 		}
 	}
 	ind.push_back(end.back());
+	if (ind.size() % 2 != 0)
+		error("size error! must be even!");
 	return ind.size() / 2;
 }
 
@@ -243,13 +250,22 @@ int FindInline(vector<int>& ind, const CString& str, char option)
 	FindComment(indComm, str);
 	while (true) {
 		ind0 = str.Find(_T("$"), ind0);
-		if (ind0 < 0) { break; } // did not find
-		if (ind0 > 0 && str.GetAt(ind0 - 1) == '\\') { ++ind0; continue; } // not an escape
-		if (IndexInRange(ind0, indComm)) { ++ind0; continue; } // not in comment
+		if (ind0 < 0) {
+			break;
+		} // did not find
+		if (ind0 > 0 && str.GetAt(ind0 - 1) == '\\') { // escaped
+			++ind0; continue;
+		}
+		if (IndexInRange(ind0, indComm)) { // in comment
+			++ind0; continue;
+		}
 		ind.push_back(ind0);
 		++ind0; ++N;
 	}
-	if (N % 2 != 0) return -1;// odd number of $ found
+	if (N % 2 != 0) {
+		error("odd number of $ found!"); // breakpoint here
+		return -1;
+	}
 	N /= 2;
 	if (option == 'i' && N > 0)
 		for (int i{}; i < 2 * N; i += 2) {

@@ -18,9 +18,10 @@ string to_utf8(CString cstr)
 // convert UTF-8 to CString
 CString from_utf8(string str)
 {
-	wchar_t *buffer = new wchar_t[1024 * 1024];
+	wchar_t *buffer = new wchar_t[str.size()+1];
 	// Convert headers from ASCII to Unicode.
-	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, 1024 * 1024);
+	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, str.size());
+	buffer[str.size()] = 0; // set last character as null
 
 	CString cstr = buffer;
 	delete[]buffer;
@@ -28,20 +29,19 @@ CString from_utf8(string str)
 }
 
 // read a UTF8 file to CString
-char buffer[1024 * 1024] = {};
 CString ReadUTF8(CString path)
 {
 	ifstream fin;
-	fin.open(path, ios::in);
+	fin.open(path);
 	if (!fin.is_open()) {
 		error("open input file error");  // break point here
 		return _T("error");
 	}
-	memset(buffer, 0, 1024 * 1024);
-	fin.read(buffer, 1024 * 1024);
+	string str((std::istreambuf_iterator<char>(fin)),
+		(std::istreambuf_iterator<char>()));
 	fin.close();
-
-	return from_utf8(buffer);
+	auto cstr = from_utf8(str);
+	return cstr;
 }
 
 // write a CString to a UTF8 file
