@@ -21,7 +21,7 @@ inline Bool file_exist(Str32_I fname) {
 inline void read_file(Str_O str, Str_I fname)
 {
 	if (!file_exist(fname))
-		SLS_ERR("file does not exist!");
+		SLS_ERR("file \"" + fname + "\" does not exist!");
 	ifstream fin(fname, std::ios::binary);
 	stringstream ss;
 	ss << fin.rdbuf();

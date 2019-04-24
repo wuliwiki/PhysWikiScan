@@ -960,6 +960,7 @@ inline void PhysWikiOnline(Str32_I path0)
 
 	vector<Str32> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
+	cout << "======  1st scan ======" << endl;
 	for (Long i = 0; i < names.size(); ++i) {
 		cout << i << " ";
 		cout << names[i] << "..." << endl;
@@ -973,7 +974,7 @@ inline void PhysWikiOnline(Str32_I path0)
 	}
 
 	// 2nd loop through tex files
-	cout << "\n\n\n\n\n\n" << "2nd Loop:" << endl;
+	cout << "\n\n\n\n" << "====== 2nd scan ======" << endl;
 	Str32 html;
 	for (unsigned i{}; i < names.size(); ++i) {
 		cout << i << ' ' << names[i] << "..." << endl;
