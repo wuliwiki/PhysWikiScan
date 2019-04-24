@@ -7,7 +7,8 @@
 
 int main() {
 	using namespace slisc;
-	PhysWikiOnline();
-	// PhysWikiCheck();
+	Str32 path0 = U"../temp/PhysWikiOnline/";
+	PhysWikiOnline(path0);
+	// PhysWikiCheck(U"../PhysWiki/contents/");
 	cout << "Program Finished!" << endl; getchar();
 }

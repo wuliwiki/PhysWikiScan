@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "../SLISC/global.h"
 #include "../SLISC/file.h"
+#include "../SLISC/input.h"
 #include "../TeX/tex2html.h"
 
 using namespace slisc;
@@ -11,18 +12,19 @@ using namespace slisc;
 Long GetTitle(Str32_O title, Str32_I str)
 {
 	if (str.at(0) != U'%') {
-		SLS_ERR("Need a title!"); // break point here
+		cout << "\nNeed a title!" << endl; // break point here
 		return -1;
 	}
 	Str32 c;
 	Long ind0 = NextNoSpace(c, str, 1);
 	if (ind0 < 0) {
-		SLS_ERR("Title is empty!"); // break point here
+		cout << "\nTitle is empty!" << endl; // break point here
 		return -1;
 	}
 	Long ind1 = str.find(U'\n', ind0);
 	if (ind1 < 0) {
-		SLS_ERR("Body is empty!"); // break point here
+		cout << "\nBody is empty!" << endl; // break point here
+		return -1;
 	}
 	title = str.substr(ind0, ind1 - ind0);
 	return 0;
@@ -204,7 +206,7 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 		ind2 = str.rfind(U"\\end", ind5);
 		ind4 = str.rfind(U"\\begin", ind5);
 		if (ind2 >= ind4) {
-			SLS_ERR("label not in an environment!"); // break point here
+			cout << "label not in an environment!" << endl; // break point here
 			return -1;
 		}
 		// detect environment kind
@@ -231,13 +233,15 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 			idName = U"eq"; envName = U"align";
 		}
 		else {
-			SLS_ERR("environment not supported for label!"); return -1; // break point here
+			cout << "environment not supported for label!" << endl;
+			return -1; // break point here
 		}
 		// check label format and save label
 		ind0 = ExpectKey(str, U"{", ind5 + 6);
 		ind3 = ExpectKey(str, entryName + U'_' + idName, ind0);
 		if (ind3 < 0) {
-			SLS_ERR("label format error!"); return -1; // break point here
+			cout << "label format error!" << endl;
+			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
 		label.push_back(str.substr(ind0, ind3 - ind0));
@@ -307,13 +311,16 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 		indName2 = str.find(U".pdf", indFig[i]) - 1;
 		if (indName2 < 0)
 			indName2 = str.find(U".png", indFig[i]) - 1;
-		if (indName2 < 0)
-			SLS_ERR("error when reading figure name!"); // breakpoint here
+		if (indName2 < 0) {
+			cout << "error when reading figure name!" << endl; // breakpoint here
+			return -1;
+		}
 		figName = str.substr(indName1, indName2 - indName1 + 1);
 		// get caption of figure
 		ind0 = str.find(U"\\caption", ind0);
 		if (ind0 < 0) {
-			SLS_ERR("fig caption not found!"); return -1; // break point here
+			cout << "fig caption not found!" << endl;
+			return -1; // break point here
 		}
 		ind0 = ExpectKey(str, U"{", ind0 + 8);
 		ind1 = PairBraceR(str, ind0);
@@ -326,7 +333,8 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 		else if (file_exist(path + figName + ".png"))
 			format = U".png";
 		else {
-			SLS_ERR("figure not found!"); return -1; // break point here
+			cout << "figure not found!" << endl;
+			return -1; // break point here
 		}
 		// insert html code
 		num2str(widthPt, (Long)(33.4 * width));
@@ -452,7 +460,8 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.find('_', ind1);
 		if (ind2 < 0) {
-			SLS_ERR("autoref format error!"); return -1; // break point here
+			cout << "autoref format error!" << endl;
+			return -1; // break point here
 		}
 		ind3 = FindNum(str, ind2);
 		idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
@@ -462,7 +471,8 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 		else if (idName == U"exe") kind = U"练习";
 		else if (idName == U"tab") kind = U"表";
 		else {
-			SLS_ERR("unknown id name!"); return -1; // break point here
+			cout << "unknown id name!" << endl;
+			return -1; // break point here
 		}
 		ind3 = str.find('}', ind3);
 		// find id of the label
@@ -471,7 +481,8 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
-			SLS_ERR("label not found!"); return -1; // break point here
+			cout << "label not found!" << endl;
+			return -1; // break point here
 		}
 		ind4 = FindNum(id[i], 0);
 		idNum = id[i].substr(ind4);		
@@ -501,7 +512,8 @@ Long upref(Str32_IO str, Str32_I path)
 		entryName = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(entryName, U' '); TrimRight(entryName, U' ');
 		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
-			SLS_ERR("upref file not found!"); return -1; // break point here
+			cout << "upref file not found!" << endl;
+			return -1; // break point here
 		}
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
 		str.insert(indOut[i], U"<span class = \"icon\"><a href = \"" +
@@ -567,7 +579,8 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 			TrimLeft(title, U' '); TrimRight(title, U' ');
 			replace(title, U"\\ ", U" ");
 			if (title.empty()) {
-				SLS_ERR("Chinese title is empty in PhysWiki.tex!"); return -1;  // break point here
+				cout << "Chinese title is empty in PhysWiki.tex!" << endl;
+				return -1;  // break point here
 			}
 			ind1 = ExpectKey(str, U"{", ind2 + 1);
 			ind2 = str.find(U"}", ind1);
@@ -581,7 +594,8 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 				if (entryName == names[i]) break;
 			}
 			if (i == names.size()) {
-				SLS_ERR("File not found for an entry in PhysWiki.tex!"); return -1; // break point here
+				cout << "File not found for an entry in PhysWiki.tex!" << endl;
+				return -1; // break point here
 			}
 			titles[i] = title;
 		}
@@ -654,7 +668,8 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
 		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
-			SLS_ERR("code file not found!"); return -1; // break point here
+			cout << "code file not found!" << endl;
+			return -1; // break point here
 		}
 		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
 		CRLF_to_LF(code);
@@ -689,7 +704,8 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
 		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
-			SLS_ERR("code file not found!"); return -1; // break point here
+			cout << "code file not found!" << endl;
+			return -1; // break point here
 		}
 		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
 		CRLF_to_LF(code);
@@ -703,7 +719,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">");
 		// insert title with download link
 		if (!file_exist(path + utf32to8(name) + ".m")) {
-			SLS_ERR(".m file not found!"); return -1; // break point here
+			cout << ".m file not found!" << endl; return -1; // break point here
 		}
 		str.insert(indOut[i], U"<b>" + name + U".m</b>\n");
 		str.insert(indOut[i], U"<span class = \"icon\"><a href = \"" + name
@@ -801,13 +817,15 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	CRLF_to_LF(html);
 	Str32 newcomm; read_file(newcomm, "PhysWikiScan/newcommand.html");
 	CRLF_to_LF(newcomm);
-	if (GetTitle(title, str) < 0) return -1;
+	if (GetTitle(title, str) < 0)
+		return -1;
 	for (j = 0; j < names.size(); ++j) {
 		if (entryName == names[j])
 			break;
 	}
 	if (!titles[j].empty() && title != titles[j]) {
-		SLS_ERR("Chinese title different from toc!"); return -1; // break point here
+		cout << "Chinese title inconsistent!" << endl;
+		return -1; // break point here
 	}
 	// insert \newcommand
 	ind0 = html.find(U"PhysWikiCommand", 0);
@@ -830,13 +848,15 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	// itemize and enumerate
 	Itemize(str); Enumerate(str);
 	// add html id for links
-	EnvLabel(id, label, entryName, str);
+	if (EnvLabel(id, label, entryName, str) < 0)
+		return -1;
 	// process table environments
 	Table(str);
 	// ensure '<' and '>' has spaces around them
 	EqOmitTag(str);
 	// process figure environments
-	FigureEnvironment(str, path0);
+	if (FigureEnvironment(str, path0) < 0)
+		return -1;
 	// process example and exercise environments
 	ExampleEnvironment(str, path0);
 	ExerciseEnvironment(str, path0);
@@ -869,7 +889,8 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	Command2Tag(U"subsubsection", U"<h5><b>", U"</b></h5>", str);
 	Command2Tag(U"bb", U"<b>", U"</b>", str);
 	// replace \upref{} with link icon
-	upref(str, path0);
+	if (upref(str, path0) < 0)
+		return -1;
 	// replace environments with html tags
 	Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
 						U"\\end{equation}\n</div></div>", str);
@@ -878,7 +899,10 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}",
 		U"\\end{align}\n</div></div>", str);
 	// Matlab code
-	MatlabCode(str, path0); MatlabCodeTitle(str, path0);
+	if (MatlabCode(str, path0) < 0)
+		return -1;
+	if (MatlabCodeTitle(str, path0) < 0)
+		return -1;
 	Command(str);
 	Command2Tag(U"x", U"<span class = \"w3-text-teal\">", U"</span>", str);
 	// footnote
@@ -905,9 +929,9 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	return 0;
 }
 
-inline void PhysWikiOnline()
+// generate html for littleshi.cn/online
+inline void PhysWikiOnline(Str32_I path0)
 {
-	Str32 path0 = U"C:/Users/Addis/Documents/GitHub/temp/PhysWikiOnline/";
 	vector<Str32> names;
 	
 	file_list_ext(names, path0, Str32(U"tex"), false);
@@ -917,7 +941,11 @@ inline void PhysWikiOnline()
 	if (names.size() <= 0) return;
 	cout << "Creating table of contents from PhysWiki.tex...\n";
 
-	TableOfContent(titles, names, path0);
+	while (TableOfContent(titles, names, path0) < 0) {
+		if (!Input().Bool("try again?"))
+			exit(EXIT_FAILURE);
+	}
+
 	cout << endl;
 	vector<Str32> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
@@ -927,7 +955,10 @@ inline void PhysWikiOnline()
 		if (names[i] == U"MatFun")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
-		PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles);
+		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
+			if (!Input().Bool("try again?"))
+				exit(EXIT_FAILURE);
+		}
 		cout << endl;
 	}
 
@@ -940,17 +971,22 @@ inline void PhysWikiOnline()
 		if (names[i] == U"ITable")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// process \autoref and \upref
-		autoref(IdList, LabelList, names[i], html);
+		if (autoref(IdList, LabelList, names[i], html) < 0) {
+			if (Input().Bool("try again?")) {
+				--i; continue;
+			}
+			else
+				exit(EXIT_FAILURE);
+		}
 		write_file(html, path0 + names[i] + ".html"); // save html file
 		cout << endl;
 	}
 }
 
-void PhysWikiCheck()
+// check format error of .tex files in path0
+void PhysWikiCheck(Str32_I path0)
 {
 	Long ind0{};
-	Str32 path0 = U"C:/Users/addis/Documents/GitHub/PhysWiki/contents/";
-	//CString path0 = U"C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
 	vector<Str32> names;
 	file_list_ext(names, path0, U"tex", false);
 	//RemoveNoEntry(names);
