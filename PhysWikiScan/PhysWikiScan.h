@@ -32,6 +32,7 @@ Long GetTitle(Str32_O title, Str32_I str)
 
 // add <p> tags to paragraphs
 // return number of tag pairs added
+// return -1 if failed
 Long ParagraphTag(Str32_IO str)
 {
 	Long i{}, N{}, N1{}, ind0{}, ind2{};
@@ -48,7 +49,7 @@ Long ParagraphTag(Str32_IO str)
 	while (true) {
 		ind0 = str.find(U"\n\n", ind0);
 		if (ind0 < 0) break;
-		ind.push_back(ind0); ++N; ind0 += 2;
+		ind.push_back(ind0); ind0 += 2;
 	}
 	N = ind.size();
 	for (i = N - 1; i >= 0; --i) {
@@ -63,9 +64,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
 	FindComBrace(ind, U"\\subsection", str, 'o');
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\pentry", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -92,13 +93,13 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
 	FindEnv(ind, str, U"figure", 'o');
 	FindEnv(ind1, str, U"itemize", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"enumerate", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\code", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\Code", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -125,9 +126,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "<p>　　" before range, delete "　　"
 	FindEnv(ind, str, U"equation", 'o');
 	FindEnv(ind1, str, U"gather", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"align", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", ind[i] - 1);
 		ind2 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
@@ -156,11 +157,11 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
 	FindBegin(ind, U"exam", str, '2');
 	FindEnd(ind1, U"exam", str);
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindBegin(ind1, U"exer", str, '2');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -181,7 +182,7 @@ Long ParagraphTag(Str32_IO str)
 			str.insert(ind[i], U"</p>\n\n");
 		}
 	}
-	return N;
+	return N + 1;
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
@@ -353,8 +354,9 @@ Long pentry(Str32_IO str)
 {
 	Long i{}, N{};
 	vector<Long> indIn, indOut;
-	FindComBrace(indIn, U"\\pentry", str);
+	if (FindComBrace(indIn, U"\\pentry", str) < 0) return -1;
 	N = FindComBrace(indOut, U"\\pentry", str, 'o');
+	if (N < 0) return -1;
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		str.erase(indOut[i + 1], 1);
 		str.insert(indOut[i + 1], U"</div>");
@@ -540,7 +542,7 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	Str32 entryName; // entry label
 	Str32 str; read_file(str, path + "PhysWiki.tex");
 	CRLF_to_LF(str);
-	Str32 toc; read_file(toc, "PhysWikiScan/template.html"); // read html template
+	Str32 toc; read_file(toc, "PhysWikiScan/index_template.html"); // read html template
 	CRLF_to_LF(str);
 	titles.resize(names.size());
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -813,7 +815,7 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	//ind0 = path.ReverseFind('\\');
 	//path.erase(ind0, str.GetLength() - ind0);
 	//path += U"\\template.html";
-	Str32 html; read_file(html, "PhysWikiScan/template.html"); // read html template
+	Str32 html; read_file(html, "PhysWikiScan/entry_template.html"); // read html template
 	CRLF_to_LF(html);
 	Str32 newcomm; read_file(newcomm, "PhysWikiScan/newcommand.html");
 	CRLF_to_LF(newcomm);
@@ -842,26 +844,36 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 		str.erase(indComm[i], indComm[i + 1] - indComm[i] + 1);
 	}
 	// escape characters
-	NormalTextEscape(str);
+	if (NormalTextEscape(str) < 0)
+		return -1;
 	// add paragraph tags
-	ParagraphTag(str);
+	if (ParagraphTag(str) < 0)
+		return -1;
 	// itemize and enumerate
-	Itemize(str); Enumerate(str);
+	if (Itemize(str) < 0)
+		return -1;
+	if (Enumerate(str) < 0)
+		return -1;
 	// add html id for links
 	if (EnvLabel(id, label, entryName, str) < 0)
 		return -1;
 	// process table environments
-	Table(str);
+	if (Table(str) < 0)
+		return -1;
 	// ensure '<' and '>' has spaces around them
-	EqOmitTag(str);
+	if (EqOmitTag(str) < 0)
+		return -1;
 	// process figure environments
 	if (FigureEnvironment(str, path0) < 0)
 		return -1;
 	// process example and exercise environments
-	ExampleEnvironment(str, path0);
-	ExerciseEnvironment(str, path0);
+	if (ExampleEnvironment(str, path0) < 0)
+		return -1;
+	if (ExerciseEnvironment(str, path0) < 0)
+		return -1;
 	// process \pentry{}
-	pentry(str);
+	if (pentry(str) < 0)
+		return -1;
 	// Replace \nameStar commands
 	StarCommand(U"comm", str);   StarCommand(U"pb", str);
 	StarCommand(U"dv", str);     StarCommand(U"pdv", str);
@@ -909,21 +921,16 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	footnote(str);
 	// delete redundent commands
 	replace(str, U"\\dfracH", U"");
-	// insert title and notice
-	ind0 = html.find(U"PhysWikiHTMLbody", ind0); html.erase(ind0, 16);
-	ind0 = insert(html, U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n", ind0);
-	ind0 = insert(html, U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n", ind0);
-	ind0 = insert(html, U"<h3>" + title + U"</h3>\n</div>\n\n<div class = \"w3-container\">\n", ind0);
-	ind0 = insert(html, U"<p>\n<span class=\"w3-tag w3-yellow\">公告：《小时物理百科》网页版仍在开发中，", ind0);
-	ind0 = insert(html, U"请下载<a href=\"../\">《小时物理百科》PDF 版</a>。</span>\n</p>\n", ind0);
+	// insert body Title
+	if (replace(html, U"PhysWikiTitle", title) != 1) {
+		cout << "\"PhysWikiTitle\" not found in entry_template.html!" << endl;
+		return -1;
+	}
 	// insert HTML body
-	ind0 = insert(html, str, ind0);
-	ind0 = insert(html, U"\n</div>\n", ind0);
-	ind0 = insert(html, U"<div class = \"w3-container w3-gray\">", ind0);
-	ind0 = insert(html, U"<p>\n<a href = \"../online\">返回目录</a>　", ind0);
-	ind0 = insert(html, U"<a href = \"../\">返回主页</a>　", ind0);
-	ind0 = insert(html, U"<a href = \"../#donation\">捐助项目</a>　</p>\n", ind0);
-	ind0 = insert(html, U"</div>", ind0);
+	if (replace(html, U"PhysWikiHTMLbody", str) != 1) {
+		cout << "\"PhysWikiHTMLbody\" not found in entry_template.html!" << endl;
+		return -1;
+	}
 	// save html file
 	write_file(html, path0 + entryName + ".html");
 	return 0;
@@ -952,7 +959,7 @@ inline void PhysWikiOnline(Str32_I path0)
 	for (Long i = 0; i < names.size(); ++i) {
 		cout << i << " ";
 		cout << names[i] << "...";
-		if (names[i] == U"MatFun")
+		if (names[i] == U"BBdLaw")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {

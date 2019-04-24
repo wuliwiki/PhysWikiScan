@@ -25,6 +25,7 @@ Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
 
 // ensure space around '<' and '>' in equation env. and $$ env
 // return number of spaces added
+// return -1 if failed
 Long EqOmitTag(Str32_IO str)
 {
 	Long i{}, N{}, Nrange{};
@@ -32,6 +33,7 @@ Long EqOmitTag(Str32_IO str)
 	FindEnv(ind, str, U"equation");
 	FindInline(indInline, str);
 	Nrange = CombineRange(ind, ind, indInline);
+	if (Nrange < 0) return -1;
 	for (i = 2 * Nrange - 2; i >= 0; i -= 2) {
 		N += EnsureSpace(U"<", str, ind[i], ind[i + 1]);
 		N += EnsureSpace(U">", str, ind[i], ind[i + 1]);
@@ -181,6 +183,7 @@ Long TextEscape(Str32_IO str)
 
 // deal with escape simbols in normal text, \x{} commands, Command environments
 // must be done before \command{} and environments are replaced with html tags
+// return -1 if failed
 Long NormalTextEscape(Str32_IO str)
 {
 	Long i{}, N1{}, N{}, Nnorm{};
@@ -189,8 +192,10 @@ Long NormalTextEscape(Str32_IO str)
 	FindNormalText(ind, str);
 	FindComBrace(ind1, U"\\x", str);
 	Nnorm = CombineRange(ind, ind, ind1);
+	if (Nnorm < 0) return -1;
 	FindEnv(ind1, str, U"Command");
 	Nnorm = CombineRange(ind, ind, ind1);
+	if (Nnorm < 0) return -1;
 	for (i = 2 * Nnorm - 2; i >= 0; i -= 2) {
 		temp = str.substr(ind[i], ind[i + 1] - ind[i] + 1);
 		N1 = TextEscape(temp); if (N1 < 0) continue;
@@ -215,7 +220,7 @@ Long Table(Str32_IO str)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		ind0 = str.find(U"\\caption");
 		if (ind0 < 0 || ind0 > ind[i + 1]) {
-			SLS_ERR("table no caption!"); return -1;  // break point here
+			cout << "table no caption!" << endl; return -1;  // break point here
 		}
 		ind0 += 8; ind0 = ExpectKey(str, U"{", ind0);
 		ind1 = PairBraceR(str, ind0 - 1);

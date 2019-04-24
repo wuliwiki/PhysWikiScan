@@ -82,7 +82,7 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 {
 	Long i, N1 = ind1.size(), N2 = ind2.size();
 	if (ind1.size() % 2 != 0 || ind2.size() % 2 != 0)
-		SLS_ERR("size error, must be even!"); // break point here
+		cout << "size error, must be even!" << endl; // break point here
 	if (N1 == 0)
 	{
 		ind = ind2; return N2 / 2;
@@ -108,7 +108,7 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 	temp.resize(N);
 	for (i = 0; i < N; ++i) {
 		if (order[i] >= end.size())
-			SLS_ERR("out of bound!");
+			cout << "out of bound!" << endl;
 		temp[i] = end[order[i]];
 	}
 	end = temp;
@@ -127,7 +127,8 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 			}
 			else
 			{
-				SLS_ERR("error! range overlap!"); return -1;  // break point here
+				cout << "error! range overlap!" << endl;
+				return -1;  // break point here
 			}
 		}
 		else if (end[i] == start[i + 1] - 1)
@@ -140,8 +141,10 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 		}
 	}
 	ind.push_back(end.back());
-	if (ind.size() % 2 != 0)
-		SLS_ERR("size error! must be even!");
+	if (ind.size() % 2 != 0) {
+		cout << "size error! must be even!" << endl;
+	}
+		
 	return ind.size() / 2;
 }
 
@@ -388,6 +391,7 @@ Long FindEnd(vector<Long>& ind, Str32_I env, Str32_I str)
 }
 
 // Find normal text range
+// return -1 if failed
 Long FindNormalText(vector<Long>& indNorm, Str32_I str)
 {
 	vector<Long> ind, ind1;
@@ -395,44 +399,44 @@ Long FindNormalText(vector<Long>& indNorm, Str32_I str)
 	FindComment(ind, str);
 	// inline equation environments
 	FindInline(ind1, str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// equation environments
 	FindEnv(ind1, str, U"equation", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// command environments
 	FindEnv(ind1, str, U"Command", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// gather environments
 	FindEnv(ind1, str, U"gather", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// align environments (not "aligned")
 	FindEnv(ind1, str, U"align", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// texttt command
 	FindComBrace(ind1, U"\\texttt", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// input command
 	FindComBrace(ind1, U"\\input", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// Figure environments
 	FindEnv(ind1, str, U"figure", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// Table environments
 	FindEnv(ind1, str, U"table", 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// subsubsection command
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
 	FindBegin(ind1, U"exam", str, '2');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exam", str);
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
 	FindBegin(ind1, U"exer", str, '2');
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	CombineRange(ind, ind, ind1);
+	if (CombineRange(ind, ind, ind1) < 0) return -1;
 	// invert range
 	return InvertRange(indNorm, ind, str.size());
 }
