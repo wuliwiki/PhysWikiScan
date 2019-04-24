@@ -81,8 +81,10 @@ void stupid_sort(vector<Long>& x, vector<Long>& ind)
 Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 {
 	Long i, N1 = ind1.size(), N2 = ind2.size();
-	if (ind1.size() % 2 != 0 || ind2.size() % 2 != 0)
+	if (ind1.size() % 2 != 0 || ind2.size() % 2 != 0) {
 		cout << "size error, must be even!" << endl; // break point here
+		return -1;
+	}	
 	if (N1 == 0)
 	{
 		ind = ind2; return N2 / 2;
@@ -107,8 +109,10 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 	vector<Long> temp;
 	temp.resize(N);
 	for (i = 0; i < N; ++i) {
-		if (order[i] >= end.size())
+		if (order[i] >= end.size()) {
 			cout << "out of bound!" << endl;
+			return -1;
+		}
 		temp[i] = end[order[i]];
 	}
 	end = temp;
@@ -143,6 +147,7 @@ Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
 	ind.push_back(end.back());
 	if (ind.size() % 2 != 0) {
 		cout << "size error! must be even!" << endl;
+		return -1;
 	}
 		
 	return ind.size() / 2;
