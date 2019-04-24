@@ -12,18 +12,18 @@ using namespace slisc;
 Long GetTitle(Str32_O title, Str32_I str)
 {
 	if (str.at(0) != U'%') {
-		SLS_WARN("\nNeed a title!"); // break point here
+		SLS_WARN("Need a title!"); // break point here
 		return -1;
 	}
 	Str32 c;
 	Long ind0 = NextNoSpace(c, str, 1);
 	if (ind0 < 0) {
-		SLS_WARN("\nTitle is empty!"); // break point here
+		SLS_WARN("Title is empty!"); // break point here
 		return -1;
 	}
 	Long ind1 = str.find(U'\n', ind0);
 	if (ind1 < 0) {
-		SLS_WARN("\nBody is empty!"); // break point here
+		SLS_WARN("Body is empty!"); // break point here
 		return -1;
 	}
 	title = str.substr(ind0, ind1 - ind0);
@@ -241,7 +241,7 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 		ind0 = ExpectKey(str, U"{", ind5 + 6);
 		ind3 = ExpectKey(str, entryName + U'_' + idName, ind0);
 		if (ind3 < 0) {
-			SLS_WARN("label format error!");
+			SLS_WARN("label format error! expecting \"" + utf32to8(entryName + U'_' + idName) + "\"");
 			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
@@ -483,7 +483,7 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
-			SLS_WARN("label not found!");
+			SLS_WARN("label \"" + label0 +"\" not found!");
 			return -1; // break point here
 		}
 		ind4 = FindNum(id[i], 0);
@@ -670,7 +670,7 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
 		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
-			SLS_WARN("code file not found!");
+			SLS_WARN("code file \"" + utf32to8(name) + ".html\" not found!");
 			return -1; // break point here
 		}
 		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
@@ -725,7 +725,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">");
 		// insert title with download link
 		if (!file_exist(path + utf32to8(name) + ".m")) {
-			SLS_WARN(".m file not found!");
+			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
 			return -1; // break point here
 		}
 		str.insert(indOut[i], U"<b>" + name + U".m</b>\n");
