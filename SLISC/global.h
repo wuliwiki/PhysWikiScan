@@ -106,6 +106,14 @@ typedef string Str;
 typedef const Str &Str_I;
 typedef Str &Str_O, &Str_IO;
 
+typedef char32_t Char32;
+typedef const Char32 Char32_I;
+typedef Char32 &Char32_O, &Char32_IO;
+
+typedef std::u32string Str32;
+typedef const Str32 &Str32_I;
+typedef Str32 &Str32_O, &Str32_IO;
+
 // === class declarations ===
 template <class T> class ImagNum;
 template <class T> class Vector;

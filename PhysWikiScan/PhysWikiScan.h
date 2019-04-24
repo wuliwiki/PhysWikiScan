@@ -288,12 +288,12 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png, if doesn't exist, return -1
 // path must end with '\\'
-Long FigureEnvironment(Str32_IO str, Str_I path)
+Long FigureEnvironment(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
 	double width{}; // figure width in cm
 	vector<Long> indFig{};
-	Str figName;
+	Str32 figName;
 	Str32 format, caption, widthPt, figNo;
 	Nfig = FindEnv(indFig, str, U"figure", 'o');
 	for (i = 2 * Nfig - 2; i >= 0; i -= 2) {
@@ -309,7 +309,7 @@ Long FigureEnvironment(Str32_IO str, Str_I path)
 			indName2 = str.find(U".png", indFig[i]) - 1;
 		if (indName2 < 0)
 			SLS_ERR("error when reading figure name!"); // breakpoint here
-		figName = UTF32_to_UTF8(str.substr(indName1, indName2 - indName1 + 1));
+		figName = str.substr(indName1, indName2 - indName1 + 1);
 		// get caption of figure
 		ind0 = str.find(U"\\caption", ind0);
 		if (ind0 < 0) {
@@ -332,7 +332,7 @@ Long FigureEnvironment(Str32_IO str, Str_I path)
 		num2str(widthPt, (Long)(33.4 * width));
 		num2str(figNo, i / 2 + 1);
 		ind0 = insert(str, U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-			+ U"pt;\">\n" + U"<img src = \"" + UTF8_to_UTF32(figName) + format
+			+ U"pt;\">\n" + U"<img src = \"" + figName + format
 			+ U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
 			+ U"：" + caption + U"</div>", indFig[i]);
 		++N;
@@ -359,13 +359,13 @@ Long pentry(Str32_IO str)
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
-Long RemoveNoEntry(vector<Str> &names)
+Long RemoveNoEntry(vector<Str32> &names)
 {
 	Long i{}, j{}, N{}, Nnames{}, Nnames0;
-	vector<Str> names0; // names to remove
-	names0.push_back("PhysWiki");
-	names0.push_back("Sample");
-	names0.push_back("FrontMatters");
+	vector<Str32> names0; // names to remove
+	names0.push_back(U"PhysWiki");
+	names0.push_back(U"Sample");
+	names0.push_back(U"FrontMatters");
 	// add other names here
 	Nnames = names.size();
 	Nnames0 = names0.size();
@@ -382,7 +382,7 @@ Long RemoveNoEntry(vector<Str> &names)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-Long ExampleEnvironment(Str32_IO str, Str_I path0)
+Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	vector<Long> indIn, indOut;
@@ -408,7 +408,7 @@ Long ExampleEnvironment(Str32_IO str, Str_I path0)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-Long ExerciseEnvironment(Str32_IO str, Str_I path0)
+Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	vector<Long> indIn, indOut;
@@ -490,7 +490,7 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 
 // process upref
 // path must end with '\\'
-Long upref(Str32_IO str, Str_I path)
+Long upref(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{};
 	vector<Long> indIn, indOut;
@@ -500,7 +500,7 @@ Long upref(Str32_IO str, Str_I path)
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		entryName = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(entryName, U' '); TrimRight(entryName, U' ');
-		if (!file_exist(path + UTF32_to_UTF8(entryName) + ".tex")) {
+		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
 			SLS_ERR("upref file not found!"); return -1; // break point here
 		}
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
@@ -514,7 +514,7 @@ Long upref(Str32_IO str, Str_I path)
 // return the number of entries
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
-Long TableOfContent(vector<Str32> &titles, const vector<Str> &names, Str_I path)
+Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -525,7 +525,7 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str> &names, Str_I path)
 	read_file(newcomm, "PhysWikiScan/newcommand.html");
 	CRLF_to_LF(newcomm);
 	Str32 title; // chinese entry name, chapter name, or part name
-	Str entryName; // entry label
+	Str32 entryName; // entry label
 	Str32 str; read_file(str, path + "PhysWiki.tex");
 	CRLF_to_LF(str);
 	Str32 toc; read_file(toc, "PhysWikiScan/template.html"); // read html template
@@ -571,10 +571,10 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str> &names, Str_I path)
 			}
 			ind1 = ExpectKey(str, U"{", ind2 + 1);
 			ind2 = str.find(U"}", ind1);
-			entryName = UTF32_to_UTF8(str.substr(ind1, ind2 - ind1));
+			entryName = str.substr(ind1, ind2 - ind1);
 			ind1 = ind2;
 			// insert entry into html table of contents
-			ind0 = insert(toc, U"<a href = \"" + UTF8_to_UTF32(entryName) + U".html" + U"\" target = \"_blank\">"
+			ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
 				+ title + U"</a>　\n", ind0);
 			// record Chinese title
 			for (i = 0; i < names.size(); ++i) {
@@ -639,7 +639,7 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str> &names, Str_I path)
 // then save the html files as UTF-8 encoding
 // path must end with '\\', code files (html) must be in "<path>\codes\" folder
 // no comment allowed, must use after ParagraphTag()
-Long MatlabCode(Str32_IO str, Str_I path)
+Long MatlabCode(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
@@ -653,10 +653,10 @@ Long MatlabCode(Str32_IO str, Str_I path)
 		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
-		if (!file_exist(path + "codes\\" + UTF32_to_UTF8(name) + ".html")) {
+		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
 			SLS_ERR("code file not found!"); return -1; // break point here
 		}
-		read_file(code, path + "codes\\" + UTF32_to_UTF8(name) + ".html");
+		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
 		CRLF_to_LF(code);
 		ind0 = code.find(U"<pre", 0);
 		ind1 = code.find(U"</pre>", ind0);
@@ -674,7 +674,7 @@ Long MatlabCode(Str32_IO str, Str_I path)
 }
 
 // same with MatlabCode, for \Code command
-Long MatlabCodeTitle(Str32_IO str, Str_I path)
+Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
@@ -688,10 +688,10 @@ Long MatlabCodeTitle(Str32_IO str, Str_I path)
 		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
-		if (!file_exist(path + "codes\\" + UTF32_to_UTF8(name) + ".html")) {
+		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
 			SLS_ERR("code file not found!"); return -1; // break point here
 		}
-		read_file(code, path + "codes\\" + UTF32_to_UTF8(name) + ".html");
+		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
 		CRLF_to_LF(code);
 		ind0 = code.find(U"<pre", 0);
 		ind1 = code.find(U"</pre>", ind0);
@@ -702,7 +702,7 @@ Long MatlabCodeTitle(Str32_IO str, Str_I path)
 		str.insert(indOut[i], code);
 		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">");
 		// insert title with download link
-		if (!file_exist(path + UTF32_to_UTF8(name) + ".m")) {
+		if (!file_exist(path + utf32to8(name) + ".m")) {
 			SLS_ERR(".m file not found!"); return -1; // break point here
 		}
 		str.insert(indOut[i], U"<b>" + name + U".m</b>\n");
@@ -713,7 +713,7 @@ Long MatlabCodeTitle(Str32_IO str, Str_I path)
 }
 
 // find \bra{}\ket{} and mark
-Long OneFile4(Str_I path)
+Long OneFile4(Str32_I path)
 {
 	Long ind0{}, ind1{}, N{};
 	Str32 str;
@@ -784,8 +784,8 @@ Long Command(Str32_IO str)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str_I entryName,
-	Str path0, const vector<Str>& names, const vector<Str32>& titles)
+Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
+	Str32 path0, const vector<Str32>& names, const vector<Str32>& titles)
 {
 	// read template file from local folder
 	Long i{}, j{}, N{}, ind0;
@@ -830,7 +830,7 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str_I entryName,
 	// itemize and enumerate
 	Itemize(str); Enumerate(str);
 	// add html id for links
-	EnvLabel(id, label, UTF8_to_UTF32(entryName), str);
+	EnvLabel(id, label, entryName, str);
 	// process table environments
 	Table(str);
 	// ensure '<' and '>' has spaces around them
@@ -907,10 +907,10 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str_I entryName,
 
 inline void PhysWikiOnline()
 {
-	Str path0 = "C:/Users/Addis/Documents/GitHub/temp/PhysWikiOnline/";
-	vector<Str> names;
+	Str32 path0 = U"C:/Users/Addis/Documents/GitHub/temp/PhysWikiOnline/";
+	vector<Str32> names;
 	
-	file_list_ext(names, path0, "tex", false);
+	file_list_ext(names, path0, Str32(U"tex"), false);
 	vector<Str32> titles;
 	RemoveNoEntry(names);
 
@@ -924,7 +924,7 @@ inline void PhysWikiOnline()
 	for (Long i = 0; i < names.size(); ++i) {
 		cout << i << " ";
 		cout << names[i] << "...";
-		if (names[i] == "MatFun")
+		if (names[i] == U"MatFun")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles);
@@ -937,10 +937,10 @@ inline void PhysWikiOnline()
 	for (unsigned i{}; i < names.size(); ++i) {
 		cout << i << ' ' << names[i] << "...";
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == "ITable")
+		if (names[i] == U"ITable")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// process \autoref and \upref
-		autoref(IdList, LabelList, UTF8_to_UTF32(names[i]), html);
+		autoref(IdList, LabelList, names[i], html);
 		write_file(html, path0 + names[i] + ".html"); // save html file
 		cout << endl;
 	}
@@ -949,10 +949,10 @@ inline void PhysWikiOnline()
 void PhysWikiCheck()
 {
 	Long ind0{};
-	Str path0 = "C:/Users/addis/Documents/GitHub/PhysWiki/contents/";
+	Str32 path0 = U"C:/Users/addis/Documents/GitHub/PhysWiki/contents/";
 	//CString path0 = U"C:\\Users\\addis\\Documents\\GitHub\\littleshi.cn\\root\\PhysWiki\\online\\");
-	vector<Str> names;
-	file_list_ext(names, path0, "tex", false);
+	vector<Str32> names;
+	file_list_ext(names, path0, U"tex", false);
 	//RemoveNoEntry(names);
 	if (names.size() <= 0) return;
 	//names.resize(0); names.push_back(U"Sample"));

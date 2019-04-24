@@ -4,13 +4,54 @@
 #include <fstream>
 #include <codecvt>
 #include <filesystem>
-#include "string.h"
+#include "unicode.h"
 
 namespace slisc {
 
 inline Bool file_exist(Str_I fname) {
 	ifstream f(fname.c_str());
 	return f.good();
+}
+
+inline Bool file_exist(Str32_I fname) {
+	return file_exist(utf32to8(fname));
+}
+
+// read whole file to Str
+inline void read_file(Str_O str, Str_I fname)
+{
+	if (!file_exist(fname))
+		SLS_ERR("file does not exist!");
+	ifstream fin(fname, std::ios::binary);
+	stringstream ss;
+	ss << fin.rdbuf();
+	str = ss.str();
+}
+
+// read a UTF-8 file into UTF-32 Str32
+inline void read_file(Str32_O str32, Str_I fname)
+{
+	Str str;
+	read_file(str, fname);
+	utf8to32(str32, str);
+}
+
+inline void read_file(Str32_O str32, Str32_I fname)
+{
+	read_file(str32, utf32to8(fname));
+}
+
+// write UTF-32 Str32 into a UTF-8 file
+inline void write_file(Str32_I str32, Str_I fname)
+{
+	Str str;
+	utf32to8(str, str32);
+	write_file(str, fname);
+}
+
+inline void write_file(Str32_I str32, Str32_I fname)
+{
+	write_file(str32, utf32to8(fname));
 }
 
 inline void file_rm(Str_I wildcard_name) {
@@ -97,6 +138,16 @@ inline void file_list_ext(vector<Str> &fnames, Str_I path, Str_I ext, Bool_I kee
 	vector<Str> fnames0;
 	file_list(fnames0, path);
 	file_ext(fnames, fnames0, ext, keep_ext);
+}
+
+// list all files in current directory, with a given extension
+inline void file_list_ext(vector<Str32> &fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
+{
+	vector<Str> fnames8;
+	fnames.resize(0);
+	file_list_ext(fnames8, utf32to8(path), utf32to8(ext), keep_ext);
+	for (Long i = 0; i < fnames8.size(); ++i)
+		fnames.push_back(utf8to32(fnames8[i]));
 }
 
 } // namespace slisc

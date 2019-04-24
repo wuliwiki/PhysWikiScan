@@ -5,7 +5,6 @@
 #include <locale>
 #include <codecvt>
 #include "string.h"
-#include "file.h"
 #include "utfcpp/utf8.h"
 
 #ifdef _MSC_VER
@@ -15,25 +14,6 @@
 namespace slisc {
 
 using std::stringstream;
-
-typedef char32_t Char32;
-typedef const Char32 Char32_I;
-typedef Char32 &Char32_O, &Char32_IO;
-
-typedef std::u32string Str32;
-typedef const Str32 &Str32_I;
-typedef Str32 &Str32_O, &Str32_IO;
-
-// read whole file to Str
-inline void read_file(Str_O str, Str_I fname)
-{
-	if (!file_exist(fname))
-		SLS_ERR("file does not exist!");
-	ifstream fin(fname, std::ios::binary);
-	stringstream ss;
-	ss << fin.rdbuf();
-	str = ss.str();
-}
 
 // write Str to file
 inline void write_file(Str_I str, Str_I name)
@@ -45,14 +25,14 @@ inline void write_file(Str_I str, Str_I name)
 
 #ifdef SLS_USE_UTFCPP
 // convert from UTF-8 Str to UTF-32 Str32
-inline void UTF8_to_UTF32(Str32_O str32, Str_I str)
+inline void utf8to32(Str32_O str32, Str_I str)
 {
 	str32.clear();
 	utf8::utf8to32(str.begin(), str.end(), back_inserter(str32));
 }
 
 // convert from UTF-32 Str32 to UTF-8 Str
-inline void UTF32_to_UTF8(Str_O str, Str32_I str32)
+inline void utf32to8(Str_O str, Str32_I str32)
 {
 	str.clear();
 	utf8::utf32to8(str32.begin(), str32.end(), back_inserter(str));
@@ -74,43 +54,51 @@ inline void UTF32_to_UTF8(Str_O str, Str32_I str32)
 #endif
 
 // convert from UTF-8 Str32 to UTF-32 Str
-inline Str32 UTF8_to_UTF32(Str_I str)
+inline Str32 utf8to32(Str_I str)
 {
 	Str32 str32;
-	UTF8_to_UTF32(str32, str);
+	utf8to32(str32, str);
 	return str32;
 }
 
 // convert from UTF-32 Str32 to UTF-8 Str
-inline Str UTF32_to_UTF8(Str32_I str32)
+inline Str utf32to8(Str32_I str32)
 {
 	Str str;
-	UTF32_to_UTF8(str, str32);
+	utf32to8(str, str32);
 	return str;
 }
 
-// display Str32
-inline void disp(Str32_I str32)
+inline void write_file(Str_I str, Str32_I name)
 {
-	Str str;
-	UTF32_to_UTF8(str, str32);
-	cout << str << endl;
+	ofstream fout(utf32to8(name), std::ios::binary);
+	fout << str;
+	fout.close();
 }
 
-// read a UTF-8 file into UTF-32 Str32
-inline void read_file(Str32_O str32, Str_I fname)
+inline void read_file(Str_O str, Str32_I fname)
 {
-	Str str;
 	read_file(str, fname);
-	UTF8_to_UTF32(str32, str);
 }
 
-// write UTF-32 Str32 into a UTF-8 file
-inline void write_file(Str32_I str32, Str_I fname)
+// display Str32
+inline std::ostream &operator<<(std::ostream &out, Str32_I str32)
 {
 	Str str;
-	UTF32_to_UTF8(str, str32);
-	write_file(str, fname);
+	utf32to8(str, str32);
+	out << str;
+	return out;
+}
+
+// operator+ that converts Str to Str32
+Str32 operator+(Str32_I str32, Str_I str)
+{
+	return str32 + utf8to32(str);
+}
+
+Str32 operator+(Str_I str, Str32_I str32)
+{
+	return utf8to32(str) + str32;
 }
 
 template <class T>
@@ -118,7 +106,7 @@ inline void num2str(Str32_O str, const T &num)
 {
 	Str str0;
 	num2str(str0, num);
-	UTF8_to_UTF32(str, str0);
+	utf8to32(str, str0);
 }
 
  // same as str.insert(), but return one index after key after insertion
