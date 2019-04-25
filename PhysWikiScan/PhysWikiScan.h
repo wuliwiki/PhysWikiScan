@@ -638,10 +638,10 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	}
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path + "index.html");
-	cout << "\n\nWarning: the following files are not used by PhysWiki.tex: " << endl;
+	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录" << endl;
 	for (i = 0; i < titles.size(); ++i) {
 		if (titles[i].empty())
-			cout << names[i] + ".tex" << endl;
+			cout << names[i] << endl;
 	}
 	cout << endl;
 	return N;
@@ -951,19 +951,20 @@ inline void PhysWikiOnline(Str32_I path0)
 	RemoveNoEntry(names);
 
 	if (names.size() <= 0) return;
-	cout << "Creating table of contents from PhysWiki.tex..." << endl;
+	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
 
 	while (TableOfContent(titles, names, path0) < 0) {
-		if (!Input().Bool("try again?"))
+		if (!Input().Bool("重试?"))
 			exit(EXIT_FAILURE);
 	}
 
 	vector<Str32> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
-	cout << "======  1st scan ======" << endl;
+	cout << u8"======  第 1 轮转换 ======\n" << endl;
 	for (Long i = 0; i < names.size(); ++i) {
-		cout << i << " ";
-		cout << names[i] << "..." << endl;
+		cout    << std::setw(5)  << std::left << i
+				<< std::setw(10)  << std::left << names[i]
+				<< std::setw(20) << std::left << titles[i] << endl;
 		if (names[i] == U"GauEli")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
@@ -974,10 +975,12 @@ inline void PhysWikiOnline(Str32_I path0)
 	}
 
 	// 2nd loop through tex files
-	cout << "\n\n\n\n" << "====== 2nd scan ======" << endl;
+	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str32 html;
 	for (unsigned i{}; i < names.size(); ++i) {
-		cout << i << ' ' << names[i] << "..." << endl;
+		cout    << std::setw(5)  << std::left << i
+				<< std::setw(10)  << std::left << names[i]
+				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
 		if (names[i] == U"GauEli")
 			Long Set_Break_Point_Here = 1000; // one file debug
@@ -991,6 +994,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		}
 		write_file(html, path0 + names[i] + ".html"); // save html file
 	}
+	cout << endl;
 }
 
 // check format error of .tex files in path0

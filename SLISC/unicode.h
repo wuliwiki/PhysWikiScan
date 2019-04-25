@@ -4,6 +4,9 @@
 #include <fstream>
 #include <locale>
 #include <codecvt>
+#ifdef _MSC_VER
+#include <Windows.h> // for console unicode output
+#endif
 #include "string.h"
 #include "utfcpp/utf8.h"
 
@@ -14,6 +17,17 @@
 namespace slisc {
 
 using std::stringstream;
+
+// set windows console to display utf-8
+#ifdef _MSC_VER
+struct set_windows_console_utf8 {
+	set_windows_console_utf8() {
+		SetConsoleOutputCP(65001); // code page 65001 is UTF-8
+	}
+};
+// in case of ODR error, put this in main function;
+inline set_windows_console_utf8 yes_set_windows_console_utf8;
+#endif
 
 // write Str to file
 inline void write_file(Str_I str, Str_I name)

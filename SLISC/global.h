@@ -391,7 +391,7 @@ struct turn_on_floating_exceptions {
 	}
 };
 // in case of ODR error, put this in main function;
-turn_on_floating_exceptions yes_turn_on_floating_exceptions;
+inline turn_on_floating_exceptions yes_turn_on_floating_exceptions;
 #endif
 #endif
 
