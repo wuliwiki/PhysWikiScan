@@ -34,3 +34,5 @@
 ## TODO
 * 考虑自己写一个 Matlab 转网页的函数（应该不难）
 * 还有好多 bug 的截图需要处理的。。。
+* 直接在程序中 highlight Matlab， 先把以前的 Matlab 代码处理程序删掉。 代码以 code/ 中的 m 文件中的为准， 编码用 utf8， 取消下载按钮， 统一通过压缩包下载， 压缩包内是 GB2312 编码的 m 文件（通过 VScode 手动转换）。
+* Matlab 代码块不会自动换行啊， 因为是 verbatim

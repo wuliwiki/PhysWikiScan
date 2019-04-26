@@ -669,23 +669,22 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
-		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
-			SLS_WARN("code file \"" + utf32to8(name) + ".html\" not found!");
+		if (!file_exist(path + utf32to8(name) + ".m")) {
+			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
 			return -1; // break point here
 		}
-		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
+		read_file(code, path + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
-		ind0 = code.find(U"<pre", 0);
-		ind1 = code.find(U"</pre>", ind0);
-		code = code.substr(ind0, ind1 - ind0 + 6);
+
 		// insert code
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		str.insert(indOut[i], U"</div></div>");
-		str.insert(indOut[i], code);
-		str.insert(indOut[i], U"<div class = \"nospace\">");
-		str.insert(indOut[i], U"<span class = \"icon\"><a href = \"" + name
-			+ U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>");
-		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">");
+		ind0 = indOut[i];
+		// download button
+		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
+		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n", ind0);
+		ind0 = insert(str, U"<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
+		ind0 = insert(str, code, ind0);
+		ind0 = insert(str, U"</pre></div></div>", ind0);
 	}
 	return N;
 }
@@ -705,32 +704,23 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
-		if (!file_exist(path + "codes\\" + utf32to8(name) + ".html")) {
-			SLS_WARN("code file \"" + name + ".html\" not found!");
-			return -1; // break point here
-		}
-		read_file(code, path + "codes\\" + utf32to8(name) + ".html");
-		CRLF_to_LF(code);
-		ind0 = code.find(U"<pre", 0);
-		ind1 = code.find(U"</pre>", ind0);
-		if (ind0 < 0 || ind1 < 0) {
-			SLS_WARN("wrong format in \"" + name + ".html\"!");
-			return -1;
-		}
-		code = code.substr(ind0, ind1 - ind0 + 6);
-		// insert code
-		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		str.insert(indOut[i], U"</div></div>");
-		str.insert(indOut[i], code);
-		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\">");
-		// insert title with download link
 		if (!file_exist(path + utf32to8(name) + ".m")) {
 			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
 			return -1; // break point here
 		}
-		str.insert(indOut[i], U"<b>" + name + U".m</b>\n");
-		str.insert(indOut[i], U"<span class = \"icon\"><a href = \"" + name
-			+ U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>");
+		read_file(code, path + "codes/" + utf32to8(name) + ".m");
+		CRLF_to_LF(code);
+
+		// insert code
+		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
+		ind0 = indOut[i];
+		// download button
+		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
+		ind0 = insert(str, U"<b>" + name + U".m</b>\n", ind0);
+		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n", ind0);
+		ind0 = insert(str, U"<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
+		ind0 = insert(str, code, ind0);
+		ind0 = insert(str, U"</pre></div></div>", ind0);
 	}
 	return N;
 }
@@ -764,41 +754,23 @@ Long OneFile4(Str32_I path)
 	return N;
 }
 
-// process \Command{} to display Matlab Code
-// TODO: generate one .m file to be processed by "highlight()" function in Matlab
+// process lstlisting[language=MatlabCom] environments to display Matlab Command Line
 // return the number of \Command{} processed, return -1 if failed
-Long Command(Str32_IO str)
+// TODO: make sure it's \begin{lstlisting}[language=MatlabCom], not any lstlisting
+Long MatlabCom(Str32_IO str)
 {
-	Long i{}, j{}, N{}, ind0{}, ind1{}, Ncolor;
-	vector<Long> ind, indColor;
-	Str32 temp;
-	N = FindEnv(ind, str, U"Command");
+	Long i{}, j{}, N{}, ind0{};
+	vector<Long> indIn, indOut;
+	N = FindEnv(indIn, str, U"lstlisting");
+	N = FindEnv(indOut, str, U"lstlisting", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		temp = str.substr(ind[i], ind[i + 1] - ind[i] + 1);
-		replace(temp, U"\\\\", U"");
-		// deal with color
-		Ncolor = FindComBrace(indColor, U"\\color", temp, 'o');
-		for (j = 2 * Ncolor - 2; j >= 0; j -= 2) {
-			temp.erase(indColor[j], indColor[j + 1] - indColor[j] + 1);
-			ind0 = ExpectKeyReverse(temp, U"{", indColor[j] - 1) + 1;
-			ind1 = PairBraceR(temp, ind0);
-			temp.erase(ind1, 1); temp.insert(ind1, U"</span>");
-			temp.erase(ind0, 1); temp.insert(ind0, U"<span class = \"string\">");
-		}
-		// process \par
-		while (true) {
-			ind0 = temp.find(U"\\par");
-			if (ind0 < 0) break;
-			temp.erase(ind0, 4);
-			DeleteSpaceReturn(temp, ind0);
-			temp.insert(ind0, U"\n　　");
-		}
-
-		str.erase(ind[i], ind[i + 1] - ind[i] + 1);
-		str.insert(ind[i], temp);
+		ind0 = ExpectKey(str, U"[", indIn[i]);
+		ind0 = PairBraceR(str, ind0, U'[');
+		str.erase(indIn[i+1]+1, indOut[i+1] - indIn[i+1]);
+		str.insert(indIn[i+1]+1, U"</pre></div></div>");
+		str.erase(indOut[i], ind0 - indOut[i] + 1);
+		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">");
 	}
-	Env2Tag(U"Command", U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">",
-		U"</pre></div></div>", str);
 	return N;
 }
 
@@ -920,7 +892,7 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 		return -1;
 	if (MatlabCodeTitle(str, path0) < 0)
 		return -1;
-	Command(str);
+	MatlabCom(str);
 	Command2Tag(U"x", U"<span class = \"w3-text-teal\">", U"</span>", str);
 	// footnote
 	footnote(str);
