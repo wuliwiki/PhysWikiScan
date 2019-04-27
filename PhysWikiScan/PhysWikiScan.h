@@ -1,8 +1,8 @@
 ﻿#pragma once
-#include "../SLISC/global.h"
 #include "../SLISC/file.h"
 #include "../SLISC/input.h"
 #include "../TeX/tex2html.h"
+#include "../Matlab/matlab2html.h"
 
 using namespace slisc;
 
@@ -648,13 +648,6 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 }
 
 // process Matlab code (\code command)
-// https://www.artefact.tk/software/matlab/highlight/
-// to allow unicode:
-// first save .tex code to .m code in ANSI encoding
-// then use the program in this website to convert to html
-// then save the html files as UTF-8 encoding
-// path must end with '\\', code files (html) must be in "<path>\codes\" folder
-// no comment allowed, must use after ParagraphTag()
 Long MatlabCode(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
@@ -675,7 +668,7 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		}
 		read_file(code, path + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
-		Matlab(code);
+		Matlab_highlight(code);
 
 		// insert code
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
@@ -711,7 +704,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		}
 		read_file(code, path + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
-		Matlab(code);
+		Matlab_highlight(code);
 
 		// insert code
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
@@ -939,7 +932,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"MatFun")
+		if (names[i] == U"MIfFor")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
@@ -956,7 +949,7 @@ inline void PhysWikiOnline(Str32_I path0)
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == U"GauEli")
+		if (names[i] == U"MIfFor")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, names[i], html) < 0) {

@@ -143,8 +143,7 @@ inline Long CRLF_to_LF(Str32_IO str)
 
 // Fiind the next appearance of
 // output the ikey of key[ikey] found
-// return the first index of key[ikey], return -1 if nothing found
-// TODO: temporary algorithm, can be more efficient
+// return the first index of key[ikey] found, return -1 if nothing found
 Long FindMultiple(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imin;
@@ -158,6 +157,44 @@ Long FindMultiple(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I sta
 	}
 	if (imin == str.size()) imin = -1;
 	return imin;
+}
+
+// Fiind the previous appearance of
+// output the ikey of key[ikey] found
+// return the first index of key[ikey] found, return -1 if nothing found
+// keyword will be found even if starting from the middle of it
+Long FindMultipleReverse(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+{
+	Long i{}, ind0{}, Nkey{}, imax;
+	Nkey = key.size();
+	imax = -1;
+	for (i = 0; i < Nkey; ++i) {
+		ind0 = str.rfind(key[i], start);
+		if (ind0 > imax && ind0 <= start) {
+			imax = ind0; ikey = i;
+		}
+	}
+	return imax;
+}
+
+// same as FindMultipleReverse, but able to deal with multiple match
+// return the number of matches, return -1 if not found
+Long FindMultipleReverseN(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+{
+	Long i{}, ind0{}, Nkey{}, imax;
+	Nkey = key.size();
+	imax = -1;
+	for (i = 0; i < Nkey; ++i) {
+		ind0 = str.rfind(key[i], start);
+		if (ind0 > imax && ind0 <= start) {
+			imax = ind0; ikey.clear();
+			ikey.push_back(i);
+		}
+		// found another
+		else if (ind0 == imax)
+			ikey.push_back(i);
+	}
+	return imax;
 }
 
 // see if a key appears followed only by only white space or '\n'
@@ -229,25 +266,32 @@ inline Bool is_alphanum_(Char32_I c)
 	return false;
 }
 
+// check if a word is a whole word
+Bool is_whole_word(Str32_I str, Long_I ind, Long_I size)
+{
+	// check left
+	Long ind0 = ind - 1;
+	if (ind0 >= 0 && is_alphanum_(str[ind0]))
+		return false;
+	// check right
+	ind0 += 1 + size;
+	if (ind0 < str.size() && is_alphanum_(str[ind0]))
+		return false;
+	return true;
+}
+
 // find whole word, like in Visual Studio Code, begin from "str[start]"
 // return the first index of key found, return -1 if not found
-Long find_whole_word(vector<Long> &ind, Str32_I str, Str32_I key, Long_I start)
+Long find_whole_word(Str32_I str, Str32_I key, Long_I start)
 {
 	Long ind0 = start;
 	while (true) {
 		ind0 = str.find(key, ind0);
 		if (ind0 < 0)
 			return -1;
-		// check left
-		--ind0;
-		if (ind0 >= 0 && is_alphanum_(str[ind0]))
-			continue;
-		// check right
-		ind0 += key.size() + 1;
-		if (ind0 < str.size() && is_alphanum_(str[ind0]))
-			continue;
-		// check passed
-		return ind0 - key.size();
+		if (is_whole_word(str, ind0, key.size()))
+			return ind0;
+		++ind0;
 	}
 }
 
