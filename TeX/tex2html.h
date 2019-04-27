@@ -388,4 +388,63 @@ Long footnote(Str32_IO str)
 	return N;
 }
 
+// determin if a apostrophe is a transpose operator
+inline Long Matlab_is_trans(Str32_I str, Long_I ind)
+{
+	if (str.at(ind) != U'\'')
+		SLS_ERR("not an apostrophe!");
+	Long ind0 = ind - 1;
+	if (ind0 >= 0 && (is_alphanum_(str[ind0]) || str[ind0] == U'.'))
+		return true;
+	return false;
+}
+
+// find all strings in a matlab code
+inline Long Matlab_strings(vector<Long> &ind, Str32_I str)
+{
+	abccccccccccccccc TODO, unfinished
+	Long ind0 = 0;
+	while (true) {
+		ind0 = str.find(U'\'', ind0);
+		if (ind0 < 0) return -1;
+		// transpose, not a string
+		if (ind0 > 0 && (is_alphanum_(str[ind0 - 1]) || str[ind0 - 1] == U'.'))
+			continue;
+	}
+}
+
+// find all comments in a matlab code
+Long Matlab_comments(vector<Long> &ind, Str32_I str)
+{
+	Long ind0;
+	while (true) {
+		str.find(U'%', ind0);
+	}
+}
+
+// highlight matlab code
+// return the number of words highlighted
+Long Matlab(Str32_IO str)
+{
+	// keywords
+	vector<Str32> keywords = { U"break", U"case", U"catch", U"classdef",
+		U"continue", U"else", U"elseif", U"end", U"for", U"function",
+		U"global", U"if", U"otherwie", U"parfor", U"persistent",
+		U"return", U"spmd", U"switch", U"try", U"while"};
+	// keyword class e.g. <span class="keyword">...</span>
+	Str32 keyword_class = U"keyword";
+
+	// maximum line width
+	Long Nwidth = 160; 
+
+	
+	
+	Long N = 0;
+	for (Long i = 0; i < keywords.size(); ++i) {
+		N += replace(str, keywords[i],
+			U"<span class = \"" + keyword_class + "\">" + keywords[i] + U"</span>");
+	}
+	return N;
+}
+
 }

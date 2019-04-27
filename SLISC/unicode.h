@@ -205,6 +205,52 @@ Long TrimRight(Str32_IO str, Char32_I key)
 	return ind;
 }
 
+// check if a character is a letter (a-z, A-Z)
+inline Bool is_letter(Char32_I c)
+{
+	if (c >= U'a' && c <= U'z' || c >= U'A' && c <= U'Z')
+		return true;
+	return false;
+}
+
+// check if a character is alphanumeric (a-z, A-Z, 0-9)
+inline Bool is_alphanum(Char32_I c)
+{
+	if (is_letter(c) || c >= U'0' && c <= U'9')
+		return true;
+	return false;
+}
+
+// check if a character is alphanumeric or an underscore
+inline Bool is_alphanum_(Char32_I c)
+{
+	if (is_alphanum(c) || c == U'_')
+		return true;
+	return false;
+}
+
+// find whole word, like in Visual Studio Code, begin from "str[start]"
+// return the first index of key found, return -1 if not found
+Long find_whole_word(vector<Long> &ind, Str32_I str, Str32_I key, Long_I start)
+{
+	Long ind0 = start;
+	while (true) {
+		ind0 = str.find(key, ind0);
+		if (ind0 < 0)
+			return -1;
+		// check left
+		--ind0;
+		if (ind0 >= 0 && is_alphanum_(str[ind0]))
+			continue;
+		// check right
+		ind0 += key.size() + 1;
+		if (ind0 < str.size() && is_alphanum_(str[ind0]))
+			continue;
+		// check passed
+		return ind0 - key.size();
+	}
+}
+
 // replace all occurance of "key" with "new_str"
 // return the number of keys replaced
 Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
@@ -217,7 +263,7 @@ Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
 		if (ind0 < 0) break;
 		str.erase(ind0, Nkey);
 		str.insert(ind0, new_str);
-		++N; ++ind0;
+		++N; ind0 += new_str.size();
 	}
 	return N;
 }

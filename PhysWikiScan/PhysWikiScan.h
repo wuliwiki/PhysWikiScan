@@ -675,6 +675,7 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		}
 		read_file(code, path + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
+		Matlab(code);
 
 		// insert code
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
@@ -710,6 +711,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		}
 		read_file(code, path + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
+		Matlab(code);
 
 		// insert code
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
@@ -937,7 +939,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"GauEli")
+		if (names[i] == U"MatFun")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
