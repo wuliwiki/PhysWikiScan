@@ -30,14 +30,14 @@ Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
 Long EqOmitTag(Str32_IO str)
 {
 	Long i{}, N{}, Nrange{};
-	vector<Long> ind, indInline;
-	FindEnv(ind, str, U"equation");
+	Intvs intv, indInline;
+	FindEnv(intv, str, U"equation");
 	FindInline(indInline, str);
-	Nrange = combine(ind, indInline);
+	Nrange = combine(intv, indInline);
 	if (Nrange < 0) return -1;
 	for (i = 2 * Nrange - 2; i >= 0; i -= 2) {
-		N += EnsureSpace(U"<", str, ind[i], ind[i + 1]);
-		N += EnsureSpace(U">", str, ind[i], ind[i + 1]);
+		N += EnsureSpace(U"<", str, intv[i], intv[i + 1]);
+		N += EnsureSpace(U">", str, intv[i], intv[i + 1]);
 	}
 	return N;
 }
@@ -189,20 +189,20 @@ Long NormalTextEscape(Str32_IO str)
 {
 	Long i{}, N1{}, N{}, Nnorm{};
 	Str32 temp;
-	vector<Long> ind, ind1;
-	FindNormalText(ind, str);
-	FindComBrace(ind1, U"\\x", str);
-	Nnorm = combine(ind, ind1);
+	Intvs intv, intv1;
+	FindNormalText(intv, str);
+	FindComBrace(intv1, U"\\x", str);
+	Nnorm = combine(intv, intv1);
 	if (Nnorm < 0) return -1;
-	FindEnv(ind1, str, U"Command");
-	Nnorm = combine(ind, ind1);
+	FindEnv(intv1, str, U"Command");
+	Nnorm = combine(intv, intv1);
 	if (Nnorm < 0) return -1;
 	for (i = 2 * Nnorm - 2; i >= 0; i -= 2) {
-		temp = str.substr(ind[i], ind[i + 1] - ind[i] + 1);
+		temp = str.substr(intv[i], intv[i + 1] - intv[i] + 1);
 		N1 = TextEscape(temp); if (N1 < 0) continue;
 		N += N1;
-		str.erase(ind[i], ind[i + 1] - ind[i] + 1);
-		str.insert(ind[i], temp);
+		str.erase(intv[i], intv[i + 1] - intv[i] + 1);
+		str.insert(intv[i], temp);
 	}
 	return N;
 }
@@ -213,14 +213,14 @@ Long NormalTextEscape(Str32_IO str)
 Long Table(Str32_IO str)
 {
 	Long i{}, j{}, N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
-	vector<Long> ind;
+	Intvs intv;
 	vector<Long> indLine; // stores the position of "\hline"
 	Str32 caption;
-	N = FindEnv(ind, str, U"table", 'o');
+	N = FindEnv(intv, str, U"table", 'o');
 	if (N == 0) return 0;
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		ind0 = str.find(U"\\caption");
-		if (ind0 < 0 || ind0 > ind[i + 1]) {
+		if (ind0 < 0 || ind0 > intv[i + 1]) {
 			cout << "table no caption!" << endl; return -1;  // break point here
 		}
 		ind0 += 8; ind0 = ExpectKey(str, U"{", ind0);
@@ -229,7 +229,7 @@ Long Table(Str32_IO str)
 		// recognize \hline and replace with tags, also deletes '\\'
 		while (true) {
 			ind0 = str.find(U"\\hline", ind0);
-			if (ind0 < 0 || ind0 > ind[i + 1]) break;
+			if (ind0 < 0 || ind0 > intv[i + 1]) break;
 			indLine.push_back(ind0);
 			ind0 += 5;
 		}
@@ -250,9 +250,9 @@ Long Table(Str32_IO str)
 	// second round, replace '&' with tags
 	// delete latex code
 	// TODO: add title
-	FindEnv(ind, str, U"table", 'o');
+	FindEnv(intv, str, U"table", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		ind0 = ind[i] + 12; ind1 = ind[i + 1];
+		ind0 = intv[i] + 12; ind1 = intv[i + 1];
 		while (true) {
 			ind0 = str.find('&', ind0);
 			if (ind0 < 0 || ind0 > ind1) break;
@@ -262,8 +262,8 @@ Long Table(Str32_IO str)
 		}
 		ind0 = str.rfind(U"</table>", ind1) + 8;
 		str.erase(ind0, ind1 - ind0 + 1);
-		ind0 = str.find(U"<table>", ind[i]) - 1;
-		str.erase(ind[i], ind0 - ind[i] + 1);
+		ind0 = str.find(U"<table>", intv[i]) - 1;
+		str.erase(intv[i], ind0 - intv[i] + 1);
 	}
 	return N;
 }
@@ -273,34 +273,34 @@ Long Table(Str32_IO str)
 Long Itemize(Str32_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	vector<Long> indItem; // positions of each "\item"
-	N = FindEnv(indIn, str, U"itemize");
-	FindEnv(indOut, str, U"itemize", 'o');
+	N = FindEnv(intvIn, str, U"itemize");
+	FindEnv(intvOut, str, U"itemize", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		// delete paragraph tags
-		ind0 = indIn[i];
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"<p>　　", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1])
+			if (ind0 < 0 || ind0 > intvIn[i + 1])
 				break;
-			str.erase(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;
+			str.erase(ind0, 5); intvIn[i + 1] -= 5; intvOut[i + 1] -= 5;
 		}
-		ind0 = indIn[i];
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"</p>", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1])
+			if (ind0 < 0 || ind0 > intvIn[i + 1])
 				break;
-			str.erase(ind0, 4); indIn[i + 1] -= 4;  indOut[i + 1] -= 4;
+			str.erase(ind0, 4); intvIn[i + 1] -= 4;  intvOut[i + 1] -= 4;
 		}
 		// replace tags
 		indItem.resize(0);
-		str.erase(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
-		str.insert(indIn[i + 1] + 1, U"</li></ul>");
-		ind0 = indIn[i];
+		str.erase(intvIn[i + 1] + 1, intvOut[i + 1] - intvIn[i + 1]);
+		str.insert(intvIn[i + 1] + 1, U"</li></ul>");
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"\\item", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1]) break;
+			if (ind0 < 0 || ind0 > intvIn[i + 1]) break;
 			indItem.push_back(ind0); ind0 += 5;
 		}
 		Nitem = indItem.size();
@@ -311,7 +311,7 @@ Long Itemize(Str32_IO str)
 		}
 		str.erase(indItem[0], 5);
 		str.insert(indItem[0], U"<ul><li>");
-		str.erase(indOut[i], indItem[0] - indOut[i]);
+		str.erase(intvOut[i], indItem[0] - intvOut[i]);
 	}
 	return N;
 }
@@ -321,34 +321,34 @@ Long Itemize(Str32_IO str)
 Long Enumerate(Str32_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	vector<Long> indItem; // positions of each "\item"
-	N = FindEnv(indIn, str, U"enumerate");
-	FindEnv(indOut, str, U"enumerate", 'o');
+	N = FindEnv(intvIn, str, U"enumerate");
+	FindEnv(intvOut, str, U"enumerate", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		// delete paragraph tags
-		ind0 = indIn[i];
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"<p>　　", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1])
+			if (ind0 < 0 || ind0 > intvIn[i + 1])
 				break;
-			str.erase(ind0, 5); indIn[i + 1] -= 5; indOut[i + 1] -= 5;
+			str.erase(ind0, 5); intvIn[i + 1] -= 5; intvOut[i + 1] -= 5;
 		}
-		ind0 = indIn[i];
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"</p>", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1])
+			if (ind0 < 0 || ind0 > intvIn[i + 1])
 				break;
-			str.erase(ind0, 4); indIn[i + 1] -= 4; indOut[i + 1] -= 4;
+			str.erase(ind0, 4); intvIn[i + 1] -= 4; intvOut[i + 1] -= 4;
 		}
 		// replace tags
 		indItem.resize(0);
-		str.erase(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
-		str.insert(indIn[i + 1] + 1, U"</li></ol>");
-		ind0 = indIn[i];
+		str.erase(intvIn[i + 1] + 1, intvOut[i + 1] - intvIn[i + 1]);
+		str.insert(intvIn[i + 1] + 1, U"</li></ol>");
+		ind0 = intvIn[i];
 		while (true) {
 			ind0 = str.find(U"\\item", ind0);
-			if (ind0 < 0 || ind0 > indIn[i + 1]) break;
+			if (ind0 < 0 || ind0 > intvIn[i + 1]) break;
 			indItem.push_back(ind0); ind0 += 5;
 		}
 		Nitem = indItem.size();
@@ -359,7 +359,7 @@ Long Enumerate(Str32_IO str)
 		}
 		str.erase(indItem[0], 5);
 		str.insert(indItem[0], U"<ol><li>");
-		str.erase(indOut[i], indItem[0] - indOut[i]);
+		str.erase(intvOut[i], indItem[0] - intvOut[i]);
 	}
 	return N;
 }
@@ -388,4 +388,4 @@ Long footnote(Str32_IO str)
 		str += U"</p>";
 	return N;
 }
-}
+} // namespace slisc

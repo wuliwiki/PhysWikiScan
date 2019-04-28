@@ -34,20 +34,19 @@ Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 }
 
 // find comments
-// output: ind is index in pairs
 // return number of comments found. return -1 if failed
 // range is from '%' to 'CR'
 // result will include the comments in lstlisting!
-Long FindComment0(vector<Long>& ind, Str32_I str)
+Long FindComment0(Intvs_O intv, Str32_I str)
 {
 	Long ind0{}, ind1{};
 	Long N{}; // number of comments found
-	ind.resize(0);
+	intv.clear();
 	while (true) {
 		ind1 = str.find(U'%', ind0);
 		if (ind1 >= 0)
 			if (ind1 == 0 || (ind1 > 0 && str.at(ind1 - 1) != U'\\')) {
-				ind.push_back(ind1); ++N;
+				intv.push_back(ind1); ++N;
 			}
 			else {
 				ind0 = ind1 + 1;  continue;
@@ -57,32 +56,31 @@ Long FindComment0(vector<Long>& ind, Str32_I str)
 
 		ind1 = str.find(U'\n', ind1 + 1);
 		if (ind1 < 0) {// not found
-			ind.push_back(str.size() - 1);
+			intv.push_back(str.size() - 1);
 			return N;
 		}
 		else
-			ind.push_back(ind1);
+			intv.push_back(ind1);
 
 		ind0 = ind1;
 	}
 }
 
 // find a scope in str for environment named env
-// output: ind is index in pairs
 // return number of environments found. return -1 if failed
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
-Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
+Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{};
-	vector<Long> indComm{}; // result from FindComment
+	Intvs intvComm; // result from FindComment
 	Long N{}; // number of environments found
-	ind.resize(0);
-	FindComment0(indComm, str);
+	intv.clear();
+	FindComment0(intvComm, str);
 	while (true) {
 		// find "\\begin"
 		ind3 = str.find(U"\\begin", ind0);
-		if (is_in(ind3, indComm)) { ind0 = ind3 + 6; continue; }
+		if (is_in(ind3, intvComm)) { ind0 = ind3 + 6; continue; }
 		if (ind3 < 0)
 			return N;
 		ind0 = ind3 + 6;
@@ -100,13 +98,13 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 		ind0 = ExpectKey(str, U"}", ind0);
 		if (ind0 < 0)
 			return -1;
-		ind.push_back(option == 'i' ? ind0 : ind3);
+		intv.push_back(option == 'i' ? ind0 : ind3);
 
 		while (true)
 		{
 			// find "\\end"
 			ind0 = str.find(U"\\end", ind0);
-			if (is_in(ind0, indComm)) { ind0 += 4; continue; }
+			if (is_in(ind0, intvComm)) { ind0 += 4; continue; }
 			if (ind0 < 0)
 				return -1;
 			ind2 = ind0 - 1;
@@ -124,7 +122,7 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 			ind0 = ExpectKey(str, U"}", ind0);
 			if (ind0 < 0)
 				return -1;
-			ind.push_back(option == 'i' ? ind2 : ind0 - 1);
+			intv.push_back(option == 'i' ? ind2 : ind0 - 1);
 			++N;
 			break;
 		}
@@ -134,30 +132,30 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 // find latex comments
 // similar to FindComment0
 // does not include the ones in lstlisting environment
-Long FindComment(vector<Long>& ind, Str32_I str)
+Long FindComment(Intvs_O intv, Str32_I str)
 {
-	FindComment0(ind, str);
-	vector<Long> indLst;
-	FindEnv(indLst, str, U"lstlisting", 'o');
-	for (Long i = ind.size() - 2; i >= 0; i -= 2) {
-		if (is_in(ind[i], indLst))
-			ind.erase(ind.begin() + i, ind.begin() + i+2);
+	FindComment0(intv, str);
+	Intvs intvLst;
+	FindEnv(intvLst, str, U"lstlisting", 'o');
+	for (Long i = intv.size() - 2; i >= 0; i -= 2) {
+		if (is_in(intv[i], intvLst))
+			intv.erase(intv.begin() + i, intv.begin() + i+2);
 	}
-	if (isodd(ind.size()))
+	if (isodd(intv.size()))
 		SLS_ERR("even number expected!");
-	return ind.size()/2;
+	return intv.size()/2;
 }
 
 // find the range of inline equations using $$
-// if option = 'i', range does not include $, if 'o', it does.
+// if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $$ environments found.
-Long FindInline(vector<Long>& ind, Str32_I str, Char option = 'i')
+Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 {
-	ind.resize(0);
+	intv.resize(0);
 	Long N{}; // number of $$
 	Long ind0{};
-	vector<Long> indComm; // result from FindComment
-	FindComment(indComm, str);
+	Intvs intvComm; // result from FindComment
+	FindComment(intvComm, str);
 	while (true) {
 		ind0 = str.find(U"$", ind0);
 		if (ind0 < 0) {
@@ -166,10 +164,10 @@ Long FindInline(vector<Long>& ind, Str32_I str, Char option = 'i')
 		if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
 			++ind0; continue;
 		}
-		if (is_in(ind0, indComm)) { // in comment
+		if (is_in(ind0, intvComm)) { // in comment
 			++ind0; continue;
 		}
-		ind.push_back(ind0);
+		intv.push_back(ind0);
 		++ind0; ++N;
 	}
 	if (N % 2 != 0) {
@@ -179,51 +177,51 @@ Long FindInline(vector<Long>& ind, Str32_I str, Char option = 'i')
 	N /= 2;
 	if (option == 'i' && N > 0)
 		for (Long i{}; i < 2 * N; i += 2) {
-			++ind[i]; --ind[i + 1];
+			++intv[i]; --intv[i + 1];
 		}
 	return N;
 }
 
 // Find all <key>{} environment in str
 // find <key>{}{} when option = '2'
-// output ranges to ind
+// output ranges
 // if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
 // return number of <key>{} found, return -1 if failed.
-Long FindComBrace(vector<Long>& ind, Str32_I key, Str32_I str, Char option = 'i')
+Long FindComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
-	ind.resize(0);
+	intv.clear();
 	Long ind0{}, ind1;
 	while (true)
 	{
 		ind1 = str.find(key, ind0);
 		if (ind1 < 0)
-			return ind.size() / 2;
+			return intv.size() / 2;
 		ind0 = ind1 + key.size();
 		ind0 = ExpectKey(str, U"{", ind0);
 		if (ind0 < 0) {
 			ind0 = ind1 + key.size(); continue;
 		}
-		ind.push_back(option == 'i' ? ind0 : ind1);
+		intv.push_back(option == 'i' ? ind0 : ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (option != '2') {
-			ind.push_back(option == 'i' ? ind0 - 1 : ind0);
+			intv.push_back(option == 'i' ? ind0 - 1 : ind0);
 		}
 		else {
 			ind0 = ExpectKey(str, U"{", ind0 + 1);
 			if (ind0 < 0)
 				continue;
 			ind0 = PairBraceR(str, ind0 - 1);
-			ind.push_back(ind0);
+			intv.push_back(ind0);
 		}
 	}
 }
 
 // Find "\begin{env}" or "\begin{env}{}" (option = '2')
-// output ranges to ind, from '\' to '}'
+// output ranges to intv, from '\' to '}'
 // return number found, return -1 if failed
-Long FindBegin(vector<Long>& ind, Str32_I env, Str32_I str, Char option)
+Long FindBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 {
-	ind.resize(0);
+	intv.resize(0);
 	Long N{}, ind0{}, ind1;
 	while (true) {
 		ind1 = str.find(U"\\begin", ind0);
@@ -232,25 +230,25 @@ Long FindBegin(vector<Long>& ind, Str32_I env, Str32_I str, Char option)
 		ind0 = ExpectKey(str, U"{", ind1 + 6);
 		if (ExpectKey(str, env, ind0) < 0)
 			continue;
-		++N; ind.push_back(ind1);
+		++N; intv.push_back(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (option == '1')
-			ind.push_back(ind0);
+			intv.push_back(ind0);
 		ind0 = ExpectKey(str, U"{", ind0 + 1);
 		if (ind0 < 0) {
 			SLS_ERR("expecting {}{}!"); return -1;  // break point here
 		}
 		ind0 = PairBraceR(str, ind0 - 1);
-		ind.push_back(ind0);
+		intv.push_back(ind0);
 	}
 }
 
 // Find "\end{env}"
-// output ranges to ind, from '\' to '}'
+// output ranges to intv, from '\' to '}'
 // return number found, return -1 if failed
-Long FindEnd(vector<Long>& ind, Str32_I env, Str32_I str)
+Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
-	ind.resize(0);
+	intv.resize(0);
 	Long N{}, ind0{}, ind1{};
 	while (true) {
 		ind1 = str.find(U"\\end", ind0);
@@ -259,61 +257,61 @@ Long FindEnd(vector<Long>& ind, Str32_I env, Str32_I str)
 		ind0 = ExpectKey(str, U"{", ind1 + 4);
 		if (ExpectKey(str, env, ind0) < 0)
 			continue;
-		++N; ind.push_back(ind1);
+		++N; intv.push_back(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
-		ind.push_back(ind0);
+		intv.push_back(ind0);
 	}
 }
 
 // Find normal text range
 // return -1 if failed
-Long FindNormalText(vector<Long>& indNorm, Str32_I str)
+Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
-	vector<Long> ind, ind1;
+	Intvs intv, intv1;
 	// comments
-	FindComment(ind, str);
+	FindComment(intv, str);
 	// inline equation environments
-	FindInline(ind1, str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindInline(intv1, str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// equation environments
-	FindEnv(ind1, str, U"equation", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"equation", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// command environments
-	FindEnv(ind1, str, U"Command", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"Command", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// gather environments
-	FindEnv(ind1, str, U"gather", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"gather", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// align environments (not "aligned")
-	FindEnv(ind1, str, U"align", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"align", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// texttt command
-	FindComBrace(ind1, U"\\texttt", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindComBrace(intv1, U"\\texttt", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// input command
-	FindComBrace(ind1, U"\\input", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindComBrace(intv1, U"\\input", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// Figure environments
-	FindEnv(ind1, str, U"figure", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"figure", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// Table environments
-	FindEnv(ind1, str, U"table", 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindEnv(intv1, str, U"table", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// subsubsection command
-	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
+	FindComBrace(intv1, U"\\subsubsection", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
-	FindBegin(ind1, U"exam", str, '2');
-	if (combine(ind, ind1) < 0) return -1;
-	FindEnd(ind1, U"exam", str);
-	if (combine(ind, ind1) < 0) return -1;
+	FindBegin(intv1, U"exam", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"exam", str);
+	if (combine(intv, intv1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
-	FindBegin(ind1, U"exer", str, '2');
-	if (combine(ind, ind1) < 0) return -1;
-	FindEnd(ind1, U"exer", str);
-	if (combine(ind, ind1) < 0) return -1;
+	FindBegin(intv1, U"exer", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"exer", str);
+	if (combine(intv, intv1) < 0) return -1;
 	// invert range
-	return invert(indNorm, ind, str.size());
+	return invert(indNorm, intv, str.size());
 }
 
 // detect unnecessary braces and add "删除标记"
@@ -371,14 +369,14 @@ Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO s
 Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 {
 	Long i{}, N{}, Nenv;
-	vector<Long> indEnvOut, indEnvIn;
-	Nenv = FindEnv(indEnvIn, str, nameEnv, 'i');
-	Nenv = FindEnv(indEnvOut, str, nameEnv, 'o');
+	Intvs intvEnvOut, intvEnvIn;
+	Nenv = FindEnv(intvEnvIn, str, nameEnv, 'i');
+	Nenv = FindEnv(intvEnvOut, str, nameEnv, 'o');
 	for (i = 2 * Nenv - 2; i >= 0; i -= 2) {
-		str.erase(indEnvIn[i + 1] + 1, indEnvOut[i + 1] - indEnvIn[i + 1]);
-		str.insert(indEnvIn[i + 1] + 1, strRight);
-		str.erase(indEnvOut[i], indEnvIn[i] - indEnvOut[i]);
-		str.insert(indEnvOut[i], strLeft);
+		str.erase(intvEnvIn[i + 1] + 1, intvEnvOut[i + 1] - intvEnvIn[i + 1]);
+		str.insert(intvEnvIn[i + 1] + 1, strRight);
+		str.erase(intvEnvOut[i], intvEnvIn[i] - intvEnvOut[i]);
+		str.insert(intvEnvOut[i], strLeft);
 		++N;
 	}
 	return N;

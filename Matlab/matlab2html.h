@@ -4,16 +4,16 @@
 namespace slisc {
 
 // find all strings in a matlab code
-inline Long Matlab_strings(vector<Long> &ind, Str32_I str)
+inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 {
 	Long ind0 = 0;
 	Bool in_string = false;
 	while (true) {
 		ind0 = str.find(U'\'', ind0);
 		if (ind0 < 0) {
-			if (isodd(ind.size()))
+			if (isodd(intv.size()))
 				SLS_ERR("range pairs must be even!");
-			return ind.size() / 2;
+			return intv.size() / 2;
 		}
 
 		if (!in_string) {
@@ -29,7 +29,7 @@ inline Long Matlab_strings(vector<Long> &ind, Str32_I str)
 			}
 		}
 
-		ind.push_back(ind0);
+		intv.push_back(ind0);
 		in_string = !in_string;
 		++ind0;
 	}
@@ -41,9 +41,9 @@ inline Long Matlab_strings(vector<Long> &ind, Str32_I str)
 inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I keyword_class)
 {
 	// find comments and strings
-	vector<Long> ind_comm, ind_str;
-	Matlab_strings(ind_str, str);
-	Matlab_comments(ind_comm, str, ind_str);
+	Intvs intv_comm, intv_str;
+	Matlab_strings(intv_str, str);
+	Matlab_comments(intv_comm, str, intv_str);
 
 	Long N = 0;
 	Long ind0 = str.size() - 1;
@@ -70,7 +70,7 @@ inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I 
 			--ind0;  continue;
 		}
 		// ignore keyword in comment or in string
-		if (is_in(ind0, ind_comm) || is_in(ind0, ind_str)) {
+		if (is_in(ind0, intv_comm) || is_in(ind0, intv_str)) {
 			--ind0; continue;
 		}
 		// found keyword
@@ -89,13 +89,13 @@ inline Long Matlab_string(Str32_IO code, Str32_I str_class)
 {
 	Long N = 0;
 	// find comments and strings
-	vector<Long> ind_str;
-	Matlab_strings(ind_str, code);
+	Intvs intv_str;
+	Matlab_strings(intv_str, code);
 
 	// highlight backwards
-	for (Long i = ind_str.size() - 2; i >= 0; i -= 2) {
-		code.insert(ind_str[i + 1] + 1, U"</span>");
-		code.insert(ind_str[i], U"<span class = \"" + str_class + "\">");
+	for (Long i = intv_str.size() - 2; i >= 0; i -= 2) {
+		code.insert(intv_str[i + 1] + 1, U"</span>");
+		code.insert(intv_str[i], U"<span class = \"" + str_class + "\">");
 		++N;
 	}
 	return N;
@@ -109,14 +109,14 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 {
 	Long N = 0;
 	// find comments and strings
-	vector<Long> ind_comm, ind_str;
-	Matlab_strings(ind_str, code);
-	Matlab_comments(ind_comm, code, ind_str);
+	Intvs intv_comm, intv_str;
+	Matlab_strings(intv_str, code);
+	Matlab_comments(intv_comm, code, intv_str);
 	
 	// highlight backwards
-	for (Long i = ind_comm.size() - 2; i >= 0; i -= 2) {
-		code.insert(ind_comm[i + 1] + 1, U"</span>");
-		code.insert(ind_comm[i], U"<span class = \"" + comm_class + "\">");
+	for (Long i = intv_comm.size() - 2; i >= 0; i -= 2) {
+		code.insert(intv_comm[i + 1] + 1, U"</span>");
+		code.insert(intv_comm[i], U"<span class = \"" + comm_class + "\">");
 		++N;
 	}
 	return N;

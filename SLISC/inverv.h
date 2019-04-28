@@ -9,7 +9,10 @@
 
 namespace slisc {
 
-typedef vector<Long> Intvs;
+class Intvs : public vector<Long>
+{
+};
+
 typedef const Intvs &Intvs_I;
 typedef Intvs &Intvs_O, &Intvs_IO;
 

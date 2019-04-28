@@ -14,29 +14,29 @@ inline Long Matlab_is_trans(Str32_I str, Long_I ind)
 	return false;
 }
 
-// find ranges of all comments in a matlab code (including '%', not including '\n')
+// find intervals of all comments in a matlab code (including '%', not including '\n')
 // "strings" are the ranges of all
-inline Long Matlab_comments(vector<Long> &ind, Str32_I str, const vector<Long> &ind_str)
+inline Long Matlab_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 {
 	Long ind0 = 0;
 	Long N = 0;
 	while (true) {
 		ind0 = str.find(U'%', ind0);
 		if (ind0 < 0) {
-			if (isodd(ind.size()))
+			if (isodd(intv.size()))
 				SLS_ERR("range pairs must be even!");
-			return ind.size()/2;
+			return intv.size()/2;
 		}
-		if (is_in(ind0, ind_str))
+		if (is_in(ind0, intv_str))
 			continue;
-		ind.push_back(ind0);
+		intv.push_back(ind0);
 		ind0 = str.find(U'\n', ind0);
 		// last line, line ending
 		if (ind0 < 0) {
-			ind.push_back(str.size()-1);
+			intv.push_back(str.size()-1);
 			return N;
 		}
-		ind.push_back(ind0-1);
+		intv.push_back(ind0-1);
 	}
 }
 

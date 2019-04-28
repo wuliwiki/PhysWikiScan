@@ -36,7 +36,7 @@ Long GetTitle(Str32_O title, Str32_I str)
 Long ParagraphTag(Str32_IO str)
 {
 	Long i{}, N{}, N1{}, ind0{}, ind2{};
-	vector<Long> ind, ind1;
+	vector<Long> ind;
 	TrimLeft(str, U'\n'); TrimRight(str, U'\n');
 	// delete extra '\n' (more than two continuous)
 	while (true) {
@@ -62,21 +62,22 @@ Long ParagraphTag(Str32_IO str)
 	// deal with ranges that should not be in <p>...</p>
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
 	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
-	FindComBrace(ind, U"\\subsection", str, 'o');
-	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	FindComBrace(ind1, U"\\pentry", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	for (i = ind.size() - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
+	Intvs intv, intv1;
+	FindComBrace(intv, U"\\subsection", str, 'o');
+	FindComBrace(intv1, U"\\subsubsection", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	FindComBrace(intv1, U"\\pentry", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	for (i = intv.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, U"</p>", intv[i + 1] + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
 		else {
-			str.insert(ind[i + 1] + 1, U"\n<p>　　"); ++N;
+			str.insert(intv[i + 1] + 1, U"\n<p>　　"); ++N;
 		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", ind[i] - 1);
+		ind0 = ExpectKeyReverse(str, U"<p>　　", intv[i] - 1);
+		ind2 = ExpectKeyReverse(str, U"<p>", intv[i] - 1);
 		if (ind0 > -2) {
 			str.erase(ind0 + 1, 5); --N;
 		}
@@ -84,32 +85,32 @@ Long ParagraphTag(Str32_IO str)
 			str.erase(ind2 + 1, 3); --N;
 		}
 		else {
-			str.insert(ind[i], U"</p>\n\n");
+			str.insert(intv[i], U"</p>\n\n");
 		}
 	}
 
 	// deal with ranges that should not be in <p>...</p>
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
-	FindEnv(ind, str, U"figure", 'o');
-	FindEnv(ind1, str, U"itemize", 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	FindEnv(ind1, str, U"enumerate", 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	FindComBrace(ind1, U"\\code", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	FindComBrace(ind1, U"\\Code", str, 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	for (i = ind.size() - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
+	FindEnv(intv, str, U"figure", 'o');
+	FindEnv(intv1, str, U"itemize", 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnv(intv1, str, U"enumerate", 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	FindComBrace(intv1, U"\\code", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	FindComBrace(intv1, U"\\Code", str, 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	for (i = intv.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, U"</p>", intv[i + 1] + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
 		else {
-			str.insert(ind[i + 1] + 1, U"\n<p>"); ++N;
+			str.insert(intv[i + 1] + 1, U"\n<p>"); ++N;
 		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", ind[i] - 1);
+		ind0 = ExpectKeyReverse(str, U"<p>　　", intv[i] - 1);
+		ind2 = ExpectKeyReverse(str, U"<p>", intv[i] - 1);
 		if (ind0 > -2) {
 			str.erase(ind0 + 1, 5); --N;
 		}
@@ -117,21 +118,21 @@ Long ParagraphTag(Str32_IO str)
 			str.erase(ind2 + 1, 3); --N;
 		}
 		else {
-			str.insert(ind[i], U"</p>\n\n");
+			str.insert(intv[i], U"</p>\n\n");
 		}
 	}
 
 	// deal with equation environments alike
 	// if there is "</p>\n<p>　　" before range, delete it
 	// if there is "<p>　　" before range, delete "　　"
-	FindEnv(ind, str, U"equation", 'o');
-	FindEnv(ind1, str, U"gather", 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	FindEnv(ind1, str, U"align", 'o');
-	if (combine(ind, ind1) < 0) return -1;
-	for (i = ind.size() - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", ind[i] - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
+	FindEnv(intv, str, U"equation", 'o');
+	FindEnv(intv1, str, U"gather", 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnv(intv1, str, U"align", 'o');
+	if (combine(intv, intv1) < 0) return -1;
+	for (i = intv.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", intv[i] - 1);
+		ind2 = ExpectKeyReverse(str, U"<p>　　", intv[i] - 1);
 		if (ind0 > -2) {
 			str.erase(ind0 + 1, 10); --N;
 		}
@@ -155,23 +156,23 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after \begin{}{}, delete it, otherwise, add "<p>　　"
 	// if there is "<p>" before \end{}, delete it, otherwise, add "</p>"
 	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
-	FindBegin(ind, U"exam", str, '2');
-	FindEnd(ind1, U"exam", str);
-	if (combine(ind, ind1) < 0) return -1;
-	FindBegin(ind1, U"exer", str, '2');
-	if (combine(ind, ind1) < 0) return -1;
-	FindEnd(ind1, U"exer", str);
-	if (combine(ind, ind1) < 0) return -1;
-	for (i = ind.size() - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
+	FindBegin(intv, U"exam", str, '2');
+	FindEnd(intv1, U"exam", str);
+	if (combine(intv, intv1) < 0) return -1;
+	FindBegin(intv1, U"exer", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"exer", str);
+	if (combine(intv, intv1) < 0) return -1;
+	for (i = intv.size() - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, U"</p>", intv[i + 1] + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
 		else {
-			str.insert(ind[i + 1] + 1, U"\n<p>　　"); ++N;
+			str.insert(intv[i + 1] + 1, U"\n<p>　　"); ++N;
 		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", ind[i] - 1);
+		ind0 = ExpectKeyReverse(str, U"<p>　　", intv[i] - 1);
+		ind2 = ExpectKeyReverse(str, U"<p>", intv[i] - 1);
 		if (ind0 > -2) {
 			str.erase(ind0 + 1, 5); --N;
 		}
@@ -179,7 +180,7 @@ Long ParagraphTag(Str32_IO str)
 			str.erase(ind2 + 1, 3); --N;
 		}
 		else {
-			str.insert(ind[i], U"</p>\n\n");
+			str.insert(intv[i], U"</p>\n\n");
 		}
 	}
 	return N + 1;
@@ -199,7 +200,6 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 	Str32 envName; // "equation" or "figure" or "exam"...
 	Str32 idNum{}; // id = idName + idNum
 	Long idN{}; // convert to idNum
-	vector<Long> indEnv;
 	while (true) {
 		ind5 = str.find(U"\\label", ind0);
 		if (ind5 < 0) return N;
@@ -248,25 +248,26 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 		label.push_back(str.substr(ind0, ind3 - ind0));
 		TrimLeft(label.back(), U' '); TrimRight(label.back(), U' ');
 		// count idNum, insert html id tag, delete label
+		Intvs intvEnv;
 		if (idName != U"eq") {
-			idN = FindEnv(indEnv, str.substr(0,ind4), envName) + 1;
+			idN = FindEnv(intvEnv, str.substr(0,ind4), envName) + 1;
 		}
 		else { // count equations
-			idN = FindEnv(indEnv, str.substr(0,ind4), U"equation");
-			Ngather = FindEnv(indEnv, str.substr(0,ind4), U"gather");
+			idN = FindEnv(intvEnv, str.substr(0,ind4), U"equation");
+			Ngather = FindEnv(intvEnv, str.substr(0,ind4), U"gather");
 			if (Ngather > 0) {
 				for (i = 0; i < 2 * Ngather; i += 2) {
-					for (j = indEnv[i]; j < indEnv[i + 1]; ++j) {
+					for (j = intvEnv[i]; j < intvEnv[i + 1]; ++j) {
 						if (str.at(j) == '\\' && str.at(j+1) == '\\')
 							++idN;
 					}
 					++idN;
 				}
 			}
-			Nalign = FindEnv(indEnv, str.substr(0,ind4), U"align");
+			Nalign = FindEnv(intvEnv, str.substr(0,ind4), U"align");
 			if (Nalign > 0) {
 				for (i = 0; i < 2 * Nalign; i += 2) {
-					for (j = indEnv[i]; j < indEnv[i + 1]; ++j) {
+					for (j = intvEnv[i]; j < intvEnv[i + 1]; ++j) {
 						if (str.at(j) == '\\' && str.at(j + 1) == '\\')
 							++idN;
 					}
@@ -297,21 +298,21 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
 	double width{}; // figure width in cm
-	vector<Long> indFig{};
+	Intvs intvFig;
 	Str32 figName;
 	Str32 format, caption, widthPt, figNo;
-	Nfig = FindEnv(indFig, str, U"figure", 'o');
+	Nfig = FindEnv(intvFig, str, U"figure", 'o');
 	for (i = 2 * Nfig - 2; i >= 0; i -= 2) {
 		// get width of figure
-		ind0 = str.find(U"width", indFig[i]) + 5;
+		ind0 = str.find(U"width", intvFig[i]) + 5;
 		ind0 = ExpectKey(str, U"=", ind0);
 		ind0 = FindNum(str, ind0);
 		str2double(width, str, ind0);
 		// get file name of figure
 		indName1 = str.find(U"figures/", ind0) + 8;
-		indName2 = str.find(U".pdf", indFig[i]) - 1;
+		indName2 = str.find(U".pdf", intvFig[i]) - 1;
 		if (indName2 < 0)
-			indName2 = str.find(U".png", indFig[i]) - 1;
+			indName2 = str.find(U".png", intvFig[i]) - 1;
 		if (indName2 < 0) {
 			SLS_WARN("error when reading figure name!"); // breakpoint here
 			return -1;
@@ -326,8 +327,8 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 		ind0 = ExpectKey(str, U"{", ind0 + 8);
 		ind1 = PairBraceR(str, ind0);
 		caption = str.substr(ind0, ind1 - ind0);
-		str.erase(indFig[i], indFig[i + 1] - indFig[i] + 1); // delete environment
-		ind0 = ExpectKey(str, U"\n</p>", indFig[i]);
+		str.erase(intvFig[i], intvFig[i + 1] - intvFig[i] + 1); // delete environment
+		ind0 = ExpectKey(str, U"\n</p>", intvFig[i]);
 		// test img file existence
 		if (file_exist(path + figName + ".svg"))
 			format = U".svg";
@@ -340,7 +341,7 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 		// insert html code
 		num2str(widthPt, (Long)(33.4 * width));
 		num2str(figNo, i / 2 + 1);
-		str.insert(indFig[i], U"<div class = \"w3-content\" style = \"max-width:" + widthPt
+		str.insert(intvFig[i], U"<div class = \"w3-content\" style = \"max-width:" + widthPt
 			+ U"pt;\">\n" + U"<img src = \"" + figName + format
 			+ U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
 			+ U"：" + caption + U"</div>");
@@ -353,15 +354,15 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 Long pentry(Str32_IO str)
 {
 	Long i{}, N{};
-	vector<Long> indIn, indOut;
-	if (FindComBrace(indIn, U"\\pentry", str) < 0) return -1;
-	N = FindComBrace(indOut, U"\\pentry", str, 'o');
+	Intvs intvIn, intvOut;
+	if (FindComBrace(intvIn, U"\\pentry", str) < 0) return -1;
+	N = FindComBrace(intvOut, U"\\pentry", str, 'o');
 	if (N < 0) return -1;
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		str.erase(indOut[i + 1], 1);
-		str.insert(indOut[i + 1], U"</div>");
-		str.erase(indOut[i], indIn[i] - indOut[i]);
-		str.insert(indOut[i], U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　");
+		str.erase(intvOut[i + 1], 1);
+		str.insert(intvOut[i + 1], U"</div>");
+		str.erase(intvOut[i], intvIn[i] - intvOut[i]);
+		str.insert(intvOut[i], U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　");
 	}
 	return N;
 }
@@ -395,22 +396,22 @@ Long RemoveNoEntry(vector<Str32> &names)
 Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	FindEnv(indIn, str, U"exam");
-	N = FindEnv(indOut, str, U"exam", 'o');
+	FindEnv(intvIn, str, U"exam");
+	N = FindEnv(intvOut, str, U"exam", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		ind0 = str.find('{', indOut[i]);
+		ind0 = str.find('{', intvOut[i]);
 		ind0 = PairBraceR(str, ind0);
 		ind0 = ExpectKey(str, U"{", ind0 + 1);
 		ind1 = PairBraceR(str, ind0 - 1);
 		exName = str.substr(ind0, ind1 - ind0);
 		// replace with html tags
-		str.erase(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
-		str.insert(indIn[i + 1] + 1, U"</div>\n");
-		str.erase(indOut[i], ind1 - indOut[i] + 1);
+		str.erase(intvIn[i + 1] + 1, intvOut[i + 1] - intvIn[i + 1]);
+		str.insert(intvIn[i + 1] + 1, U"</div>\n");
+		str.erase(intvOut[i], ind1 - intvOut[i] + 1);
 		num2str(exNo, i/2 + 1);
-		str.insert(indOut[i], U"<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例"
+		str.insert(intvOut[i], U"<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例"
 				+ exNo + U"</b>　" + exName + U"</h5>");
 	}
 	return N;
@@ -421,22 +422,22 @@ Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	FindEnv(indIn, str, U"exer");
-	N = FindEnv(indOut, str, U"exer", 'o');
+	FindEnv(intvIn, str, U"exer");
+	N = FindEnv(intvOut, str, U"exer", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		ind0 = str.find(U"{", indOut[i]);
+		ind0 = str.find(U"{", intvOut[i]);
 		ind0 = PairBraceR(str, ind0);
 		ind0 = ExpectKey(str, U"{", ind0 + 1);
 		ind1 = PairBraceR(str, ind0 - 1);
 		exName = str.substr(ind0, ind1 - ind0);
 		// replace with html tags
-		str.erase(indIn[i + 1] + 1, indOut[i + 1] - indIn[i + 1]);
-		str.insert(indIn[i + 1] + 1, U"</div>\n");
-		str.erase(indOut[i], ind1 - indOut[i] + 1);
+		str.erase(intvIn[i + 1] + 1, intvOut[i + 1] - intvIn[i + 1]);
+		str.insert(intvIn[i + 1] + 1, U"</div>\n");
+		str.erase(intvOut[i], ind1 - intvOut[i] + 1);
 		num2str(exNo, i / 2 + 1);
-		str.insert(indOut[i], U"<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题"
+		str.insert(intvOut[i], U"<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题"
 			+ exNo + U"</b>　" + exName + U"</h5>");
 	}
 	return N;
@@ -506,19 +507,19 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 Long upref(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	Str32 entryName;
-	FindComBrace(indIn, U"\\upref", str);
-	N = FindComBrace(indOut, U"\\upref", str, 'o');
+	FindComBrace(intvIn, U"\\upref", str);
+	N = FindComBrace(intvOut, U"\\upref", str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		entryName = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		entryName = str.substr(intvIn[i], intvIn[i + 1] - intvIn[i] + 1);
 		TrimLeft(entryName, U' '); TrimRight(entryName, U' ');
 		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
 			SLS_WARN("upref file not found!");
 			return -1; // break point here
 		}
-		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		str.insert(indOut[i], U"<span class = \"icon\"><a href = \"" +
+		str.erase(intvOut[i], intvOut[i + 1] - intvOut[i] + 1);
+		str.insert(intvOut[i], U"<span class = \"icon\"><a href = \"" +
 			entryName + U".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
 	}
 }
@@ -565,9 +566,9 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 		, ind0);
 
 	// remove comments
-	vector<Long> indComm;
-	for (i = 2*FindComment(indComm, str)-2; i >= 0; i -= 2)
-		str.erase(indComm[i], indComm[i + 1] - indComm[i] + 1);
+	Intvs intvComm;
+	for (i = 2*FindComment(intvComm, str)-2; i >= 0; i -= 2)
+		str.erase(intvComm[i], intvComm[i + 1] - intvComm[i] + 1);
 	while (true) {
 		ind1 = FindMultiple(ikey, str, keys, ind1);
 		if (ind1 < 0) break;
@@ -655,13 +656,13 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
 	Str32 code;
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	// \code commands
-	FindComBrace(indIn, U"\\code", str);
-	N = FindComBrace(indOut, U"\\code", str, 'o');
+	FindComBrace(intvIn, U"\\code", str);
+	N = FindComBrace(intvOut, U"\\code", str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		// get code file name
-		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		name = str.substr(intvIn[i], intvIn[i + 1] - intvIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
 		if (!file_exist(path + utf32to8(name) + ".m")) {
@@ -673,8 +674,8 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		Matlab_highlight(code);
 
 		// insert code
-		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		ind0 = indOut[i];
+		str.erase(intvOut[i], intvOut[i + 1] - intvOut[i] + 1);
+		ind0 = intvOut[i];
 		// download button
 		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
 		ind0 = insert(str,
@@ -693,13 +694,13 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
 	Str32 code;
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	// \code commands
-	FindComBrace(indIn, U"\\Code", str);
-	N = FindComBrace(indOut, U"\\Code", str, 'o');
+	FindComBrace(intvIn, U"\\Code", str);
+	N = FindComBrace(intvOut, U"\\Code", str, 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
 		// get code file name
-		name = str.substr(indIn[i], indIn[i + 1] - indIn[i] + 1);
+		name = str.substr(intvIn[i], intvIn[i + 1] - intvIn[i] + 1);
 		TrimLeft(name, U' '); TrimRight(name, U' ');
 		// read file
 		if (!file_exist(path + utf32to8(name) + ".m")) {
@@ -711,8 +712,8 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		Matlab_highlight(code);
 
 		// insert code
-		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		ind0 = indOut[i];
+		str.erase(intvOut[i], intvOut[i + 1] - intvOut[i] + 1);
+		ind0 = intvOut[i];
 		// download button
 		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
 		ind0 = insert(str,
@@ -732,14 +733,14 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 Long MatlabComLine(Str32_IO str)
 {
 	Long i{}, j{}, N{}, ind0{};
-	vector<Long> indIn, indOut;
+	Intvs intvIn, intvOut;
 	Str32 code;
-	N = FindEnv(indIn, str, U"lstlisting");
-	N = FindEnv(indOut, str, U"lstlisting", 'o');
+	N = FindEnv(intvIn, str, U"lstlisting");
+	N = FindEnv(intvOut, str, U"lstlisting", 'o');
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKey(str, U"[", indIn[i]);
+		ind0 = ExpectKey(str, U"[", intvIn[i]);
 		ind0 = PairBraceR(str, ind0, U'[');
-		code = str.substr(ind0+1, indIn[i + 1]-ind0);
+		code = str.substr(ind0+1, intvIn[i + 1]-ind0);
 		if (code[0] != U'\n' || code.back() != U'\n') {
 			cout << "wrong format of Matlab command line environment!" << endl;
 			return -1;
@@ -747,8 +748,8 @@ Long MatlabComLine(Str32_IO str)
 		code = code.substr(1, code.size() - 2);
 		Matlab_highlight(code);
 
-		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
-		ind0 = indOut[i];
+		str.erase(intvOut[i], intvOut[i + 1] - intvOut[i] + 1);
+		ind0 = intvOut[i];
 		ind0 = insert(str,
 			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
 			"<div class = \"nospace\"><pre class = \"mcode\">\n"
@@ -830,10 +831,10 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 		return -1;
 	}
 	// remove comments
-	vector<Long> indComm;
-	N = FindComment(indComm, str);
+	Intvs intvComm;
+	N = FindComment(intvComm, str);
 	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		str.erase(indComm[i], indComm[i + 1] - indComm[i] + 1);
+		str.erase(intvComm[i], intvComm[i + 1] - intvComm[i] + 1);
 	}
 	// escape characters
 	if (NormalTextEscape(str) < 0)
