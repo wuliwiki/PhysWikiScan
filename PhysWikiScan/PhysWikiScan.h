@@ -340,10 +340,10 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 		// insert html code
 		num2str(widthPt, (Long)(33.4 * width));
 		num2str(figNo, i / 2 + 1);
-		ind0 = insert(str, U"<div class = \"w3-content\" style = \"max-width:" + widthPt
+		str.insert(indFig[i], U"<div class = \"w3-content\" style = \"max-width:" + widthPt
 			+ U"pt;\">\n" + U"<img src = \"" + figName + format
 			+ U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
-			+ U"：" + caption + U"</div>", indFig[i]);
+			+ U"：" + caption + U"</div>");
 		++N;
 	}
 	return N;
@@ -553,15 +553,16 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
 	toc.erase(ind0, 16);
 
-	ind0 = insert(toc, U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n", ind0);
-	ind0 = insert(toc, U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n", ind0);
-	ind0 = insert(toc, U"<h1>小时物理百科在线</h1>\n</div>\n\n", ind0);
-
-	ind0 = insert(toc, U"<div class = \"w3-container\"><p>\n", ind0);
-	ind0 = insert(toc, U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n", ind0);
-	ind0 = insert(toc, U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n", ind0);
-	ind0 = insert(toc, U"<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n", ind0);
-	ind0 = insert(toc, U"<a href = \"../\">返回主页</a>\n", ind0);
+	ind0 = insert(toc,
+		U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"
+		U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"
+		U"<h1>小时物理百科在线</h1>\n</div>\n\n"
+		U"<div class = \"w3-container\"><p>\n"
+		U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"
+		U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"
+		U"<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n"
+		U"<a href = \"../\">返回主页</a>\n"
+		, ind0);
 
 	// remove comments
 	vector<Long> indComm;
@@ -630,10 +631,11 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	 		// insert part into html table of contents
 	 		++partNo;
 			
-	 		ind0 = insert(toc, U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n", ind0);
-	 		ind0 = insert(toc, U"<h3 align = \"center\">第" + chineseNo[partNo] + U"部分 "
-	 			+ title + U"</h3>\n", ind0);
-	 		ind0 = insert(toc, U"</div>\n\n<div class = \"w3-container\">\n", ind0);
+	 		ind0 = insert(toc,
+				U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
+				U"<h3 align = \"center\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
+				U"</div>\n\n<div class = \"w3-container\">\n"
+				, ind0);
 	 	}
 	}
 	toc.insert(ind0, U"</p>\n</div>");
@@ -675,10 +677,12 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 		ind0 = indOut[i];
 		// download button
 		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
-		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n", ind0);
-		ind0 = insert(str, U"<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
-		ind0 = insert(str, code, ind0);
-		ind0 = insert(str, U"</pre></div></div>", ind0);
+		ind0 = insert(str,
+			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
+			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
+			+ code +
+			U"</pre></div></div>"
+			, ind0);
 	}
 	return N;
 }
@@ -711,11 +715,13 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 		ind0 = indOut[i];
 		// download button
 		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
-		ind0 = insert(str, U"<b>" + name + U".m</b>\n", ind0);
-		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n", ind0);
-		ind0 = insert(str, U"<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
-		ind0 = insert(str, code, ind0);
-		ind0 = insert(str, U"</pre></div></div>", ind0);
+		ind0 = insert(str,
+			U"<b>" + name + U".m</b>\n"
+			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
+			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
+			+ code +
+			U"</pre></div></div>"
+			, ind0);
 	}
 	return N;
 }
@@ -743,9 +749,12 @@ Long MatlabComLine(Str32_IO str)
 
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
 		ind0 = indOut[i];
-		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
-		ind0 = insert(str, code, ind0);
-		insert(str, U"\n</pre></div></div>", ind0);
+		ind0 = insert(str,
+			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
+			"<div class = \"nospace\"><pre class = \"mcode\">\n"
+			+ code +
+			U"\n</pre></div></div>"
+			, ind0);
 	}
 	return N;
 }
