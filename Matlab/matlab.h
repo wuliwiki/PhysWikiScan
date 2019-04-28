@@ -27,7 +27,7 @@ inline Long Matlab_comments(vector<Long> &ind, Str32_I str, const vector<Long> &
 				SLS_ERR("range pairs must be even!");
 			return ind.size()/2;
 		}
-		if (IndexInRange(ind0, ind_str))
+		if (is_in(ind0, ind_str))
 			continue;
 		ind.push_back(ind0);
 		ind0 = str.find(U'\n', ind0);

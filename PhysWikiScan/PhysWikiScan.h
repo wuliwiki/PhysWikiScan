@@ -64,9 +64,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
 	FindComBrace(ind, U"\\subsection", str, 'o');
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\pentry", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -93,13 +93,13 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
 	FindEnv(ind, str, U"figure", 'o');
 	FindEnv(ind1, str, U"itemize", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"enumerate", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\code", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\Code", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -126,9 +126,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "<p>　　" before range, delete "　　"
 	FindEnv(ind, str, U"equation", 'o');
 	FindEnv(ind1, str, U"gather", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"align", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", ind[i] - 1);
 		ind2 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
@@ -157,11 +157,11 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
 	FindBegin(ind, U"exam", str, '2');
 	FindEnd(ind1, U"exam", str);
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindBegin(ind1, U"exer", str, '2');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {

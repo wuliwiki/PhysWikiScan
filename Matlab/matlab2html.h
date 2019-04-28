@@ -70,7 +70,7 @@ inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I 
 			--ind0;  continue;
 		}
 		// ignore keyword in comment or in string
-		if (IndexInRange(ind0, ind_comm) || IndexInRange(ind0, ind_str)) {
+		if (is_in(ind0, ind_comm) || is_in(ind0, ind_str)) {
 			--ind0; continue;
 		}
 		// found keyword

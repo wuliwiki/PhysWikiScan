@@ -1,20 +1,9 @@
 ﻿#pragma once
 #include "../SLISC/scalar_arith.h"
 #include "../SLISC/unicode.h"
+#include "../SLISC/inverv.h"
 
 namespace slisc {
-
-// see if an index i falls into the scopes of ind
-Bool IndexInRange(Long i, vector<Long> ind)
-{
-	if (ind.size() == 0)
-		return false;
-	for (Long j = 0; j < ind.size() - 1; j += 2) {
-		if (ind[j] <= i && i <= ind[j + 1])
-			return true;
-	}
-	return false;
-}
 
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of name[iname], -1 if return false
@@ -42,142 +31,6 @@ Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 		else
 			return true;
 	}
-}
-
-// TODO: replace this with the SLISC version
-// sort x in descending order while tracking the original index
-void stupid_sort(vector<Long>& x, vector<Long>& ind)
-{
-	Long i, temp;
-	Long N = x.size();
-	// initialize ind
-	ind.resize(0);
-	for (i = 0; i < N; ++i)
-		ind.push_back(i);
-
-	Bool changed{ true };
-	while (changed == true)
-	{
-		changed = false;
-		for (i = 0; i < N - 1; i++)
-		{
-			if (x[i] > x[i + 1])
-			{
-				temp = x[i];
-				x[i] = x[i + 1];
-				x[i + 1] = temp;
-				temp = ind[i];
-				ind[i] = ind[i + 1];
-				ind[i + 1] = temp;
-				changed = true;
-			}
-		}
-	}
-}
-
-// combine ranges ind1 and ind2
-// a range can contain another range, but not partial overlap
-// return total range number, or -1 if failed.
-Long CombineRange(vector<Long>& ind, vector<Long> ind1, vector<Long> ind2)
-{
-	Long i, N1 = ind1.size(), N2 = ind2.size();
-	if (ind1.size() % 2 != 0 || ind2.size() % 2 != 0) {
-		cout << "size error, must be even!" << endl; // break point here
-		return -1;
-	}	
-	if (N1 == 0)
-	{
-		ind = ind2; return N2 / 2;
-	}
-	else if (N2 == 0)
-	{
-		ind = ind1; return N1 / 2;
-	}
-
-	// load start and end, and sort
-	vector<Long> start, end, order;
-	for (i = 0; i < N1; i += 2)
-		start.push_back(ind1[i]);
-	for (i = 1; i < N1; i += 2)
-		end.push_back(ind1[i]);
-	for (i = 0; i < N2; i += 2)
-		start.push_back(ind2[i]);
-	for (i = 1; i < N2; i += 2)
-		end.push_back(ind2[i]);
-	Long N = start.size();
-	stupid_sort(start, order);
-	vector<Long> temp;
-	temp.resize(N);
-	for (i = 0; i < N; ++i) {
-		if (order[i] >= end.size()) {
-			cout << "out of bound!" << endl;
-			return -1;
-		}
-		temp[i] = end[order[i]];
-	}
-	end = temp;
-
-	// load ind
-	ind.resize(0);
-	ind.push_back(start[0]);
-	i = 0;
-	while (i < N - 1)
-	{
-		if (end[i] > start[i + 1])
-		{
-			if (end[i] > end[i + 1])
-			{
-				end[i + 1] = end[i]; ++i;
-			}
-			else
-			{
-				cout << "error! range overlap!" << endl;
-				return -1;  // break point here
-			}
-		}
-		else if (end[i] == start[i + 1] - 1)
-			++i;
-		else
-		{
-			ind.push_back(end[i]);
-			ind.push_back(start[i + 1]);
-			++i;
-		}
-	}
-	ind.push_back(end.back());
-	if (ind.size() % 2 != 0) {
-		cout << "size error! must be even!" << endl;
-		return -1;
-	}
-		
-	return ind.size() / 2;
-}
-
-// invert ranges in ind0, output to ind1
-Long InvertRange(vector<Long>& ind, const vector<Long>& ind0, Long Nstr)
-{
-	ind.resize(0);
-	if (ind0.size() == 0)
-	{
-		ind.push_back(0); ind.push_back(Nstr - 1); return 1;
-	}
-
-	Long N{}; // total num of ranges output
-	if (ind0[0] > 0)
-	{
-		ind.push_back(0); ind.push_back(ind0[0] - 1); ++N;
-	}
-	for (unsigned i{ 1 }; i < ind0.size() - 1; i += 2)
-	{
-		ind.push_back(ind0[i] + 1);
-		ind.push_back(ind0[i + 1] - 1);
-		++N;
-	}
-	if (ind0.back() < Nstr - 1)
-	{
-		ind.push_back(ind0.back() + 1); ind.push_back(Nstr - 1); ++N;
-	}
-	return N;
 }
 
 // find comments
@@ -229,7 +82,7 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 	while (true) {
 		// find "\\begin"
 		ind3 = str.find(U"\\begin", ind0);
-		if (IndexInRange(ind3, indComm)) { ind0 = ind3 + 6; continue; }
+		if (is_in(ind3, indComm)) { ind0 = ind3 + 6; continue; }
 		if (ind3 < 0)
 			return N;
 		ind0 = ind3 + 6;
@@ -253,7 +106,7 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 		{
 			// find "\\end"
 			ind0 = str.find(U"\\end", ind0);
-			if (IndexInRange(ind0, indComm)) { ind0 += 4; continue; }
+			if (is_in(ind0, indComm)) { ind0 += 4; continue; }
 			if (ind0 < 0)
 				return -1;
 			ind2 = ind0 - 1;
@@ -287,7 +140,7 @@ Long FindComment(vector<Long>& ind, Str32_I str)
 	vector<Long> indLst;
 	FindEnv(indLst, str, U"lstlisting", 'o');
 	for (Long i = ind.size() - 2; i >= 0; i -= 2) {
-		if (IndexInRange(ind[i], indLst))
+		if (is_in(ind[i], indLst))
 			ind.erase(ind.begin() + i, ind.begin() + i+2);
 	}
 	if (isodd(ind.size()))
@@ -313,7 +166,7 @@ Long FindInline(vector<Long>& ind, Str32_I str, Char option = 'i')
 		if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
 			++ind0; continue;
 		}
-		if (IndexInRange(ind0, indComm)) { // in comment
+		if (is_in(ind0, indComm)) { // in comment
 			++ind0; continue;
 		}
 		ind.push_back(ind0);
@@ -421,46 +274,46 @@ Long FindNormalText(vector<Long>& indNorm, Str32_I str)
 	FindComment(ind, str);
 	// inline equation environments
 	FindInline(ind1, str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// equation environments
 	FindEnv(ind1, str, U"equation", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// command environments
 	FindEnv(ind1, str, U"Command", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// gather environments
 	FindEnv(ind1, str, U"gather", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// align environments (not "aligned")
 	FindEnv(ind1, str, U"align", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// texttt command
 	FindComBrace(ind1, U"\\texttt", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// input command
 	FindComBrace(ind1, U"\\input", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// Figure environments
 	FindEnv(ind1, str, U"figure", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// Table environments
 	FindEnv(ind1, str, U"table", 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// subsubsection command
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
 	FindBegin(ind1, U"exam", str, '2');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exam", str);
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
 	FindBegin(ind1, U"exer", str, '2');
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	if (CombineRange(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind, ind1) < 0) return -1;
 	// invert range
-	return InvertRange(indNorm, ind, str.size());
+	return invert(indNorm, ind, str.size());
 }
 
 // detect unnecessary braces and add "删除标记"
