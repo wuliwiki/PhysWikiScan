@@ -38,3 +38,4 @@
 * Matlab 代码块不会自动换行啊， 因为是 verbatim
 * `end` keyword 用于 slicing 的时候不能高亮， html 和 lstlisting 都有这个问题
 * 行号是必须的
+* fix the compiler warnings

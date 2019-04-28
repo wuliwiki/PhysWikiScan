@@ -720,6 +720,34 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 	return N;
 }
 
+// process lstlisting[language=MatlabCom] environments to display Matlab Command Line
+// return the number of \Command{} processed, return -1 if failed
+// TODO: make sure it's \begin{lstlisting}[language=MatlabCom], not any lstlisting
+Long MatlabComLine(Str32_IO str)
+{
+	Long i{}, j{}, N{}, ind0{};
+	vector<Long> indIn, indOut;
+	Str32 code;
+	N = FindEnv(indIn, str, U"lstlisting");
+	N = FindEnv(indOut, str, U"lstlisting", 'o');
+	for (i = 2 * N - 2; i >= 0; i -= 2) {
+		ind0 = ExpectKey(str, U"[", indIn[i]);
+		ind0 = PairBraceR(str, ind0, U'[');
+		code = str.substr(ind0+1, indIn[i + 1]-ind0);
+		if (code[0] != U'\n' || code.back() != U'\n') {
+			cout << "wrong format of Matlab command line environment!" << endl;
+			return -1;
+		}
+		code = code.substr(1, code.size() - 2);
+		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
+		ind0 = indOut[i];
+		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
+		ind0 = insert(str, code, ind0);
+		insert(str, U"\n</pre></div></div>", ind0);
+	}
+	return N;
+}
+
 // find \bra{}\ket{} and mark
 Long OneFile4(Str32_I path)
 {
@@ -746,26 +774,6 @@ Long OneFile4(Str32_I path)
 	}
 	if (N > 0)
 		write_file(str, path);
-	return N;
-}
-
-// process lstlisting[language=MatlabCom] environments to display Matlab Command Line
-// return the number of \Command{} processed, return -1 if failed
-// TODO: make sure it's \begin{lstlisting}[language=MatlabCom], not any lstlisting
-Long MatlabCom(Str32_IO str)
-{
-	Long i{}, j{}, N{}, ind0{};
-	vector<Long> indIn, indOut;
-	N = FindEnv(indIn, str, U"lstlisting");
-	N = FindEnv(indOut, str, U"lstlisting", 'o');
-	for (i = 2 * N - 2; i >= 0; i -= 2) {
-		ind0 = ExpectKey(str, U"[", indIn[i]);
-		ind0 = PairBraceR(str, ind0, U'[');
-		str.erase(indIn[i+1]+1, indOut[i+1] - indIn[i+1]);
-		str.insert(indIn[i+1]+1, U"</pre></div></div>");
-		str.erase(indOut[i], ind0 - indOut[i] + 1);
-		str.insert(indOut[i], U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">");
-	}
 	return N;
 }
 
@@ -887,7 +895,8 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 		return -1;
 	if (MatlabCodeTitle(str, path0) < 0)
 		return -1;
-	MatlabCom(str);
+	if (MatlabComLine(str) < 0)
+		return -1;
 	Command2Tag(U"x", U"<span class = \"w3-text-teal\">", U"</span>", str);
 	// footnote
 	footnote(str);
@@ -932,7 +941,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"MIfFor")
+		if (names[i] == U"MatVar")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
@@ -949,7 +958,7 @@ inline void PhysWikiOnline(Str32_I path0)
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == U"MIfFor")
+		if (names[i] == U"MatVar")
 			Long Set_Break_Point_Here = 1000; // one file debug
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, names[i], html) < 0) {

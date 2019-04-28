@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "../SLISC/global.h"
+#include "../SLISC/scalar_arith.h"
 #include "../SLISC/unicode.h"
 
 namespace slisc {
@@ -184,12 +184,12 @@ Long InvertRange(vector<Long>& ind, const vector<Long>& ind0, Long Nstr)
 // output: ind is index in pairs
 // return number of comments found. return -1 if failed
 // range is from '%' to 'CR'
-Long FindComment(vector<Long>& ind, Str32_I str)
+// result will include the comments in lstlisting!
+Long FindComment0(vector<Long>& ind, Str32_I str)
 {
 	Long ind0{}, ind1{};
 	Long N{}; // number of comments found
 	ind.resize(0);
-	//TCHAR escape{'\\'};
 	while (true) {
 		ind1 = str.find(U'%', ind0);
 		if (ind1 >= 0)
@@ -225,7 +225,7 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 	vector<Long> indComm{}; // result from FindComment
 	Long N{}; // number of environments found
 	ind.resize(0);
-	FindComment(indComm, str);
+	FindComment0(indComm, str);
 	while (true) {
 		// find "\\begin"
 		ind3 = str.find(U"\\begin", ind0);
@@ -276,6 +276,23 @@ Long FindEnv(vector<Long>& ind, Str32_I str, Str32_I env, Char option = 'i')
 			break;
 		}
 	}
+}
+
+// find latex comments
+// similar to FindComment0
+// does not include the ones in lstlisting environment
+Long FindComment(vector<Long>& ind, Str32_I str)
+{
+	FindComment0(ind, str);
+	vector<Long> indLst;
+	FindEnv(indLst, str, U"lstlisting", 'o');
+	for (Long i = ind.size() - 2; i >= 0; i -= 2) {
+		if (IndexInRange(ind[i], indLst))
+			ind.erase(ind.begin() + i, ind.begin() + i+2);
+	}
+	if (isodd(ind.size()))
+		SLS_ERR("even number expected!");
+	return ind.size()/2;
 }
 
 // find the range of inline equations using $$

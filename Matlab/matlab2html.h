@@ -108,6 +108,7 @@ inline Long Matlab_str_comm(Str32_IO str, Str32_I str_class, Str32_I comm_class)
 		str.insert(ind_comm[i], U"<span class = \"" + comm_class + "\">");
 		++N;
 	}
+	return N;
 }
 
 // highlight matlab code
