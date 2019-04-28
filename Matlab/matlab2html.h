@@ -81,31 +81,42 @@ inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I 
 	return N;
 }
 
-// highlight strings and comments in Matlab
-// str is Matlab code only
+// highlight comments in Matlab code
+// code is Matlab code snippet
 // replace keywords with <span class="string_class">...</span>
 // return the total number of strings and commens processed
-inline Long Matlab_str_comm(Str32_IO str, Str32_I str_class, Str32_I comm_class)
+inline Long Matlab_string(Str32_IO code, Str32_I str_class)
+{
+	Long N = 0;
+	// find comments and strings
+	vector<Long> ind_str;
+	Matlab_strings(ind_str, code);
+
+	// highlight backwards
+	for (Long i = ind_str.size() - 2; i >= 0; i -= 2) {
+		code.insert(ind_str[i + 1] + 1, U"</span>");
+		code.insert(ind_str[i], U"<span class = \"" + str_class + "\">");
+		++N;
+	}
+	return N;
+}
+
+// highlight comments in Matlab code
+// code is Matlab code snippet
+// replace keywords with <span class="string_class">...</span>
+// return the total number of strings and commens processed
+inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 {
 	Long N = 0;
 	// find comments and strings
 	vector<Long> ind_comm, ind_str;
-	Matlab_strings(ind_str, str);
-	Matlab_comments(ind_comm, str, ind_str);
+	Matlab_strings(ind_str, code);
+	Matlab_comments(ind_comm, code, ind_str);
 	
 	// highlight backwards
-	Long j = ind_str.size() - 2;
 	for (Long i = ind_comm.size() - 2; i >= 0; i -= 2) {
-		while (j >= 0 && ind_str[j] > ind_comm[i]) {
-			// found a string first
-			str.insert(ind_str[j + 1]+1, U"</span>");
-			str.insert(ind_str[j], U"<span class = \"" + str_class + "\">");
-			++N;
-			j -= 2;
-		}
-		// found a comment
-		str.insert(ind_comm[i + 1] + 1, U"</span>");
-		str.insert(ind_comm[i], U"<span class = \"" + comm_class + "\">");
+		code.insert(ind_comm[i + 1] + 1, U"</span>");
+		code.insert(ind_comm[i], U"<span class = \"" + comm_class + "\">");
 		++N;
 	}
 	return N;
@@ -132,8 +143,10 @@ inline Long Matlab_highlight(Str32_IO str)
 	Long N = 0;
 	// highlight keywords
 	N += Matlab_keywords(str, keywords, keyword_class);
-	// highlight strings and comments
-	Matlab_str_comm(str, str_class, comm_class);
+	// highlight comments
+	Matlab_comment(str, comm_class);
+	// highlight strings
+	Matlab_string(str, str_class);
 	return N;
 }
 

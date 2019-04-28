@@ -739,6 +739,8 @@ Long MatlabComLine(Str32_IO str)
 			return -1;
 		}
 		code = code.substr(1, code.size() - 2);
+		Matlab_highlight(code);
+
 		str.erase(indOut[i], indOut[i + 1] - indOut[i] + 1);
 		ind0 = indOut[i];
 		ind0 = insert(str, U"<div class = \"w3-code notranslate w3-pale-yellow\">\n<div class = \"nospace\"><pre class = \"mcode\">\n", ind0);
