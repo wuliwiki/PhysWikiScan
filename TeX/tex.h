@@ -274,44 +274,44 @@ Long FindNormalText(vector<Long>& indNorm, Str32_I str)
 	FindComment(ind, str);
 	// inline equation environments
 	FindInline(ind1, str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// equation environments
 	FindEnv(ind1, str, U"equation", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// command environments
 	FindEnv(ind1, str, U"Command", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// gather environments
 	FindEnv(ind1, str, U"gather", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// align environments (not "aligned")
 	FindEnv(ind1, str, U"align", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// texttt command
 	FindComBrace(ind1, U"\\texttt", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// input command
 	FindComBrace(ind1, U"\\input", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// Figure environments
 	FindEnv(ind1, str, U"figure", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// Table environments
 	FindEnv(ind1, str, U"table", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// subsubsection command
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
 	FindBegin(ind1, U"exam", str, '2');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exam", str);
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
 	FindBegin(ind1, U"exer", str, '2');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	// invert range
 	return invert(indNorm, ind, str.size());
 }

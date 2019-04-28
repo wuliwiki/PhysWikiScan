@@ -33,7 +33,7 @@ Long EqOmitTag(Str32_IO str)
 	vector<Long> ind, indInline;
 	FindEnv(ind, str, U"equation");
 	FindInline(indInline, str);
-	Nrange = combine(ind, ind, indInline);
+	Nrange = combine(ind, indInline);
 	if (Nrange < 0) return -1;
 	for (i = 2 * Nrange - 2; i >= 0; i -= 2) {
 		N += EnsureSpace(U"<", str, ind[i], ind[i + 1]);
@@ -192,10 +192,10 @@ Long NormalTextEscape(Str32_IO str)
 	vector<Long> ind, ind1;
 	FindNormalText(ind, str);
 	FindComBrace(ind1, U"\\x", str);
-	Nnorm = combine(ind, ind, ind1);
+	Nnorm = combine(ind, ind1);
 	if (Nnorm < 0) return -1;
 	FindEnv(ind1, str, U"Command");
-	Nnorm = combine(ind, ind, ind1);
+	Nnorm = combine(ind, ind1);
 	if (Nnorm < 0) return -1;
 	for (i = 2 * Nnorm - 2; i >= 0; i -= 2) {
 		temp = str.substr(ind[i], ind[i + 1] - ind[i] + 1);

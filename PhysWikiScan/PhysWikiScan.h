@@ -64,9 +64,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
 	FindComBrace(ind, U"\\subsection", str, 'o');
 	FindComBrace(ind1, U"\\subsubsection", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\pentry", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -93,13 +93,13 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
 	FindEnv(ind, str, U"figure", 'o');
 	FindEnv(ind1, str, U"itemize", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"enumerate", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\code", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindComBrace(ind1, U"\\Code", str, 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -126,9 +126,9 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "<p>　　" before range, delete "　　"
 	FindEnv(ind, str, U"equation", 'o');
 	FindEnv(ind1, str, U"gather", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindEnv(ind1, str, U"align", 'o');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", ind[i] - 1);
 		ind2 = ExpectKeyReverse(str, U"<p>　　", ind[i] - 1);
@@ -157,11 +157,11 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
 	FindBegin(ind, U"exam", str, '2');
 	FindEnd(ind1, U"exam", str);
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindBegin(ind1, U"exer", str, '2');
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	FindEnd(ind1, U"exer", str);
-	if (combine(ind, ind, ind1) < 0) return -1;
+	if (combine(ind, ind1) < 0) return -1;
 	for (i = ind.size() - 2; i >= 0; i -= 2) {
 		ind0 = ExpectKey(str, U"</p>", ind[i + 1] + 1);
 		if (ind0 >= 0) {
@@ -796,20 +796,19 @@ Long OneFile4(Str32_I path)
 Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	Str32 path0, const vector<Str32>& names, const vector<Str32>& titles)
 {
-	// read template file from local folder
 	Long i{}, j{}, N{}, ind0;
 	Str32 str;
 	read_file(str, path0 + entryName + ".tex"); // read tex file
 	CRLF_to_LF(str);
 	Str32 title;
-	//// read template from the same folder as path
-	//ind0 = path.ReverseFind('\\');
-	//path.erase(ind0, str.GetLength() - ind0);
-	//path += U"\\template.html";
-	Str32 html; read_file(html, "PhysWikiScan/entry_template.html"); // read html template
+	// read html template and \newcommand{}
+	Str32 html;
+	read_file(html, "PhysWikiScan/entry_template.html");
 	CRLF_to_LF(html);
-	Str32 newcomm; read_file(newcomm, "PhysWikiScan/newcommand.html");
+	Str32 newcomm;
+	read_file(newcomm, "PhysWikiScan/newcommand.html");
 	CRLF_to_LF(newcomm);
+	// read title from first comment
 	if (GetTitle(title, str) < 0)
 		return -1;
 	for (j = 0; j < names.size(); ++j) {
@@ -817,17 +816,19 @@ Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 			break;
 	}
 	if (!titles[j].empty() && title != titles[j]) {
-		SLS_WARN("Chinese title inconsistent!");
-		return -1; // break point here
+		SLS_WARN("title inconsistent!");
+		return -1;
 	}
-	// insert \newcommand
-	ind0 = html.find(U"PhysWikiCommand", 0);
-	html.erase(ind0, 15);
-	html.insert(ind0, newcomm);
+	// insert \newcommand{}
+	if (replace(html, U"PhysWikiCommand", newcomm) != 1) {
+		SLS_WARN("wrong format in newcommand.html!");
+		return -1;
+	}
 	// insert HTML title
-	ind0 = html.find(U"PhysWikiHTMLtitle", 0);
-	html.erase(ind0, 17);
-	html.insert(ind0, title);
+	if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
+		SLS_WARN("wrong format in newcommand.html!");
+		return -1;
+	}
 	// remove comments
 	vector<Long> indComm;
 	N = FindComment(indComm, str);
