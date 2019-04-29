@@ -1,7 +1,5 @@
 ﻿#pragma once
-#include "../SLISC/scalar_arith.h"
-#include "../SLISC/unicode.h"
-#include "../SLISC/inverv.h"
+#include "../SLISC/parser.h"
 
 namespace slisc {
 
@@ -170,38 +168,9 @@ Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 	return N;
 }
 
-// Find all <key>{} environment in str
-// find <key>{}{} when option = '2'
-// output ranges
-// if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
-// return number of <key>{} found, return -1 if failed.
 Long FindComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
-	intv.clear();
-	Long ind0{}, ind1;
-	while (true)
-	{
-		ind1 = str.find(key, ind0);
-		if (ind1 < 0)
-			return intv.size();
-		ind0 = ind1 + key.size();
-		ind0 = ExpectKey(str, U"{", ind0);
-		if (ind0 < 0) {
-			ind0 = ind1 + key.size(); continue;
-		}
-		intv.pushL(option == 'i' ? ind0 : ind1);
-		ind0 = PairBraceR(str, ind0 - 1);
-		if (option != '2') {
-			intv.pushR(option == 'i' ? ind0 - 1 : ind0);
-		}
-		else {
-			ind0 = ExpectKey(str, U"{", ind0 + 1);
-			if (ind0 < 0)
-				continue;
-			ind0 = PairBraceR(str, ind0 - 1);
-			intv.pushR(ind0);
-		}
-	}
+	return find_scopes(intv, U"\\"+key, str, option);
 }
 
 // Find "\begin{env}" or "\begin{env}{}" (option = '2')
@@ -274,10 +243,10 @@ Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"align", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// texttt command
-	FindComBrace(intv1, U"\\texttt", str, 'o');
+	FindComBrace(intv1, U"texttt", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// input command
-	FindComBrace(intv1, U"\\input", str, 'o');
+	FindComBrace(intv1, U"input", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// Figure environments
 	FindEnv(intv1, str, U"figure", 'o');
@@ -286,7 +255,7 @@ Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"table", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// subsubsection command
-	FindComBrace(intv1, U"\\subsubsection", str, 'o');
+	FindComBrace(intv1, U"subsubsection", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
 	FindBegin(intv1, U"exam", str, '2');
