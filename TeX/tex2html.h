@@ -191,7 +191,7 @@ Long NormalTextEscape(Str32_IO str)
 	Str32 temp;
 	Intvs intv, intv1;
 	FindNormalText(intv, str);
-	FindComBrace(intv1, U"x", str);
+	FindAllComBrace(intv1, U"x", str);
 	Nnorm = combine(intv, intv1);
 	if (Nnorm < 0) return -1;
 	FindEnv(intv1, str, U"Command");

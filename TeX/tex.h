@@ -1,37 +1,58 @@
 ﻿#pragma once
 #include "../SLISC/parser.h"
+#include <cassert>
 
 namespace slisc {
 
-// find comments
-// result will include the comments in lstlisting!
-// return number of comments found. return -1 if failed
-// range is from '%' to '\n' (including)
-Long FindComment0(Intvs_O intv, Str32_I str)
+// Find the next "\key{...}" in "str"
+// find "\key{}{}" when option = '2'
+// if option = 'i', intervals are the strings inside "{}" (not including)
+// if option = 'o', range from '\' to '}' (including)
+// return number of intervals found
+Long FindComBrace(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
 {
-	Long ind0{}, ind1{};
-	Long N{}; // number of comments found
-	intv.clear();
-	while (true) {
-		ind1 = str.find(U'%', ind0);
-		if (ind1 >= 0)
-			if (ind1 == 0 || (ind1 > 0 && str.at(ind1 - 1) != U'\\')) {
-				intv.pushL(ind1); ++N;
-			}
-			else {
-				ind0 = ind1 + 1;  continue;
-			}
-		else
-			return N;
+	return find_scope(right, key, str, start, option);
+}
 
-		ind1 = str.find(U'\n', ind1 + 1);
-		if (ind1 < 0) {// not found
-			intv.pushR(str.size() - 1);
-			return N;
+// find all FindComBrace()
+Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
+{
+	return find_scopes(intv, U"\\"+key, str, option);
+}
+
+// Find the next "\key{key2}" in "str"
+// return the index of '\', output the index of '}'
+// return -1 if not found
+// e.g. used to find \begin{env} or \end{env}
+Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I start)
+{
+	Long ind0;
+	Str32 temp;
+	while (true) {
+		Long left = FindComBrace(right, key, str, start, 'i');
+		if (left < 0) {
+			right = -1; return -1;
 		}
-		else
-			intv.pushR(ind1);
-		ind0 = ind1;
+		temp = str.substr(left, right - left + 1);
+		TrimLeft(temp, U' '); TrimRight(temp, U' ');
+		if (temp == key2) {
+			ind0 = ExpectKeyReverse(str, U'\\' + key, left - 2) + 1;
+			assert(ind0 >= 0);
+			right = ExpectKey(str, U"}", right+1) - 1;
+			return ind0;
+		}
+	}
+}
+
+// find all FindComBrace2()
+Long FindAllComBrace2(Intvs_O intv, Str32_I str, Str32_I key, Str32_I key2)
+{
+	Long ind0 = 0, right;
+	while (true) {
+		ind0 = FindComBrace2(right, str, key, key2, ind0);
+		if (ind0 < 0)
+			return intv.size();
+		intv.push(ind0, right);
 	}
 }
 
@@ -45,7 +66,8 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 	Intvs intvComm; // result from FindComment
 	Long N{}; // number of environments found
 	intv.clear();
-	FindComment0(intvComm, str);
+	// find comments including the ones in lstlisting (doesn't matter)
+	find_comments(intvComm, str, U"%");
 	while (true) {
 		// find "\\begin"
 		ind3 = str.find(U"\\begin", ind0);
@@ -122,7 +144,7 @@ Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 // does not include the ones in lstlisting environment
 Long FindComment(Intvs_O intv, Str32_I str)
 {
-	FindComment0(intv, str);
+	find_comments(intv, str, U"%");
 	Intvs intvLst;
 	FindEnv(intvLst, str, U"lstlisting", 'o');
 	for (Long i = intv.size() - 1; i >= 0; --i) {
@@ -168,15 +190,15 @@ Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 	return N;
 }
 
-Long FindComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
-{
-	return find_scopes(intv, U"\\"+key, str, option);
-}
+// TODO: find one instead of all
+// TODO: find one using FindComBrace
+// Long FindAllBegin
 
 // Find "\begin{env}" or "\begin{env}{}" (option = '2')
-// output ranges to intv, from '\' to '}'
+// output interval from '\' to '}'
 // return number found, return -1 if failed
-Long FindBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
+// use FindAllBegin
+Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 {
 	intv.clear();
 	Long N{}, ind0{}, ind1;
@@ -243,10 +265,10 @@ Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"align", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// texttt command
-	FindComBrace(intv1, U"texttt", str, 'o');
+	FindAllComBrace(intv1, U"texttt", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// input command
-	FindComBrace(intv1, U"input", str, 'o');
+	FindAllComBrace(intv1, U"input", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// Figure environments
 	FindEnv(intv1, str, U"figure", 'o');
@@ -255,15 +277,15 @@ Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"table", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// subsubsection command
-	FindComBrace(intv1, U"subsubsection", str, 'o');
+	FindAllComBrace(intv1, U"subsubsection", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
-	FindBegin(intv1, U"exam", str, '2');
+	FindAllBegin(intv1, U"exam", str, '2');
 	if (combine(intv, intv1) < 0) return -1;
 	FindEnd(intv1, U"exam", str);
 	if (combine(intv, intv1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
-	FindBegin(intv1, U"exer", str, '2');
+	FindAllBegin(intv1, U"exer", str, '2');
 	if (combine(intv, intv1) < 0) return -1;
 	FindEnd(intv1, U"exer", str);
 	if (combine(intv, intv1) < 0) return -1;

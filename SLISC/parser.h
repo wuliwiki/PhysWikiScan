@@ -8,9 +8,8 @@ namespace slisc {
 
 // Find the next "key{...}" in "str"
 // find "key{...}{...}" when option = '2'
-// output ranges
 // if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
-// return the left interval boundary, output the size of the range
+// return the left interval boundary, output the right boundary
 // return -1 if not found.
 Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
 {
@@ -44,10 +43,11 @@ Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char optio
 	return left;
 }
 
-// Find all "\key{...}" in "str"
-// find "<key>{}{}" when option = '2'
-// if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
-// return number of "\key{}" found, return -1 if failed.
+// Find all "key{...}" in "str"
+// find "key{}{}" when option = '2'
+// if option = 'i', intervals are the strings inside "{}" (not including)
+// if option = 'o', range from first character of "key" to '}' (including)
+// return number of scopes found
 Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
 	intv.clear();
@@ -59,6 +59,39 @@ Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 			return intv.size();
 		intv.push(ind0, right);
 		++ind0;
+	}
+}
+
+// find comments
+// e.g. key = "%" for tex, "//" for c++
+// key is escaped and only escaped if preceded by backslash '\'
+// return number of comments found. return -1 if failed
+// interval is from key[0] to '\n' (including)
+Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
+{
+	Long ind0{}, ind1{};
+	Long N{}; // number of comments found
+	intv.clear();
+	while (true) {
+		ind1 = str.find(key, ind0);
+		if (ind1 < 0)
+			return N;
+		if (ind1 == 0 || (ind1 > 0 && str.at(ind1 - 1) != U'\\')) {
+			intv.pushL(ind1); ++N;
+		}
+		else {
+			ind0 = ind1 + 1;  continue;
+		}
+			
+
+		ind1 = str.find(U'\n', ind1 + 1);
+		if (ind1 < 0) {// not found
+			intv.pushR(str.size() - 1);
+			return N;
+		}
+		else
+			intv.pushR(ind1);
+		ind0 = ind1;
 	}
 }
 

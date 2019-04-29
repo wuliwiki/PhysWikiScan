@@ -63,10 +63,10 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
 	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
 	Intvs intv, intv1;
-	FindComBrace(intv, U"subsection", str, 'o');
-	FindComBrace(intv1, U"subsubsection", str, 'o');
+	FindAllComBrace(intv, U"subsection", str, 'o');
+	FindAllComBrace(intv1, U"subsubsection", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
-	FindComBrace(intv1, U"pentry", str, 'o');
+	FindAllComBrace(intv1, U"pentry", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
 		ind0 = ExpectKey(str, U"</p>", intv.R(i) + 1);
@@ -97,9 +97,9 @@ Long ParagraphTag(Str32_IO str)
 	if (combine(intv, intv1) < 0) return -1;
 	FindEnv(intv1, str, U"enumerate", 'o');
 	if (combine(intv, intv1) < 0) return -1;
-	FindComBrace(intv1, U"code", str, 'o');
+	FindAllComBrace(intv1, U"code", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
-	FindComBrace(intv1, U"Code", str, 'o');
+	FindAllComBrace(intv1, U"Code", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
 		ind0 = ExpectKey(str, U"</p>", intv.R(i) + 1);
@@ -156,10 +156,10 @@ Long ParagraphTag(Str32_IO str)
 	// if there is "</p>" after \begin{}{}, delete it, otherwise, add "<p>　　"
 	// if there is "<p>" before \end{}, delete it, otherwise, add "</p>"
 	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
-	FindBegin(intv, U"exam", str, '2');
+	FindAllBegin(intv, U"exam", str, '2');
 	FindEnd(intv1, U"exam", str);
 	if (combine(intv, intv1) < 0) return -1;
-	FindBegin(intv1, U"exer", str, '2');
+	FindAllBegin(intv1, U"exer", str, '2');
 	if (combine(intv, intv1) < 0) return -1;
 	FindEnd(intv1, U"exer", str);
 	if (combine(intv, intv1) < 0) return -1;
@@ -355,14 +355,13 @@ Long pentry(Str32_IO str)
 {
 	Long i{}, N{};
 	Intvs intvIn, intvOut;
-	if (FindComBrace(intvIn, U"pentry", str) < 0) return -1;
-	N = FindComBrace(intvOut, U"pentry", str, 'o');
+	if (FindAllComBrace(intvIn, U"pentry", str) < 0) return -1;
+	N = FindAllComBrace(intvOut, U"pentry", str, 'o');
 	if (N < 0) return -1;
 	for (i = N - 1; i >= 0; --i) {
-		str.erase(intvOut.R(i), 1);
-		str.insert(intvOut.R(i), U"</div>");
-		str.erase(intvOut.L(i), intvIn.L(i) - intvOut.L(i));
-		str.insert(intvOut.L(i), U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　");
+		str.replace(intvOut.R(i), 1, U"</div>");
+		str.replace(intvOut.L(i), intvIn.L(i) - intvOut.L(i),
+			U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　");
 	}
 	return N;
 }
@@ -511,8 +510,8 @@ Long upref(Str32_IO str, Str32_I path)
 	Long i{}, N{};
 	Intvs intvIn, intvOut;
 	Str32 entryName;
-	FindComBrace(intvIn, U"upref", str);
-	FindComBrace(intvOut, U"upref", str, 'o');
+	FindAllComBrace(intvIn, U"upref", str);
+	FindAllComBrace(intvOut, U"upref", str, 'o');
 	for (i = intvOut.size() - 1; i >= 0; --i) {
 		entryName = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
 		TrimLeft(entryName, U' '); TrimRight(entryName, U' ');
@@ -664,8 +663,8 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 	Str32 code;
 	Intvs intvIn, intvOut;
 	// \code commands
-	FindComBrace(intvIn, U"code", str);
-	N = FindComBrace(intvOut, U"code", str, 'o');
+	FindAllComBrace(intvIn, U"code", str);
+	N = FindAllComBrace(intvOut, U"code", str, 'o');
 	for (i = N - 1; i >= 0; --i) {
 		// get code file name
 		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
@@ -702,8 +701,8 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 	Str32 code;
 	Intvs intvIn, intvOut;
 	// \code commands
-	FindComBrace(intvIn, U"Code", str);
-	N = FindComBrace(intvOut, U"Code", str, 'o');
+	FindAllComBrace(intvIn, U"Code", str);
+	N = FindAllComBrace(intvOut, U"Code", str, 'o');
 	for (i = N - 1; i >= 0; --i) {
 		// get code file name
 		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
