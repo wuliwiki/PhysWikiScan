@@ -5,38 +5,10 @@
 
 namespace slisc {
 
-// see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
-// output iname of name[iname], -1 if return false
-// TODO: check if this function works.
-Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
-{
-	Long j{}, ikey{}, ind0{ ind + 1 }, ind1{}, Nname{};
-	Nname = names.size(); iname = -1;
-	vector<Str32> key{U"\\begin", U"\\end"};
-	// find next \begin{name} or \end{name}
-	while (true) {
-		ind0 = FindMultiple(ikey, str, key, ind0);
-		if (ind0 < 0) return false;
-		ind0 = ExpectKey(str, U"{", ind0 + key[ikey].size());
-		for (j = 0; j < Nname; ++j) {
-			ind1 = ExpectKey(str, names[j], ind0);
-			if (ind1 >= 0) {
-				iname = j;  break;
-			}
-		}
-		if (ind1 < 0)
-			return false;
-		else if (ikey == 0)
-			return false;
-		else
-			return true;
-	}
-}
-
 // find comments
-// return number of comments found. return -1 if failed
-// range is from '%' to 'CR'
 // result will include the comments in lstlisting!
+// return number of comments found. return -1 if failed
+// range is from '%' to '\n' (including)
 Long FindComment0(Intvs_O intv, Str32_I str)
 {
 	Long ind0{}, ind1{};
@@ -61,7 +33,6 @@ Long FindComment0(Intvs_O intv, Str32_I str)
 		}
 		else
 			intv.pushR(ind1);
-
 		ind0 = ind1;
 	}
 }
@@ -91,7 +62,7 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 			return -1;
 		// expect 'env'
 		ind1 = ExpectKey(str, env, ind0);
-		if (ind1 < 0)
+		if (ind1 < 0 || !is_whole_word(str, ind1-env.size(), env.size()))
 			continue;
 		ind0 = ind1;
 		// expect '}'
@@ -127,6 +98,25 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 			break;
 		}
 	}
+}
+
+// see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
+// output iname of name[iname], -1 if return false
+// TODO: check if this function works.
+Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
+{
+	Intvs intv;
+	for (Long i = 0; i < names.size(); ++i) {
+		while (FindEnv(intv, str, names[i]) < 0) {
+			Input().Bool("failed! retry?");
+		}
+		if (is_in(ind, intv)) {
+			iname = i;
+			return true;
+		}
+	}
+	iname = -1;
+	return false;
 }
 
 // find latex comments

@@ -494,9 +494,11 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 			newtab = U"target = \"_blank\"";
 			file = entry + U".html";
 		}
-		if (!inEq) str.insert(ind3 + 1, U" </a>");
+		if (!inEq)
+			str.insert(ind3 + 1, U" </a>");
 		str.insert(ind3 + 1, kind + U' ' + idNum);
-		if (!inEq) str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + id[i] + U"\" " + newtab + U">");
+		if (!inEq)
+			str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + id[i] + U"\" " + newtab + U">");
 		str.erase(ind0, ind3 - ind0 + 1);
 		++N;
 	}
@@ -958,7 +960,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"Astro")
+		if (names[i] == U"ITable")
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
@@ -975,7 +977,7 @@ inline void PhysWikiOnline(Str32_I path0)
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == U"MatVar")
+		if (names[i] == U"ITable")
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, names[i], html) < 0) {

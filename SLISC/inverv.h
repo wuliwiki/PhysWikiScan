@@ -9,120 +9,147 @@
 
 namespace slisc {
 
+class Intvs;
+typedef const Intvs &Intvs_I;
+typedef Intvs &Intvs_O, &Intvs_IO;
+
 class Intvs : public vector<Long>
 {
 public:
 	typedef vector<Long> Base;
-	void push(Long_I left, Long_I right)
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (left < 0 || right < 0)
-			SLS_ERR("must be non-negative!");
-		if (isodd(Base::size()))
-			SLS_ERR("not the same size!");
-#endif
-		push_back(left);
-		push_back(right);
-	}
 
-	void pushL(Long_I i)
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0)
-			SLS_ERR("must be non-negative!");
-		if (isodd(Base::size()))
-			SLS_ERR("not the same size!");
-#endif
-		push_back(i);
-	}
+	void push(Long_I left, Long_I right);
 
-	void pushR(Long_I i)
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0)
-			SLS_ERR("must be non-negative!");
-		if (!isodd(Base::size()))
-			SLS_ERR("not the same size!");
-#endif
-		push_back(i);
-	}
+	void pushL(Long_I i);
 
-	void push_back(Long_I i)
-	{
-		Base::push_back(i);
-	}
+	void pushR(Long_I i);
 
-	void check() const
-	{
-		if (isodd(Base::size()))
-			SLS_ERR("side is odd!");
-	}
+	void push_back(Long_I i);
 
-	// debug purpose
-	Long size() const
-	{
-		if (isodd(Base::size()))
-			SLS_ERR("side is odd!");
-		return Base::size()/2;
-	}
+	void check_pair() const;
 
-	const Long &L(Long_I i) const
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0 || i * 2 >= Base::size())
-			SLS_ERR("out of bound!");
-#endif
-		return Base::operator[](i * 2);
-	}
+	Long size() const;
 
-	Long &L(Long_I i)
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0 || i * 2 >= Base::size())
-			SLS_ERR("out of bound!");
-#endif
-		return Base::operator[](i * 2);
-	}
+	const Long &L(Long_I i) const;
 
-	const Long &R(Long_I i) const
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0 || i * 2 + 1 >= Base::size())
-			SLS_ERR("out of bound!");
-#endif
-		return Base::operator[](i * 2 + 1);
-	}
+	Long &L(Long_I i);
 
-	Long &R(Long_I i)
-	{
-#ifdef SLS_CHECK_BOUNDS
-		if (i < 0 || i * 2 + 1 >= Base::size())
-			SLS_ERR("out of bound!");
-#endif
-		return Base::operator[](i * 2 + 1);
-	}
+	const Long &R(Long_I i) const;
 
-	const Long &operator[](Long_I i) const
-	{
-		SLS_ERR("use .L() or .R() instead!");
-		return Base::operator[](i);
-	}
+	Long &R(Long_I i);
 
-	Long &operator[](Long_I i)
-	{
-		SLS_ERR("use .L() or .R() instead!");
-		return Base::operator[](i);
-	}
+	const Long &operator[](Long_I i) const;
 
-	void erase(Long_I start, Long_I count)
-	{
-		auto temp = Base::begin() + 2 * start;
-		Base::erase(temp, temp + 2*count);
-	}
+	Long &operator[](Long_I i);
+
+	void erase(Long_I start, Long_I count);
 };
 
-typedef const Intvs &Intvs_I;
-typedef Intvs &Intvs_O, &Intvs_IO;
+inline void Intvs::push(Long_I left, Long_I right)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (left < 0 || right < 0)
+		SLS_ERR("must be non-negative!");
+	if (isodd(Base::size()))
+		SLS_ERR("last pair not finished!");
+#endif
+	push_back(left);
+	push_back(right);
+}
+
+inline void Intvs::pushL(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0)
+		SLS_ERR("must be non-negative!");
+	if (isodd(Base::size()))
+		SLS_ERR("last pair not finished!");
+#endif
+	push_back(i);
+}
+
+inline void Intvs::pushR(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0)
+		SLS_ERR("must be non-negative!");
+	if (!isodd(Base::size()))
+		SLS_ERR("left not pushed!");
+#endif
+	push_back(i);
+}
+
+inline void Intvs::push_back(Long_I i)
+{
+	Base::push_back(i);
+}
+
+inline void Intvs::check_pair() const
+{
+	if (isodd(Base::size()))
+		SLS_ERR("side is odd!");
+}
+
+inline Long Intvs::size() const
+{
+	if (isodd(Base::size()))
+		SLS_ERR("last pair unfinished!");
+	return Base::size() / 2;
+}
+
+inline const Long &Intvs::L(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0 || i * 2 >= Base::size())
+		SLS_ERR("out of bound!");
+#endif
+	return Base::operator[](i * 2);
+}
+
+inline Long &Intvs::L(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0 || i * 2 >= Base::size())
+		SLS_ERR("out of bound!");
+#endif
+	return Base::operator[](i * 2);
+}
+
+inline const Long &Intvs::R(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0 || i * 2 + 1 >= Base::size())
+		SLS_ERR("out of bound!");
+#endif
+	return Base::operator[](i * 2 + 1);
+}
+
+inline Long &Intvs::R(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i < 0 || i * 2 + 1 >= Base::size())
+		SLS_ERR("out of bound!");
+#endif
+	return Base::operator[](i * 2 + 1);
+}
+
+inline const Long &Intvs::operator[](Long_I i) const
+{
+	SLS_ERR("use .L() or .R() instead!");
+	return Base::operator[](i);
+}
+
+inline Long &Intvs::operator[](Long_I i)
+{
+	SLS_ERR("use .L() or .R() instead!");
+	return Base::operator[](i);
+}
+
+inline void Intvs::erase(Long_I start, Long_I count)
+{
+	auto temp = Base::begin() + 2 * start;
+	Base::erase(temp, temp + 2 * count);
+}
 
 // see if an index i falls into the scopes of ind
 inline Bool is_in(Long_I i, Intvs_I intvs)
@@ -135,26 +162,27 @@ inline Bool is_in(Long_I i, Intvs_I intvs)
 }
 
 // invert ranges in ind0, output to ind1
-Long invert(Intvs_O ind, Intvs_I ind0, Long_I Nstr)
+// [0, N-1] is the total domain
+Long invert(Intvs_O ind, Intvs_I ind0, Long_I N)
 {
 	ind.clear();
 	if (ind0.size() == 0) {
-		ind.push(0, Nstr - 1);
+		ind.push(0, N - 1);
 		return 1;
 	}
 
-	Long N{}; // total num of ranges output
+	Long count{}; // total num of ranges output
 	if (ind0.L(0) > 0) {
-		ind.push(0, ind0.L(0) - 1); ++N;
+		ind.push(0, ind0.L(0) - 1); ++count;
 	}
 	for (Long i = 0; i < ind0.size()-1; ++i) {
 		ind.push(ind0.R(i) + 1, ind0.L(i+1) - 1);
-		++N;
+		++count;
 	}
-	if (ind0.back() < Nstr - 1) {
-		ind.push(ind0.back() + 1, Nstr - 1); ++N;
+	if (ind0.back() < N - 1) {
+		ind.push(ind0.back() + 1, N - 1); ++count;
 	}
-	return N;
+	return count;
 }
 
 // combine ranges ind1 and ind2
@@ -163,7 +191,7 @@ Long invert(Intvs_O ind, Intvs_I ind0, Long_I Nstr)
 Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
 {
 	Long i, N1 = ind1.size(), N2 = ind2.size();
-	ind1.check(); ind2.check();
+	ind1.check_pair(); ind2.check_pair();
 	if (&ind == &ind1 || &ind == &ind2) {
 		SLS_ERR("aliasing is not allowed!");
 	}
