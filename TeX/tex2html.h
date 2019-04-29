@@ -7,7 +7,7 @@ namespace slisc {
 // ensure space around (CString)name
 // return number of spaces added
 // will only check equation env. and inline equations
-Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
+inline Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
 {
 	Long N{}, ind0{ start };
 	while (true) {
@@ -27,7 +27,7 @@ Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
 // ensure space around '<' and '>' in equation env. and $$ env
 // return number of spaces added
 // return -1 if failed
-Long EqOmitTag(Str32_IO str)
+inline Long EqOmitTag(Str32_IO str)
 {
 	Long i{}, N{}, Nrange{};
 	Intvs intv, indInline;
@@ -45,7 +45,7 @@ Long EqOmitTag(Str32_IO str)
 // detect \name* command and replace with \nameStar
 // return number of commmands replaced
 // must remove comments first
-Long StarCommand(Str32_I name, Str32_IO str)
+inline Long StarCommand(Str32_I name, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{};
 	while (true) {
@@ -67,7 +67,7 @@ Long StarCommand(Str32_I name, Str32_IO str)
 // return number of commmands replaced
 // maxVars  = 2 or 3
 // must remove comments first
-Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
+inline Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
 {
 	Long i{}, N{}, Nvar{}, ind0{}, ind1{};
 
@@ -99,7 +99,7 @@ Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
 // detect \name() commands and replace with \nameRound{}
 // also replace \name[]() with \nameRound[]{}
 // must remove comments first
-Long RoundSquareCommand(Str32_I name, Str32_IO str)
+inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{}, ind2{}, ind3;
 	while (true) {
@@ -132,7 +132,7 @@ Long RoundSquareCommand(Str32_I name, Str32_IO str)
 // detect \name() commands and replace with \nameRound{}
 // also replace \name[]() with \nameRound[]{}
 // must remove comments first
-Long MathFunction(Str32_I name, Str32_IO str)
+inline Long MathFunction(Str32_I name, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{}, ind2{}, ind3;
 	while (true) {
@@ -161,7 +161,7 @@ Long MathFunction(Str32_I name, Str32_IO str)
 
 // deal with escape simbols in normal text
 // str must be normal text
-Long TextEscape(Str32_IO str)
+inline Long TextEscape(Str32_IO str)
 {
 	Long N{};
 	N += replace(str, U"\\ ", U" ");
@@ -185,7 +185,7 @@ Long TextEscape(Str32_IO str)
 // deal with escape simbols in normal text, \x{} commands, Command environments
 // must be done before \command{} and environments are replaced with html tags
 // return -1 if failed
-Long NormalTextEscape(Str32_IO str)
+inline Long NormalTextEscape(Str32_IO str)
 {
 	Long i{}, N1{}, N{}, Nnorm{};
 	Str32 temp;
@@ -210,7 +210,7 @@ Long NormalTextEscape(Str32_IO str)
 // process table
 // return number of tables processed, return -1 if failed
 // must be used after EnvLabel()
-Long Table(Str32_IO str)
+inline Long Table(Str32_IO str)
 {
 	Long i{}, j{}, N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
 	Intvs intv;
@@ -270,7 +270,7 @@ Long Table(Str32_IO str)
 
 // process Itemize environments
 // return number processed, or -1 if failed
-Long Itemize(Str32_IO str)
+inline Long Itemize(Str32_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;
@@ -318,7 +318,7 @@ Long Itemize(Str32_IO str)
 
 // process enumerate environments
 // similar to Itemize()
-Long Enumerate(Str32_IO str)
+inline Long Enumerate(Str32_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;
@@ -365,7 +365,7 @@ Long Enumerate(Str32_IO str)
 }
 
 // process \footnote{}, return number of \footnote{} found
-Long footnote(Str32_IO str)
+inline Long footnote(Str32_IO str)
 {
 	Long ind0{}, ind1{}, ind2{}, N{};
 	Str32 note, idNo;

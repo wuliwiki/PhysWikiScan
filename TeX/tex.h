@@ -9,7 +9,7 @@ namespace slisc {
 
 // find text command '\name', return the index of '\'
 // output the index of "name.back()"
-Long find_command(Str32_I str, Str32_I name, Long_I start)
+inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 {
 	Long ind0;
 	while (true) {
@@ -27,7 +27,7 @@ Long find_command(Str32_I str, Str32_I name, Long_I start)
 // skipt command name (command name can only have letters)
 // input the index of '\'
 // return one index after command name
-Long skip_command_name(Str32_I str, Long_I ind)
+inline Long skip_command_name(Str32_I str, Long_I ind)
 {
 	for (Long i = ind + 1; i < str.size(); ++i) {
 		if (!is_letter(str[i]))
@@ -37,7 +37,7 @@ Long skip_command_name(Str32_I str, Long_I ind)
 }
 
 // get the i-th command argument
-Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i)
+inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i)
 {
 	return 1;
 }
@@ -47,13 +47,13 @@ Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i)
 // if option = 'i', intervals are the strings inside "{}" (not including)
 // if option = 'o', range from '\' to '}' (including)
 // return number of intervals found
-Long FindComBrace(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
+inline Long FindComBrace(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
 {
 	return find_scope(right, key, str, start, option);
 }
 
 // find all FindComBrace()
-Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
+inline Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
 	return find_scopes(intv, U"\\"+key, str, option);
 }
@@ -62,7 +62,7 @@ Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 // return the index of '\', output the index of '}'
 // return -1 if not found
 // e.g. used to find \begin{env} or \end{env}
-Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I start)
+inline Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I start)
 {
 	Long ind0;
 	Str32 temp;
@@ -83,7 +83,7 @@ Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I 
 }
 
 // find all FindComBrace2()
-Long FindAllComBrace2(Intvs_O intv, Str32_I str, Str32_I key, Str32_I key2)
+inline Long FindAllComBrace2(Intvs_O intv, Str32_I str, Str32_I key, Str32_I key2)
 {
 	Long ind0 = 0, right;
 	while (true) {
@@ -98,7 +98,7 @@ Long FindAllComBrace2(Intvs_O intv, Str32_I str, Str32_I key, Str32_I key2)
 // return number of environments found. return -1 if failed
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
-Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
+inline Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{};
 	Intvs intvComm; // result from FindComment
@@ -161,7 +161,7 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of name[iname], -1 if return false
 // TODO: check if this function works.
-Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
+inline Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 {
 	Intvs intv;
 	for (Long i = 0; i < names.size(); ++i) {
@@ -180,7 +180,7 @@ Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 // find latex comments
 // similar to FindComment0
 // does not include the ones in lstlisting environment
-Long FindComment(Intvs_O intv, Str32_I str)
+inline Long FindComment(Intvs_O intv, Str32_I str)
 {
 	find_comments(intv, str, U"%");
 	Intvs intvLst;
@@ -195,7 +195,7 @@ Long FindComment(Intvs_O intv, Str32_I str)
 // find the range of inline equations using $$
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $$ environments found.
-Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 {
 	intv.clear();
 	Long N{}; // number of $$
@@ -236,7 +236,7 @@ Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 // output interval from '\' to '}'
 // return number found, return -1 if failed
 // use FindAllBegin
-Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
+inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 {
 	intv.clear();
 	Long N{}, ind0{}, ind1;
@@ -263,7 +263,7 @@ Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 // Find "\end{env}"
 // output ranges to intv, from '\' to '}'
 // return number found, return -1 if failed
-Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
+inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
 	intv.clear();
 	Long N{}, ind0{}, ind1{};
@@ -282,7 +282,7 @@ Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 
 // Find normal text range
 // return -1 if failed
-Long FindNormalText(Intvs_O indNorm, Str32_I str)
+inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
 	Intvs intv, intv1;
 	// comments
@@ -333,7 +333,7 @@ Long FindNormalText(Intvs_O indNorm, Str32_I str)
 
 // detect unnecessary braces and add "删除标记"
 // return the number of braces pairs removed
-Long RemoveBraces(vector<Long>& ind_left, vector<Long>& ind_right,
+inline Long RemoveBraces(vector<Long>& ind_left, vector<Long>& ind_right,
 	vector<Long>& ind_RmatchL, Str32_IO str)
 {
 	unsigned i, N{};
@@ -360,7 +360,7 @@ Long RemoveBraces(vector<Long>& ind_left, vector<Long>& ind_right,
 // replace \nameComm{...} with strLeft...strRight
 // {} cannot be omitted
 // must remove comments first
-Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO str)
+inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{}, ind2{};
 	while (true) {
@@ -383,7 +383,7 @@ Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO s
 
 // replace nameEnv environment with strLeft...strRight
 // must remove comments first
-Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
+inline Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 {
 	Long i{}, N{}, Nenv;
 	Intvs intvEnvOut, intvEnvIn;

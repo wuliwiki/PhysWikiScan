@@ -105,12 +105,12 @@ inline std::ostream &operator<<(std::ostream &out, Str32_I str32)
 }
 
 // operator+ that converts Str to Str32
-Str32 operator+(Str32_I str32, Str_I str)
+inline Str32 operator+(Str32_I str32, Str_I str)
 {
 	return str32 + utf8to32(str);
 }
 
-Str32 operator+(Str_I str, Str32_I str32)
+inline Str32 operator+(Str_I str, Str32_I str32)
 {
 	return utf8to32(str) + str32;
 }
@@ -144,7 +144,7 @@ inline Long CRLF_to_LF(Str32_IO str)
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imin;
 	Nkey = key.size();
@@ -163,7 +163,7 @@ Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
 // keyword will be found even if starting from the middle of it
-Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -179,7 +179,7 @@ Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 
 // same as FindMultipleReverse, but able to deal with multiple match
 // return the number of matches, return -1 if not found
-Long rfind(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long rfind(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -199,7 +199,7 @@ Long rfind(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I sta
 
 // see if a key appears followed only by only white space or '\n'
 // return the index after the key found, return -1 if nothing found.
-Long expect(Str32_I str, Str32_I key, Long_I start)
+inline Long expect(Str32_I str, Str32_I key, Long_I start)
 {
 	Long ind = start;
 	Long ind0 = 0;
@@ -223,7 +223,7 @@ Long expect(Str32_I str, Str32_I key, Long_I start)
 }
 
 // trim all occurance of key on the left
-Long trimL(Str32_IO str, Char32_I key)
+inline Long trimL(Str32_IO str, Char32_I key)
 {
 	Long ind = str.find_first_not_of(key);
 	if (ind > 0) {
@@ -233,7 +233,7 @@ Long trimL(Str32_IO str, Char32_I key)
 }
 
 // trim all occurance of key on the right
-Long trimR(Str32_IO str, Char32_I key)
+inline Long trimR(Str32_IO str, Char32_I key)
 {
 	Long ind = str.find_last_not_of(key);
 	if (ind < str.size() - 1) {
@@ -260,7 +260,7 @@ inline Bool is_num(Char32_I c)
 // check if a character is alphanumeric (a-z, A-Z, 0-9)
 inline Bool is_alphanum(Char32_I c)
 {
-	if (is_letter(c) || c >= U'0' && c <= U'9')
+	if (is_letter(c) || is_num(c))
 		return true;
 	return false;
 }
@@ -274,7 +274,7 @@ inline Bool is_alphanum_(Char32_I c)
 }
 
 // check if a word is a whole word
-Bool is_whole_word(Str32_I str, Long_I ind, Long_I size)
+inline Bool is_whole_word(Str32_I str, Long_I ind, Long_I size)
 {
 	// check left
 	Long ind0 = ind - 1;
@@ -289,7 +289,7 @@ Bool is_whole_word(Str32_I str, Long_I ind, Long_I size)
 
 // find whole word, like in Visual Studio Code, begin from "str[start]"
 // return the first index of key found, return -1 if not found
-Long find_whole_word(Str32_I str, Str32_I key, Long_I start)
+inline Long find_whole_word(Str32_I str, Str32_I key, Long_I start)
 {
 	Long ind0 = start;
 	while (true) {
@@ -304,7 +304,7 @@ Long find_whole_word(Str32_I str, Str32_I key, Long_I start)
 
 // replace all occurance of "key" with "new_str"
 // return the number of keys replaced
-Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
+inline Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
 {
 	Long ind0 = 0;
 	Long Nkey = key.size();
@@ -323,7 +323,7 @@ Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
 // output single character c, return the position of the c
 // return -1 if not found
 // TODO: replace this with basic_string::find_first_not_of
-Long NextNoSpace(Str32_O c, Str32_I str, Long start)
+inline Long NextNoSpace(Str32_O c, Str32_I str, Long start)
 {
 	for (Long i = start; i < str.size(); ++i) {
 		c = str.at(i);
@@ -337,7 +337,7 @@ Long NextNoSpace(Str32_O c, Str32_I str, Long start)
 
 // reverse version of Expect key
 // return the previous index of the key found, return -2 if nothing found.
-Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
+inline Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
 {
 	Long ind = start;
 	Long L = str.size();
@@ -362,7 +362,7 @@ Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
 
 // Find the next number
 // return -1 if not found
-Long FindNum(Str32_I str, Long start)
+inline Long FindNum(Str32_I str, Long start)
 {
 	Long i{}, end = str.size() - 1;
 	unsigned char c;
@@ -376,7 +376,7 @@ Long FindNum(Str32_I str, Long start)
 // get non-negative integer from string
 // return the index after the last digit, return -1 if failed
 // str[start] must be a number
-Long str2int(Long_O num, Str32_I str, Long start)
+inline Long str2int(Long_O num, Str32_I str, Long start)
 {
 	Long i{};
 	Char32 c;
@@ -398,7 +398,7 @@ Long str2int(Long_O num, Str32_I str, Long start)
 // get non-negative double from string
 // return the index after the last digit, return -1 if failed
 // str[start] must be a number
-Long str2double(Doub& num, Str32_I str, Long start)
+inline Long str2double(Doub& num, Str32_I str, Long start)
 {
 	Long ind0{}, num1{}, num2{};
 	ind0 = str2int(num1, str, start);
@@ -419,7 +419,7 @@ Long str2double(Doub& num, Str32_I str, Long start)
 // when option = 'r' (right), will only delete ' ' or '\n' at "start" or to the right
 // when option = 'l' (left), will only delete ' ' or '\n' at "start" or to the left
 // when option = 'a' (all), will delete both direction
-Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
+inline Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
 {
 	Long i{}, Nstr{}, left{ start }, right{ start };
 	Nstr = str.size();
@@ -451,7 +451,7 @@ Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
 // or () or [] or anying single character
 // ind is inddex of left brace
 // return index of right brace, -1 if failed
-Long PairBraceR(Str32_I str, Long ind, Char32_I type = U'{')
+inline Long PairBraceR(Str32_I str, Long ind, Char32_I type = U'{')
 {
 	Char32 left, right;
 	if (type == U'{' || type == U'}') {
@@ -488,7 +488,7 @@ Long PairBraceR(Str32_I str, Long ind, Char32_I type = U'{')
 // match braces
 // return -1 means failure, otherwise return number of {} paired
 // output ind_left, ind_right, ind_RmatchL
-Long MatchBraces(vector<Long>& ind_left, vector<Long>& ind_right,
+inline Long MatchBraces(vector<Long>& ind_left, vector<Long>& ind_right,
 	vector<Long>& ind_RmatchL, Str32_I str, Long start, Long end)
 {
 	ind_left.resize(0); ind_right.resize(0); ind_RmatchL.resize(0);

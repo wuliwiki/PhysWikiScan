@@ -10,7 +10,7 @@ namespace slisc {
 // skip one "{...}"
 // return one index after '}', return -1 if failed
 // type can only be '{' for now
-Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
+inline Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
 {
 	for (Long i = 0; i < N; ++i) {
 		Long ind0 = expect(str, U"{", ind);
@@ -25,7 +25,7 @@ Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
 // if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
 // return the left interval boundary, output the right boundary
 // return -1 if not found.
-Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
+inline Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
 {
 	Long ind0 = start, ind1;
 	Long left;
@@ -62,7 +62,7 @@ Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char optio
 // if option = 'i', intervals are the strings inside "{}" (not including)
 // if option = 'o', range from first character of "key" to '}' (including)
 // return number of scopes found
-Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
+inline Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
 	intv.clear();
 	Long ind0 = 0, right;
@@ -81,7 +81,7 @@ Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 // key is escaped and only escaped if preceded by backslash '\'
 // return number of comments found. return -1 if failed
 // interval is from key[0] to '\n' (including)
-Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
+inline Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
 {
 	Long ind0{}, ind1{};
 	Long N{}; // number of comments found

@@ -9,7 +9,7 @@ using namespace slisc;
 // get the title (defined as the first comment, no space after %)
 // limited to 20 characters
 // return -1 if error, 0 if successful
-Long GetTitle(Str32_O title, Str32_I str)
+inline Long GetTitle(Str32_O title, Str32_I str)
 {
 	if (str.at(0) != U'%') {
 		SLS_WARN("Need a title!"); // break point here
@@ -33,7 +33,7 @@ Long GetTitle(Str32_O title, Str32_I str)
 // add <p> tags to paragraphs
 // return number of tag pairs added
 // return -1 if failed
-Long ParagraphTag(Str32_IO str)
+inline Long ParagraphTag(Str32_IO str)
 {
 	Long i{}, N{}, N1{}, ind0{}, ind2{};
 	vector<Long> ind;
@@ -192,7 +192,7 @@ Long ParagraphTag(Str32_IO str)
 // idNum is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_IO str)
+inline Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_IO str)
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -294,7 +294,7 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png, if doesn't exist, return -1
 // path must end with '\\'
-Long FigureEnvironment(Str32_IO str, Str32_I path)
+inline Long FigureEnvironment(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
 	double width{}; // figure width in cm
@@ -351,7 +351,7 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 }
 
 // replace \pentry comman with html round panel
-Long pentry(Str32_IO str)
+inline Long pentry(Str32_IO str)
 {
 	Long i{}, N{};
 	Intvs intvIn, intvOut;
@@ -369,7 +369,7 @@ Long pentry(Str32_IO str)
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
-Long RemoveNoEntry(vector<Str32> &names)
+inline Long RemoveNoEntry(vector<Str32> &names)
 {
 	Long i{}, j{}, N{}, Nnames{}, Nnames0;
 	vector<Str32> names0; // names to remove
@@ -392,7 +392,7 @@ Long RemoveNoEntry(vector<Str32> &names)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-Long ExampleEnvironment(Str32_IO str, Str32_I path0)
+inline Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
@@ -418,7 +418,7 @@ Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
+inline Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
@@ -446,7 +446,7 @@ Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryName, Str32_IO str)
+inline Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryName, Str32_IO str)
 {
 	unsigned i{};
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
@@ -505,7 +505,7 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 
 // process upref
 // path must end with '\\'
-Long upref(Str32_IO str, Str32_I path)
+inline Long upref(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{};
 	Intvs intvIn, intvOut;
@@ -533,7 +533,7 @@ Long upref(Str32_IO str, Str32_I path)
 // return the number of entries
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
-Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path)
+inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -656,7 +656,7 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 }
 
 // process Matlab code (\code command)
-Long MatlabCode(Str32_IO str, Str32_I path)
+inline Long MatlabCode(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
@@ -694,7 +694,7 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 }
 
 // same with MatlabCode, for \Code command
-Long MatlabCodeTitle(Str32_IO str, Str32_I path)
+inline Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{};
 	Str32 name; // code file name without extension
@@ -735,7 +735,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 // process lstlisting[language=MatlabCom] environments to display Matlab Command Line
 // return the number of \Command{} processed, return -1 if failed
 // TODO: make sure it's \begin{lstlisting}[language=MatlabCom], not any lstlisting
-Long MatlabComLine(Str32_IO str)
+inline Long MatlabComLine(Str32_IO str)
 {
 	Long i{}, j{}, N{}, ind0{};
 	Intvs intvIn, intvOut;
@@ -766,7 +766,7 @@ Long MatlabComLine(Str32_IO str)
 }
 
 // find \bra{}\ket{} and mark
-Long OneFile4(Str32_I path)
+inline Long OneFile4(Str32_I path)
 {
 	Long ind0{}, ind1{}, N{};
 	Str32 str;
@@ -799,7 +799,7 @@ Long OneFile4(Str32_I path)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
+inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	Str32 path0, const vector<Str32>& names, const vector<Str32>& titles)
 {
 	Long i{}, j{}, ind0;
@@ -992,7 +992,7 @@ inline void PhysWikiOnline(Str32_I path0)
 }
 
 // check format error of .tex files in path0
-void PhysWikiCheck(Str32_I path0)
+inline void PhysWikiCheck(Str32_I path0)
 {
 	Long ind0{};
 	vector<Str32> names;
