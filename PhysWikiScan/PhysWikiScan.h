@@ -37,7 +37,7 @@ Long ParagraphTag(Str32_IO str)
 {
 	Long i{}, N{}, N1{}, ind0{}, ind2{};
 	vector<Long> ind;
-	TrimLeft(str, U'\n'); TrimRight(str, U'\n');
+	trimL(str, U'\n'); trimR(str, U'\n');
 	// delete extra '\n' (more than two continuous)
 	while (true) {
 		ind0 = str.find(U"\n\n\n", ind0);
@@ -69,7 +69,7 @@ Long ParagraphTag(Str32_IO str)
 	FindAllComBrace(intv1, U"pentry", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = ExpectKey(str, U"</p>", intv.R(i) + 1);
+		ind0 = expect(str, U"</p>", intv.R(i) + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
@@ -102,7 +102,7 @@ Long ParagraphTag(Str32_IO str)
 	FindAllComBrace(intv1, U"Code", str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = ExpectKey(str, U"</p>", intv.R(i) + 1);
+		ind0 = expect(str, U"</p>", intv.R(i) + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
@@ -164,7 +164,7 @@ Long ParagraphTag(Str32_IO str)
 	FindEnd(intv1, U"exer", str);
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = ExpectKey(str, U"</p>", intv.R(i) + 1);
+		ind0 = expect(str, U"</p>", intv.R(i) + 1);
 		if (ind0 >= 0) {
 			str.erase(ind0 - 4, 4);
 		}
@@ -211,26 +211,26 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 			return -1;
 		}
 		// detect environment kind
-		ind1 = ExpectKey(str, U"{", ind4 + 6);
-		if (ExpectKey(str, U"equation", ind1) > 0) {
+		ind1 = expect(str, U"{", ind4 + 6);
+		if (expect(str, U"equation", ind1) > 0) {
 			idName = U"eq"; envName = U"equation";
 		}
-		else if (ExpectKey(str, U"figure", ind1) > 0) {
+		else if (expect(str, U"figure", ind1) > 0) {
 			idName = U"fig"; envName = U"figure";
 		}
-		else if (ExpectKey(str, U"exam", ind1) > 0) {
+		else if (expect(str, U"exam", ind1) > 0) {
 			idName = U"ex"; envName = U"exam";
 		}
-		else if (ExpectKey(str, U"exer", ind1) > 0) {
+		else if (expect(str, U"exer", ind1) > 0) {
 			idName = U"exe"; envName = U"exer";
 		}
-		else if (ExpectKey(str, U"table", ind1) > 0) {
+		else if (expect(str, U"table", ind1) > 0) {
 			idName = U"tab"; envName = U"table";
 		}
-		else if (ExpectKey(str, U"gather", ind1) > 0) {
+		else if (expect(str, U"gather", ind1) > 0) {
 			idName = U"eq"; envName = U"gather";
 		}
-		else if (ExpectKey(str, U"align", ind1) > 0) {
+		else if (expect(str, U"align", ind1) > 0) {
 			idName = U"eq"; envName = U"align";
 		}
 		else {
@@ -238,15 +238,15 @@ Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_
 			return -1; // break point here
 		}
 		// check label format and save label
-		ind0 = ExpectKey(str, U"{", ind5 + 6);
-		ind3 = ExpectKey(str, entryName + U'_' + idName, ind0);
+		ind0 = expect(str, U"{", ind5 + 6);
+		ind3 = expect(str, entryName + U'_' + idName, ind0);
 		if (ind3 < 0) {
 			SLS_WARN("label format error! expecting \"" + utf32to8(entryName + U'_' + idName) + "\"");
 			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
 		label.push_back(str.substr(ind0, ind3 - ind0));
-		TrimLeft(label.back(), U' '); TrimRight(label.back(), U' ');
+		trimL(label.back(), U' '); trimR(label.back(), U' ');
 		// count idNum, insert html id tag, delete label
 		Intvs intvEnv;
 		if (idName != U"eq") {
@@ -305,7 +305,7 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 	for (i = Nfig - 1; i >= 0; --i) {
 		// get width of figure
 		ind0 = str.find(U"width", intvFig.L(i)) + 5;
-		ind0 = ExpectKey(str, U"=", ind0);
+		ind0 = expect(str, U"=", ind0);
 		ind0 = FindNum(str, ind0);
 		str2double(width, str, ind0);
 		// get file name of figure
@@ -324,11 +324,11 @@ Long FigureEnvironment(Str32_IO str, Str32_I path)
 			SLS_WARN("fig caption not found!");
 			return -1; // break point here
 		}
-		ind0 = ExpectKey(str, U"{", ind0 + 8);
+		ind0 = expect(str, U"{", ind0 + 8);
 		ind1 = PairBraceR(str, ind0);
 		caption = str.substr(ind0, ind1 - ind0);
 		str.erase(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1); // delete environment
-		ind0 = ExpectKey(str, U"\n</p>", intvFig.L(i));
+		ind0 = expect(str, U"\n</p>", intvFig.L(i));
 		// test img file existence
 		if (file_exist(path + figName + ".svg"))
 			format = U".svg";
@@ -402,7 +402,7 @@ Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = str.find('{', intvOut.L(i));
 		ind0 = PairBraceR(str, ind0);
-		ind0 = ExpectKey(str, U"{", ind0 + 1);
+		ind0 = expect(str, U"{", ind0 + 1);
 		ind1 = PairBraceR(str, ind0 - 1);
 		exName = str.substr(ind0, ind1 - ind0);
 		// replace with html tags
@@ -428,7 +428,7 @@ Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = str.find(U"{", intvOut.L(i));
 		ind0 = PairBraceR(str, ind0);
-		ind0 = ExpectKey(str, U"{", ind0 + 1);
+		ind0 = expect(str, U"{", ind0 + 1);
 		ind1 = PairBraceR(str, ind0 - 1);
 		exName = str.substr(ind0, ind1 - ind0);
 		// replace with html tags
@@ -458,7 +458,7 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 		ind0 = str.find(U"\\autoref", ind0);
 		if (ind0 < 0) return N;
 		inEq = IndexInEnv(ienv, ind0, envNames, str);
-		ind1 = ExpectKey(str, U"{", ind0 + 8);
+		ind1 = expect(str, U"{", ind0 + 8);
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.find('_', ind1);
 		if (ind2 < 0) {
@@ -478,7 +478,7 @@ Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryN
 		}
 		ind3 = str.find('}', ind3);
 		// find id of the label
-		label0 = str.substr(ind1, ind3 - ind1); TrimLeft(label0, U' '); TrimRight(label0, U' ');
+		label0 = str.substr(ind1, ind3 - ind1); trimL(label0, U' '); trimR(label0, U' ');
 		for (i = 0; i < label.size(); ++i) {
 			if (label0 == label[i]) break;
 		}
@@ -514,7 +514,7 @@ Long upref(Str32_IO str, Str32_I path)
 	FindAllComBrace(intvOut, U"upref", str, 'o');
 	for (i = intvOut.size() - 1; i >= 0; --i) {
 		entryName = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
-		TrimLeft(entryName, U' '); TrimRight(entryName, U' ');
+		trimL(entryName, U' '); trimR(entryName, U' ');
 		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
 			SLS_WARN("upref file not found!");
 			return -1; // break point here
@@ -575,23 +575,23 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	for (i = intvComm.size() - 1; i >= 0; --i)
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	while (true) {
-		ind1 = FindMultiple(ikey, str, keys, ind1);
+		ind1 = find(ikey, str, keys, ind1);
 		if (ind1 < 0) break;
 		if (ikey >= 2) { // found "\entry"
 			// get chinese title and entry label
 			if (ikey == 2 || ikey == 3) ind1 += 6;
 			else if (ikey == 4) ind1 += 9;
 			++N;
-			ind1 = ExpectKey(str, U"{", ind1);
+			ind1 = expect(str, U"{", ind1);
 			ind2 = str.find(U"}", ind1);
 			title = str.substr(ind1, ind2 - ind1);
-			TrimLeft(title, U' '); TrimRight(title, U' ');
+			trimL(title, U' '); trimR(title, U' ');
 			replace(title, U"\\ ", U" ");
 			if (title.empty()) {
 				SLS_WARN("Chinese title is empty in PhysWiki.tex!");
 				return -1;  // break point here
 			}
-			ind1 = ExpectKey(str, U"{", ind2 + 1);
+			ind1 = expect(str, U"{", ind2 + 1);
 			ind2 = str.find(U"}", ind1);
 			entryName = str.substr(ind1, ind2 - ind1);
 			ind1 = ind2;
@@ -611,10 +611,10 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 		else if (ikey == 1) { // found "\chapter"
 			// get chinese chapter name
 			ind1 += 8;
-			ind1 = ExpectKey(str, U"{", ind1);
+			ind1 = expect(str, U"{", ind1);
 			ind2 = str.find('}', ind1);
 			title = str.substr(ind1, ind2 - ind1);
-			TrimLeft(title, U' '); TrimRight(title, U' ');
+			trimL(title, U' '); trimR(title, U' ');
 
 	 		replace(title, U"\\ ", U" ");
 	 		ind1 = ind2;
@@ -628,10 +628,10 @@ Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I p
 	 	else if (ikey == 0){ // found "\part"
 	 		// get chinese part name
 	 		ind1 += 5; chapNo = -1;
-	 		ind1 = ExpectKey(str, U"{", ind1);
+	 		ind1 = expect(str, U"{", ind1);
 	 		ind2 = str.find('}', ind1);
 	 		title = str.substr(ind1, ind2 - ind1);
-			TrimLeft(title, U' '); TrimRight(title, U' ');
+			trimL(title, U' '); trimR(title, U' ');
 	 		replace(title, U"\\ ", U" ");
 	 		ind1 = ind2;
 	 		// insert part into html table of contents
@@ -668,7 +668,7 @@ Long MatlabCode(Str32_IO str, Str32_I path)
 	for (i = N - 1; i >= 0; --i) {
 		// get code file name
 		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
-		TrimLeft(name, U' '); TrimRight(name, U' ');
+		trimL(name, U' '); trimR(name, U' ');
 		// read file
 		if (!file_exist(path + utf32to8(name) + ".m")) {
 			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
@@ -706,7 +706,7 @@ Long MatlabCodeTitle(Str32_IO str, Str32_I path)
 	for (i = N - 1; i >= 0; --i) {
 		// get code file name
 		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
-		TrimLeft(name, U' '); TrimRight(name, U' ');
+		trimL(name, U' '); trimR(name, U' ');
 		// read file
 		if (!file_exist(path + utf32to8(name) + ".m")) {
 			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
@@ -743,7 +743,7 @@ Long MatlabComLine(Str32_IO str)
 	N = FindEnv(intvIn, str, U"lstlisting");
 	N = FindEnv(intvOut, str, U"lstlisting", 'o');
 	for (i = N - 1; i >= 0; --i) {
-		ind0 = ExpectKey(str, U"[", intvIn.L(i));
+		ind0 = expect(str, U"[", intvIn.L(i));
 		ind0 = PairBraceR(str, ind0, U'[');
 		code = str.substr(ind0+1, intvIn.R(i)-ind0);
 		if (code[0] != U'\n' || code.back() != U'\n') {
@@ -776,12 +776,12 @@ Long OneFile4(Str32_I path)
 		ind0 = str.find(U"\\bra", ind0);
 		if (ind0 < 0) break;
 		ind1 = ind0 + 4;
-		ind1 = ExpectKey(str, U"{", ind1);
+		ind1 = expect(str, U"{", ind1);
 		if (ind1 < 0) {
 			++ind0; continue;
 		}
 		ind1 = PairBraceR(str, ind1 - 1);
-		ind1 = ExpectKey(str, U"\\ket", ind1 + 1);
+		ind1 = expect(str, U"\\ket", ind1 + 1);
 		if (ind1 > 0) {
 			str.insert(ind0, U"删除标记"); ++N;
 			ind0 = ind1 + 4;

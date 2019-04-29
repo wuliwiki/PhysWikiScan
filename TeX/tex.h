@@ -1,8 +1,46 @@
-﻿#pragma once
+﻿// tex parser utilities
+// always remove comments first
+#pragma once
 #include "../SLISC/parser.h"
 #include <cassert>
 
+
 namespace slisc {
+
+// find text command '\name', return the index of '\'
+// output the index of "name.back()"
+Long find_command(Str32_I str, Str32_I name, Long_I start)
+{
+	Long ind0;
+	while (true) {
+		ind0 = str.find(U"\\" + name, start);
+		if (ind0 < 0)
+			return -1;
+		// check right
+		Char32 c = ind0 + name.size() + 1;
+		if (c == '{' || c == U' ' || c == U'\n' || is_num(c))
+			return ind0;
+		++ind0;
+	}
+}
+
+// skipt command name (command name can only have letters)
+// input the index of '\'
+// return one index after command name
+Long skip_command_name(Str32_I str, Long_I ind)
+{
+	for (Long i = ind + 1; i < str.size(); ++i) {
+		if (!is_letter(str[i]))
+			return i;
+	}
+	return -1;
+}
+
+// get the i-th command argument
+Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i)
+{
+	return 1;
+}
 
 // Find the next "\key{...}" in "str"
 // find "\key{}{}" when option = '2'
@@ -34,11 +72,11 @@ Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I 
 			right = -1; return -1;
 		}
 		temp = str.substr(left, right - left + 1);
-		TrimLeft(temp, U' '); TrimRight(temp, U' ');
+		trimL(temp, U' '); trimR(temp, U' ');
 		if (temp == key2) {
 			ind0 = ExpectKeyReverse(str, U'\\' + key, left - 2) + 1;
 			assert(ind0 >= 0);
-			right = ExpectKey(str, U"}", right+1) - 1;
+			right = expect(str, U"}", right+1) - 1;
 			return ind0;
 		}
 	}
@@ -77,16 +115,16 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 		ind0 = ind3 + 6;
 
 		// expect '{'
-		ind0 = ExpectKey(str, U"{", ind0);
+		ind0 = expect(str, U"{", ind0);
 		if (ind0 < 0)
 			return -1;
 		// expect 'env'
-		ind1 = ExpectKey(str, env, ind0);
+		ind1 = expect(str, env, ind0);
 		if (ind1 < 0 || !is_whole_word(str, ind1-env.size(), env.size()))
 			continue;
 		ind0 = ind1;
 		// expect '}'
-		ind0 = ExpectKey(str, U"}", ind0);
+		ind0 = expect(str, U"}", ind0);
 		if (ind0 < 0)
 			return -1;
 		intv.pushL(option == 'i' ? ind0 : ind3);
@@ -101,16 +139,16 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 			ind2 = ind0 - 1;
 			ind0 += 4;
 			// expect '{'
-			ind0 = ExpectKey(str, U"{", ind0);
+			ind0 = expect(str, U"{", ind0);
 			if (ind0 < 1)
 				return -1;
 			// expect 'env'
-			ind1 = ExpectKey(str, env, ind0);
+			ind1 = expect(str, env, ind0);
 			if (ind1 < 0)
 				continue;
 			ind0 = ind1;
 			// expect '}'
-			ind0 = ExpectKey(str, U"}", ind0);
+			ind0 = expect(str, U"}", ind0);
 			if (ind0 < 0)
 				return -1;
 			intv.pushR(option == 'i' ? ind2 : ind0 - 1);
@@ -206,14 +244,14 @@ Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 		ind1 = str.find(U"\\begin", ind0);
 		if (ind1 < 0)
 			return N;
-		ind0 = ExpectKey(str, U"{", ind1 + 6);
-		if (ExpectKey(str, env, ind0) < 0)
+		ind0 = expect(str, U"{", ind1 + 6);
+		if (expect(str, env, ind0) < 0)
 			continue;
 		++N; intv.pushL(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (option == '1')
 			intv.pushR(ind0);
-		ind0 = ExpectKey(str, U"{", ind0 + 1);
+		ind0 = expect(str, U"{", ind0 + 1);
 		if (ind0 < 0) {
 			SLS_ERR("expecting {}{}!"); return -1;  // break point here
 		}
@@ -233,8 +271,8 @@ Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 		ind1 = str.find(U"\\end", ind0);
 		if (ind1 < 0)
 			return N;
-		ind0 = ExpectKey(str, U"{", ind1 + 4);
-		if (ExpectKey(str, env, ind0) < 0)
+		ind0 = expect(str, U"{", ind1 + 4);
+		if (expect(str, env, ind0) < 0)
 			continue;
 		++N; intv.pushL(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
@@ -329,7 +367,7 @@ Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO s
 		ind0 = str.find(U"\\" + nameComm, ind0);
 		if (ind0 < 0) break;
 		ind1 = ind0 + nameComm.size() + 1;
-		ind1 = ExpectKey(str, U"{", ind1); --ind1;
+		ind1 = expect(str, U"{", ind1); --ind1;
 		if (ind1 < 0) {
 			++ind0; continue;
 		}

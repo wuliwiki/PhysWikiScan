@@ -53,14 +53,14 @@ inline void utf32to8(Str_O str, Str32_I str32)
 }
 #else
 // convert from UTF-8 Str to UTF-32 Str32
-inline void UTF8_to_UTF32(Str32_O str32, Str_I str)
+inline void utf8to32(Str32_O str32, Str_I str)
 {
 	std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> myconv;
 	str32 = myconv.from_bytes(str);
 }
 
 // convert from UTF-32 Str32 to UTF-8 Str
-inline void UTF32_to_UTF8(Str_O str, Str32_I str32)
+inline void utf32to8(Str_O str, Str32_I str32)
 {
 	std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> myconv;
 	str = myconv.to_bytes(str32);
@@ -141,10 +141,10 @@ inline Long CRLF_to_LF(Str32_IO str)
 	}
 }
 
-// Fiind the next appearance of
+// Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-Long FindMultiple(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imin;
 	Nkey = key.size();
@@ -159,11 +159,11 @@ Long FindMultiple(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I sta
 	return imin;
 }
 
-// Fiind the previous appearance of
+// Find the previous appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
 // keyword will be found even if starting from the middle of it
-Long FindMultipleReverse(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -179,7 +179,7 @@ Long FindMultipleReverse(Long_O ikey, Str32_I str, const vector<Str32> &key, Lon
 
 // same as FindMultipleReverse, but able to deal with multiple match
 // return the number of matches, return -1 if not found
-Long FindMultipleReverseN(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+Long rfind(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -199,7 +199,7 @@ Long FindMultipleReverseN(vector<Long> &ikey, Str32_I str, const vector<Str32> &
 
 // see if a key appears followed only by only white space or '\n'
 // return the index after the key found, return -1 if nothing found.
-Long ExpectKey(Str32_I str, Str32_I key, Long_I start)
+Long expect(Str32_I str, Str32_I key, Long_I start)
 {
 	Long ind = start;
 	Long ind0 = 0;
@@ -223,7 +223,7 @@ Long ExpectKey(Str32_I str, Str32_I key, Long_I start)
 }
 
 // trim all occurance of key on the left
-Long TrimLeft(Str32_IO str, Char32_I key)
+Long trimL(Str32_IO str, Char32_I key)
 {
 	Long ind = str.find_first_not_of(key);
 	if (ind > 0) {
@@ -233,7 +233,7 @@ Long TrimLeft(Str32_IO str, Char32_I key)
 }
 
 // trim all occurance of key on the right
-Long TrimRight(Str32_IO str, Char32_I key)
+Long trimR(Str32_IO str, Char32_I key)
 {
 	Long ind = str.find_last_not_of(key);
 	if (ind < str.size() - 1) {
@@ -246,6 +246,13 @@ Long TrimRight(Str32_IO str, Char32_I key)
 inline Bool is_letter(Char32_I c)
 {
 	if (c >= U'a' && c <= U'z' || c >= U'A' && c <= U'Z')
+		return true;
+	return false;
+}
+
+inline Bool is_num(Char32_I c)
+{
+	if (c >= U'0' && c <= U'9')
 		return true;
 	return false;
 }
@@ -444,17 +451,17 @@ Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
 // or () or [] or anying single character
 // ind is inddex of left brace
 // return index of right brace, -1 if failed
-Long PairBraceR(Str32_I str, Long ind, Char32_I type = '{')
+Long PairBraceR(Str32_I str, Long ind, Char32_I type = U'{')
 {
 	Char32 left, right;
-	if (type == '{' || type == '}') {
-		left = '{'; right = '}';
+	if (type == U'{' || type == U'}') {
+		left = U'{'; right = U'}';
 	}
-	else if (type == '(' || type == ')') {
-		left = '('; right = ')';
+	else if (type == U'(' || type == U')') {
+		left = U'('; right = U')';
 	}
-	else if (type == '[' || type == ']') {
-		left = '['; right = ']';
+	else if (type == U'[' || type == U']') {
+		left = U'['; right = U']';
 	}
 	else {// anything else
 		left = type; right = type;

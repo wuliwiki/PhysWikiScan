@@ -6,6 +6,20 @@
 
 namespace slisc {
 
+// skip N contiguous scope
+// skip one "{...}"
+// return one index after '}', return -1 if failed
+// type can only be '{' for now
+Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
+{
+	for (Long i = 0; i < N; ++i) {
+		Long ind0 = expect(str, U"{", ind);
+		if (ind0 < 0)
+			return -1;
+		ind0 = PairBraceR(str, ind0 - 1) + 1;
+	}
+}
+
 // Find the next "key{...}" in "str"
 // find "key{...}{...}" when option = '2'
 // if option = 'i', range does not include {}, if 'o', range from first character of <key> to '}'
@@ -21,7 +35,7 @@ Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char optio
 			right = -1; return -1;
 		}
 		ind0 = ind1 + key.size();
-		ind0 = ExpectKey(str, U"{", ind0);
+		ind0 = expect(str, U"{", ind0);
 		if (ind0 < 0) {
 			ind0 = ind1 + key.size(); continue;
 		}
@@ -32,7 +46,7 @@ Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Char optio
 			break;
 		}
 		else {
-			ind0 = ExpectKey(str, U"{", ind0 + 1);
+			ind0 = expect(str, U"{", ind0 + 1);
 			if (ind0 < 0)
 				continue;
 			ind0 = PairBraceR(str, ind0 - 1);

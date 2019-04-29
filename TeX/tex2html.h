@@ -52,7 +52,7 @@ Long StarCommand(Str32_I name, Str32_IO str)
 		ind0 = str.find(U"\\" + name, ind0 + 1);
 		if (ind0 < 0) break;
 		ind0 += name.size() + 1;
-		ind1 = ExpectKey(str, U"*", ind0);
+		ind1 = expect(str, U"*", ind0);
 		if (ind1 < 0) continue;
 		str.erase(ind0, ind1 - ind0); // delete * and spaces
 		str.insert(ind0, U"Star");
@@ -75,19 +75,19 @@ Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
 		ind0 = str.find(U"\\" + name, ind0 + 1);
 		if (ind0 < 0) break;
 		ind0 += name.size() + 1;
-		ind1 = ExpectKey(str, U"[", ind0);
+		ind1 = expect(str, U"[", ind0);
 		if (ind1 > 0)
 			ind1 = PairBraceR(str, ind1 - 1, U']') + 1;
 		else
 			ind1 = ind0;
-		ind1 = ExpectKey(str, U"{", ind1);
+		ind1 = expect(str, U"{", ind1);
 		if (ind1 < 0) continue;
 		ind1 = PairBraceR(str, ind1 - 1);
-		ind1 = ExpectKey(str, U"{", ind1 + 1);
+		ind1 = expect(str, U"{", ind1 + 1);
 		if (ind1 < 0) continue;
 		ind1 = PairBraceR(str, ind1 - 1);
 		if (maxVars == 2) { str.insert(ind0, U"Two"); ++N; continue; }
-		ind1 = ExpectKey(str, U"{", ind1 + 1);
+		ind1 = expect(str, U"{", ind1 + 1);
 		if (ind1 < 0) {
 			str.insert(ind0, U"Two"); ++N; continue;
 		}
@@ -106,7 +106,7 @@ Long RoundSquareCommand(Str32_I name, Str32_IO str)
 		ind0 = str.find(U"\\" + name, ind0);
 		if (ind0 < 0) break;
 		ind0 += name.size() + 1;
-		ind2 = ExpectKey(str, U"(", ind0);
+		ind2 = expect(str, U"(", ind0);
 		if (ind2 > 0) {
 			--ind2;
 			ind3 = PairBraceR(str, ind2, U')');
@@ -116,7 +116,7 @@ Long RoundSquareCommand(Str32_I name, Str32_IO str)
 			++N;
 		}
 		else {
-			ind2 = ExpectKey(str, U"[", ind0);
+			ind2 = expect(str, U"[", ind0);
 			if (ind2 < 0) break;
 			--ind2;
 			ind3 = PairBraceR(str, ind2, U']');
@@ -139,7 +139,7 @@ Long MathFunction(Str32_I name, Str32_IO str)
 		ind0 = str.find(U"\\" + name, ind0);
 		if (ind0 < 0) break;
 		ind0 += name.size() + 1;
-		ind1 = ExpectKey(str, U"[", ind0);
+		ind1 = expect(str, U"[", ind0);
 		if (ind1 > 0) {
 			--ind1;
 			ind1 = PairBraceR(str, ind1, ']');
@@ -147,7 +147,7 @@ Long MathFunction(Str32_I name, Str32_IO str)
 		}
 		else
 			ind2 = ind0;
-		ind2 = ExpectKey(str, U"(", ind2);
+		ind2 = expect(str, U"(", ind2);
 		if (ind2 < 0) continue;
 		--ind2;
 		ind3 = PairBraceR(str, ind2, ')');
@@ -223,7 +223,7 @@ Long Table(Str32_IO str)
 		if (ind0 < 0 || ind0 > intv.R(i)) {
 			cout << "table no caption!" << endl; return -1;  // break point here
 		}
-		ind0 += 8; ind0 = ExpectKey(str, U"{", ind0);
+		ind0 += 8; ind0 = expect(str, U"{", ind0);
 		ind1 = PairBraceR(str, ind0 - 1);
 		caption = str.substr(ind0, ind1 - ind0);
 		// recognize \hline and replace with tags, also deletes '\\'
@@ -375,7 +375,7 @@ Long footnote(Str32_IO str)
 		N++;
 		if (N == 1)
 			str += U"\n<hr><p>\n";
-		ind1 = ExpectKey(str, U"{", ind0 + 9);
+		ind1 = expect(str, U"{", ind0 + 9);
 		ind2 = PairBraceR(str, ind1 - 1);
 		note = str.substr(ind1, ind2 - ind1);
 		str.erase(ind0, ind2 - ind0 + 1);

@@ -17,7 +17,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 		if (!in_string) {
 			// first quote in comment
 			Long ikey;
-			FindMultipleReverse(ikey, str, { U"\n", U"%" }, ind0 - 1);
+			rfind(ikey, str, { U"\n", U"%" }, ind0 - 1);
 			if (ikey == 1) {
 				++ind0; continue;
 			}
@@ -52,7 +52,7 @@ inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I 
 
 		// find the last keyword
 		vector<Long> ikeys;
-		ind0 = FindMultipleReverseN(ikeys, str, keywords, ind0);
+		ind0 = rfind(ikeys, str, keywords, ind0);
 		if (ind0 < 0)
 			break;
 
