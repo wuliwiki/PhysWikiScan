@@ -46,7 +46,7 @@ Long FindComment0(Intvs_O intv, Str32_I str)
 		ind1 = str.find(U'%', ind0);
 		if (ind1 >= 0)
 			if (ind1 == 0 || (ind1 > 0 && str.at(ind1 - 1) != U'\\')) {
-				intv.push_back(ind1); ++N;
+				intv.pushL(ind1); ++N;
 			}
 			else {
 				ind0 = ind1 + 1;  continue;
@@ -56,11 +56,11 @@ Long FindComment0(Intvs_O intv, Str32_I str)
 
 		ind1 = str.find(U'\n', ind1 + 1);
 		if (ind1 < 0) {// not found
-			intv.push_back(str.size() - 1);
+			intv.pushR(str.size() - 1);
 			return N;
 		}
 		else
-			intv.push_back(ind1);
+			intv.pushR(ind1);
 
 		ind0 = ind1;
 	}
@@ -98,7 +98,7 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 		ind0 = ExpectKey(str, U"}", ind0);
 		if (ind0 < 0)
 			return -1;
-		intv.push_back(option == 'i' ? ind0 : ind3);
+		intv.pushL(option == 'i' ? ind0 : ind3);
 
 		while (true)
 		{
@@ -122,7 +122,7 @@ Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 			ind0 = ExpectKey(str, U"}", ind0);
 			if (ind0 < 0)
 				return -1;
-			intv.push_back(option == 'i' ? ind2 : ind0 - 1);
+			intv.pushR(option == 'i' ? ind2 : ind0 - 1);
 			++N;
 			break;
 		}
@@ -137,13 +137,11 @@ Long FindComment(Intvs_O intv, Str32_I str)
 	FindComment0(intv, str);
 	Intvs intvLst;
 	FindEnv(intvLst, str, U"lstlisting", 'o');
-	for (Long i = intv.size() - 2; i >= 0; i -= 2) {
-		if (is_in(intv[i], intvLst))
-			intv.erase(intv.begin() + i, intv.begin() + i+2);
+	for (Long i = intv.size() - 1; i >= 0; --i) {
+		if (is_in(intv.L(i), intvLst))
+			intv.erase(i, 1);
 	}
-	if (isodd(intv.size()))
-		SLS_ERR("even number expected!");
-	return intv.size()/2;
+	return intv.size();
 }
 
 // find the range of inline equations using $$
@@ -151,7 +149,7 @@ Long FindComment(Intvs_O intv, Str32_I str)
 // return the number of $$ environments found.
 Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 {
-	intv.resize(0);
+	intv.clear();
 	Long N{}; // number of $$
 	Long ind0{};
 	Intvs intvComm; // result from FindComment
@@ -176,8 +174,8 @@ Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 	}
 	N /= 2;
 	if (option == 'i' && N > 0)
-		for (Long i{}; i < 2 * N; i += 2) {
-			++intv[i]; --intv[i + 1];
+		for (Long i = 0; i < N; ++i) {
+			++intv.L(i); --intv.R(i);
 		}
 	return N;
 }
@@ -195,23 +193,23 @@ Long FindComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 	{
 		ind1 = str.find(key, ind0);
 		if (ind1 < 0)
-			return intv.size() / 2;
+			return intv.size();
 		ind0 = ind1 + key.size();
 		ind0 = ExpectKey(str, U"{", ind0);
 		if (ind0 < 0) {
 			ind0 = ind1 + key.size(); continue;
 		}
-		intv.push_back(option == 'i' ? ind0 : ind1);
+		intv.pushL(option == 'i' ? ind0 : ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (option != '2') {
-			intv.push_back(option == 'i' ? ind0 - 1 : ind0);
+			intv.pushR(option == 'i' ? ind0 - 1 : ind0);
 		}
 		else {
 			ind0 = ExpectKey(str, U"{", ind0 + 1);
 			if (ind0 < 0)
 				continue;
 			ind0 = PairBraceR(str, ind0 - 1);
-			intv.push_back(ind0);
+			intv.pushR(ind0);
 		}
 	}
 }
@@ -221,7 +219,7 @@ Long FindComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 // return number found, return -1 if failed
 Long FindBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 {
-	intv.resize(0);
+	intv.clear();
 	Long N{}, ind0{}, ind1;
 	while (true) {
 		ind1 = str.find(U"\\begin", ind0);
@@ -230,16 +228,16 @@ Long FindBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 		ind0 = ExpectKey(str, U"{", ind1 + 6);
 		if (ExpectKey(str, env, ind0) < 0)
 			continue;
-		++N; intv.push_back(ind1);
+		++N; intv.pushL(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
 		if (option == '1')
-			intv.push_back(ind0);
+			intv.pushR(ind0);
 		ind0 = ExpectKey(str, U"{", ind0 + 1);
 		if (ind0 < 0) {
 			SLS_ERR("expecting {}{}!"); return -1;  // break point here
 		}
 		ind0 = PairBraceR(str, ind0 - 1);
-		intv.push_back(ind0);
+		intv.pushR(ind0);
 	}
 }
 
@@ -248,7 +246,7 @@ Long FindBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 // return number found, return -1 if failed
 Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
-	intv.resize(0);
+	intv.clear();
 	Long N{}, ind0{}, ind1{};
 	while (true) {
 		ind1 = str.find(U"\\end", ind0);
@@ -257,9 +255,9 @@ Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 		ind0 = ExpectKey(str, U"{", ind1 + 4);
 		if (ExpectKey(str, env, ind0) < 0)
 			continue;
-		++N; intv.push_back(ind1);
+		++N; intv.pushL(ind1);
 		ind0 = PairBraceR(str, ind0 - 1);
-		intv.push_back(ind0);
+		intv.pushR(ind0);
 	}
 }
 
@@ -372,11 +370,11 @@ Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 	Intvs intvEnvOut, intvEnvIn;
 	Nenv = FindEnv(intvEnvIn, str, nameEnv, 'i');
 	Nenv = FindEnv(intvEnvOut, str, nameEnv, 'o');
-	for (i = 2 * Nenv - 2; i >= 0; i -= 2) {
-		str.erase(intvEnvIn[i + 1] + 1, intvEnvOut[i + 1] - intvEnvIn[i + 1]);
-		str.insert(intvEnvIn[i + 1] + 1, strRight);
-		str.erase(intvEnvOut[i], intvEnvIn[i] - intvEnvOut[i]);
-		str.insert(intvEnvOut[i], strLeft);
+	for (i = Nenv - 1; i >= 0; --i) {
+		str.erase(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i));
+		str.insert(intvEnvIn.R(i) + 1, strRight);
+		str.erase(intvEnvOut.L(i), intvEnvIn.L(i) - intvEnvOut.L(i));
+		str.insert(intvEnvOut.L(i), strLeft);
 		++N;
 	}
 	return N;

@@ -23,20 +23,18 @@ inline Long Matlab_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 	while (true) {
 		ind0 = str.find(U'%', ind0);
 		if (ind0 < 0) {
-			if (isodd(intv.size()))
-				SLS_ERR("range pairs must be even!");
-			return intv.size()/2;
+			return intv.size();
 		}
 		if (is_in(ind0, intv_str))
 			continue;
-		intv.push_back(ind0);
+		intv.pushL(ind0);
 		ind0 = str.find(U'\n', ind0);
 		// last line, line ending
 		if (ind0 < 0) {
-			intv.push_back(str.size()-1);
+			intv.pushR(str.size()-1);
 			return N;
 		}
-		intv.push_back(ind0-1);
+		intv.pushR(ind0-1);
 	}
 }
 

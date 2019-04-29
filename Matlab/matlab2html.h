@@ -11,9 +11,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 	while (true) {
 		ind0 = str.find(U'\'', ind0);
 		if (ind0 < 0) {
-			if (isodd(intv.size()))
-				SLS_ERR("range pairs must be even!");
-			return intv.size() / 2;
+			return intv.size();
 		}
 
 		if (!in_string) {
@@ -28,8 +26,10 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 				++ind0; continue;
 			}
 		}
-
-		intv.push_back(ind0);
+		if (in_string)
+			intv.pushR(ind0);
+		else
+			intv.pushL(ind0);
 		in_string = !in_string;
 		++ind0;
 	}
@@ -93,9 +93,9 @@ inline Long Matlab_string(Str32_IO code, Str32_I str_class)
 	Matlab_strings(intv_str, code);
 
 	// highlight backwards
-	for (Long i = intv_str.size() - 2; i >= 0; i -= 2) {
-		code.insert(intv_str[i + 1] + 1, U"</span>");
-		code.insert(intv_str[i], U"<span class = \"" + str_class + "\">");
+	for (Long i = intv_str.size()-1; i >= 0; --i) {
+		code.insert(intv_str.R(i) + 1, U"</span>");
+		code.insert(intv_str.L(i), U"<span class = \"" + str_class + "\">");
 		++N;
 	}
 	return N;
@@ -114,9 +114,9 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 	Matlab_comments(intv_comm, code, intv_str);
 	
 	// highlight backwards
-	for (Long i = intv_comm.size() - 2; i >= 0; i -= 2) {
-		code.insert(intv_comm[i + 1] + 1, U"</span>");
-		code.insert(intv_comm[i], U"<span class = \"" + comm_class + "\">");
+	for (Long i = intv_comm.size() - 1; i >= 0; --i) {
+		code.insert(intv_comm.R(i) + 1, U"</span>");
+		code.insert(intv_comm.L(i), U"<span class = \"" + comm_class + "\">");
 		++N;
 	}
 	return N;
