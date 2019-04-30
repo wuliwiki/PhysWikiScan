@@ -37,7 +37,7 @@ inline Long ParagraphTag(Str32_IO str)
 {
 	Long i{}, N{}, N1{}, ind0{}, ind2{};
 	vector<Long> ind;
-	trim(str, U'\n');
+	trim(str, U"\n");
 	// delete extra '\n' (more than two continuous)
 	while (true) {
 		ind0 = str.find(U"\n\n\n", ind0);
