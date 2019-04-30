@@ -58,8 +58,8 @@ inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I 
 
 		// in case of multiple match, use the longest keyword (e.g. elseif/else)
 		Long ikey, max_size = 0;
-		for (Long i = 0; i < ikeys.size(); ++i) {
-			if (max_size < keywords[ikeys[i]].size()) {
+		for (Long i = 0; i < Size(ikeys); ++i) {
+			if (max_size < Size(keywords[ikeys[i]])) {
 				max_size = keywords[ikeys[i]].size();
 				ikey = ikeys[i];
 			}

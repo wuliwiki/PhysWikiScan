@@ -100,7 +100,7 @@ inline Long Intvs::size() const
 inline const Long &Intvs::L(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
-	if (i < 0 || i * 2 >= Base::size())
+	if (i < 0 || i * 2 >= (Long)Base::size())
 		SLS_ERR("out of bound!");
 #endif
 	return Base::operator[](i * 2);
@@ -109,7 +109,7 @@ inline const Long &Intvs::L(Long_I i) const
 inline Long &Intvs::L(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
-	if (i < 0 || i * 2 >= Base::size())
+	if (i < 0 || i * 2 >= (Long)Base::size())
 		SLS_ERR("out of bound!");
 #endif
 	return Base::operator[](i * 2);
@@ -118,7 +118,7 @@ inline Long &Intvs::L(Long_I i)
 inline const Long &Intvs::R(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
-	if (i < 0 || i * 2 + 1 >= Base::size())
+	if (i < 0 || i * 2 + 1 >= (Long)Base::size())
 		SLS_ERR("out of bound!");
 #endif
 	return Base::operator[](i * 2 + 1);
@@ -127,7 +127,7 @@ inline const Long &Intvs::R(Long_I i) const
 inline Long &Intvs::R(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
-	if (i < 0 || i * 2 + 1 >= Base::size())
+	if (i < 0 || i * 2 + 1 >= (Long)Base::size())
 		SLS_ERR("out of bound!");
 #endif
 	return Base::operator[](i * 2 + 1);
@@ -218,7 +218,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
 	ind.clear();
 	ind.pushL(start[0]);
 	i = 0;
-	while (i < start.size() - 1) {
+	while (i < Size(start) - 1) {
 		if (end[i] > start[i + 1]) {
 			if (end[i] > end[i + 1]) {
 				end[i + 1] = end[i]; ++i;

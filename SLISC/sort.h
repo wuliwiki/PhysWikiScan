@@ -1,4 +1,4 @@
-#include "global.h"
+#include "scalar_arith.h"
 #include "vector.h"
 
 namespace slisc {
@@ -16,12 +16,12 @@ void sort2(vector<T> &v, vector<U> &v1);
 
 // ======== implementations =======
 template<class T>
-void sort(Vector<T> &arr, Int m = -1)
+void sort(Vector<T> &arr, Long m = -1)
 {
 	static const Int M = 7, NSTACK = 64;
-	Int i, ir, j, k, jstack = -1, l = 0, n = arr.size();
+	Long i, ir, j, k, jstack = -1, l = 0, n = arr.size();
 	T a;
-	VecInt istack(NSTACK);
+	VecLong istack(NSTACK);
 	if (m>0) n = MIN(m, n);
 	ir = n - 1;
 	for (;;) {
@@ -80,11 +80,11 @@ void sort(Vector<T> &arr, Int m = -1)
 template<class T, class U>
 void sort2_vv(T *v, U *v1, Long_I N)
 {
-	const Int M = 7, NSTACK = 64;
-	Int i, ir, j, k, jstack = -1, l = 0, n = N;
+	const Long M = 7, NSTACK = 64;
+	Long i, ir, j, k, jstack = -1, l = 0, n = N;
 	T a;
 	U b;
-	VecInt istack(NSTACK);
+	VecLong istack(NSTACK);
 	ir = n - 1;
 	for (;;) {
 		if (ir - l < M) {

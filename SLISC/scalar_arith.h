@@ -39,6 +39,13 @@ template<class T>
 inline T SIGN(const T &a, const T &b)
 { return b >= 0 ? (a >= 0 ? a : -a) : (a >= 0 ? -a : a); }
 
+// get std::vector size in Long instead of size_t
+template <class T, SLS_IF(is_vector<T>() || is_basic_str<T>())>
+inline Long Size(const T &v)
+{
+	return (Long)v.size();
+}
+
 // for SWAP, use std::swap instead
 
 template <class T, SLS_IF(is_floating_point<T>())>

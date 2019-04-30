@@ -406,4 +406,4 @@ const Comp I(0., 1.);
 
 #define SLS_WARN(str) do{cout << "warning: " << __FILE__ << ": line " << __LINE__ << ": " << str << endl;} while(0)
 
-}
+} // namespace slisc

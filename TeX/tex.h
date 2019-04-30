@@ -31,32 +31,34 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 // return -1 if failed
 inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 {
-	Long i, ind0;
-	for (i = ind + 1; i < str.size(); ++i) {
+	Long i;
+	for (i = ind + 1; i < Size(str); ++i) {
 		if (!is_letter(str[i]))
 			break;
 	}
-	if (i >= str.size() - 1)
+	if (i >= Size(str) - 1)
 		return -1;
+	Long ind0 = i;
 	if (Narg > 0)
-		ind0 = skip_scope(str, i, Narg);
+		ind0 = skip_scope(str, ind0, Narg);
+	return ind0;
 }
 
 // get the i-th command argument
 // return the next index of the i-th '}'
 // when "option" is 't', trim white spaces on both sides of "arg"
-inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i, Char_I option = 't')
+inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Char_I option = 't')
 {
-	Long ind0, ind1;
+	Long ind0 = ind, ind1;
 	ind0 = skip_command(str, ind0);
 	if (ind0 < 0) return -1;
-	ind0 = skip_scope(str, i);
+	ind0 = skip_scope(str, ind0, i);
 	if (ind0 < 0) return -1;
 	ind0 = expect(str, U"{", ind0);
 	if (ind0 < 0) return -1;
 	ind1 = pair_brace(str, ind0 - 1);
 	if (ind1 < 0) return -1;
-	arg = str.substr(ind0, ind1 - ind0 - 1);
+	arg = str.substr(ind0, ind1 - ind0);
 	trim(arg);
 	return ind1;
 }
@@ -174,7 +176,7 @@ inline Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 inline Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 {
 	Intvs intv;
-	for (Long i = 0; i < names.size(); ++i) {
+	for (Long i = 0; i < Size(names); ++i) {
 		while (FindEnv(intv, str, names[i]) < 0) {
 			Input().Bool("failed! retry?");
 		}

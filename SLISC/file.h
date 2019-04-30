@@ -116,7 +116,7 @@ inline void file_ext(vector<Str> &fnames_ext, const vector<Str> &fnames, Str_I e
 {
 	fnames_ext.resize(0);
 	Long N_ext = ext.size();
-	for (Long i = 0; i < fnames.size(); ++i) {
+	for (Long i = 0; i < Size(fnames); ++i) {
 		const Str & str = fnames[i];
 		// check position of '.'
 		Long ind = fnames[i].size() - N_ext - 1;
@@ -146,7 +146,7 @@ inline void file_list_ext(vector<Str32> &fnames, Str32_I path, Str32_I ext, Bool
 	vector<Str> fnames8;
 	fnames.resize(0);
 	file_list_ext(fnames8, utf32to8(path), utf32to8(ext), keep_ext);
-	for (Long i = 0; i < fnames8.size(); ++i)
+	for (Long i = 0; i < Size(fnames8); ++i)
 		fnames.push_back(utf8to32(fnames8[i]));
 }
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "global.h"
+#include "scalar_arith.h"
 #include <sstream>
 #include <fstream>
 #include <locale>
@@ -295,15 +295,15 @@ inline Bool is_alphanum_(Char32_I c)
 }
 
 // check if a word is a whole word
-inline Bool is_whole_word(Str32_I str, Long_I ind, Long_I size)
+inline Bool is_whole_word(Str32_I str, Long_I ind, Long_I count)
 {
 	// check left
 	Long ind0 = ind - 1;
 	if (ind0 >= 0 && is_alphanum_(str[ind0]))
 		return false;
 	// check right
-	ind0 += 1 + size;
-	if (ind0 < str.size() && is_alphanum_(str[ind0]))
+	ind0 += 1 + count;
+	if (ind0 < Size(str) && is_alphanum_(str[ind0]))
 		return false;
 	return true;
 }
@@ -346,7 +346,7 @@ inline Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
 // TODO: replace this with basic_string::find_first_not_of
 inline Long NextNoSpace(Str32_O c, Str32_I str, Long start)
 {
-	for (Long i = start; i < str.size(); ++i) {
+	for (Long i = start; i < Size(str); ++i) {
 		c = str.at(i);
 		if (c == U" ")
 			continue;
@@ -386,12 +386,13 @@ inline Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
 inline Long find_num(Str32_I str, Long start)
 {
 	Long i{}, end = str.size() - 1;
-	unsigned char c;
+	Char32 c;
 	for (i = start; i <= end; ++i) {
 		c = str.at(i);
 		if (c >= '0' && c <= '9')
 			return i;
 	}
+	return -1;
 }
 
 // get non-negative integer from string
@@ -406,7 +407,7 @@ inline Long str2int(Long_O num, Str32_I str, Long start)
 		SLS_ERR("not a number!"); return -1;  // break point here
 	}
 	num = c - '0';
-	for (i = start + 1; i < str.size(); ++i) {
+	for (i = start + 1; i < Size(str); ++i) {
 		c = str.at(i);
 		if (c >= '0' && c <= '9')
 			num = 10 * num + (Long)(c - '0');
@@ -428,7 +429,7 @@ inline Long str2double(Doub& num, Str32_I str, Long start)
 		return ind0;
 	}
 	ind0 = str2int(num2, str, ind0 + 1);
-	num = num2;
+	num = (Doub)num2;
 	while (num >= 1)
 		num /= 10;
 	num += (Doub)num1;
@@ -490,7 +491,7 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 
 	Char32 c, c0 = ' ';
 	Long Nleft = 1;
-	for (Long i = ind + 1; i < str.size(); i++)
+	for (Long i = ind + 1; i < Size(str); i++)
 	{
 		c = str.at(i);
 		if (c == left && c0 != '\\')

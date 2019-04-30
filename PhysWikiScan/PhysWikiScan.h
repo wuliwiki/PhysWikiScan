@@ -498,19 +498,20 @@ inline Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I
 // path must end with '\\'
 inline Long upref(Str32_IO str, Str32_I path)
 {
-	Long i{}, N{};
-	Intvs intvIn, intvOut;
+	Long ind0 = 0, right, N = 0;
 	Str32 entryName;
-	FindAllComBrace(intvIn, U"upref", str);
-	find_all_command_intv(intvOut, U"upref", str);
-	for (i = intvOut.size() - 1; i >= 0; --i) {
-		entryName = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
+	while (true) {
+		ind0 = find_command(str, U"upref", ind0);
+		if (ind0 < 0)
+			return N;
+		command_arg(entryName, str, ind0);
 		trim(entryName);
 		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
 			SLS_WARN("upref file not found!");
 			return -1; // break point here
 		}
-		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1,
+		right = skip_command(str, ind0, 1);
+		str.replace(ind0, right - ind0,
 			U"<span class = \"icon\"><a href = \""
 			+ entryName +
 			U".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
@@ -590,7 +591,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 			ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
 				+ title + U"</a>　\n", ind0);
 			// record Chinese title
-			for (i = 0; i < names.size(); ++i) {
+			for (i = 0; i < Size(names); ++i) {
 				if (entryName == names[i]) break;
 			}
 			if (i == names.size()) {
@@ -638,7 +639,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path + "index.html");
 	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录" << endl;
-	for (i = 0; i < titles.size(); ++i) {
+	for (i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty())
 			cout << names[i] << endl;
 	}
@@ -647,19 +648,21 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 }
 
 // process Matlab code (\code command)
-inline Long MatlabCode(Str32_IO str, Str32_I path)
+inline Long MatlabCode(Str32_IO str, Str32_I path, Bool_I show_title)
 {
-	Long i{}, N{}, ind0{}, ind1{}, ind2{};
+	Long N = 0, ind0 = 0;
 	Str32 name; // code file name without extension
 	Str32 code;
 	Intvs intvIn, intvOut;
 	// \code commands
-	FindAllComBrace(intvIn, U"code", str);
-	N = find_all_command_intv(intvOut, U"code", str);
-	for (i = N - 1; i >= 0; --i) {
-		// get code file name
-		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
-		trim(name);
+	while (true) {
+		if (show_title)
+			ind0 = find_command(str, U"Code", ind0);
+		else
+			ind0 = find_command(str, U"code", ind0);
+		if (ind0 < 0)
+			return N;
+		command_arg(name, str, ind0);
 		// read file
 		if (!file_exist(path + utf32to8(name) + ".m")) {
 			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
@@ -670,57 +673,20 @@ inline Long MatlabCode(Str32_IO str, Str32_I path)
 		Matlab_highlight(code);
 
 		// insert code
-		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
-		ind0 = intvOut.L(i);
-		// download button
-		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
-		ind0 = insert(str,
+		// for download button, use
+		// U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"
+		Str32 title;
+		if (show_title)
+			title = U"<b>" + name + U".m</b>\n";
+		str.replace(ind0, skip_command(str, ind0, 1) - ind0,
+			title +
 			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
 			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
 			+ code +
 			U"</pre></div></div>"
-			, ind0);
+		);
+		++N;
 	}
-	return N;
-}
-
-// same with MatlabCode, for \Code command
-inline Long MatlabCodeTitle(Str32_IO str, Str32_I path)
-{
-	Long i{}, N{}, ind0{}, ind1{}, ind2{};
-	Str32 name; // code file name without extension
-	Str32 code;
-	Intvs intvIn, intvOut;
-	// \code commands
-	FindAllComBrace(intvIn, U"Code", str);
-	N = find_all_command_intv(intvOut, U"Code", str);
-	for (i = N - 1; i >= 0; --i) {
-		// get code file name
-		name = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
-		trim(name);
-		// read file
-		if (!file_exist(path + utf32to8(name) + ".m")) {
-			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
-			return -1; // break point here
-		}
-		read_file(code, path + "codes/" + utf32to8(name) + ".m");
-		CRLF_to_LF(code);
-		Matlab_highlight(code);
-
-		// insert code
-		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
-		ind0 = intvOut.L(i);
-		// download button
-		// ind0 = insert(str, U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>", ind0);
-		ind0 = insert(str,
-			U"<b>" + name + U".m</b>\n"
-			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
-			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
-			+ code +
-			U"</pre></div></div>"
-			, ind0);
-	}
-	return N;
 }
 
 // process lstlisting[language=MatlabCom] environments to display Matlab Command Line
@@ -793,7 +759,7 @@ inline Long OneFile4(Str32_I path)
 inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 	Str32 path0, const vector<Str32>& names, const vector<Str32>& titles)
 {
-	Long i{}, j{}, ind0;
+	Long i{}, j{};
 	Str32 str;
 	read_file(str, path0 + entryName + ".tex"); // read tex file
 	CRLF_to_LF(str);
@@ -808,7 +774,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	// read title from first comment
 	if (GetTitle(title, str) < 0)
 		return -1;
-	for (j = 0; j < names.size(); ++j) {
+	for (j = 0; j < Size(names); ++j) {
 		if (entryName == names[j])
 			break;
 	}
@@ -900,9 +866,9 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}",
 		U"\\end{align}\n</div></div>", str);
 	// Matlab code
-	if (MatlabCode(str, path0) < 0)
+	if (MatlabCode(str, path0, false) < 0)
 		return -1;
-	if (MatlabCodeTitle(str, path0) < 0)
+	if (MatlabCode(str, path0, true) < 0)
 		return -1;
 	if (MatlabComLine(str) < 0)
 		return -1;
@@ -946,7 +912,7 @@ inline void PhysWikiOnline(Str32_I path0)
 	vector<Str32> IdList, LabelList; // html id and corresponding tex label
 	// 1st loop through tex files
 	cout << u8"======  第 1 轮转换 ======\n" << endl;
-	for (Long i = 0; i < names.size(); ++i) {
+	for (Long i = 0; i < Size(names); ++i) {
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
