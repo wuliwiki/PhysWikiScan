@@ -77,15 +77,15 @@ inline Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
 		ind0 += name.size() + 1;
 		ind1 = expect(str, U"[", ind0);
 		if (ind1 > 0)
-			ind1 = PairBraceR(str, ind1 - 1, U']') + 1;
+			ind1 = pair_brace(str, ind1 - 1, U']') + 1;
 		else
 			ind1 = ind0;
 		ind1 = expect(str, U"{", ind1);
 		if (ind1 < 0) continue;
-		ind1 = PairBraceR(str, ind1 - 1);
+		ind1 = pair_brace(str, ind1 - 1);
 		ind1 = expect(str, U"{", ind1 + 1);
 		if (ind1 < 0) continue;
-		ind1 = PairBraceR(str, ind1 - 1);
+		ind1 = pair_brace(str, ind1 - 1);
 		if (maxVars == 2) { str.insert(ind0, U"Two"); ++N; continue; }
 		ind1 = expect(str, U"{", ind1 + 1);
 		if (ind1 < 0) {
@@ -109,7 +109,7 @@ inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
 		ind2 = expect(str, U"(", ind0);
 		if (ind2 > 0) {
 			--ind2;
-			ind3 = PairBraceR(str, ind2, U')');
+			ind3 = pair_brace(str, ind2, U')');
 			str.erase(ind3, 1); str.insert(ind3, U"}");
 			str.erase(ind2, 1); str.insert(ind2, U"{");
 			str.insert(ind0, U"Round");
@@ -119,7 +119,7 @@ inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
 			ind2 = expect(str, U"[", ind0);
 			if (ind2 < 0) break;
 			--ind2;
-			ind3 = PairBraceR(str, ind2, U']');
+			ind3 = pair_brace(str, ind2, U']');
 			str.erase(ind3, 1); str.insert(ind3, U"}");
 			str.erase(ind2, 1); str.insert(ind2, U"{");
 			str.insert(ind0, U"Square");
@@ -142,7 +142,7 @@ inline Long MathFunction(Str32_I name, Str32_IO str)
 		ind1 = expect(str, U"[", ind0);
 		if (ind1 > 0) {
 			--ind1;
-			ind1 = PairBraceR(str, ind1, ']');
+			ind1 = pair_brace(str, ind1, ']');
 			ind2 = ind1 + 1;
 		}
 		else
@@ -150,7 +150,7 @@ inline Long MathFunction(Str32_I name, Str32_IO str)
 		ind2 = expect(str, U"(", ind2);
 		if (ind2 < 0) continue;
 		--ind2;
-		ind3 = PairBraceR(str, ind2, ')');
+		ind3 = pair_brace(str, ind2, ')');
 		str.erase(ind3, 1); str.insert(ind3, U"}");
 		str.erase(ind2, 1); str.insert(ind2, U"{");
 		str.insert(ind0, U"Round");
@@ -224,7 +224,7 @@ inline Long Table(Str32_IO str)
 			cout << "table no caption!" << endl; return -1;  // break point here
 		}
 		ind0 += 8; ind0 = expect(str, U"{", ind0);
-		ind1 = PairBraceR(str, ind0 - 1);
+		ind1 = pair_brace(str, ind0 - 1);
 		caption = str.substr(ind0, ind1 - ind0);
 		// recognize \hline and replace with tags, also deletes '\\'
 		while (true) {
@@ -376,10 +376,10 @@ inline Long footnote(Str32_IO str)
 		if (N == 1)
 			str += U"\n<hr><p>\n";
 		ind1 = expect(str, U"{", ind0 + 9);
-		ind2 = PairBraceR(str, ind1 - 1);
+		ind2 = pair_brace(str, ind1 - 1);
 		note = str.substr(ind1, ind2 - ind1);
 		str.erase(ind0, ind2 - ind0 + 1);
-		ind0 -= DeleteSpaceReturn(str, ind0 - 1, 'l');
+		ind0 -= delete_space_return(str, ind0 - 1, 'l');
 		num2str(idNo, N);
 		str.insert(ind0, U"<sup><a href = \"#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
 		str += U"<span id = \"footnote" + idNo + U"\"></span>" + idNo + U". " + note + U"<br>\n";

@@ -4,94 +4,104 @@
 #include "../SLISC/parser.h"
 #include <cassert>
 
-
 namespace slisc {
 
 // find text command '\name', return the index of '\'
 // output the index of "name.back()"
 inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 {
-	Long ind0;
+	Long ind0 = start;
 	while (true) {
-		ind0 = str.find(U"\\" + name, start);
+		ind0 = str.find(U"\\" + name, ind0);
 		if (ind0 < 0)
 			return -1;
 		// check right
-		Char32 c = ind0 + name.size() + 1;
-		if (c == '{' || c == U' ' || c == U'\n' || is_num(c))
+		Char32 c = str[ind0 + name.size() + 1];
+		if (c == U'{' || c == U' ' || c == U'\n' || is_num(c))
 			return ind0;
 		++ind0;
 	}
 }
 
-// skipt command name (command name can only have letters)
+// skipt command with 'Narg' arguments (command name can only have letters)
+// arguments must be in braces '{}' for now
 // input the index of '\'
-// return one index after command name
-inline Long skip_command_name(Str32_I str, Long_I ind)
+// return one index after command name if 'Narg = 0'
+// return one index after '}' if 'Narg > 0'
+// return -1 if failed
+inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 {
-	for (Long i = ind + 1; i < str.size(); ++i) {
+	Long i, ind0;
+	for (i = ind + 1; i < str.size(); ++i) {
 		if (!is_letter(str[i]))
-			return i;
+			break;
 	}
-	return -1;
+	if (i >= str.size() - 1)
+		return -1;
+	if (Narg > 0)
+		ind0 = skip_scope(str, i, Narg);
 }
 
 // get the i-th command argument
-inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i)
+// return the next index of the i-th '}'
+// when "option" is 't', trim white spaces on both sides of "arg"
+inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i, Char_I option = 't')
 {
-	return 1;
+	Long ind0, ind1;
+	ind0 = skip_command(str, ind0);
+	if (ind0 < 0) return -1;
+	ind0 = skip_scope(str, i);
+	if (ind0 < 0) return -1;
+	ind0 = expect(str, U"{", ind0);
+	if (ind0 < 0) return -1;
+	ind1 = pair_brace(str, ind0 - 1);
+	if (ind1 < 0) return -1;
+	arg = str.substr(ind0, ind1 - ind0 - 1);
+	trim(arg);
+	return ind1;
 }
 
-// Find the next "\key{...}" in "str"
-// find "\key{}{}" when option = '2'
-// if option = 'i', intervals are the strings inside "{}" (not including)
-// if option = 'o', range from '\' to '}' (including)
-// return number of intervals found
-inline Long FindComBrace(Long_O right, Str32_I key, Str32_I str, Long_I start, Char option = 'i')
+// find command with a specific 1st arguments
+// i.e. \begin{equation}
+// return the index of '\', return -1 if not found
+inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I start)
 {
-	return find_scope(right, key, str, start, option);
+	Long ind0 = start;
+	Str32 arg1_;
+	while (true) {
+		ind0 = find_command(str, name, ind0);
+		if (ind0 < 0)
+			return -1;
+		command_arg(arg1_, str, ind0, 0);
+		if (arg1_ == arg1)
+			return ind0;
+		++ind0;
+	}
+}
+
+// find the intervals of all commands with 1 argument
+// intervals are from '\' to '}'
+// return the number of commands found, return -1 if failed
+inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
+{
+	Long ind0 = 0, N = 0;
+	intv.clear();
+	while (true) {
+		ind0 = find_command(str, name, ind0);
+		if (ind0 < 0)
+			return intv.size();
+		intv.pushL(ind0);
+		ind0 = skip_command(str, ind0, 1);
+		if (ind0 < 0)
+			return -1;
+		intv.pushR(ind0-1);
+	}
 }
 
 // find all FindComBrace()
 inline Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
 {
 	return find_scopes(intv, U"\\"+key, str, option);
-}
-
-// Find the next "\key{key2}" in "str"
-// return the index of '\', output the index of '}'
-// return -1 if not found
-// e.g. used to find \begin{env} or \end{env}
-inline Long FindComBrace2(Long_O right, Str32_I str, Str32_I key, Str32_I key2, Long_I start)
-{
-	Long ind0;
-	Str32 temp;
-	while (true) {
-		Long left = FindComBrace(right, key, str, start, 'i');
-		if (left < 0) {
-			right = -1; return -1;
-		}
-		temp = str.substr(left, right - left + 1);
-		trimL(temp, U' '); trimR(temp, U' ');
-		if (temp == key2) {
-			ind0 = ExpectKeyReverse(str, U'\\' + key, left - 2) + 1;
-			assert(ind0 >= 0);
-			right = expect(str, U"}", right+1) - 1;
-			return ind0;
-		}
-	}
-}
-
-// find all FindComBrace2()
-inline Long FindAllComBrace2(Intvs_O intv, Str32_I str, Str32_I key, Str32_I key2)
-{
-	Long ind0 = 0, right;
-	while (true) {
-		ind0 = FindComBrace2(right, str, key, key2, ind0);
-		if (ind0 < 0)
-			return intv.size();
-		intv.push(ind0, right);
-	}
 }
 
 // find a scope in str for environment named env
@@ -248,14 +258,14 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 		if (expect(str, env, ind0) < 0)
 			continue;
 		++N; intv.pushL(ind1);
-		ind0 = PairBraceR(str, ind0 - 1);
+		ind0 = pair_brace(str, ind0 - 1);
 		if (option == '1')
 			intv.pushR(ind0);
 		ind0 = expect(str, U"{", ind0 + 1);
 		if (ind0 < 0) {
 			SLS_ERR("expecting {}{}!"); return -1;  // break point here
 		}
-		ind0 = PairBraceR(str, ind0 - 1);
+		ind0 = pair_brace(str, ind0 - 1);
 		intv.pushR(ind0);
 	}
 }
@@ -275,7 +285,7 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 		if (expect(str, env, ind0) < 0)
 			continue;
 		++N; intv.pushL(ind1);
-		ind0 = PairBraceR(str, ind0 - 1);
+		ind0 = pair_brace(str, ind0 - 1);
 		intv.pushR(ind0);
 	}
 }
@@ -303,10 +313,10 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"align", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// texttt command
-	FindAllComBrace(intv1, U"texttt", str, 'o');
+	find_all_command_intv(intv1, U"texttt", str);
 	if (combine(intv, intv1) < 0) return -1;
 	// input command
-	FindAllComBrace(intv1, U"input", str, 'o');
+	find_all_command_intv(intv1, U"input", str);
 	if (combine(intv, intv1) < 0) return -1;
 	// Figure environments
 	FindEnv(intv1, str, U"figure", 'o');
@@ -315,7 +325,7 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	FindEnv(intv1, str, U"table", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// subsubsection command
-	FindAllComBrace(intv1, U"subsubsection", str, 'o');
+	find_all_command_intv(intv1, U"subsubsection", str);
 	if (combine(intv, intv1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
 	FindAllBegin(intv1, U"exam", str, '2');
@@ -371,7 +381,7 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 		if (ind1 < 0) {
 			++ind0; continue;
 		}
-		ind2 = PairBraceR(str, ind1);
+		ind2 = pair_brace(str, ind1);
 		str.erase(ind2, 1);
 		str.insert(ind2, strRight);
 		str.erase(ind0, ind1 - ind0 + 1);

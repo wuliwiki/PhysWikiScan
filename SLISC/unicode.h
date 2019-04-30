@@ -223,23 +223,44 @@ inline Long expect(Str32_I str, Str32_I key, Long_I start)
 }
 
 // trim all occurance of key on the left
-inline Long trimL(Str32_IO str, Char32_I key)
+// return the number of charaters trimed
+// e.g. key = "\n " to trim space and '\n'
+inline Long trimL(Str32_IO str, Str32_I key = U" ")
 {
+	Long N;
 	Long ind = str.find_first_not_of(key);
-	if (ind > 0) {
- 		str.erase(0, ind);
+	if (ind < 0) {
+		N = str.size();
+		str.clear();
+		return N;
 	}
-	return ind;
+	N = ind;
+	str.erase(0, N);
+	return N;
 }
 
 // trim all occurance of key on the right
-inline Long trimR(Str32_IO str, Char32_I key)
+// return the number of charaters trimed
+// e.g. key = "\n " to trim space and '\n'
+inline Long trimR(Str32_IO str, Str32_I key = U" ")
 {
+	Long N;
 	Long ind = str.find_last_not_of(key);
-	if (ind < str.size() - 1) {
- 		str.erase(ind + 1);
+	if (ind < 0) {
+		N = str.size();
+		str.clear();
+		return N;
 	}
-	return ind;
+	str.erase(ind + 1);
+	N = str.size() - ind;
+	return N;
+}
+
+// trim both sides
+// e.g. key = "\n " to trim space and '\n'
+inline Long trim(Str32_IO str, Str32_I key = U" ")
+{
+	return trimL(str, key) + trimR(str, key);
 }
 
 // check if a character is a letter (a-z, A-Z)
@@ -362,7 +383,7 @@ inline Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
 
 // Find the next number
 // return -1 if not found
-inline Long FindNum(Str32_I str, Long start)
+inline Long find_num(Str32_I str, Long start)
 {
 	Long i{}, end = str.size() - 1;
 	unsigned char c;
@@ -403,14 +424,14 @@ inline Long str2double(Doub& num, Str32_I str, Long start)
 	Long ind0{}, num1{}, num2{};
 	ind0 = str2int(num1, str, start);
 	if (str.at(ind0) != '.') {
-		num = (double)num1;
+		num = (Doub)num1;
 		return ind0;
 	}
 	ind0 = str2int(num2, str, ind0 + 1);
 	num = num2;
 	while (num >= 1)
 		num /= 10;
-	num += (double)num1;
+	num += (Doub)num1;
 	return ind0;
 }
 
@@ -419,7 +440,7 @@ inline Long str2double(Doub& num, Str32_I str, Long start)
 // when option = 'r' (right), will only delete ' ' or '\n' at "start" or to the right
 // when option = 'l' (left), will only delete ' ' or '\n' at "start" or to the left
 // when option = 'a' (all), will delete both direction
-inline Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
+inline Long delete_space_return(Str32& str, Long start, Char option = 'r')
 {
 	Long i{}, Nstr{}, left{ start }, right{ start };
 	Nstr = str.size();
@@ -451,7 +472,7 @@ inline Long DeleteSpaceReturn(Str32& str, Long start, Char option = 'r')
 // or () or [] or anying single character
 // ind is inddex of left brace
 // return index of right brace, -1 if failed
-inline Long PairBraceR(Str32_I str, Long ind, Char32_I type = U'{')
+inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 {
 	Char32 left, right;
 	if (type == U'{' || type == U'}') {

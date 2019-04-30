@@ -12,12 +12,14 @@ namespace slisc {
 // type can only be '{' for now
 inline Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
 {
+	Long ind0 = ind;
 	for (Long i = 0; i < N; ++i) {
-		Long ind0 = expect(str, U"{", ind);
+		ind0 = expect(str, U"{", ind0);
 		if (ind0 < 0)
 			return -1;
-		ind0 = PairBraceR(str, ind0 - 1) + 1;
+		ind0 = pair_brace(str, ind0 - 1) + 1;
 	}
+	return ind0;
 }
 
 // Find the next "key{...}" in "str"
@@ -40,7 +42,7 @@ inline Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Cha
 			ind0 = ind1 + key.size(); continue;
 		}
 		left = (option == 'i' ? ind0 : ind1);
-		ind0 = PairBraceR(str, ind0 - 1);
+		ind0 = pair_brace(str, ind0 - 1);
 		if (option != '2') {
 			right = option == 'i' ? ind0 - 1 : ind0;
 			break;
@@ -49,7 +51,7 @@ inline Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Cha
 			ind0 = expect(str, U"{", ind0 + 1);
 			if (ind0 < 0)
 				continue;
-			ind0 = PairBraceR(str, ind0 - 1);
+			ind0 = pair_brace(str, ind0 - 1);
 			right = ind0;
 			break;
 		}
