@@ -28,19 +28,27 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 // input the index of '\'
 // return one index after command name if 'Narg = 0'
 // return one index after '}' if 'Narg > 0'
+// might return str.size()
 // return -1 if failed
 inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 {
 	Long i;
+	Bool found = false;
 	for (i = ind + 1; i < Size(str); ++i) {
-		if (!is_letter(str[i]))
-			break;
+		if (!is_letter(str[i])) {
+			found = true; break;
+		}
+			
 	}
-	if (i >= Size(str) - 1)
-		return -1;
+	if (!found) {
+		if (Narg == 0)
+			return str.size();
+		else
+			return -1;
+	}
 	Long ind0 = i;
 	if (Narg > 0)
-		ind0 = skip_scope(str, ind0, Narg);
+		return skip_scope(str, ind0, Narg);
 	return ind0;
 }
 
@@ -82,6 +90,7 @@ inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I st
 }
 
 // skip an environment
+// might return str.size()
 inline Long skip_env(Str32_I str, Long_I ind)
 {
 	Str32 name;
@@ -138,8 +147,32 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 			return -1;
 		if (option == 'o')
 			ind0 = skip_command(str, ind0, 1);
-		intv.pushR(ind0 - 1);
+		if (ind0 < 0) {
+			intv.pushR(str.size() - 1);
+			return intv.size();
+		}
+		else
+			intv.pushR(ind0 - 1);
 	}
+}
+
+// get to the inside of the environment
+// return the first index inside environment
+// output first index of "\end"
+// return -1 if failed
+inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
+{
+	if (expect(str, U"\\begin", ind) < 0)
+		return -1;
+	Str32 env;
+	command_arg(env, str, ind, 0);
+	Long left = skip_command(str, ind, Narg);
+	if (left < 0)
+		return -1;
+	right = find_command_spec(str, U"end", env, left);
+	if (right < 0)
+		return -1;
+	return left;
 }
 
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
@@ -367,7 +400,26 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 	return N;
 }
 
-// replace nameEnv environment with strLeft...strRight
+// replace one nameEnv environment with strLeft...strRight
+// must remove comments first
+// return the increase in str.size()
+inline Long Env2Tag(Str32_IO str, Long_I ind, Str32_I strLeft, Str32_I strRight, Long_I NargBegin = 1)
+{
+	Long ind1 = skip_command(str, ind, NargBegin);
+	Str32 envName;
+	command_arg(envName, str, ind);
+
+	Long ind2 = find_command_spec(str, U"end", envName, ind);
+	Long ind3 = skip_command(str, ind2, 1);
+	Long Nbegin = ind1 - ind;
+	Long Nend = ind3 - ind2;
+
+	str.replace(ind2, Nend, strRight);
+	str.replace(ind, Nbegin, strLeft);
+	return strRight.size() + strLeft.size() - Nend - Nbegin;
+}
+
+// replace all nameEnv environments with strLeft...strRight
 // must remove comments first
 inline Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 {

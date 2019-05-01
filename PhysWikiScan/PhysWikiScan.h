@@ -30,33 +30,12 @@ inline Long GetTitle(Str32_O title, Str32_I str)
 	return 0;
 }
 
-// add <p> tags to paragraphs
-// return number of tag pairs added
-// return -1 if failed
-inline Long paragraph_tag1_old(Str32_IO str)
-{
-	Long ind0 = 0, N = 0;
-	trim(str, U"\n");
-	// delete extra '\n' (more than two continuous)
-	while (true) {
-		ind0 = str.find(U"\n\n\n", ind0);
-		if (ind0 < 0)
-			break;
-		eatR(str, ind0 + 2, U"\n");
-	}
-
-	// replace "\n\n" with "\n</p>\n<p>　　\n"
-	N = replace(str, U"\n\n", U"\n</p>\n<p>　　\n");
-	str.insert(str.size(), U"\n</p>");
-	str.insert(0, U"<p>　　\n");// <p> is indented by unicode white space
-	return N;
-}
-
 // trim “\n" and " " on both sides
 // remove unnecessary "\n"
 // replace “\n\n" with "\n</p>\n<p>　　\n"
 inline Long paragraph_tag1(Str32_IO str)
 {
+	todo: omit inline equations! check basics.tex
 	Long ind0 = 0, N = 0;
 	trim(str, U" \n");
 	// delete extra '\n' (more than two continuous)
@@ -80,7 +59,7 @@ inline Long ParagraphTag(Str32_IO str)
 
 	// "begin", and commands that cannot be in a paragraph
 	vector<Str32> commands = {U"\\begin",
-		U"\\ubsection", U"\\subsubsection", U"\\pentry", U"\\code", U"\\Code"};
+		U"\\subsection", U"\\subsubsection", U"\\pentry", U"\\code", U"\\Code"};
 	// equation envs
 	vector<Str32> envs_eq = {U"equation", U"align", U"gather"};
 	// environments that needs <p></p> inside
@@ -92,27 +71,31 @@ inline Long ParagraphTag(Str32_IO str)
 	// handle normal text intervals separated by
 	// commands in "commands" and environments
 	while (true) {
-		ind0 = find(ikey, str, commands, ind0);
 
 		// decide mode
-		if (ind0 < 0) {
+		if (ind0 == str.size()) {
 			mode_end = 'f';
 		}
 		else {
-			mode_end = 'n';
-			if (ikey == 0) { // found environment
-				command_arg(env, str, ind0);
-				if (match(env, envs_eq) >= 0) {
-					mode_end = 'e';
-				}
-				else if (match(env, envs_p) >= 0) {
-					mode_end = 'p';
+			ind0 = find(ikey, str, commands, ind0);
+			if (ind0 < 0)
+				mode_end = 'f';
+			else {
+				mode_end = 'n';
+				if (ikey == 0) { // found environment
+					command_arg(env, str, ind0);
+					if (match(env, envs_eq) >= 0) {
+						mode_end = 'e';
+					}
+					else if (match(env, envs_p) >= 0) {
+						mode_end = 'p';
+					}
 				}
 			}
 		}
 
 		// decide ending tag
-		if (mode_end == 'n') {
+		if (mode_end == 'n' || mode_end == 'p') {
 			end = U"\n</p>\n";
 		}
 		else if (mode_end == 'e') {
@@ -150,20 +133,33 @@ inline Long ParagraphTag(Str32_IO str)
 			return N;
 		ind0 += temp.size() - length;
 		
-		// handle env_p environments or skip
+		// skip
 		if (ikey == 0) {
 			if (mode_end == 'p') {
-				; //"TODO: handle 'env_p' environments!";
+				Long ind1 = skip_env(str, ind0);
+				Long left, right;
+				left = inside_env(right, str, ind0, 2);
+				length = right - left;
+				temp = str.substr(left, length);
+				ParagraphTag(temp);
+				str.replace(left, length, temp);
+				ind0 = ind1 + temp.size() - length;
 			}
-			ind0 = skip_env(str, ind0);
+			else
+				ind0 = skip_env(str, ind0);
 		}
 		else
 			ind0 = skip_command(str, ind0, 1);
+
 		left = ind0;
+		mode_begin = mode_end;
+		if (ind0 == str.size()) {
+			continue;
+		}
 		
 		// beginning tag for next interval
-		mode_begin = mode_end;
-		if (mode_begin == 'n')
+		
+		if (mode_begin == 'n' || mode_begin == 'p')
 			begin = U"\n<p>　　\n";
 		else if (mode_begin == 'e') {
 			if (expect(str, U"\n\n", ind0) >= 0) {
@@ -173,108 +169,6 @@ inline Long ParagraphTag(Str32_IO str)
 				begin = U"\n";
 		}	
 	}
-}
-
-// add <p> tags to paragraphs
-// return number of tag pairs added
-// return -1 if failed
-inline Long ParagraphTag_old(Str32_IO str)
-{
-	Long i{}, N{}, N1{}, ind0{}, ind2{};
-	N = paragraph_tag1_old(str);
-
-	// deal with ranges that should not be in <p>...</p>
-	// if there is "<p>" before range, delete it, otherwise, add "</p>"
-	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
-	Intvs intv, intv1;
-	find_all_command_intv(intv, U"subsection", str);
-	find_all_command_intv(intv1, U"subsubsection", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"pentry", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"code", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"Code", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-
-	find_env(intv1, str, U"figure", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"itemize", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"enumerate", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-
-	FindAllBegin(intv1, U"exam", str, '2');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	FindEnd(intv1, U"exam", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	FindAllBegin(intv1, U"exer", str, '2');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	FindEnd(intv1, U"exer", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	
-	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = expect(str, U"</p>", intv.R(i) + 1);
-		if (ind0 >= 0) {
-			str.erase(ind0 - 4, 4);
-		}
-		else {
-			str.insert(intv.R(i) + 1, U"\n<p>　　"); ++N;
-		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", intv.L(i) - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", intv.L(i) - 1);
-		if (ind0 > -2) {
-			str.erase(ind0 + 1, 5); --N;
-		}
-		else if (ind2 > -2) {
-			str.erase(ind2 + 1, 3); --N;
-		}
-		else {
-			str.insert(intv.L(i), U"</p>\n\n");
-		}
-	}
-
-	// deal with equation environments alike
-	// if there is "</p>\n<p>　　" before range, delete it
-	// if there is "<p>　　" before range, delete "　　"
-	find_env(intv, str, U"equation", 'o');
-	find_env(intv1, str, U"gather", 'o');
-	if (combine(intv, intv1) < 0) return -1;
-	find_env(intv1, str, U"align", 'o');
-	if (combine(intv, intv1) < 0) return -1;
-	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", intv.L(i) - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>　　", intv.L(i) - 1);
-		if (ind0 > -2) {
-			str.erase(ind0 + 1, 10); --N;
-		}
-		else if (ind2 > -2) {
-			str.erase(ind2 + 4, 2);
-		}
-	}
-
-	// deal with \noindent
-	ind0 = 0;
-	while (true) {
-		ind0 = str.find(U"\\noindent", ind0);
-		if (ind0 < 0) break;
-		str.erase(ind0, 9);
-		ind2 = ExpectKeyReverse(str, U"　　", ind0 - 1);
-		if (ind2 > -2)
-			str.erase(ind2 + 1, 2);
-	}
-	return N + 1;
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
@@ -419,7 +313,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path)
 		ind1 = pair_brace(str, ind0);
 		caption = str.substr(ind0, ind1 - ind0);
 		str.erase(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1); // delete environment
-		ind0 = expect(str, U"\n</p>", intvFig.L(i));
+
 		// test img file existence
 		if (file_exist(path + figName + ".svg"))
 			format = U".svg";
@@ -478,21 +372,27 @@ inline Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	find_env(intvIn, str, U"exam");
-	N = find_env(intvOut, str, U"exam", 'o');
-	for (i = N - 1; i >= 0; --i) {
-		ind0 = str.find('{', intvOut.L(i));
-		ind0 = pair_brace(str, ind0);
-		ind0 = expect(str, U"{", ind0 + 1);
-		ind1 = pair_brace(str, ind0 - 1);
-		exName = str.substr(ind0, ind1 - ind0);
-		// replace with html tags
-		str.erase(intvIn.R(i) + 1, intvOut.R(i) - intvIn.R(i));
-		str.insert(intvIn.R(i) + 1, U"</div>\n");
-		str.erase(intvOut.L(i), ind1 - intvOut.L(i) + 1);
-		num2str(exNo, i + 1);
-		str.insert(intvOut.L(i), U"<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例"
-				+ exNo + U"</b>　" + exName + U"</h5>");
+	while (true) {
+		ind0 = find_command_spec(str, U"begin", U"exam", ind0);
+		if (ind0 < 0)
+			return N;
+		++N; num2str(exNo, N);
+		command_arg(exName, str, ind0, 1);
+
+		// positions of the environment
+		Long ind1 = skip_command(str, ind0, 2);
+		Long ind2 = find_command_spec(str, U"end", U"exam", ind0);
+		Long ind3 = skip_command(str, ind2, 1);
+
+		//// add <p> </p>
+		//Str32 temp = str.substr(ind1, ind2 - ind1);
+		//ParagraphTag(temp);
+		
+		// replace
+		str.replace(ind2, ind3 - ind2, U"</div>\n");
+		// str.replace(ind1, ind2 - ind1, temp);
+		str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例"
+			+ exNo + U"</b>　" + exName + U"</h5>\n");
 	}
 	return N;
 }
@@ -504,21 +404,27 @@ inline Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	find_env(intvIn, str, U"exer");
-	N = find_env(intvOut, str, U"exer", 'o');
-	for (i = N - 1; i >= 0; --i) {
-		ind0 = str.find(U"{", intvOut.L(i));
-		ind0 = pair_brace(str, ind0);
-		ind0 = expect(str, U"{", ind0 + 1);
-		ind1 = pair_brace(str, ind0 - 1);
-		exName = str.substr(ind0, ind1 - ind0);
-		// replace with html tags
-		str.erase(intvIn.R(i) + 1, intvOut.R(i) - intvIn.R(i));
-		str.insert(intvIn.R(i) + 1, U"</div>\n");
-		str.erase(intvOut.L(i), ind1 - intvOut.L(i) + 1);
-		num2str(exNo, i + 1);
-		str.insert(intvOut.L(i), U"<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题"
-			+ exNo + U"</b>　" + exName + U"</h5>");
+	while (true) {
+		ind0 = find_command_spec(str, U"begin", U"exer", ind0);
+		if (ind0 < 0)
+			return N;
+		++N; num2str(exNo, N);
+		command_arg(exName, str, ind0, 1);
+
+		// positions of the environment
+		Long ind1 = skip_command(str, ind0, 2);
+		Long ind2 = find_command_spec(str, U"end", U"exer", ind0);
+		Long ind3 = skip_command(str, ind2, 1);
+
+		//// add <p> </p>
+		//Str32 temp = str.substr(ind1, ind2 - ind1);
+		//ParagraphTag(temp);
+
+		// replace
+		str.replace(ind2, ind3 - ind2, U"</div>\n");
+		// str.replace(ind1, ind2 - ind1, temp);
+		str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题"
+			+ exNo + U"</b>　" + exName + U"</h5>\n");
 	}
 	return N;
 }
@@ -908,13 +814,13 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	// ensure '<' and '>' has spaces around them
 	if (EqOmitTag(str) < 0)
 		return -1;
-	// process figure environments
-	if (FigureEnvironment(str, path0) < 0)
-		return -1;
 	// process example and exercise environments
 	if (ExampleEnvironment(str, path0) < 0)
 		return -1;
 	if (ExerciseEnvironment(str, path0) < 0)
+		return -1;
+	// process figure environments
+	if (FigureEnvironment(str, path0) < 0)
 		return -1;
 	// process \pentry{}
 	if (pentry(str) < 0)
@@ -1006,7 +912,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"AprPtr")
+		if (names[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
@@ -1023,7 +929,7 @@ inline void PhysWikiOnline(Str32_I path0)
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == U"AprPtr")
+		if (names[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, names[i], html) < 0) {

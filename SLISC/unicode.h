@@ -372,6 +372,8 @@ inline Long NextNoSpace(Str32_O c, Str32_I str, Long start)
 // return the previous index of the key found, return -2 if nothing found.
 inline Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
 {
+	if (start < 0)
+		return -2;
 	Long ind = start;
 	Long L = str.size();
 	Long L0 = key.size();

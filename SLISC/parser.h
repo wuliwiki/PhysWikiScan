@@ -9,6 +9,7 @@ namespace slisc {
 // skip N contiguous scope
 // skip one "{...}"
 // return one index after '}', return -1 if failed
+// might return str.size()
 // type can only be '{' for now
 inline Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'{')
 {
