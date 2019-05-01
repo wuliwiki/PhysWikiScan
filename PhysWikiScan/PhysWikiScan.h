@@ -33,31 +33,33 @@ inline Long GetTitle(Str32_O title, Str32_I str)
 // add <p> tags to paragraphs
 // return number of tag pairs added
 // return -1 if failed
-inline Long ParagraphTag(Str32_IO str)
+inline Long paragraph_tag1(Str32_IO str)
 {
-	Long i{}, N{}, N1{}, ind0{}, ind2{};
-	vector<Long> ind;
+	Long ind0 = 0, N = 0;
 	trim(str, U"\n");
 	// delete extra '\n' (more than two continuous)
 	while (true) {
 		ind0 = str.find(U"\n\n\n", ind0);
-		if (ind0 < 0) break;
-		str.erase(ind0, 1);
+		if (ind0 < 0)
+			break;
+		eatR(str, ind0 + 2, U"\n");
 	}
-	// remove "\n\n" and add <p> tags
-	ind0 = 0;
-	while (true) {
-		ind0 = str.find(U"\n\n", ind0);
-		if (ind0 < 0) break;
-		ind.push_back(ind0); ind0 += 2;
-	}
-	N = ind.size();
-	for (i = N - 1; i >= 0; --i) {
-		str.insert(ind[i] + 1, U"<p>　　");// <p> is indented by unicode white space
-		str.insert(ind[i], U"\n</p>");
-	}
+
+	// replace "\n\n" with "\n</p>\n<p>　　\n"
+	N = replace(str, U"\n\n", U"\n</p>\n<p>　　\n");
 	str.insert(str.size(), U"\n</p>");
 	str.insert(0, U"<p>　　\n");// <p> is indented by unicode white space
+	return N;
+}
+
+// add <p> tags to paragraphs
+// return number of tag pairs added
+// return -1 if failed
+inline Long ParagraphTag(Str32_IO str)
+{
+	Long i{}, N{}, N1{}, ind0{}, ind2{};
+	vector<Long> ind;
+	N = paragraph_tag1(str);
 
 	// deal with ranges that should not be in <p>...</p>
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
@@ -66,9 +68,11 @@ inline Long ParagraphTag(Str32_IO str)
 	while (find_all_command_intv(intv, U"subsection", str) < 0)
 		Input().Bool("retry?");
 	find_all_command_intv(intv1, U"subsubsection", str);
-	if (combine(intv, intv1) < 0) return -1;
+	if (combine(intv, intv1) < 0)
+		return -1;
 	find_all_command_intv(intv1, U"pentry", str);
-	if (combine(intv, intv1) < 0) return -1;
+	if (combine(intv, intv1) < 0)
+		return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
 		ind0 = expect(str, U"</p>", intv.R(i) + 1);
 		if (ind0 >= 0) {
@@ -93,10 +97,10 @@ inline Long ParagraphTag(Str32_IO str)
 	// deal with ranges that should not be in <p>...</p>
 	// if there is "<p>" before range, delete it, otherwise, add "</p>"
 	// if there is "</p>" after range, delete it, otherwise, add "<p>"
-	FindEnv(intv, str, U"figure", 'o');
-	FindEnv(intv1, str, U"itemize", 'o');
+	find_env(intv, str, U"figure", 'o');
+	find_env(intv1, str, U"itemize", 'o');
 	if (combine(intv, intv1) < 0) return -1;
-	FindEnv(intv1, str, U"enumerate", 'o');
+	find_env(intv1, str, U"enumerate", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	find_all_command_intv(intv1, U"code", str);
 	if (combine(intv, intv1) < 0) return -1;
@@ -126,10 +130,10 @@ inline Long ParagraphTag(Str32_IO str)
 	// deal with equation environments alike
 	// if there is "</p>\n<p>　　" before range, delete it
 	// if there is "<p>　　" before range, delete "　　"
-	FindEnv(intv, str, U"equation", 'o');
-	FindEnv(intv1, str, U"gather", 'o');
+	find_env(intv, str, U"equation", 'o');
+	find_env(intv1, str, U"gather", 'o');
 	if (combine(intv, intv1) < 0) return -1;
-	FindEnv(intv1, str, U"align", 'o');
+	find_env(intv1, str, U"align", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	for (i = intv.size() - 1; i >= 0; --i) {
 		ind0 = ExpectKeyReverse(str, U"</p>\n<p>　　", intv.L(i) - 1);
@@ -251,11 +255,11 @@ inline Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 		// count idNum, insert html id tag, delete label
 		Intvs intvEnv;
 		if (idName != U"eq") {
-			idN = FindEnv(intvEnv, str.substr(0,ind4), envName) + 1;
+			idN = find_env(intvEnv, str.substr(0,ind4), envName) + 1;
 		}
 		else { // count equations
-			idN = FindEnv(intvEnv, str.substr(0,ind4), U"equation");
-			Ngather = FindEnv(intvEnv, str.substr(0,ind4), U"gather");
+			idN = find_env(intvEnv, str.substr(0,ind4), U"equation");
+			Ngather = find_env(intvEnv, str.substr(0,ind4), U"gather");
 			if (Ngather > 0) {
 				for (i = 0; i < Ngather; ++i) {
 					for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
@@ -265,7 +269,7 @@ inline Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 					++idN;
 				}
 			}
-			Nalign = FindEnv(intvEnv, str.substr(0,ind4), U"align");
+			Nalign = find_env(intvEnv, str.substr(0,ind4), U"align");
 			if (Nalign > 0) {
 				for (i = 0; i < Nalign; ++i) {
 					for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
@@ -302,7 +306,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path)
 	Intvs intvFig;
 	Str32 figName;
 	Str32 format, caption, widthPt, figNo;
-	Nfig = FindEnv(intvFig, str, U"figure", 'o');
+	Nfig = find_env(intvFig, str, U"figure", 'o');
 	for (i = Nfig - 1; i >= 0; --i) {
 		// get width of figure
 		ind0 = str.find(U"width", intvFig.L(i)) + 5;
@@ -388,8 +392,8 @@ inline Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	FindEnv(intvIn, str, U"exam");
-	N = FindEnv(intvOut, str, U"exam", 'o');
+	find_env(intvIn, str, U"exam");
+	N = find_env(intvOut, str, U"exam", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = str.find('{', intvOut.L(i));
 		ind0 = pair_brace(str, ind0);
@@ -414,8 +418,8 @@ inline Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
-	FindEnv(intvIn, str, U"exer");
-	N = FindEnv(intvOut, str, U"exer", 'o');
+	find_env(intvIn, str, U"exer");
+	N = find_env(intvOut, str, U"exer", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = str.find(U"{", intvOut.L(i));
 		ind0 = pair_brace(str, ind0);
@@ -448,7 +452,7 @@ inline Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I
 		newtab.clear(); file.clear();
 		ind0 = str.find(U"\\autoref", ind0);
 		if (ind0 < 0) return N;
-		inEq = IndexInEnv(ienv, ind0, envNames, str);
+		inEq = index_in_env(ienv, ind0, envNames, str);
 		ind1 = expect(str, U"{", ind0 + 8);
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.find('_', ind1);
@@ -563,7 +567,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 
 	// remove comments
 	Intvs intvComm;
-	FindComment(intvComm, str);
+	find_comment(intvComm, str);
 	for (i = intvComm.size() - 1; i >= 0; --i)
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	while (true) {
@@ -697,8 +701,8 @@ inline Long MatlabComLine(Str32_IO str)
 	Long i{}, j{}, N{}, ind0{};
 	Intvs intvIn, intvOut;
 	Str32 code;
-	N = FindEnv(intvIn, str, U"lstlisting");
-	N = FindEnv(intvOut, str, U"lstlisting", 'o');
+	N = find_env(intvIn, str, U"lstlisting");
+	N = find_env(intvOut, str, U"lstlisting", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = expect(str, U"[", intvIn.L(i));
 		ind0 = pair_brace(str, ind0, U'[');
@@ -794,7 +798,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	}
 	// remove comments
 	Intvs intvComm;
-	FindComment(intvComm, str);
+	find_comment(intvComm, str);
 	for (i = intvComm.size() - 1; i >= 0; --i) {
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	}

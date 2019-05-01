@@ -436,38 +436,37 @@ inline Long str2double(Doub& num, Str32_I str, Long start)
 	return ind0;
 }
 
-// delete any following ' ' or '\n' characters starting from "start" (not including "start")
+// delete any following ' ' or '\n' characters starting from "start" (including "start")
 // return the number of characters deleted
-// when option = 'r' (right), will only delete ' ' or '\n' at "start" or to the right
-// when option = 'l' (left), will only delete ' ' or '\n' at "start" or to the left
-// when option = 'a' (all), will delete both direction
-inline Long delete_space_return(Str32& str, Long start, Char option = 'r')
+inline Long eatR(Str32& str, Long start, Str32_I chars)
 {
-	Long i{}, Nstr{}, left{ start }, right{ start };
-	Nstr = str.size();
-	if (str.at(start) != ' ' && str.at(start) != '\n')
-		return 0;
-	if (option == 'r' || option == 'a') {
-		for (i = start + 1; i < Nstr; ++i) {
-			if (str.at(i) == ' ' || str.at(i) == '\n')
-				continue;
-			else {
-				right = i - 1; break;
-			}
-		}
+	Long N;
+	Long ind0 = str.find_first_not_of(chars, start);
+	if (ind0 < 0) {
+		N = str.size() - start;
+		if (N > 0)
+			str.erase(start, N);
 	}
-	if (option == 'l' || option == 'a') {
-		for (i = start - 1; i >= 0; --i) {
-			if (str.at(i) == ' ' || str.at(i) == '\n')
-				continue;
-			else
-				left = i + 1; break;
-		}
-	}
-	str.erase(left, right - left + 1);
-	return right - left + 1;
+	N = ind0 - start;
+	if (N > 0)
+		str.erase(start, N);
+	return N;
 }
 
+// eat to left, see eatR
+inline Long eatL(Str32& str, Long start, Str32_I chars)
+{
+	Long N;
+	Long ind0 = str.find_last_not_of(chars, start);
+	if (ind0 < 0) {
+		N = start + 1;
+		str.erase(0, N);
+	}
+	N = start - ind0;
+	if (N > 0)
+		str.erase(ind0 + 1, N);
+	return N;
+}
 
 // Pair right brace to left one (default)
 // or () or [] or anying single character

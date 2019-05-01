@@ -31,8 +31,8 @@ inline Long EqOmitTag(Str32_IO str)
 {
 	Long i{}, N{}, Nrange{};
 	Intvs intv, indInline;
-	FindEnv(intv, str, U"equation");
-	FindInline(indInline, str);
+	find_env(intv, str, U"equation");
+	find_inline_eq(indInline, str);
 	Nrange = combine(intv, indInline);
 	if (Nrange < 0) return -1;
 	for (i = Nrange - 1; i >= 0; --i) {
@@ -191,10 +191,10 @@ inline Long NormalTextEscape(Str32_IO str)
 	Str32 temp;
 	Intvs intv, intv1;
 	FindNormalText(intv, str);
-	FindAllComBrace(intv1, U"x", str);
+	find_scopes(intv1, U"\\x", str);
 	Nnorm = combine(intv, intv1);
 	if (Nnorm < 0) return -1;
-	FindEnv(intv1, str, U"Command");
+	find_env(intv1, str, U"Command");
 	Nnorm = combine(intv, intv1);
 	if (Nnorm < 0) return -1;
 	for (i = Nnorm - 1; i >= 0; --i) {
@@ -216,7 +216,7 @@ inline Long Table(Str32_IO str)
 	Intvs intv;
 	vector<Long> indLine; // stores the position of "\hline"
 	Str32 caption;
-	N = FindEnv(intv, str, U"table", 'o');
+	N = find_env(intv, str, U"table", 'o');
 	if (N == 0) return 0;
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = str.find(U"\\caption");
@@ -250,7 +250,7 @@ inline Long Table(Str32_IO str)
 	// second round, replace '&' with tags
 	// delete latex code
 	// TODO: add title
-	FindEnv(intv, str, U"table", 'o');
+	find_env(intv, str, U"table", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = intv.L(i) + 12; ind1 = intv.R(i);
 		while (true) {
@@ -275,8 +275,8 @@ inline Long Itemize(Str32_IO str)
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;
 	vector<Long> indItem; // positions of each "\item"
-	N = FindEnv(intvIn, str, U"itemize");
-	FindEnv(intvOut, str, U"itemize", 'o');
+	N = find_env(intvIn, str, U"itemize");
+	find_env(intvOut, str, U"itemize", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		// delete paragraph tags
 		ind0 = intvIn.L(i);
@@ -323,8 +323,8 @@ inline Long Enumerate(Str32_IO str)
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;
 	vector<Long> indItem; // positions of each "\item"
-	N = FindEnv(intvIn, str, U"enumerate");
-	FindEnv(intvOut, str, U"enumerate", 'o');
+	N = find_env(intvIn, str, U"enumerate");
+	find_env(intvOut, str, U"enumerate", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		// delete paragraph tags
 		ind0 = intvIn.L(i);
@@ -367,25 +367,26 @@ inline Long Enumerate(Str32_IO str)
 // process \footnote{}, return number of \footnote{} found
 inline Long footnote(Str32_IO str)
 {
-	Long ind0{}, ind1{}, ind2{}, N{};
-	Str32 note, idNo;
+	Long ind0 = 0, N = 0;
+	Str32 temp, idNo;
+	ind0 = find_command(str, U"footnote", ind0);
+	if (ind0 < 0)
+		return 0;
+	str += U"\n<hr><p>\n";
 	while (true) {
-		ind0 = str.find(U"\\footnote", ind0);
-		if (ind0 < 0) break;
-		N++;
-		if (N == 1)
-			str += U"\n<hr><p>\n";
-		ind1 = expect(str, U"{", ind0 + 9);
-		ind2 = pair_brace(str, ind1 - 1);
-		note = str.substr(ind1, ind2 - ind1);
-		str.erase(ind0, ind2 - ind0 + 1);
-		ind0 -= delete_space_return(str, ind0 - 1, 'l');
+		++N;
 		num2str(idNo, N);
-		str.insert(ind0, U"<sup><a href = \"#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
-		str += U"<span id = \"footnote" + idNo + U"\"></span>" + idNo + U". " + note + U"<br>\n";
+		command_arg(temp, str, ind0);
+		str += U"<span id = \"footnote" + idNo + U"\"></span>" + idNo + U". " + temp + U"<br>\n";
+		ind0 -= eatL(str, ind0 - 1, U" \n");
+		str.replace(ind0, skip_command(str, ind0, 1) - ind0,
+			U"<sup><a href = \"#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
+		++ind0;
+		ind0 = find_command(str, U"footnote", ind0);
+		if (ind0 < 0)
+			break;
 	}
-	if (N > 0)
-		str += U"</p>";
+	str += U"</p>";
 	return N;
 }
 } // namespace slisc

@@ -100,84 +100,47 @@ inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 	}
 }
 
-// find all FindComBrace()
-inline Long FindAllComBrace(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i')
-{
-	return find_scopes(intv, U"\\"+key, str, option);
-}
-
 // find a scope in str for environment named env
 // return number of environments found. return -1 if failed
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
-inline Long FindEnv(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
+inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{};
 	Intvs intvComm; // result from FindComment
 	Long N{}; // number of environments found
+	if (option != 'i' && option != 'o')
+		SLS_ERR("illegal option!");
 	intv.clear();
 	// find comments including the ones in lstlisting (doesn't matter)
 	find_comments(intvComm, str, U"%");
 	while (true) {
-		// find "\\begin"
-		ind3 = str.find(U"\\begin", ind0);
-		if (is_in(ind3, intvComm)) { ind0 = ind3 + 6; continue; }
-		if (ind3 < 0)
-			return N;
-		ind0 = ind3 + 6;
+		// find "\begin{env}"
+		ind0 = find_command_spec(str, U"begin", env, ind0);
+		if (ind0 < 0)
+			return intv.size();
+		if (option == 'i')
+			ind0 = skip_command(str, ind0, 1);
+		intv.pushL(ind0);
 
-		// expect '{'
-		ind0 = expect(str, U"{", ind0);
+		// find "\end{env}"
+		ind0 = find_command_spec(str, U"end", env, ind0);
 		if (ind0 < 0)
 			return -1;
-		// expect 'env'
-		ind1 = expect(str, env, ind0);
-		if (ind1 < 0 || !is_whole_word(str, ind1-env.size(), env.size()))
-			continue;
-		ind0 = ind1;
-		// expect '}'
-		ind0 = expect(str, U"}", ind0);
-		if (ind0 < 0)
-			return -1;
-		intv.pushL(option == 'i' ? ind0 : ind3);
-
-		while (true)
-		{
-			// find "\\end"
-			ind0 = str.find(U"\\end", ind0);
-			if (is_in(ind0, intvComm)) { ind0 += 4; continue; }
-			if (ind0 < 0)
-				return -1;
-			ind2 = ind0 - 1;
-			ind0 += 4;
-			// expect '{'
-			ind0 = expect(str, U"{", ind0);
-			if (ind0 < 1)
-				return -1;
-			// expect 'env'
-			ind1 = expect(str, env, ind0);
-			if (ind1 < 0)
-				continue;
-			ind0 = ind1;
-			// expect '}'
-			ind0 = expect(str, U"}", ind0);
-			if (ind0 < 0)
-				return -1;
-			intv.pushR(option == 'i' ? ind2 : ind0 - 1);
-			++N;
-			break;
-		}
+		if (option == 'o')
+			ind0 = skip_command(str, ind0, 1);
+		intv.pushR(ind0 - 1);
 	}
 }
 
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of name[iname], -1 if return false
 // TODO: check if this function works.
-inline Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
+inline Bool index_in_env(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
 {
 	Intvs intv;
 	for (Long i = 0; i < Size(names); ++i) {
-		while (FindEnv(intv, str, names[i]) < 0) {
+		while (find_env(intv, str, names[i]) < 0) {
 			Input().Bool("failed! retry?");
 		}
 		if (is_in(ind, intv)) {
@@ -192,11 +155,11 @@ inline Bool IndexInEnv(Long& iname, Long ind, const vector<Str32>& names, Str32_
 // find latex comments
 // similar to FindComment0
 // does not include the ones in lstlisting environment
-inline Long FindComment(Intvs_O intv, Str32_I str)
+inline Long find_comment(Intvs_O intv, Str32_I str)
 {
 	find_comments(intv, str, U"%");
 	Intvs intvLst;
-	FindEnv(intvLst, str, U"lstlisting", 'o');
+	find_env(intvLst, str, U"lstlisting", 'o');
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 		if (is_in(intv.L(i), intvLst))
 			intv.erase(i, 1);
@@ -207,13 +170,13 @@ inline Long FindComment(Intvs_O intv, Str32_I str)
 // find the range of inline equations using $$
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $$ environments found.
-inline Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 {
 	intv.clear();
 	Long N{}; // number of $$
 	Long ind0{};
 	Intvs intvComm; // result from FindComment
-	FindComment(intvComm, str);
+	find_comment(intvComm, str);
 	while (true) {
 		ind0 = str.find(U"$", ind0);
 		if (ind0 < 0) {
@@ -244,6 +207,7 @@ inline Long FindInline(Intvs_O intv, Str32_I str, Char option = 'i')
 // TODO: find one using FindComBrace
 // Long FindAllBegin
 
+// TODO: delete this
 // Find "\begin{env}" or "\begin{env}{}" (option = '2')
 // output interval from '\' to '}'
 // return number found, return -1 if failed
@@ -272,6 +236,7 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 	}
 }
 
+// TODO: delete this
 // Find "\end{env}"
 // output ranges to intv, from '\' to '}'
 // return number found, return -1 if failed
@@ -298,21 +263,21 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
 	Intvs intv, intv1;
 	// comments
-	FindComment(intv, str);
+	find_comment(intv, str);
 	// inline equation environments
-	FindInline(intv1, str, 'o');
+	find_inline_eq(intv1, str, 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// equation environments
-	FindEnv(intv1, str, U"equation", 'o');
+	find_env(intv1, str, U"equation", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// command environments
-	FindEnv(intv1, str, U"Command", 'o');
+	find_env(intv1, str, U"Command", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// gather environments
-	FindEnv(intv1, str, U"gather", 'o');
+	find_env(intv1, str, U"gather", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// align environments (not "aligned")
-	FindEnv(intv1, str, U"align", 'o');
+	find_env(intv1, str, U"align", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// texttt command
 	find_all_command_intv(intv1, U"texttt", str);
@@ -321,10 +286,10 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	find_all_command_intv(intv1, U"input", str);
 	if (combine(intv, intv1) < 0) return -1;
 	// Figure environments
-	FindEnv(intv1, str, U"figure", 'o');
+	find_env(intv1, str, U"figure", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// Table environments
-	FindEnv(intv1, str, U"table", 'o');
+	find_env(intv1, str, U"table", 'o');
 	if (combine(intv, intv1) < 0) return -1;
 	// subsubsection command
 	find_all_command_intv(intv1, U"subsubsection", str);
@@ -399,8 +364,8 @@ inline Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO
 {
 	Long i{}, N{}, Nenv;
 	Intvs intvEnvOut, intvEnvIn;
-	Nenv = FindEnv(intvEnvIn, str, nameEnv, 'i');
-	Nenv = FindEnv(intvEnvOut, str, nameEnv, 'o');
+	Nenv = find_env(intvEnvIn, str, nameEnv, 'i');
+	Nenv = find_env(intvEnvOut, str, nameEnv, 'o');
 	for (i = Nenv - 1; i >= 0; --i) {
 		str.erase(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i));
 		str.insert(intvEnvIn.R(i) + 1, strRight);
