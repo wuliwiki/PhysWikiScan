@@ -52,10 +52,13 @@ inline Long paragraph_tag1_old(Str32_IO str)
 	return N;
 }
 
+// trim “\n" and " " on both sides
+// remove unnecessary "\n"
+// replace “\n\n" with "\n</p>\n<p>　　\n"
 inline Long paragraph_tag1(Str32_IO str)
 {
 	Long ind0 = 0, N = 0;
-	trim(str, U"\n");
+	trim(str, U" \n");
 	// delete extra '\n' (more than two continuous)
 	while (true) {
 		ind0 = str.find(U"\n\n\n", ind0);
@@ -69,81 +72,76 @@ inline Long paragraph_tag1(Str32_IO str)
 	return N;
 }
 
+TODO: test this!
 inline Long ParagraphTag(Str32_IO str)
 {
 	Long N = 0, ind0 = 0, left = 0, length, ikey;
 	Intvs intv;
-	Str32 temp, env;
-	vector<Str32> commands = {U"begin",
-		U"subsection", U"subsubsection", U"pentry", U"code", U"Code"
-	};
+	Str32 temp, env, end, begin;
 
-	vector<Str32> envs = { U"figure", U"itemize", U"enumerate", U"equation", U"gather", U"align" };
+	// "begin", and commands that cannot be in a paragraph
+	vector<Str32> commands = {U"\\begin",
+		U"\\ubsection", U"\\subsubsection", U"\\pentry", U"\\code", U"\\Code"};
+	// equation envs
+	vector<Str32> envs_eq = {U"equation", U"align", U"gather"};
+	// environments that needs <p></p> inside
+	vector<Str32> envs_p = { U"exam", U"exer"};
 
-	/*Intvs intv, intv1;
-	find_all_command_intv(intv, U"subsection", str);
-	find_all_command_intv(intv1, U"subsubsection", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"pentry", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"code", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_all_command_intv(intv1, U"Code", str);
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"figure", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"itemize", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"enumerate", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"equation", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"gather", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-	find_env(intv1, str, U"align", 'o');
-	if (combine(intv, intv1) < 0)
-		return -1;
-*/
+	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p)
+	char mode;
 
+	// handle normal text intervals separated by
+	// commands in "commands" and environments
 	while (true) {
 		ind0 = find(ikey, str, commands, ind0);
 		if (ind0 < 0)
 			return N;
-		if (ikey == 0) {
+		
+		// decide mode
+		mode = 'n';
+		if (ikey == 0) { // found environment
 			command_arg(env, str, ind0);
-			if (!is_in(env, envs)) {
-				break;
+			if (is_in(env, envs_eq)) {
+				mode = 'e';
+			}
+			else if (is_in(env, envs_p)) {
+				mode = 'p';
 			}
 		}
-		if (ikey > 0) {
-			length = ind0 - left;
-			temp = str.substr(left, length);
-			N += paragraph_tag1(temp);
-			str.replace(left, length, temp);
-			ind0 += temp.size() - length;
-			ind0 = skip_env(str, ind0);
-		}
-
 		
-		command_arg(env, str, ind0);
-		if (env == U"equation") {
-			++ind0; continue;
+		// decide ending tag
+		if (mode == 'e' &&
+			// equations can be inside paragraph
+			ExpectKeyReverse(str, U"\n\n", ind0 - 1) < 0) {
+			end.clear();
 		}
+		else
+			end = U"\n<\p>\n";
+
+		// add tags
 		length = ind0 - left;
 		temp = str.substr(left, length);
 		N += paragraph_tag1(temp);
-		str.replace(left, length, temp);
+		str.replace(left, length, begin + temp + end);
 		ind0 += temp.size() - length;
-		ind0 = skip_env(str, ind0);
+		
+		// handle env_p environments or skip
+		if (ikey == 0) {
+			if (mode == 'p') {
+				; //"TODO: handle 'env_p' environments!";
+			}
+			ind0 = skip_env(str, ind0);
+		}
+		else
+			ind0 = skip_command(str, ind0, 1);
+		
+		// beginning tag for next interval
+		if (mode == 'e' &&
+			expect(str, U"\n\n", ind0) < 0) {
+			end.clear();
+		}
+		else
+			end = U"\n<p>　　\n";
 	}
 }
 
@@ -172,6 +170,7 @@ inline Long ParagraphTag_old(Str32_IO str)
 	find_all_command_intv(intv1, U"Code", str);
 	if (combine(intv, intv1) < 0)
 		return -1;
+
 	find_env(intv1, str, U"figure", 'o');
 	if (combine(intv, intv1) < 0)
 		return -1;
@@ -179,6 +178,19 @@ inline Long ParagraphTag_old(Str32_IO str)
 	if (combine(intv, intv1) < 0)
 		return -1;
 	find_env(intv1, str, U"enumerate", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+
+	FindAllBegin(intv1, U"exam", str, '2');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	FindEnd(intv1, U"exam", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	FindAllBegin(intv1, U"exer", str, '2');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	FindEnd(intv1, U"exer", str);
 	if (combine(intv, intv1) < 0)
 		return -1;
 	
@@ -231,39 +243,6 @@ inline Long ParagraphTag_old(Str32_IO str)
 		ind2 = ExpectKeyReverse(str, U"　　", ind0 - 1);
 		if (ind2 > -2)
 			str.erase(ind2 + 1, 2);
-	}
-
-	// deal with ranges that should not be in <p>...</p>
-	// if there is "<p>" before \begin{}{}, delete it, otherwise, add "</p>"
-	// if there is "</p>" after \begin{}{}, delete it, otherwise, add "<p>　　"
-	// if there is "<p>" before \end{}, delete it, otherwise, add "</p>"
-	// if there is "</p>" after \end{}, delete it, otherwise, add "<p>　　"
-	FindAllBegin(intv, U"exam", str, '2');
-	FindEnd(intv1, U"exam", str);
-	if (combine(intv, intv1) < 0) return -1;
-	FindAllBegin(intv1, U"exer", str, '2');
-	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"exer", str);
-	if (combine(intv, intv1) < 0) return -1;
-	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = expect(str, U"</p>", intv.R(i) + 1);
-		if (ind0 >= 0) {
-			str.erase(ind0 - 4, 4);
-		}
-		else {
-			str.insert(intv.R(i) + 1, U"\n<p>　　"); ++N;
-		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", intv.L(i) - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", intv.L(i) - 1);
-		if (ind0 > -2) {
-			str.erase(ind0 + 1, 5); --N;
-		}
-		else if (ind2 > -2) {
-			str.erase(ind2 + 1, 3); --N;
-		}
-		else {
-			str.insert(intv.L(i), U"</p>\n\n");
-		}
 	}
 	return N + 1;
 }
