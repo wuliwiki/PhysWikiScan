@@ -118,7 +118,7 @@ inline Str32 operator+(Str_I str, Str32_I str32)
 // check if str == strs[i]
 // return the first index found
 // return -1 if not found
-inline Long is_in(Str32_I str, const vector<Str32> &strs)
+inline Long match(Str32_I str, const vector<Str32> &strs)
 {
 	for (Long i = 0; i < strs.size(); ++i) {
 		if (str == strs[i])

@@ -72,12 +72,11 @@ inline Long paragraph_tag1(Str32_IO str)
 	return N;
 }
 
-TODO: test this!
 inline Long ParagraphTag(Str32_IO str)
 {
 	Long N = 0, ind0 = 0, left = 0, length, ikey;
 	Intvs intv;
-	Str32 temp, env, end, begin;
+	Str32 temp, env, end, begin = U"<p>　　\n";
 
 	// "begin", and commands that cannot be in a paragraph
 	vector<Str32> commands = {U"\\begin",
@@ -87,61 +86,92 @@ inline Long ParagraphTag(Str32_IO str)
 	// environments that needs <p></p> inside
 	vector<Str32> envs_p = { U"exam", U"exer"};
 
-	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p)
-	char mode;
+	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
+	char mode_end, mode_begin = 'n';
 
 	// handle normal text intervals separated by
 	// commands in "commands" and environments
 	while (true) {
 		ind0 = find(ikey, str, commands, ind0);
-		if (ind0 < 0)
-			return N;
-		
+
 		// decide mode
-		mode = 'n';
-		if (ikey == 0) { // found environment
-			command_arg(env, str, ind0);
-			if (is_in(env, envs_eq)) {
-				mode = 'e';
-			}
-			else if (is_in(env, envs_p)) {
-				mode = 'p';
+		if (ind0 < 0) {
+			mode_end = 'f';
+		}
+		else {
+			mode_end = 'n';
+			if (ikey == 0) { // found environment
+				command_arg(env, str, ind0);
+				if (match(env, envs_eq) >= 0) {
+					mode_end = 'e';
+				}
+				else if (match(env, envs_p) >= 0) {
+					mode_end = 'p';
+				}
 			}
 		}
-		
+
 		// decide ending tag
-		if (mode == 'e' &&
-			// equations can be inside paragraph
-			ExpectKeyReverse(str, U"\n\n", ind0 - 1) < 0) {
-			end.clear();
+		if (mode_end == 'n') {
+			end = U"\n</p>\n";
 		}
-		else
-			end = U"\n<\p>\n";
+		else if (mode_end == 'e') {
+			// equations can be inside paragraph
+			if (ExpectKeyReverse(str, U"\n\n", ind0 - 1) >= 0) {
+				end = U"\n</p>\n<p>\n";
+			}
+			else
+				end = U"\n";
+		}
+		else if (mode_end == 'f') {
+			end = U"\n</p>\n";
+		}
 
 		// add tags
 		length = ind0 - left;
 		temp = str.substr(left, length);
 		N += paragraph_tag1(temp);
-		str.replace(left, length, begin + temp + end);
+		if (temp.empty()) {
+			if (mode_end == 'e' && mode_begin != 'e') {
+				temp = U"\n<p>\n";
+			}
+			else if (mode_begin == 'e' && mode_end != 'e') {
+				temp = U"\n</p>\n";
+			}
+			else {
+				temp = U"\n";
+			}
+		}
+		else {
+			temp = begin + temp + end;
+		}
+		str.replace(left, length, temp);
+		if (mode_end == 'f')
+			return N;
 		ind0 += temp.size() - length;
 		
 		// handle env_p environments or skip
 		if (ikey == 0) {
-			if (mode == 'p') {
+			if (mode_end == 'p') {
 				; //"TODO: handle 'env_p' environments!";
 			}
 			ind0 = skip_env(str, ind0);
 		}
 		else
 			ind0 = skip_command(str, ind0, 1);
+		left = ind0;
 		
 		// beginning tag for next interval
-		if (mode == 'e' &&
-			expect(str, U"\n\n", ind0) < 0) {
-			end.clear();
-		}
-		else
-			end = U"\n<p>　　\n";
+		mode_begin = mode_end;
+		if (mode_begin == 'n')
+			begin = U"\n<p>　　\n";
+		else if (mode_begin == 'e') {
+			if (expect(str, U"\n\n", ind0) >= 0) {
+				begin = U"\n</p>\n<p>　　\n";
+			}
+			else
+				begin = U"\n";
+		}	
 	}
 }
 
@@ -862,7 +892,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	if (NormalTextEscape(str) < 0)
 		return -1;
 	// add paragraph tags
-	if (ParagraphTag_old(str) < 0)
+	if (ParagraphTag(str) < 0)
 		return -1;
 	// itemize and enumerate
 	if (Itemize(str) < 0)
@@ -976,7 +1006,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"ITable")
+		if (names[i] == U"AprPtr")
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
@@ -993,7 +1023,7 @@ inline void PhysWikiOnline(Str32_I path0)
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path0 + names[i] + ".html"); // read html file
-		if (names[i] == U"ITable")
+		if (names[i] == U"AprPtr")
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, names[i], html) < 0) {
