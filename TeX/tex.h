@@ -81,6 +81,15 @@ inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I st
 	}
 }
 
+// skip an environment
+inline Long skip_env(Str32_I str, Long_I ind)
+{
+	Str32 name;
+	command_arg(name, str, ind);
+	Long ind0 = find_command_spec(str, U"end", name, ind);
+	return skip_command(str, ind0, 1);
+}
+
 // find the intervals of all commands with 1 argument
 // intervals are from '\' to '}'
 // return the number of commands found, return -1 if failed

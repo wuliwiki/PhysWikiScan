@@ -33,7 +33,7 @@ inline Long GetTitle(Str32_O title, Str32_I str)
 // add <p> tags to paragraphs
 // return number of tag pairs added
 // return -1 if failed
-inline Long paragraph_tag1(Str32_IO str)
+inline Long paragraph_tag1_old(Str32_IO str)
 {
 	Long ind0 = 0, N = 0;
 	trim(str, U"\n");
@@ -52,27 +52,136 @@ inline Long paragraph_tag1(Str32_IO str)
 	return N;
 }
 
-// add <p> tags to paragraphs
-// return number of tag pairs added
-// return -1 if failed
+inline Long paragraph_tag1(Str32_IO str)
+{
+	Long ind0 = 0, N = 0;
+	trim(str, U"\n");
+	// delete extra '\n' (more than two continuous)
+	while (true) {
+		ind0 = str.find(U"\n\n\n", ind0);
+		if (ind0 < 0)
+			break;
+		eatR(str, ind0 + 2, U"\n");
+	}
+
+	// replace "\n\n" with "\n</p>\n<p>　　\n"
+	N = replace(str, U"\n\n", U"\n</p>\n<p>　　\n");
+	return N;
+}
+
 inline Long ParagraphTag(Str32_IO str)
 {
-	Long i{}, N{}, N1{}, ind0{}, ind2{};
-	vector<Long> ind;
-	N = paragraph_tag1(str);
+	Long N = 0, ind0 = 0, left = 0, length, ikey;
+	Intvs intv;
+	Str32 temp, env;
+	vector<Str32> commands = {U"begin",
+		U"subsection", U"subsubsection", U"pentry", U"code", U"Code"
+	};
 
-	// deal with ranges that should not be in <p>...</p>
-	// if there is "<p>" before range, delete it, otherwise, add "</p>"
-	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
-	Intvs intv, intv1;
-	while (find_all_command_intv(intv, U"subsection", str) < 0)
-		Input().Bool("retry?");
+	vector<Str32> envs = { U"figure", U"itemize", U"enumerate", U"equation", U"gather", U"align" };
+
+	/*Intvs intv, intv1;
+	find_all_command_intv(intv, U"subsection", str);
 	find_all_command_intv(intv1, U"subsubsection", str);
 	if (combine(intv, intv1) < 0)
 		return -1;
 	find_all_command_intv(intv1, U"pentry", str);
 	if (combine(intv, intv1) < 0)
 		return -1;
+	find_all_command_intv(intv1, U"code", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_all_command_intv(intv1, U"Code", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"figure", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"itemize", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"enumerate", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"equation", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"gather", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"align", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+*/
+
+	while (true) {
+		ind0 = find(ikey, str, commands, ind0);
+		if (ind0 < 0)
+			return N;
+		if (ikey == 0) {
+			command_arg(env, str, ind0);
+			if (!is_in(env, envs)) {
+				break;
+			}
+		}
+		if (ikey > 0) {
+			length = ind0 - left;
+			temp = str.substr(left, length);
+			N += paragraph_tag1(temp);
+			str.replace(left, length, temp);
+			ind0 += temp.size() - length;
+			ind0 = skip_env(str, ind0);
+		}
+
+		
+		command_arg(env, str, ind0);
+		if (env == U"equation") {
+			++ind0; continue;
+		}
+		length = ind0 - left;
+		temp = str.substr(left, length);
+		N += paragraph_tag1(temp);
+		str.replace(left, length, temp);
+		ind0 += temp.size() - length;
+		ind0 = skip_env(str, ind0);
+	}
+}
+
+// add <p> tags to paragraphs
+// return number of tag pairs added
+// return -1 if failed
+inline Long ParagraphTag_old(Str32_IO str)
+{
+	Long i{}, N{}, N1{}, ind0{}, ind2{};
+	N = paragraph_tag1_old(str);
+
+	// deal with ranges that should not be in <p>...</p>
+	// if there is "<p>" before range, delete it, otherwise, add "</p>"
+	// if there is "</p>" after range, delete it, otherwise, add "<p>　　"
+	Intvs intv, intv1;
+	find_all_command_intv(intv, U"subsection", str);
+	find_all_command_intv(intv1, U"subsubsection", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_all_command_intv(intv1, U"pentry", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_all_command_intv(intv1, U"code", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_all_command_intv(intv1, U"Code", str);
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"figure", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"itemize", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	find_env(intv1, str, U"enumerate", 'o');
+	if (combine(intv, intv1) < 0)
+		return -1;
+	
 	for (i = intv.size() - 1; i >= 0; --i) {
 		ind0 = expect(str, U"</p>", intv.R(i) + 1);
 		if (ind0 >= 0) {
@@ -80,39 +189,6 @@ inline Long ParagraphTag(Str32_IO str)
 		}
 		else {
 			str.insert(intv.R(i) + 1, U"\n<p>　　"); ++N;
-		}
-		ind0 = ExpectKeyReverse(str, U"<p>　　", intv.L(i) - 1);
-		ind2 = ExpectKeyReverse(str, U"<p>", intv.L(i) - 1);
-		if (ind0 > -2) {
-			str.erase(ind0 + 1, 5); --N;
-		}
-		else if (ind2 > -2) {
-			str.erase(ind2 + 1, 3); --N;
-		}
-		else {
-			str.insert(intv.L(i), U"</p>\n\n");
-		}
-	}
-
-	// deal with ranges that should not be in <p>...</p>
-	// if there is "<p>" before range, delete it, otherwise, add "</p>"
-	// if there is "</p>" after range, delete it, otherwise, add "<p>"
-	find_env(intv, str, U"figure", 'o');
-	find_env(intv1, str, U"itemize", 'o');
-	if (combine(intv, intv1) < 0) return -1;
-	find_env(intv1, str, U"enumerate", 'o');
-	if (combine(intv, intv1) < 0) return -1;
-	find_all_command_intv(intv1, U"code", str);
-	if (combine(intv, intv1) < 0) return -1;
-	find_all_command_intv(intv1, U"Code", str);
-	if (combine(intv, intv1) < 0) return -1;
-	for (i = intv.size() - 1; i >= 0; --i) {
-		ind0 = expect(str, U"</p>", intv.R(i) + 1);
-		if (ind0 >= 0) {
-			str.erase(ind0 - 4, 4);
-		}
-		else {
-			str.insert(intv.R(i) + 1, U"\n<p>"); ++N;
 		}
 		ind0 = ExpectKeyReverse(str, U"<p>　　", intv.L(i) - 1);
 		ind2 = ExpectKeyReverse(str, U"<p>", intv.L(i) - 1);
@@ -145,6 +221,7 @@ inline Long ParagraphTag(Str32_IO str)
 			str.erase(ind2 + 4, 2);
 		}
 	}
+
 	// deal with \noindent
 	ind0 = 0;
 	while (true) {
@@ -806,7 +883,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	if (NormalTextEscape(str) < 0)
 		return -1;
 	// add paragraph tags
-	if (ParagraphTag(str) < 0)
+	if (ParagraphTag_old(str) < 0)
 		return -1;
 	// itemize and enumerate
 	if (Itemize(str) < 0)
