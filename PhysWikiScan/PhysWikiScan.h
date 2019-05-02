@@ -50,7 +50,7 @@ inline Long paragraph_tag1(Str32_IO str)
 	return N;
 }
 
-inline Long ParagraphTag(Str32_IO str)
+inline Long paragraph_tag(Str32_IO str)
 {
 	Long N = 0, ind0 = 0, left = 0, length, ikey;
 	Intvs intv;
@@ -59,9 +59,11 @@ inline Long ParagraphTag(Str32_IO str)
 	// "begin", and commands that cannot be in a paragraph
 	vector<Str32> commands = {U"\\begin",
 		U"\\subsection", U"\\subsubsection", U"\\pentry", U"\\code", U"\\Code"};
-	// equation envs
-	vector<Str32> envs_eq = {U"equation", U"align", U"gather"};
-	// environments that needs <p></p> inside
+
+	// environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
+	vector<Str32> envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
+
+	// environments that needs paragraph tags inside
 	vector<Str32> envs_p = { U"exam", U"exer"};
 
 	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
@@ -146,7 +148,7 @@ inline Long ParagraphTag(Str32_IO str)
 				left = inside_env(right, str, ind0, 2);
 				length = right - left;
 				temp = str.substr(left, length);
-				ParagraphTag(temp);
+				paragraph_tag(temp);
 				str.replace(left, length, temp);
 				find_inline_eq(intvInline, str);
 				ind0 = ind1 + temp.size() - length;
