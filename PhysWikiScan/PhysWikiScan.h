@@ -35,7 +35,6 @@ inline Long GetTitle(Str32_O title, Str32_I str)
 // replace “\n\n" with "\n</p>\n<p>　　\n"
 inline Long paragraph_tag1(Str32_IO str)
 {
-	todo: omit inline equations! check basics.tex
 	Long ind0 = 0, N = 0;
 	trim(str, U" \n");
 	// delete extra '\n' (more than two continuous)
@@ -68,10 +67,12 @@ inline Long ParagraphTag(Str32_IO str)
 	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
 	char mode_end, mode_begin = 'n';
 
+	Intvs intvInline;
+	find_inline_eq(intvInline, str);
+
 	// handle normal text intervals separated by
 	// commands in "commands" and environments
 	while (true) {
-
 		// decide mode
 		if (ind0 == str.size()) {
 			mode_end = 'f';
@@ -83,6 +84,9 @@ inline Long ParagraphTag(Str32_IO str)
 			else {
 				mode_end = 'n';
 				if (ikey == 0) { // found environment
+					if (is_in(ind0, intvInline)) {
+						++ind0; continue; // ignore in inline equation
+					}
 					command_arg(env, str, ind0);
 					if (match(env, envs_eq) >= 0) {
 						mode_end = 'e';
@@ -129,6 +133,7 @@ inline Long ParagraphTag(Str32_IO str)
 			temp = begin + temp + end;
 		}
 		str.replace(left, length, temp);
+		find_inline_eq(intvInline, str);
 		if (mode_end == 'f')
 			return N;
 		ind0 += temp.size() - length;
@@ -143,6 +148,7 @@ inline Long ParagraphTag(Str32_IO str)
 				temp = str.substr(left, length);
 				ParagraphTag(temp);
 				str.replace(left, length, temp);
+				find_inline_eq(intvInline, str);
 				ind0 = ind1 + temp.size() - length;
 			}
 			else
