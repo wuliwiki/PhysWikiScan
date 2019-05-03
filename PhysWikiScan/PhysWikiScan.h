@@ -67,7 +67,7 @@ inline Long paragraph_tag(Str32_IO str)
 	vector<Str32> envs_p = { U"exam", U"exer"};
 
 	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
-	char mode_end, mode_begin = 'n';
+	char next, last = 'n';
 
 	Intvs intvInline;
 	find_inline_eq(intvInline, str);
@@ -77,34 +77,34 @@ inline Long paragraph_tag(Str32_IO str)
 	while (true) {
 		// decide mode
 		if (ind0 == str.size()) {
-			mode_end = 'f';
+			next = 'f';
 		}
 		else {
 			ind0 = find(ikey, str, commands, ind0);
 			if (ind0 < 0)
-				mode_end = 'f';
+				next = 'f';
 			else {
-				mode_end = 'n';
+				next = 'n';
 				if (ikey == 0) { // found environment
 					if (is_in(ind0, intvInline)) {
 						++ind0; continue; // ignore in inline equation
 					}
 					command_arg(env, str, ind0);
 					if (match(env, envs_eq) >= 0) {
-						mode_end = 'e';
+						next = 'e';
 					}
 					else if (match(env, envs_p) >= 0) {
-						mode_end = 'p';
+						next = 'p';
 					}
 				}
 			}
 		}
 
 		// decide ending tag
-		if (mode_end == 'n' || mode_end == 'p') {
+		if (next == 'n' || next == 'p') {
 			end = U"\n</p>\n";
 		}
-		else if (mode_end == 'e') {
+		else if (next == 'e') {
 			// equations can be inside paragraph
 			if (ExpectKeyReverse(str, U"\n\n", ind0 - 1) >= 0) {
 				end = U"\n</p>\n<p>\n";
@@ -112,7 +112,7 @@ inline Long paragraph_tag(Str32_IO str)
 			else
 				end = U"\n";
 		}
-		else if (mode_end == 'f') {
+		else if (next == 'f') {
 			end = U"\n</p>\n";
 		}
 
@@ -121,10 +121,10 @@ inline Long paragraph_tag(Str32_IO str)
 		temp = str.substr(left, length);
 		N += paragraph_tag1(temp);
 		if (temp.empty()) {
-			if (mode_end == 'e' && mode_begin != 'e') {
+			if (next == 'e' && last != 'e') {
 				temp = U"\n<p>\n";
 			}
-			else if (mode_begin == 'e' && mode_end != 'e') {
+			else if (last == 'e' && next != 'e') {
 				temp = U"\n</p>\n";
 			}
 			else {
@@ -136,13 +136,13 @@ inline Long paragraph_tag(Str32_IO str)
 		}
 		str.replace(left, length, temp);
 		find_inline_eq(intvInline, str);
-		if (mode_end == 'f')
+		if (next == 'f')
 			return N;
 		ind0 += temp.size() - length;
 		
 		// skip
 		if (ikey == 0) {
-			if (mode_end == 'p') {
+			if (next == 'p') {
 				Long ind1 = skip_env(str, ind0);
 				Long left, right;
 				left = inside_env(right, str, ind0, 2);
@@ -160,16 +160,16 @@ inline Long paragraph_tag(Str32_IO str)
 			ind0 = skip_command(str, ind0, 1);
 
 		left = ind0;
-		mode_begin = mode_end;
+		last = next;
 		if (ind0 == str.size()) {
 			continue;
 		}
 		
 		// beginning tag for next interval
 		
-		if (mode_begin == 'n' || mode_begin == 'p')
+		if (last == 'n' || last == 'p')
 			begin = U"\n<p>　　\n";
-		else if (mode_begin == 'e') {
+		else if (last == 'e') {
 			if (expect(str, U"\n\n", ind0) >= 0) {
 				begin = U"\n</p>\n<p>　　\n";
 			}
@@ -679,15 +679,29 @@ inline Long MatlabCode(Str32_IO str, Str32_I path, Bool_I show_title)
 		// insert code
 		// for download button, use
 		// U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"
-		Str32 title;
+		Str32 title, line_nums, num;
+		Long ind1 = 0, i = 0;
+		while (true) {
+			ind1 = code.find(U'\n', ind1);
+			if (ind1 < 0) break;
+			num2str(num, ++i);
+			line_nums += num + U"<br>";
+			++ind1;
+		}
+		line_nums.erase(line_nums.size() - 4, 4);
+
 		if (show_title)
-			title = U"<b>" + name + U".m</b>\n";
+			title = U"<h6><b>　　" + name + U".m</b></h6>\n";
 		str.replace(ind0, skip_command(str, ind0, 1) - ind0,
 			title +
+			U"<table class=\"code\"><tr class=\"code\"><td class=\"linenum\">\n"
+			+ line_nums +
+			U"\n</td><td class=\"code\">\n"
 			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
 			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
 			+ code +
-			U"</pre></div></div>"
+			U"</pre></div></div>\n"
+			U"</td></tr></table>"
 		);
 		++N;
 	}
@@ -806,7 +820,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	if (NormalTextEscape(str) < 0)
 		return -1;
 	// add paragraph tags
-	if (ParagraphTag(str) < 0)
+	if (paragraph_tag(str) < 0)
 		return -1;
 	// itemize and enumerate
 	if (Itemize(str) < 0)
