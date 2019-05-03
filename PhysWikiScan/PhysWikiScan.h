@@ -287,7 +287,7 @@ inline Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png, if doesn't exist, return -1
 // path must end with '\\'
-inline Long FigureEnvironment(Str32_IO str, Str32_I path)
+inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 {
 	Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
 	double width{}; // figure width in cm
@@ -323,9 +323,9 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path)
 		str.erase(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1); // delete environment
 
 		// test img file existence
-		if (file_exist(path + figName + ".svg"))
+		if (file_exist(path_out + figName + ".svg"))
 			format = U".svg";
-		else if (file_exist(path + figName + ".png"))
+		else if (file_exist(path_out + figName + ".png"))
 			format = U".png";
 		else {
 			SLS_WARN("figure \"" + figName + "\" not found!");
@@ -356,7 +356,6 @@ inline Long RemoveNoEntry(vector<Str32> &names)
 {
 	Long i{}, j{}, N{}, Nnames{}, Nnames0;
 	vector<Str32> names0; // names to remove
-	names0.push_back(U"PhysWiki");
 	names0.push_back(U"Sample");
 	names0.push_back(U"FrontMatters");
 	// add other names here
@@ -375,7 +374,7 @@ inline Long RemoveNoEntry(vector<Str32> &names)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-inline Long ExampleEnvironment(Str32_IO str, Str32_I path0)
+inline Long ExampleEnvironment(Str32_IO str)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
@@ -407,7 +406,7 @@ inline Long ExampleEnvironment(Str32_IO str, Str32_I path0)
 
 // example is already not in a paragraph
 // return number of examples processed, return -1 if failed
-inline Long ExerciseEnvironment(Str32_IO str, Str32_I path0)
+inline Long ExerciseEnvironment(Str32_IO str)
 {
 	Long i{}, N{}, ind0{}, ind1{};
 	Intvs intvIn, intvOut;
@@ -500,7 +499,7 @@ inline Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I
 
 // process upref
 // path must end with '\\'
-inline Long upref(Str32_IO str, Str32_I path)
+inline Long upref(Str32_IO str, Str32_I path_in)
 {
 	Long ind0 = 0, right, N = 0;
 	Str32 entryName;
@@ -510,7 +509,7 @@ inline Long upref(Str32_IO str, Str32_I path)
 			return N;
 		command_arg(entryName, str, ind0);
 		trim(entryName);
-		if (!file_exist(path + utf32to8(entryName) + ".tex")) {
+		if (!file_exist(path_in + "contents/" + utf32to8(entryName) + ".tex")) {
 			SLS_WARN("upref file not found!");
 			return -1; // break point here
 		}
@@ -529,7 +528,7 @@ inline Long upref(Str32_IO str, Str32_I path)
 // return the number of entries
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
-inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path)
+inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -541,7 +540,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 	CRLF_to_LF(newcomm);
 	Str32 title; // chinese entry name, chapter name, or part name
 	Str32 entryName; // entry label
-	Str32 str; read_file(str, path + "PhysWiki.tex");
+	Str32 str; read_file(str, path_in + "PhysWiki.tex");
 	CRLF_to_LF(str);
 	Str32 toc; read_file(toc, "PhysWikiScan/index_template.html"); // read html template
 	CRLF_to_LF(str);
@@ -641,7 +640,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 	 	}
 	}
 	toc.insert(ind0, U"</p>\n</div>");
-	write_file(toc, path + "index.html");
+	write_file(toc, path_out + "index.html");
 	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录" << endl;
 	for (i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty())
@@ -652,7 +651,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 }
 
 // process Matlab code (\code command)
-inline Long MatlabCode(Str32_IO str, Str32_I path, Bool_I show_title)
+inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 {
 	Long N = 0, ind0 = 0;
 	Str32 name; // code file name without extension
@@ -668,11 +667,11 @@ inline Long MatlabCode(Str32_IO str, Str32_I path, Bool_I show_title)
 			return N;
 		command_arg(name, str, ind0);
 		// read file
-		if (!file_exist(path + utf32to8(name) + ".m")) {
+		if (!file_exist(path_in + "codes/" + utf32to8(name) + ".m")) {
 			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
 			return -1; // break point here
 		}
-		read_file(code, path + "codes/" + utf32to8(name) + ".m");
+		read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
 		Matlab_highlight(code);
 
@@ -775,11 +774,11 @@ inline Long OneFile4(Str32_I path)
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
-	Str32 path0, const vector<Str32>& names, const vector<Str32>& titles)
+	Str32_I path_in, Str32_I path_out, const vector<Str32>& names, const vector<Str32>& titles)
 {
 	Long i{}, j{};
 	Str32 str;
-	read_file(str, path0 + entryName + ".tex"); // read tex file
+	read_file(str, path_in + "contents/" + entryName + ".tex"); // read tex file
 	CRLF_to_LF(str);
 	Str32 title;
 	// read html template and \newcommand{}
@@ -837,12 +836,12 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	if (EqOmitTag(str) < 0)
 		return -1;
 	// process example and exercise environments
-	if (ExampleEnvironment(str, path0) < 0)
+	if (ExampleEnvironment(str) < 0)
 		return -1;
-	if (ExerciseEnvironment(str, path0) < 0)
+	if (ExerciseEnvironment(str) < 0)
 		return -1;
 	// process figure environments
-	if (FigureEnvironment(str, path0) < 0)
+	if (FigureEnvironment(str, path_out) < 0)
 		return -1;
 	// process \pentry{}
 	if (pentry(str) < 0)
@@ -874,7 +873,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	Command2Tag(U"subsubsection", U"<h5><b>", U"</b></h5>", str);
 	Command2Tag(U"bb", U"<b>", U"</b>", str);
 	// replace \upref{} with link icon
-	if (upref(str, path0) < 0)
+	if (upref(str, path_in) < 0)
 		return -1;
 	// replace environments with html tags
 	Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
@@ -884,9 +883,9 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}",
 		U"\\end{align}\n</div></div>", str);
 	// Matlab code
-	if (MatlabCode(str, path0, false) < 0)
+	if (MatlabCode(str, path_in, false) < 0)
 		return -1;
-	if (MatlabCode(str, path0, true) < 0)
+	if (MatlabCode(str, path_in, true) < 0)
 		return -1;
 	if (MatlabComLine(str) < 0)
 		return -1;
@@ -906,23 +905,23 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 		return -1;
 	}
 	// save html file
-	write_file(html, path0 + entryName + ".html");
+	write_file(html, path_out + entryName + ".html");
 	return 0;
 }
 
 // generate html for littleshi.cn/online
-inline void PhysWikiOnline(Str32_I path0)
+inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
 	vector<Str32> names;
 	
-	file_list_ext(names, path0, Str32(U"tex"), false);
+	file_list_ext(names, path_in + "contents/", Str32(U"tex"), false);
 	vector<Str32> titles;
 	RemoveNoEntry(names);
 
 	if (names.size() <= 0) return;
 	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
 
-	while (TableOfContent(titles, names, path0) < 0) {
+	while (TableOfContent(titles, names, path_in, path_out) < 0) {
 		if (!Input().Bool("重试?"))
 			exit(EXIT_FAILURE);
 	}
@@ -937,7 +936,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		if (names[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// main process
-		while (PhysWikiOnline1(IdList, LabelList, names[i], path0, names, titles) < 0) {
+		while (PhysWikiOnline1(IdList, LabelList, names[i], path_in, path_out, names, titles) < 0) {
 			if (!Input().Bool("try again?"))
 				exit(EXIT_FAILURE);
 		}
@@ -950,7 +949,7 @@ inline void PhysWikiOnline(Str32_I path0)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << names[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		read_file(html, path0 + names[i] + ".html"); // read html file
+		read_file(html, path_out + names[i] + ".html"); // read html file
 		if (names[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
@@ -961,7 +960,7 @@ inline void PhysWikiOnline(Str32_I path0)
 			else
 				exit(EXIT_FAILURE);
 		}
-		write_file(html, path0 + names[i] + ".html"); // save html file
+		write_file(html, path_out + names[i] + ".html"); // save html file
 	}
 	cout << endl;
 }

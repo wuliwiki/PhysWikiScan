@@ -1,8 +1,10 @@
 ## 使用说明
-* 把 PhysWiki 项目的所有 .tex, .m, .svg, .png 文件放在 PhysWikiScanTest 项目的 "PhysWikiOnline/" 目录下, 其中 PhysWiki.tex 文件用于生成目录。
-* 把所有新增 Matlab 代码用 highlight 文件夹中的 Matlab 程序转成 html 放在 PhysWikiScanTest 项目的 "PhysWikiOnline/codes" 目录下。
-* 如果不想调试代码， Windows 下直接运行 PhysWikiScan.exe 即可（无需安装 Visual Studio）， 注意 PhysWikiScan 文件夹必须与 PhysWikiScanTest 文件夹在同一目录。 运行完后， 会在 "PhysWikiScanTest/PhysWikiOnline/" 目录下生成所有 html 文件。
-* 注意 PhysWiki.tex 中不存在的词条也会被转成 html, 但不会在 online 目录中出现。
+* 在 `set_path.txt` 中设置输入路径和输出路径。
+* 输入路径可以是 `PhysWiki` 文件夹， 只会读取所有 `tex` 文件和 `m` 文件。 `PhysWiki.tex` 文件用于生成目录。
+* 程序只会输出 `html` 文件到输出路径， 不会改变其他任何文件。
+* 输出路径中需要有所有 `svg` 或 `png` 图片。
+* 如果不想调试代码， Windows 下直接运行 PhysWikiScan.exe 即可（无需安装 Visual Studio）, 但是无法设置路径。
+* 注意 PhysWiki.tex 中不存在的词条也会被转成 html, 但不会在 `index.html` 中的目录中出现。 这些词条在运行的时候会提示 warning。
 
 ## 错误提示
 * `figure xxx not found`: PhysWiki 中每一张 pdf 图片都必须装换为 svg 图片放在 PhysWikiOnline/ 下， 每一张 png 图片直接复制即可。 如果控制行提示 ， 就说明找不到 svg 或者 png 图片。
