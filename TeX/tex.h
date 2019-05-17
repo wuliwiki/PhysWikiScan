@@ -67,7 +67,8 @@ inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Char
 	ind1 = pair_brace(str, ind0 - 1);
 	if (ind1 < 0) return -1;
 	arg = str.substr(ind0, ind1 - ind0);
-	trim(arg);
+	if (option == 't')
+		trim(arg);
 	return ind1;
 }
 

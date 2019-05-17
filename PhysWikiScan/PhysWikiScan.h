@@ -343,6 +343,43 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 	return N;
 }
 
+// get dependent entries from \pentry{}
+// links are file names, not chinese titles
+// links[i][0] --> links[i][1]
+inline Long depend_entry(vector<Long> &links, Str32_I str, const vector<Str32> &entryNames, Long_I ind)
+{
+	Long ind0 = 0, N = 0;
+	Str32 temp;
+	Str32 depEntry;
+	Str32 link[2];
+	while (true) {
+		ind0 = find_command(str, U"pentry", ind0);
+		if (ind0 < 0)
+			return N;
+		command_arg(temp, str, ind0, 0, 't');
+		Long ind1 = 0;
+		while (true) {
+			ind1 = find_command(temp, U"upref", ind1);
+			if (ind1 < 0)
+				return N;
+			command_arg(depEntry, temp, ind1, 0, 't');
+			Long i; Bool flag = false;
+			for (i = 0; i < entryNames.size(); ++i) {
+				if (depEntry == entryNames[i]) {
+					flag = true; break;
+				}
+			}
+			if (!flag) {
+				SLS_ERR("upref not found: " + depEntry + ".tex");
+				return -1;
+			}
+			links.push_back(i);
+			links.push_back(ind);
+			++N; ++ind1;
+		}
+	}
+}
+
 // replace \pentry comman with html round panel
 inline Long pentry(Str32_IO str)
 {
@@ -523,11 +560,12 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 	return N;
 }
 
-// create table of content from PhysWiki1.tex
+// create table of content from PhysWiki.tex
 // path must end with '\\'
 // return the number of entries
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
+// if names[i] is not in PhysWiki.tex, then titles[i] is empty
 inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
@@ -770,15 +808,15 @@ inline Long OneFile4(Str32_I path)
 
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
+// output dependency info from \pentry{}, links[i][0] --> links[i][1]
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I entryName,
-	Str32_I path_in, Str32_I path_out, const vector<Str32>& names, const vector<Str32>& titles)
+inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, vector<Long> &links,
+	Str32_I path_in, Str32_I path_out, const vector<Str32>& names, const vector<Str32>& titles, Long_I ind)
 {
-	Long i{}, j{};
 	Str32 str;
-	read_file(str, path_in + "contents/" + entryName + ".tex"); // read tex file
+	read_file(str, path_in + "contents/" + names[ind] + ".tex"); // read tex file
 	CRLF_to_LF(str);
 	Str32 title;
 	// read html template and \newcommand{}
@@ -791,11 +829,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	// read title from first comment
 	if (GetTitle(title, str) < 0)
 		return -1;
-	for (j = 0; j < Size(names); ++j) {
-		if (entryName == names[j])
-			break;
-	}
-	if (!titles[j].empty() && title != titles[j]) {
+	if (!titles[ind].empty() && title != titles[ind]) {
 		SLS_WARN("title inconsistent!");
 		return -1;
 	}
@@ -812,7 +846,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	// remove comments
 	Intvs intvComm;
 	find_comment(intvComm, str);
-	for (i = intvComm.size() - 1; i >= 0; --i) {
+	for (Long i = intvComm.size() - 1; i >= 0; --i) {
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	}
 	// escape characters
@@ -827,7 +861,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 	if (Enumerate(str) < 0)
 		return -1;
 	// add html id for links
-	if (EnvLabel(id, label, entryName, str) < 0)
+	if (EnvLabel(id, label, names[ind], str) < 0)
 		return -1;
 	// process table environments
 	if (Table(str) < 0)
@@ -842,6 +876,9 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 		return -1;
 	// process figure environments
 	if (FigureEnvironment(str, path_out) < 0)
+		return -1;
+	// get dependent entries from \pentry{}
+	if (depend_entry(links, str, names, ind) < 0)
 		return -1;
 	// process \pentry{}
 	if (pentry(str) < 0)
@@ -905,62 +942,97 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, Str32_I ent
 		return -1;
 	}
 	// save html file
-	write_file(html, path_out + entryName + ".html");
+	write_file(html, path_out + names[ind] + ".html");
 	return 0;
+}
+
+// generate json file containing dependency tree
+// empty elements of 'titles' will be ignored
+inline void dep_json(const vector<Str32> &titles, const vector<Long> &links, Str32_I path_out)
+{
+	Str32 str;
+	// write entries
+	str += U"{\n  \"nodes\": [\n";
+	for (Long i = 0; i < titles.size(); ++i) {
+		if (titles[i].empty())
+			continue;
+		str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1},\n";
+	}
+	str.pop_back(); str.pop_back();
+	str += U"\n  ],\n";
+
+	// write links
+	str += U"  \"links\": [\n";
+	for (Long i = 0; i < links.size()/2; ++i) {
+		if (titles[links[2*i]].empty() || titles[links[2*i+1]].empty())
+			continue;
+		str += U"  {\"source\": \"" + titles[links[2*i]] + "\", ";
+		str += U"\"target\": \"" + titles[links[2*i+1]] + U"\", ";
+		str += U"\"value\": 1},\n";
+	}
+	str.pop_back(); str.pop_back();
+	str += U"\n  ]\n}\n";
+	write_file(str, path_out + "dep.json");
 }
 
 // generate html for littleshi.cn/online
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
-	vector<Str32> names;
-	
-	file_list_ext(names, path_in + "contents/", Str32(U"tex"), false);
-	vector<Str32> titles;
-	RemoveNoEntry(names);
+	vector<Str32> entries; // name in \entry{}, also .tex file name
+	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
+	RemoveNoEntry(entries);
+	if (entries.size() <= 0) return;
 
-	if (names.size() <= 0) return;
 	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
 
-	while (TableOfContent(titles, names, path_in, path_out) < 0) {
+	vector<Str32> titles; // Chinese titles in \entry{}
+	while (TableOfContent(titles, entries, path_in, path_out) < 0) {
 		if (!Input().Bool("重试?"))
 			exit(EXIT_FAILURE);
 	}
 
+	// dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
+	vector<Long> links;
 	vector<Str32> IdList, LabelList; // html id and corresponding tex label
+
 	// 1st loop through tex files
 	cout << u8"======  第 1 轮转换 ======\n" << endl;
-	for (Long i = 0; i < Size(names); ++i) {
+	for (Long i = 0; i < Size(entries); ++i) {
 		cout    << std::setw(5)  << std::left << i
-				<< std::setw(10)  << std::left << names[i]
+				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (names[i] == U"Basics")
+		if (entries[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// main process
-		while (PhysWikiOnline1(IdList, LabelList, names[i], path_in, path_out, names, titles) < 0) {
+		while (PhysWikiOnline1(IdList, LabelList, links,
+			path_in, path_out, entries, titles, i) < 0) {
 			if (!Input().Bool("try again?"))
 				exit(EXIT_FAILURE);
 		}
 	}
 
+	// generate dep.json
+	dep_json(titles, links, path_out);
+
 	// 2nd loop through tex files
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str32 html;
-	for (unsigned i{}; i < names.size(); ++i) {
+	for (unsigned i{}; i < entries.size(); ++i) {
 		cout    << std::setw(5)  << std::left << i
-				<< std::setw(10)  << std::left << names[i]
+				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		read_file(html, path_out + names[i] + ".html"); // read html file
-		if (names[i] == U"Basics")
+		read_file(html, path_out + entries[i] + ".html"); // read html file
+		if (entries[i] == U"Basics")
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
-		if (autoref(IdList, LabelList, names[i], html) < 0) {
+		if (autoref(IdList, LabelList, entries[i], html) < 0) {
 			if (Input().Bool("try again?")) {
 				--i; continue;
 			}
 			else
 				exit(EXIT_FAILURE);
 		}
-		write_file(html, path_out + names[i] + ".html"); // save html file
+		write_file(html, path_out + entries[i] + ".html"); // save html file
 	}
 	cout << endl;
 }
