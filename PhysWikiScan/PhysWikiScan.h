@@ -584,8 +584,7 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str3
 	CRLF_to_LF(str);
 	titles.resize(entries.size());
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
-	toc.erase(ind0, 17);
-	toc.insert(ind0, U"小时物理百科在线");
+	toc.replace(ind0, 17, U"小时物理百科");
 	ind0 = toc.find(U"PhysWikiCommand", ind0);
 	toc.erase(ind0, 15); toc.insert(ind0, newcomm);
 	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
@@ -594,7 +593,7 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str3
 	ind0 = insert(toc,
 		U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"
 		U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"
-		U"<h1>小时物理百科在线</h1>\n</div>\n\n"
+		U"<h1>小时物理百科</h1>\n</div>\n\n"
 		U"<div class = \"w3-container\"><p>\n"
 		U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"
 		U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"
@@ -817,7 +816,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	if (GetTitle(title, str) < 0)
 		return -1;
 	if (!titles[ind].empty() && title != titles[ind]) {
-		SLS_WARN("title inconsistent!");
+		SLS_WARN("title inconsistent: " + title + " | " + titles[ind]);
 		return -1;
 	}
 	// insert \newcommand{}
