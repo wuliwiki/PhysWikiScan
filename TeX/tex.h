@@ -16,8 +16,7 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 		if (ind0 < 0)
 			return -1;
 		// check right
-		Char32 c = str[ind0 + name.size() + 1];
-		if (c == U'{' || c == U' ' || c == U'\n' || is_num(c))
+		if (!is_letter(str[ind0 + name.size() + 1]))
 			return ind0;
 		++ind0;
 	}

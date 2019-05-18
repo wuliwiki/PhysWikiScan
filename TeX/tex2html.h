@@ -103,8 +103,9 @@ inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{}, ind2{}, ind3;
 	while (true) {
-		ind0 = str.find(U"\\" + name, ind0);
-		if (ind0 < 0) break;
+		ind0 = find_command(str, name, ind0);
+		if (ind0 < 0)
+			break;
 		ind0 += name.size() + 1;
 		ind2 = expect(str, U"(", ind0);
 		if (ind2 > 0) {
@@ -117,11 +118,12 @@ inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
 		}
 		else {
 			ind2 = expect(str, U"[", ind0);
-			if (ind2 < 0) break;
+			if (ind2 < 0)
+				continue;
 			--ind2;
 			ind3 = pair_brace(str, ind2, U']');
-			str.erase(ind3, 1); str.insert(ind3, U"}");
-			str.erase(ind2, 1); str.insert(ind2, U"{");
+			str.replace(ind3, 1, U"}");
+			str.replace(ind2, 1, U"{");
 			str.insert(ind0, U"Square");
 			++N;
 		}

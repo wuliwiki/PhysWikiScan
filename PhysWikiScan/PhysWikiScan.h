@@ -626,7 +626,8 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str3
 				+ title + U"</a>　\n", ind0);
 			// record Chinese title
 			for (i = 0; i < Size(entries); ++i) {
-				if (entryName == entries[i]) break;
+				if (entryName == entries[i])
+					break;
 			}
 			if (i == entries.size()) {
 				SLS_WARN("File not found for an entry in PhysWiki.tex!");
@@ -987,7 +988,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (entries[i] == U"Basics")
+		if (entries[i] == U"Adibat")
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, links,
@@ -1012,11 +1013,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, entries[i], html) < 0) {
-			if (Input().Bool("try again?")) {
-				--i; continue;
-			}
-			else
-				exit(EXIT_FAILURE);
+			Input().Bool("already in second scan, please rerun the program!");
+			exit(EXIT_FAILURE);
 		}
 		write_file(html, path_out + entries[i] + ".html"); // save html file
 	}
