@@ -18,7 +18,9 @@ constexpr const T &MIN(const T &a, const T &b)
 
 template<class T>
 constexpr const T &MAX(const T &a, const T &b)
-{ return a < b ? b : a; }
+{
+	return a < b ? b : a;
+}
 
 template<class T>
 constexpr const T SQR(const T &a) { return a * a; }
@@ -60,6 +62,17 @@ inline Comp INV(Comp_I x)
 
 inline Lcomp INV(Lcomp_I x)
 { return 1.l/x; }
+
+// if `elm` is one of `vec[i]`
+// `vec.size()` must be defined
+template <class T1, class T2>
+inline Bool is_in(const T1 &elm, const T2 &vec)
+{
+	for (Long i = 0; i < vec.size(); ++i)
+		if (elm == vec[i])
+			return true;
+	return false;
+}
 
 // check if two scalars have the same types and values
 // const-ness and reference are ignored

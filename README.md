@@ -37,7 +37,6 @@
 * 还有好多 bug 的截图需要处理的。。。
 * Matlab 代码块不会自动换行啊， 因为是 verbatim
 * `end` keyword 用于 slicing 的时候不能高亮， html 和 lstlisting 都有这个问题
-* 检查所有文件的大小写是否正确（包括 tex 文件，以 PhysWiki.tex 中的为准）， windows 是不区分大小写的。
 * 处理 bibliographies
 * `\eentry` 和 `\rentry` 没有处理
 * 看看能不能根据预备知识给每个词条生成一个学习路线图（线性的或者树状的）

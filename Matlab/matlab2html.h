@@ -38,7 +38,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 // highlight Matlab keywords
 // str is Matlab code only
 // replace keywords with <span class="keyword_class">...</span>
-inline Long Matlab_keywords(Str32_IO str, const vector<Str32> keywords, Str32_I keyword_class)
+inline Long Matlab_keywords(Str32_IO str, vector_I<Str32> keywords, Str32_I keyword_class)
 {
 	// find comments and strings
 	Intvs intv_comm, intv_str;

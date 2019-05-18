@@ -9,7 +9,7 @@ template<class T, class U>
 void sort2(Vector<T> &v, Vector<U> &v1);
 
 template<class T, class U>
-void sort2(vector<T> &v, vector<U> &v1);
+void sort2(vector_IO<T> v, vector_IO<U> v1);
 
 // sort v, and output the original index of each element
 
@@ -155,7 +155,7 @@ void sort2(Vector<T> &v, Vector<U> &v1)
 { sort2_vv(v.ptr(), v1.ptr(), v1.size()); }
 
 template<class T, class U>
-void sort2(vector<T> &v, vector<U> &v1)
+void sort2(vector_IO<T> v, vector_IO<U> v1)
 { sort2_vv(v.data(), v1.data(), v1.size()); }
 
 template<class T>

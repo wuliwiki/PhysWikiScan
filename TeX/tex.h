@@ -179,7 +179,7 @@ inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of name[iname], -1 if return false
 // TODO: check if this function works.
-inline Bool index_in_env(Long& iname, Long ind, const vector<Str32>& names, Str32_I str)
+inline Bool index_in_env(Long& iname, Long ind, vector_I<Str32> names, Str32_I str)
 {
 	Intvs intv;
 	for (Long i = 0; i < Size(names); ++i) {
@@ -353,8 +353,8 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 
 // detect unnecessary braces and add "删除标记"
 // return the number of braces pairs removed
-inline Long RemoveBraces(vector<Long>& ind_left, vector<Long>& ind_right,
-	vector<Long>& ind_RmatchL, Str32_IO str)
+inline Long RemoveBraces(vector_I<Long> ind_left, vector_I<Long> ind_right,
+	vector_I<Long> ind_RmatchL, Str32_IO str)
 {
 	unsigned i, N{};
 	vector<Long> ind; // redundent right brace index

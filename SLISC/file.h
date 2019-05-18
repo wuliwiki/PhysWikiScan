@@ -8,11 +8,47 @@
 
 namespace slisc {
 
-inline Bool file_exist(Str_I fname) {
+inline void file_list(vector_O<Str> names, Str_I path);
+
+#ifdef _MSC_VER
+// check if a file exist on Windws (case sensitive)
+inline Bool file_exist_case(Str_I fname)
+{
+	Long ind = max((Long)fname.rfind('/'), (Long)fname.rfind('\\'));
+	Str path, name;
+	if (ind < 0) {
+		path = "./";
+		name = fname;
+	}
+	else {
+		path = fname.substr(0, ind + 1);
+		name = fname.substr(ind + 1);
+	}
+	vector<Str> names;
+	file_list(names, path);
+	if (is_in(name, names))
+		return true;
+	else
+		return false;
+}
+#endif
+
+// check if a file exist, default is case sensitive
+inline Bool file_exist(Str_I fname, Bool_I case_sens = true) {
+#ifndef _MSC_VER
 	ifstream f(fname.c_str());
 	return f.good();
+#else
+	if (case_sens)
+		return file_exist_case(fname);
+	else {
+		ifstream f(fname.c_str());
+		return f.good();
+	}
+#endif
 }
 
+// not case sensitive on Windows, see file_exist_case()
 inline Bool file_exist(Str32_I fname) {
 	return file_exist(utf32to8(fname));
 }
@@ -61,7 +97,7 @@ inline void file_rm(Str_I wildcard_name) {
 // list all files in current directory
 // only works for linux
 #ifdef __GNUC__
-inline void file_list(vector<Str> &fnames, Str_I path)
+inline void file_list(vector_O<Str> fnames, Str_I path)
 {
 	Str temp_fname, temp_fname_pref = "SLISC_temporary_file";
 
@@ -95,7 +131,7 @@ inline void file_list(vector<Str> &fnames, Str_I path)
 // works in Visual Studio, not gcc 8
 // directory example: "C:/Users/addis/Documents/GitHub/SLISC/"
 #ifdef _MSC_VER
-inline void file_list(vector<Str> &names, Str_I path)
+inline void file_list(vector_O<Str> names, Str_I path)
 {
 	for (const auto & entry : std::filesystem::directory_iterator(path)) {
 		std::stringstream ss;
@@ -112,7 +148,7 @@ inline void file_list(vector<Str> &names, Str_I path)
 #endif
 
 // choose files with a given extension from a list of files
-inline void file_ext(vector<Str> &fnames_ext, const vector<Str> &fnames, Str_I ext, Bool_I keep_ext = true)
+inline void file_ext(vector_O<Str> fnames_ext, vector_I<Str> fnames, Str_I ext, Bool_I keep_ext = true)
 {
 	fnames_ext.resize(0);
 	Long N_ext = ext.size();
@@ -133,7 +169,7 @@ inline void file_ext(vector<Str> &fnames_ext, const vector<Str> &fnames, Str_I e
 }
 
 // list all files in current directory, with a given extension
-inline void file_list_ext(vector<Str> &fnames, Str_I path, Str_I ext, Bool_I keep_ext = true)
+inline void file_list_ext(vector_O<Str> fnames, Str_I path, Str_I ext, Bool_I keep_ext = true)
 {
 	vector<Str> fnames0;
 	file_list(fnames0, path);
@@ -141,7 +177,7 @@ inline void file_list_ext(vector<Str> &fnames, Str_I path, Str_I ext, Bool_I kee
 }
 
 // list all files in current directory, with a given extension
-inline void file_list_ext(vector<Str32> &fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
+inline void file_list_ext(vector_O<Str32> fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
 {
 	vector<Str> fnames8;
 	fnames.resize(0);

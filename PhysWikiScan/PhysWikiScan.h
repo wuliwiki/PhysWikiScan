@@ -185,7 +185,7 @@ inline Long paragraph_tag(Str32_IO str)
 // idNum is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vector<Str32>& id, vector<Str32>& label, Str32_I entryName, Str32_IO str)
+inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryName, Str32_IO str)
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -346,7 +346,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 // get dependent entries from \pentry{}
 // links are file names, not chinese titles
 // links[i][0] --> links[i][1]
-inline Long depend_entry(vector<Long> &links, Str32_I str, const vector<Str32> &entryNames, Long_I ind)
+inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> entryNames, Long_I ind)
 {
 	Long ind0 = 0, N = 0;
 	Str32 temp;
@@ -389,7 +389,7 @@ inline Long pentry(Str32_IO str)
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
-inline Long RemoveNoEntry(vector<Str32> &names)
+inline Long RemoveNoEntry(vector_IO<Str32> names)
 {
 	Long i{}, j{}, N{}, Nnames{}, Nnames0;
 	vector<Str32> names0; // names to remove
@@ -477,7 +477,7 @@ inline Long ExerciseEnvironment(Str32_IO str)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(const vector<Str32> &id, const vector<Str32> &label, Str32_I entryName, Str32_IO str)
+inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName, Str32_IO str)
 {
 	unsigned i{};
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
@@ -566,7 +566,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
 // if names[i] is not in PhysWiki.tex, then titles[i] is empty
-inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, Str32_I path_in, Str32_I path_out)
+inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -582,7 +582,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 	CRLF_to_LF(str);
 	Str32 toc; read_file(toc, "PhysWikiScan/index_template.html"); // read html template
 	CRLF_to_LF(str);
-	titles.resize(names.size());
+	titles.resize(entries.size());
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
 	toc.erase(ind0, 17);
 	toc.insert(ind0, U"小时物理百科在线");
@@ -609,64 +609,49 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	while (true) {
 		ind1 = find(ikey, str, keys, ind1);
-		if (ind1 < 0) break;
+		if (ind1 < 0)
+			break;
 		if (ikey >= 2) { // found "\entry"
 			// get chinese title and entry label
-			if (ikey == 2 || ikey == 3) ind1 += 6;
-			else if (ikey == 4) ind1 += 9;
 			++N;
-			ind1 = expect(str, U"{", ind1);
-			ind2 = str.find(U"}", ind1);
-			title = str.substr(ind1, ind2 - ind1);
-			trim(title);
+			command_arg(title, str, ind1);
 			replace(title, U"\\ ", U" ");
 			if (title.empty()) {
 				SLS_WARN("Chinese title is empty in PhysWiki.tex!");
 				return -1;  // break point here
 			}
-			ind1 = expect(str, U"{", ind2 + 1);
-			ind2 = str.find(U"}", ind1);
-			entryName = str.substr(ind1, ind2 - ind1);
-			ind1 = ind2;
+			command_arg(entryName, str, ind1, 1);
 			// insert entry into html table of contents
 			ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
 				+ title + U"</a>　\n", ind0);
 			// record Chinese title
-			for (i = 0; i < Size(names); ++i) {
-				if (entryName == names[i]) break;
+			for (i = 0; i < Size(entries); ++i) {
+				if (entryName == entries[i]) break;
 			}
-			if (i == names.size()) {
+			if (i == entries.size()) {
 				SLS_WARN("File not found for an entry in PhysWiki.tex!");
 				return -1; // break point here
 			}
 			titles[i] = title;
+			++ind1;
 		}
 		else if (ikey == 1) { // found "\chapter"
 			// get chinese chapter name
-			ind1 += 8;
-			ind1 = expect(str, U"{", ind1);
-			ind2 = str.find('}', ind1);
-			title = str.substr(ind1, ind2 - ind1);
-			trim(title);
-
+			command_arg(title, str, ind1);
 	 		replace(title, U"\\ ", U" ");
-	 		ind1 = ind2;
 	 		// insert chapter into html table of contents
 	 		++chapNo;
 	 		if (chapNo > 0)
 	 			ind0 = insert(toc, U"</p>", ind0);
 	 		ind0 = insert(toc, U"\n\n<h5><b>第" + chineseNo[chapNo] + U"章 " + title
 	 			+ U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p>\n", ind0);
+			++ind1;
 	 	}
 	 	else if (ikey == 0){ // found "\part"
 	 		// get chinese part name
-	 		ind1 += 5; chapNo = -1;
-	 		ind1 = expect(str, U"{", ind1);
-	 		ind2 = str.find('}', ind1);
-	 		title = str.substr(ind1, ind2 - ind1);
-			trim(title);
+	 		chapNo = -1;
+			command_arg(title, str, ind1);
 	 		replace(title, U"\\ ", U" ");
-	 		ind1 = ind2;
 	 		// insert part into html table of contents
 	 		++partNo;
 			
@@ -675,6 +660,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 				U"<h3 align = \"center\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
 				U"</div>\n\n<div class = \"w3-container\">\n"
 				, ind0);
+			++ind1;
 	 	}
 	}
 	toc.insert(ind0, U"</p>\n</div>");
@@ -682,7 +668,7 @@ inline Long TableOfContent(vector<Str32> &titles, const vector<Str32> &names, St
 	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录" << endl;
 	for (i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty())
-			cout << names[i] << endl;
+			cout << entries[i] << endl;
 	}
 	cout << endl;
 	return N;
@@ -812,8 +798,8 @@ inline Long OneFile4(Str32_I path)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, vector<Long> &links,
-	Str32_I path_in, Str32_I path_out, const vector<Str32>& names, const vector<Str32>& titles, Long_I ind)
+inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_IO<Long> links,
+	Str32_I path_in, Str32_I path_out, vector_I<Str32> names, vector_I<Str32> titles, Long_I ind)
 {
 	Str32 str;
 	read_file(str, path_in + "contents/" + names[ind] + ".tex"); // read tex file
@@ -948,7 +934,7 @@ inline Long PhysWikiOnline1(vector<Str32>& id, vector<Str32>& label, vector<Long
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline void dep_json(const vector<Str32> &titles, const vector<Long> &links, Str32_I path_out)
+inline void dep_json(vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
 {
 	Str32 str;
 	// write entries

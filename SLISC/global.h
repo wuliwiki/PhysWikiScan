@@ -369,6 +369,10 @@ typedef FlmComp &FlmComp_O, &FlmComp_IO;
 typedef const Matt &Matt_I;
 typedef Matt &Matt_O, &Matt_IO;
 
+template <class T> using vector_I = const vector<T> &;
+template <class T> using vector_O = vector<T> &;
+template <class T> using vector_IO = vector<T> &;
+
 // quiet NaN definition
 // uncomment one of the following 3 methods of defining a global NaN
 // you can test by verifying that (NaN != NaN) is true

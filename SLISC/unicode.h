@@ -6,6 +6,8 @@
 #include <codecvt>
 #ifdef _MSC_VER
 #include <Windows.h> // for console unicode output
+#undef max
+#undef min
 #endif
 #include "string.h"
 #include "utfcpp/utf8.h"
@@ -118,7 +120,7 @@ inline Str32 operator+(Str_I str, Str32_I str32)
 // check if str == strs[i]
 // return the first index found
 // return -1 if not found
-inline Long match(Str32_I str, const vector<Str32> &strs)
+inline Long match(Str32_I str, vector_I<Str32> strs)
 {
 	for (Long i = 0; i < strs.size(); ++i) {
 		if (str == strs[i])
@@ -156,7 +158,7 @@ inline Long CRLF_to_LF(Str32_IO str)
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-inline Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imin;
 	Nkey = key.size();
@@ -175,7 +177,7 @@ inline Long find(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I star
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
 // keyword will be found even if starting from the middle of it
-inline Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long rfind(Long_O ikey, Str32_I str, vector_I<Str32> key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -191,7 +193,7 @@ inline Long rfind(Long_O ikey, Str32_I str, const vector<Str32> &key, Long_I sta
 
 // same as FindMultipleReverse, but able to deal with multiple match
 // return the number of matches, return -1 if not found
-inline Long rfind(vector<Long> &ikey, Str32_I str, const vector<Str32> &key, Long_I start)
+inline Long rfind(vector_O<Long> ikey, Str32_I str, vector_I<Str32> key, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imax;
 	Nkey = key.size();
@@ -523,8 +525,8 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 // match braces
 // return -1 means failure, otherwise return number of {} paired
 // output ind_left, ind_right, ind_RmatchL
-inline Long MatchBraces(vector<Long>& ind_left, vector<Long>& ind_right,
-	vector<Long>& ind_RmatchL, Str32_I str, Long start, Long end)
+inline Long MatchBraces(vector_O<Long> ind_left, vector_O<Long> ind_right,
+	vector_O<Long> ind_RmatchL, Str32_I str, Long start, Long end)
 {
 	ind_left.resize(0); ind_right.resize(0); ind_RmatchL.resize(0);
 	Char32 c, c_last = ' ';
