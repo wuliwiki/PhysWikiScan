@@ -1,4 +1,4 @@
-输入路径  ../PhysWikiScanTest/PhysWiki/
+输入路径
 ../PhysWiki/
 输出路径
-../PhysWikiScanTest/online/
+../littleshi.cn/root/online/
