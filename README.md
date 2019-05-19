@@ -34,6 +34,7 @@
 * 每次 commit 以前编译一个 release 版本， 将 x64/Release/PhysWikiScan.exe 拷贝到 PhysWikiScan 目录下， 测试并写上日期。
 
 ## TODO
+* 文献引用还没有处理
 * 还有好多 bug 的截图需要处理的。。。
 * Matlab 代码块不会自动换行啊， 因为是 verbatim
 * `end` keyword 用于 slicing 的时候不能高亮， html 和 lstlisting 都有这个问题

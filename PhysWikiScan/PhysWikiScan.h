@@ -879,7 +879,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	VarCommand(U"pdv", str, 3);   VarCommand(U"pdvStar", str, 3);
 	VarCommand(U"dv", str, 2);    VarCommand(U"dvStar", str, 2);
 	VarCommand(U"ev", str, 2);    VarCommand(U"evStar", str, 2);
-	VarCommand(U"braket", str, 2);
+	VarCommand(U"braket", str, 2); VarCommand(U"braketStar", str, 2);
 	// replace \name() and \name[] with \nameRound{} and \nameRound and \nameSquare
 	RoundSquareCommand(U"qty", str);
 	// replace \namd() and \name[]() with \nameRound{} and \nameRound[]{}
@@ -987,7 +987,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		if (entries[i] == U"Adibat")
+		current_entry = entries[i];
+		if (debug(U"QSHOnr"))
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(IdList, LabelList, links,
@@ -1008,7 +1009,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path_out + entries[i] + ".html"); // read html file
-		if (entries[i] == U"Basics")
+		current_entry = entries[i];
+		if (debug(U"QSHOnr"))
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(IdList, LabelList, entries[i], html) < 0) {

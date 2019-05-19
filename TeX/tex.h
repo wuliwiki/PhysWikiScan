@@ -6,6 +6,16 @@
 
 namespace slisc {
 
+// for debug purpose, set conditional breakpoint by checking this name
+inline Str32 current_entry;
+
+inline Bool debug(Str32_I entry)
+{
+	if (current_entry == entry)
+		return true;
+	return false;
+}
+
 // find text command '\name', return the index of '\'
 // output the index of "name.back()"
 inline Long find_command(Str32_I str, Str32_I name, Long_I start)

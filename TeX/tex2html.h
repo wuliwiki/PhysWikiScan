@@ -42,31 +42,31 @@ inline Long EqOmitTag(Str32_IO str)
 	return N;
 }
 
-// detect \name* command and replace with \nameStar
+// detect "\name*" command and replace with "\nameStar"
 // return number of commmands replaced
 // must remove comments first
 inline Long StarCommand(Str32_I name, Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{};
 	while (true) {
-		ind0 = str.find(U"\\" + name, ind0 + 1);
-		if (ind0 < 0) break;
+		ind0 = find_command(str, name, ind0);
+		if (ind0 < 0)
+			break;
 		ind0 += name.size() + 1;
 		ind1 = expect(str, U"*", ind0);
-		if (ind1 < 0) continue;
-		str.erase(ind0, ind1 - ind0); // delete * and spaces
-		str.insert(ind0, U"Star");
+		if (ind1 < 0)
+			continue;
+		str.replace(ind0, ind1 - ind0, U"Star"); // delete * and spaces
 		++N;
 	}
 	return N;
 }
 
-// detect \name{} with variable parameters
-// replace \name{}{} with \nameTwo{}{} and \name{}{}{} with \nameThree{}{}{}
-// replace \name[]{}{} with \nameTwo[]{}{} and \name[]{}{}{} with \nameThree[]{}{}{}
+// detect "\name" with variable parameters
+// replace "\name{}{}" with "\nameTwo{}{}" and "\name{}{}{}" with "\nameThree{}{}{}"
+// replace "\name[]{}{}" with "\nameTwo[]{}{}" and "\name[]{}{}{}" with "\nameThree[]{}{}{}"
 // return number of commmands replaced
 // maxVars  = 2 or 3
-// must remove comments first
 inline Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
 {
 	Long i{}, N{}, Nvar{}, ind0{}, ind1{};
