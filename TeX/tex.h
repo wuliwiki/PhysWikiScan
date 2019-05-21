@@ -3,6 +3,7 @@
 #pragma once
 #include "../SLISC/parser.h"
 #include <cassert>
+#include "../SLISC/search.h"
 
 namespace slisc {
 

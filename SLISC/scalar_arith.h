@@ -63,8 +63,9 @@ inline Comp INV(Comp_I x)
 inline Lcomp INV(Lcomp_I x)
 { return 1.l/x; }
 
-// if `elm` is one of `vec[i]`
+// check if `elm` is one of `vec[i]`
 // `vec.size()` must be defined
+// if you need i, see `search()` in `search.h`
 template <class T1, class T2>
 inline Bool is_in(const T1 &elm, const T2 &vec)
 {

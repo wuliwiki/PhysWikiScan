@@ -33,11 +33,16 @@
 * 如果要 debug 某一个文件的编译， 在 "PhysWikiScan.h" 中搜索 "one file debug"， 输入文件名设置 break point 即可。
 * 每次 commit 以前编译一个 release 版本， 将 x64/Release/PhysWikiScan.exe 拷贝到 PhysWikiScan 目录下， 测试并写上日期。
 
-## TODO
+## BUG
+* table 没有标题
 * 文献引用还没有处理
-* 还有好多 bug 的截图需要处理的。。。
-* Matlab 代码块不会自动换行啊， 因为是 verbatim
+* 处理 bug 的截图
+* Matlab 代码块不会自动换行， 因为是 verbatim
 * `end` keyword 用于 slicing 的时候不能高亮， html 和 lstlisting 都有这个问题
 * 处理 bibliographies
 * `\eentry` 和 `\rentry` 没有处理
 * 看看能不能根据预备知识给每个词条生成一个学习路线图（线性的或者树状的）
+* 正文中禁止 \\ 换行，以及其他禁止的格式如 `noindent`
+
+## New Features
+* 表格像公式一样可以拖动，以便在移动设备上看

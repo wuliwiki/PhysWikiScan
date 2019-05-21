@@ -649,15 +649,12 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str3
 			ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
 				+ title + U"</a>　\n", ind0);
 			// record Chinese title
-			for (i = 0; i < Size(entries); ++i) {
-				if (entryName == entries[i])
-					break;
-			}
-			if (i == entries.size()) {
+			Long ind = search(entryName, entries);
+			if (ind < 0) {
 				SLS_WARN("File not found for an entry in PhysWiki.tex!");
 				return -1; // break point here
 			}
-			titles[i] = title;
+			titles[ind] = title;
 			++ind1;
 		}
 		else if (ikey == 1) { // found "\chapter"
