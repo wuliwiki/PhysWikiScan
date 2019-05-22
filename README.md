@@ -46,3 +46,4 @@
 
 ## New Features
 * 表格像公式一样可以拖动，以便在移动设备上看
+* 为了在搜索引擎中更方便搜到， 在每个词条的 html 中 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`
