@@ -986,7 +986,7 @@ inline void dep_json(vector_I<Str32> titles, vector_I<Long> links, Str32_I path_
 	write_file(str, path_out + "dep.json");
 }
 
-// generate html for littleshi.cn/online
+// convert PhysWiki/ folder to littleshi.cn/online folder
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
 	vector<Str32> entries; // name in \entry{}, also .tex file name
@@ -1054,6 +1054,62 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		}
 		write_file(html, path_out + entries[i] + ".html"); // save html file
 	}
+	cout << endl;
+}
+
+// like PhysWikiOnline, but convert only one file
+// requires ids.txt and labels.txt output from `PhysWikiOnline()`
+inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_out)
+{
+	current_entry = entry;
+	vector<Str32> entries; // name in \entry{}, also .tex file name
+	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
+	RemoveNoEntry(entries);
+	Long i = search(entry, entries);
+	if (i < 0)
+		SLS_ERR("entry not found!");
+
+	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
+
+	vector<Str32> titles; // Chinese titles in \entry{}
+	while (TableOfContent(titles, entries, path_in, path_out) < 0) {
+		if (!Input().Bool("重试?"))
+			exit(EXIT_FAILURE);
+	}
+
+	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
+	// the number in id is the n-th occurrence of the same type of environment
+	vector<Str32> labels, ids;
+	read_vec_str(labels, U"labels.txt");
+	read_vec_str(ids, U"ids.txt");
+
+	// 1st loop through tex files
+	// files are processed independently
+	// `IdList` and `LabelList` are recorded for 2nd loop
+	cout << u8"======  第 1 轮转换 ======\n" << endl;
+
+	// main process
+	vector<Long> links;
+	while (PhysWikiOnline1(ids, labels, links,
+		path_in, path_out, entries, titles, i) < 0) {
+		if (!Input().Bool("try again?"))
+			exit(EXIT_FAILURE);
+	}
+
+	// 2nd loop through tex files
+	// deal with autoref
+	// need `IdList` and `LabelList` from 1st loop
+	cout << "\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+
+	Str32 html;
+	read_file(html, path_out + entries[i] + ".html"); // read html file
+	// process \autoref and \upref
+	if (autoref(ids, labels, entries[i], html) < 0) {
+		Input().Bool("already in second scan, please rerun the program!");
+		exit(EXIT_FAILURE);
+	}
+	write_file(html, path_out + entries[i] + ".html"); // save html file
+
 	cout << endl;
 }
 

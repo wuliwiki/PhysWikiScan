@@ -29,8 +29,12 @@ int main() {
 	cout << u8"#   欢迎使用 PhysWikiScan   #" << endl;
 	cout << u8"#===========================#\n" << endl;
 	
-	PhysWikiOnline(path_in, path_out);
+	cout << "input \".\" for complete run, input [entry] for single run" << endl;
+	Str entry; std::cin >> entry;
+	if (entry == ".")
+		PhysWikiOnline(path_in, path_out);
+	else
+		PhysWikiOnlineSingle(utf8to32(entry), path_in, path_out);
 	// PhysWikiCheck(U"../PhysWiki/contents/");
-
 	cout << u8"按任意键退出..." << endl; getchar();
 }
