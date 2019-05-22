@@ -90,10 +90,10 @@ inline Long paragraph_tag(Str32_IO str)
 						++ind0; continue; // ignore in inline equation
 					}
 					command_arg(env, str, ind0);
-					if (match(env, envs_eq) >= 0) {
+					if (search(env, envs_eq) >= 0) {
 						next = 'e';
 					}
-					else if (match(env, envs_p) >= 0) {
+					else if (search(env, envs_p) >= 0) {
 						next = 'p';
 					}
 				}
@@ -181,8 +181,8 @@ inline Long paragraph_tag(Str32_IO str)
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
 // output html id and corresponding label for future reference
-// "gather" and "align" environments has id = "ga" and "ali"
-// idNum is in the idNum-th environment of the same name (not necessarily equal to displayed number)
+// `gather` and `align` environments has id starting wth `ga` and `ali`
+// `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
 inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryName, Str32_IO str)
@@ -1004,9 +1004,13 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 	// dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
 	vector<Long> links;
-	vector<Str32> IdList, LabelList; // html id and corresponding tex label
+	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
+	// the number in id is the n-th occurrence of the same type of environment
+	vector<Str32> labels, ids;
 
 	// 1st loop through tex files
+	// files are processed independently
+	// `IdList` and `LabelList` are recorded for 2nd loop
 	cout << u8"======  第 1 轮转换 ======\n" << endl;
 	for (Long i = 0; i < Size(entries); ++i) {
 		cout    << std::setw(5)  << std::left << i
@@ -1016,20 +1020,26 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		if (debug(U"QSHOnr"))
 			cout << "one file debug" << endl;
 		// main process
-		while (PhysWikiOnline1(IdList, LabelList, links,
+		while (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i) < 0) {
 			if (!Input().Bool("try again?"))
 				exit(EXIT_FAILURE);
 		}
 	}
 
+	// save id and label data
+	write_vec_str(labels, U"labels.txt");
+	write_vec_str(ids, U"ids.txt");
+
 	// generate dep.json
 	dep_json(titles, links, path_out);
 
 	// 2nd loop through tex files
+	// deal with autoref
+	// need `IdList` and `LabelList` from 1st loop
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str32 html;
-	for (unsigned i{}; i < entries.size(); ++i) {
+	for (Long i = 0; i < Size(entries); ++i) {
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
@@ -1038,7 +1048,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		if (debug(U"QSHOnr"))
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
-		if (autoref(IdList, LabelList, entries[i], html) < 0) {
+		if (autoref(ids, labels, entries[i], html) < 0) {
 			Input().Bool("already in second scan, please rerun the program!");
 			exit(EXIT_FAILURE);
 		}

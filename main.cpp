@@ -8,14 +8,21 @@ int main() {
 	// output folder, put png, svg in here
 	// html will be output to here
 	Str32 path_out;
+	// secondary paths
+	Str32 path_in2, path_out2;
 
-	read_file(path_in, "set_path.txt");
-	CRLF_to_LF(path_in);
-	Long ind0 = path_in.find(U'\n', 0) + 1;
-	Long ind1 = path_in.find(U'\n', ind0);
-	Long ind2 = path_in.find(U'\n', ind1 + 1) + 1;
-	path_out = path_in.substr(ind2);
-	path_in = path_in.substr(ind0, ind1 - ind0);
+	Str32 temp;
+	read_file(temp, "set_path.txt");
+	CRLF_to_LF(temp);
+	Long ind0 = skip_line(temp, 0);
+	ind0 = get_line(path_in, temp, ind0);
+	ind0 = skip_line(temp, ind0);
+	ind0 = get_line(path_out, temp, ind0);
+	ind0 = skip_line(temp, ind0);
+	ind0 = get_line(path_in2, temp, ind0);
+	ind0 = skip_line(temp, ind0);
+	ind0 = get_line(path_out2, temp, ind0);
+	
 	trim(path_in, U" \n"); trim(path_out, U" \n");
 
 	cout << u8"#===========================#" << endl;

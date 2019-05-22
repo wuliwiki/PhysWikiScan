@@ -20,6 +20,10 @@ namespace slisc {
 
 using std::stringstream;
 
+inline void read_file(Str32_O str32, Str32_I fname);
+inline void write_file(Str32_I str32, Str32_I fname);
+inline Long CRLF_to_LF(Str32_IO str);
+
 // set windows console to display utf-8
 #ifdef _MSC_VER
 struct set_windows_console_utf8 {
@@ -117,16 +121,55 @@ inline Str32 operator+(Str_I str, Str32_I str32)
 	return utf8to32(str) + str32;
 }
 
-// check if str == strs[i]
-// return the first index found
-// return -1 if not found
-inline Long match(Str32_I str, vector_I<Str32> strs)
+// read a line from a string, convert to UTF-32
+// str[start] must be the firs character of the line
+// return the start of the next line
+// if the file ends with `\n`, then the line.back() is not empty
+inline Long get_line(Str32_O line, Str32_I str, Long_I start)
 {
-	for (Long i = 0; i < strs.size(); ++i) {
-		if (str == strs[i])
-			return i;
+	Long ind = str.find(U'\n', start);
+	line = str.substr(start, ind - start);
+	if (ind < 0 || ind == str.size() - 1)
+		return -1;
+	return ind + 1;
+}
+
+// skip to the next line
+// return the index after `\n`
+// return -1 if `\n` not found
+inline Long skip_line(Str32_I &str, Long_I start)
+{
+	Long ind = str.find(U'\n', start);
+	if (ind < 0 || ind == str.size() - 1)
+		return -1;
+	return ind + 1;
+}
+
+// write a vector of strings to file
+// no `\n` allowed in each string
+inline void write_vec_str(vector_I<Str32> vec_str, Str32_I fname)
+{
+	Str32 str;
+	for (Long i = 0; i < Size(vec_str); ++i) {
+		str += vec_str[i] + U'\n';
 	}
-	return -1;
+	write_file(str, fname);
+}
+
+// read the file written by `write_vec_str()`
+inline void read_vec_str(vector_O<Str32> vec_str, Str32_I fname)
+{
+	Str32 str;
+	vec_str.clear();
+	read_file(str, fname);
+	CRLF_to_LF(str);
+	Long ind0 = 0;
+	for (Long i = 0; ; ++i) {
+		vec_str.emplace_back();
+		ind0 = get_line(vec_str[i], str, ind0);
+		if (ind0 < 0)
+			return;
+	}
 }
 
 template <class T>

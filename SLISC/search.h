@@ -12,7 +12,7 @@ inline Long search(const T &elm, const Tv &vec)
 		if (elm == vec[i])
 			return i;
 	}
-	return 0;
+	return -1;
 }
 
 // search ind so that v[ind] == s
