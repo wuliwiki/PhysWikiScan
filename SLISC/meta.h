@@ -268,6 +268,14 @@ constexpr Bool is_Svector()
 	return is_Svector_imp<T>();
 }
 
+template <class T> struct is_Scmat_imp : false_type {};
+template <class T> struct is_Scmat_imp<Scmat<T>> : integral_constant<Bool, is_scalar<T>()> {};
+template<class T>
+constexpr Bool is_Scmat()
+{
+	return is_Scmat_imp<T>();
+}
+
 template <class T> constexpr Bool is_dense_vec()
 {
 	return is_Vector<T>() || is_FixVec<T>() || is_Svector<T>();
@@ -287,6 +295,14 @@ template<class T>
 constexpr Bool is_Mat3d()
 {
 	return is_Mat3d_imp<T>();
+}
+
+template <class T> struct is_Cmat3d_imp : false_type {};
+template <class T> struct is_Cmat3d_imp<Cmat3d<T>> : integral_constant<Bool, is_scalar<T>()> {};
+template<class T>
+constexpr Bool is_Cmat3d()
+{
+	return is_Cmat3d_imp<T>();
 }
 
 template <class T> struct is_Diag_imp : false_type {};
@@ -325,10 +341,16 @@ template <class T> constexpr Bool is_dense_mat()
 	return is_Matrix<T>() || is_Cmat<T>() || is_FixCmat<T>();
 }
 
+// check if is dense 3D array
+template <class T> constexpr Bool is_dense_mat3()
+{
+	return is_Mat3d<T>() || is_Cmat3d<T>();
+}
+
 // check if is dense container (including fixed-size)
 template <class T> constexpr Bool is_dense()
 {
-	return is_dense_vec<T>() || is_dense_mat<T>() || is_Mat3d<T>();
+	return is_dense_vec<T>() || is_dense_mat<T>() || is_Mat3d<T>() || is_Cmat3d<T>();
 }
 
 // check if is sparse vector/matrix
@@ -344,6 +366,7 @@ constexpr Int contain_num()
 	else if (is_Matrix<T>()) return 1;
 	else if (is_Cmat<T>()) return 2;
 	else if (is_Mat3d<T>()) return 3;
+	else if (is_Cmat3d<T>()) return 4;
 
 	else if (is_FixVec<T>()) return 20;
 	else if (is_FixCmat<T>()) return 22;
@@ -368,6 +391,32 @@ template <class T> constexpr Bool is_contain()
 // otherwise, contain_type<T> is T
 template <class T, SLS_IF(!is_contain<T>())>
 constexpr T contain_type_fun() { return T(); };
+
+template <class T>
+constexpr Char major()
+{
+	if (is_Cmat<T>() || is_FixCmat<T>() || is_Cmat3d<T>())
+		return 'c';
+	else if (is_Matrix<T>() || is_Mat3d<T>())
+		return 'r';
+	else {
+		cout << contain_num<T>() << endl;
+		SLS_ERR("unknown!");
+	}
+}
+
+template <class T>
+constexpr Int ndims()
+{
+	if (is_dense_vec<T>() || is_FixVec<T>() || is_Svector<T>())
+		return 1;
+	else if (is_dense_mat<T>() || is_sparse<T>() || is_Scmat<T>())
+		return 2;
+	else if (is_Mat3d<T>() || is_Cmat3d<T>())
+		return 3;
+	else
+		SLS_ERR("unknown!");
+}
 
 template <class T, SLS_IF(is_contain<T>())>
 constexpr auto contain_type_fun() { return T::value_type(); };
