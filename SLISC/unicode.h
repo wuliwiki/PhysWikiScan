@@ -89,18 +89,6 @@ inline Str utf32to8(Str32_I str32)
 	return str;
 }
 
-inline void write_file(Str_I str, Str32_I name)
-{
-	ofstream fout(utf32to8(name), std::ios::binary);
-	fout << str;
-	fout.close();
-}
-
-inline void read_file(Str_O str, Str32_I fname)
-{
-	read_file(str, fname);
-}
-
 // display Str32
 inline std::ostream &operator<<(std::ostream &out, Str32_I str32)
 {
