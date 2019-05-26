@@ -1,6 +1,6 @@
 ﻿#include "PhysWikiScan/PhysWikiScan.h"
 
-int main() {
+int main(int argc, char *argv[]) {
 	using namespace slisc;
 	// input folder, put tex files and code files here
 	// same directory structure with PhysWiki
@@ -29,12 +29,44 @@ int main() {
 	cout << u8"#   欢迎使用 PhysWikiScan   #" << endl;
 	cout << u8"#===========================#\n" << endl;
 	
-	cout << "input \".\" for complete run, input [entry] for single run" << endl;
-	Str entry; std::cin >> entry;
-	if (entry == ".")
-		PhysWikiOnline(path_in, path_out);
-	else
-		PhysWikiOnlineSingle(utf8to32(entry), path_in, path_out);
+	if (argc > 1) {
+		if (strcmp(argv[1], ".") == 0) {
+			PhysWikiOnline(path_in, path_out);
+		}
+		else if (strcmp(argv[1], "titles") == 0) { // update chinese titles
+			// update entries.tex and titles.tex
+			cout << "TODO: update entries.tex and titles.tex" << endl;
+		}
+		else if (strcmp(argv[1], "toc") == 0) {
+			// update table of contents (index.html)
+			cout << "TODO: update table of contents (index.html)" << endl;
+		}
+		else if (strcmp(argv[1], "toc-changed") == 0) {
+			// update table of changed entries (changed.html) from data/changed.txt
+			cout << "TODO: update table of changed entries (changed.html) from data/changed.txt" << endl;
+		}
+		else if (strcmp(argv[1], "autoref") == 0) {
+			// check a label, add one if necessary
+			cout << "TODO: check a label, add one if necessary" << endl;
+		}
+		else if (strcmp(argv[1], "entry") == 0) {
+			// process a single entry
+			cout << "TODO: process a single entry" << endl;
+		}
+		else {
+			cout << "unknown command!" << endl;
+		}
+		return 0;
+	}
+	else {
+		cout << "input \".\" for complete run, input [entry] for single run" << endl;
+		Str entry; std::cin >> entry;
+		if (entry == ".")
+			PhysWikiOnline(path_in, path_out);
+		else
+			PhysWikiOnlineSingle(utf8to32(entry), path_in, path_out);
+	}
+	
 	// PhysWikiCheck(U"../PhysWiki/contents/");
 	cout << u8"按任意键退出..." << endl; getchar();
 }

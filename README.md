@@ -6,6 +6,14 @@
 * 如果不想调试代码， Windows 下直接运行 PhysWikiScan.exe 即可（无需安装 Visual Studio）, 但是无法设置路径。
 * 注意 PhysWiki.tex 中不存在的词条也会被转成 html, 但不会在 `index.html` 中的目录中出现。 这些词条在运行的时候会提示 warning。
 
+## PhysWikiScan 所有控制行命令
+* `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
+* `PhysWikiScan titles`: 只更新 `entries.txt` 和 `titles.txt`
+* `PhysWikiScan toc`: 生成完整目录 `index.html`
+* `PhysWikiScan toc-changed`：生成目录 `changed.html` 只含有 `changed.txt` 中的词条
+* `PhysWikiScan entry fname`：单个词条转换， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
+* `PhysWikiScan autoref fname eq 8` 查找 `fname.tex` 词条的网页公式序号 (2) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{fname_eq#}`， 把插入的 label 保存到 autoref.txt 第一行， 第二行为 `1`， 更新 ids.tex 和 labels.tex （必须已经存在）。 如果 label 已经存在， 就直接把 label 保存到 autoref.txt 第一行， 第二行为 0。 
+
 ## 错误提示
 * `figure xxx not found`: PhysWiki 中每一张 pdf 图片都必须装换为 svg 图片放在 PhysWikiOnline/ 下， 每一张 png 图片直接复制即可。 如果控制行提示 ， 就说明找不到 svg 或者 png 图片。
 * `Chinese title inconsistent!`: 说明当前词条在 `PhysWiki.tex` 中的标题和词条文件首行注释的标题不一致。

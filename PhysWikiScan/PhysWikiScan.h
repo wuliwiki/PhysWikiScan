@@ -487,16 +487,25 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 	while (true) {
 		newtab.clear(); file.clear();
 		ind0 = str.find(U"\\autoref", ind0);
-		if (ind0 < 0) return N;
+		if (ind0 < 0)
+			return N;
 		inEq = index_in_env(ienv, ind0, envNames, str);
 		ind1 = expect(str, U"{", ind0 + 8);
+		if (ind1 < 0) {
+			SLS_WARN("\\autoref argument not found!");
+			return -1;
+		}
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.find('_', ind1);
 		if (ind2 < 0) {
 			SLS_WARN("autoref format error!");
-			return -1; // break point here
+			return -1;
 		}
 		ind3 = find_num(str, ind2);
+		if (ind3 < 0) {
+			SLS_WARN("autoref format error!");
+			return -1;
+		}
 		idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
 		if (idName == U"eq") kind = U"式";
 		else if (idName == U"fig") kind = U"图";
@@ -591,7 +600,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 // names is a list of filenames
 // output chinese titles,  titles[i] is the chinese title of names[i]
 // if names[i] is not in PhysWiki.tex, then titles[i] is empty
-inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
+inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -687,10 +696,13 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_I<Str32> entries, Str3
 	}
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path_out + "index.html");
-	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录" << endl;
+	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，将被忽略" << endl;
 	for (i = 0; i < Size(titles); ++i) {
-		if (titles[i].empty())
+		if (titles[i].empty()) {
 			cout << entries[i] << endl;
+			entries.erase(entries.begin() + i, entries.begin() + i + 1);
+			titles.erase(titles.begin() + i, titles.begin() + i + 1);
+		}
 	}
 	cout << endl;
 	return N;

@@ -187,7 +187,7 @@ inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
 }
 
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
-// output iname of name[iname], -1 if return false
+// output iname of names[iname], -1 if return false
 // TODO: check if this function works.
 inline Bool index_in_env(Long& iname, Long ind, vector_I<Str32> names, Str32_I str)
 {
