@@ -165,6 +165,7 @@ inline void write_file(Str32_I str32, Str32_I fname)
 
 // write a vector of strings to file
 // no `\n` allowed in each string
+// file will be ended by a return
 inline void write_vec_str(vector_I<Str32> vec_str, Str32_I fname)
 {
 	Str32 str;
@@ -175,6 +176,7 @@ inline void write_vec_str(vector_I<Str32> vec_str, Str32_I fname)
 }
 
 // read the file written by `write_vec_str()`
+// file must be ended by a return
 inline void read_vec_str(vector_O<Str32> vec_str, Str32_I fname)
 {
 	Str32 str;

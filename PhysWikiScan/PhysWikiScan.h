@@ -5,6 +5,7 @@
 #include "../Matlab/matlab2html.h"
 
 using namespace slisc;
+Str32 err_msg;
 
 // get the title (defined as the first comment, no space after %)
 // limited to 20 characters
@@ -12,18 +13,18 @@ using namespace slisc;
 inline Long GetTitle(Str32_O title, Str32_I str)
 {
 	if (str.at(0) != U'%') {
-		SLS_WARN("Need a title!"); // break point here
+		err_msg = U"请在第一行注释标题!"; // break point here
 		return -1;
 	}
 	Str32 c;
 	Long ind0 = NextNoSpace(c, str, 1);
 	if (ind0 < 0) {
-		SLS_WARN("Title is empty!"); // break point here
+		err_msg = U"标题不能为空!"; // break point here
 		return -1;
 	}
 	Long ind1 = str.find(U'\n', ind0);
 	if (ind1 < 0) {
-		SLS_WARN("Body is empty!"); // break point here
+		err_msg = U"正文不能为空!"; // break point here
 		return -1;
 	}
 	title = str.substr(ind0, ind1 - ind0);
@@ -200,7 +201,7 @@ inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryN
 		ind2 = str.rfind(U"\\end", ind5);
 		ind4 = str.rfind(U"\\begin", ind5);
 		if (ind2 >= ind4) {
-			SLS_WARN("label not in an environment!"); // break point here
+			err_msg = U"label 不在环境内!"; // break point here
 			return -1;
 		}
 		// detect environment kind
@@ -227,14 +228,14 @@ inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryN
 			idName = U"eq"; envName = U"align";
 		}
 		else {
-			SLS_WARN("environment not supported for label!");
+			err_msg = U"该环境不支持 label!";
 			return -1; // break point here
 		}
 		// check label format and save label
 		ind0 = expect(str, U"{", ind5 + 6);
 		ind3 = expect(str, entryName + U'_' + idName, ind0);
 		if (ind3 < 0) {
-			SLS_WARN("label format error! expecting \"" + utf32to8(entryName + U'_' + idName) + "\"");
+			err_msg = U"label 格式错误， 是否为 \"" + utf32to8(entryName + U'_' + idName) + "\"？";
 			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
@@ -307,14 +308,14 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 		if (indName2 < 0)
 			indName2 = str.find(U".png", intvFig.L(i)) - 1;
 		if (indName2 < 0) {
-			SLS_WARN("error when reading figure name!"); // breakpoint here
+			err_msg = U"读取图片名错误!"; // breakpoint here
 			return -1;
 		}
 		figName = str.substr(indName1, indName2 - indName1 + 1);
 		// get caption of figure
 		ind0 = str.find(U"\\caption", ind0);
 		if (ind0 < 0) {
-			SLS_WARN("fig caption not found!");
+			err_msg = U"图片标题未找到!";
 			return -1; // break point here
 		}
 		ind0 = expect(str, U"{", ind0 + 8);
@@ -328,7 +329,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 		else if (file_exist(path_out + figName + ".png"))
 			format = U".png";
 		else {
-			SLS_WARN("figure \"" + figName + "\" not found!");
+			err_msg = U"图片 \"" + figName + "\" 未找到!";
 			return -1; // break point here
 		}
 		// insert html code
@@ -370,7 +371,7 @@ inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> ent
 				}
 			}
 			if (!flag) {
-				SLS_ERR("upref not found: " + depEntry + ".tex");
+				err_msg = U"\\upref 引用的文件未找到: " + depEntry + ".tex";
 				return -1;
 			}
 			links.push_back(i);
@@ -492,18 +493,18 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 		inEq = index_in_env(ienv, ind0, envNames, str);
 		ind1 = expect(str, U"{", ind0 + 8);
 		if (ind1 < 0) {
-			SLS_WARN("\\autoref argument not found!");
+			err_msg = U"\\autoref 变量不能为空!";
 			return -1;
 		}
 		ind1 = NextNoSpace(entry, str, ind1);
 		ind2 = str.find('_', ind1);
 		if (ind2 < 0) {
-			SLS_WARN("autoref format error!");
+			err_msg = U"\\autoref 格式错误!";
 			return -1;
 		}
 		ind3 = find_num(str, ind2);
 		if (ind3 < 0) {
-			SLS_WARN("autoref format error!");
+			err_msg = U"autoref 格式错误!";
 			return -1;
 		}
 		idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
@@ -513,7 +514,7 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 		else if (idName == U"exe") kind = U"练习";
 		else if (idName == U"tab") kind = U"表";
 		else {
-			SLS_WARN("unknown id name!");
+			err_msg = U"\\label 类型错误， 必须为 eq/fig/ex/exe/tab 之一!";
 			return -1; // break point here
 		}
 		ind3 = str.find('}', ind3);
@@ -523,7 +524,7 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
-			SLS_WARN("label \"" + label0 +"\" not found!");
+			err_msg = U"label \"" + label0 +"\" 未找到!";
 			return -1; // break point here
 		}
 		ind4 = find_num(id[i], 0);
@@ -557,7 +558,7 @@ inline Long link(Str32_IO str)
 		command_arg(url, str, ind0, 1);
 		if (url.substr(0, 7) != U"http://" &&
 			url.substr(0, 8) != U"https://") {
-			SLS_WARN("wrong url format: " + url);
+			err_msg = U"链接格式错误: " + url;
 			return -1;
 		}
 
@@ -581,7 +582,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 		command_arg(entryName, str, ind0);
 		trim(entryName);
 		if (!file_exist(path_in + "contents/" + utf32to8(entryName) + ".tex")) {
-			SLS_WARN("upref file not found!");
+			err_msg = U"\\upref 引用的文件未找到!";
 			return -1; // break point here
 		}
 		right = skip_command(str, ind0, 1);
@@ -650,7 +651,7 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 			command_arg(title, str, ind1);
 			replace(title, U"\\ ", U" ");
 			if (title.empty()) {
-				SLS_WARN("Chinese title is empty in PhysWiki.tex!");
+				err_msg = U"PhysWiki.tex 中词条中文名不能为空!";
 				return -1;  // break point here
 			}
 			command_arg(entryName, str, ind1, 1);
@@ -660,7 +661,7 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 			// record Chinese title
 			Long ind = search(entryName, entries);
 			if (ind < 0) {
-				SLS_WARN("File not found for an entry in PhysWiki.tex!");
+				err_msg = U"PhysWiki.tex 中词条文件未找到!";
 				return -1; // break point here
 			}
 			titles[ind] = title;
@@ -726,7 +727,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 		command_arg(name, str, ind0);
 		// read file
 		if (!file_exist(path_in + "codes/" + utf32to8(name) + ".m")) {
-			SLS_WARN("code file \"" + utf32to8(name) + ".m\" not found!");
+			err_msg = U"代码文件 \"" + utf32to8(name) + ".m\" 未找到!";
 			return -1; // break point here
 		}
 		read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
@@ -850,17 +851,17 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	if (GetTitle(title, str) < 0)
 		return -1;
 	if (!titles[ind].empty() && title != titles[ind]) {
-		SLS_WARN("title inconsistent: " + title + " | " + titles[ind]);
+		err_msg = U"中文标题不符: " + title + " | " + titles[ind];
 		return -1;
 	}
 	// insert \newcommand{}
 	if (replace(html, U"PhysWikiCommand", newcomm) != 1) {
-		SLS_WARN("wrong format in newcommand.html!");
+		err_msg = U"newcommand.html 格式错误!";
 		return -1;
 	}
 	// insert HTML title
 	if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
-		SLS_WARN("wrong format in newcommand.html!");
+		err_msg = U"newcommand.html 格式错误!";
 		return -1;
 	}
 	// remove comments
@@ -956,12 +957,12 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	replace(str, U"\\dfracH", U"");
 	// insert body Title
 	if (replace(html, U"PhysWikiTitle", title) != 1) {
-		SLS_WARN("\"PhysWikiTitle\" not found in entry_template.html!");
+		err_msg = U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!";
 		return -1;
 	}
 	// insert HTML body
 	if (replace(html, U"PhysWikiHTMLbody", str) != 1) {
-		SLS_WARN("\"PhysWikiHTMLbody\" not found in entry_template.html!");
+		err_msg = U"\"PhysWikiHTMLbody\" 在 entry_template.html 中未找到!";
 		return -1;
 	}
 	// save html file
@@ -1010,8 +1011,10 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 	vector<Str32> titles; // Chinese titles in \entry{}
 	while (TableOfContent(titles, entries, path_in, path_out) < 0) {
-		if (!Input().Bool("重试?"))
+		if (!Input().Bool("重试?")) {
+			cout << err_msg << endl;
 			exit(EXIT_FAILURE);
+		}
 	}
 
 	// dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
@@ -1040,8 +1043,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	}
 
 	// save id and label data
-	write_vec_str(labels, U"labels.txt");
-	write_vec_str(ids, U"ids.txt");
+	write_vec_str(labels, U"data/labels.txt");
+	write_vec_str(ids, U"data/ids.txt");
 
 	// generate dep.json
 	dep_json(titles, links, path_out);
@@ -1074,54 +1077,61 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_out)
 {
 	current_entry = entry;
-	vector<Str32> entries; // name in \entry{}, also .tex file name
-	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
-	RemoveNoEntry(entries);
-	Long i = search(entry, entries);
-	if (i < 0)
-		SLS_ERR("entry not found!");
-
-	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
-
-	vector<Str32> titles; // Chinese titles in \entry{}
-	while (TableOfContent(titles, entries, path_in, path_out) < 0) {
-		if (!Input().Bool("重试?"))
-			exit(EXIT_FAILURE);
-	}
+	vector<Str32> ; // name in \entry{}, also .tex file name
 
 	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
 	// the number in id is the n-th occurrence of the same type of environment
-	vector<Str32> labels, ids;
-	read_vec_str(labels, U"labels.txt");
-	read_vec_str(ids, U"ids.txt");
+	vector<Str32> labels, ids, entries, titles;
+	read_vec_str(labels, U"data/labels.txt");
+	read_vec_str(ids, U"data/ids.txt");
+	read_vec_str(entries, U"data/entries.txt");
+	read_vec_str(titles, U"data/titles.txt");
+	if (labels.size() != ids.size()) {
+		write_file("error\n"
+			"内部错误： labels.txt 与 ids.txt 长度不符", "data/status.txt");
+		exit(EXIT_FAILURE);
+	}
+	if (entries.size() != titles.size()) {
+		write_file("error\n"
+			"内部错误： entries.txt 与 titles.txt 长度不符", "data/status.txt");
+		exit(EXIT_FAILURE);
+	}
+
+	Long i = search(entry, entries);
+	if (i < 0) {
+		write_file("error\n"
+			"entries.txt 中未找到该词条!", "data/status.txt");
+		exit(EXIT_FAILURE);
+	}
 
 	// 1st loop through tex files
 	// files are processed independently
 	// `IdList` and `LabelList` are recorded for 2nd loop
-	cout << u8"======  第 1 轮转换 ======\n" << endl;
+	// ======  第 1 轮转换 ======
 
 	// main process
 	vector<Long> links;
-	while (PhysWikiOnline1(ids, labels, links,
+	if (PhysWikiOnline1(ids, labels, links,
 		path_in, path_out, entries, titles, i) < 0) {
-		if (!Input().Bool("try again?"))
-			exit(EXIT_FAILURE);
+		write_file("error\n" + err_msg + "\n", "data/status.txt");
+		exit(EXIT_FAILURE);
 	}
 
 	// 2nd loop through tex files
 	// deal with autoref
 	// need `IdList` and `LabelList` from 1st loop
-	cout << "\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+	// ====== 第 2 轮转换 ======
 
 	Str32 html;
 	read_file(html, path_out + entries[i] + ".html"); // read html file
 	// process \autoref and \upref
 	if (autoref(ids, labels, entries[i], html) < 0) {
-		Input().Bool("already in second scan, please rerun the program!");
+		write_file("error\n" + err_msg + "\n", "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
 	write_file(html, path_out + entries[i] + ".html"); // save html file
 
+	write_file("done\n", "data/status.txt");
 	cout << endl;
 }
 

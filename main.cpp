@@ -24,10 +24,6 @@ int main(int argc, char *argv[]) {
 	ind0 = get_line(path_out2, temp, ind0);
 	
 	trim(path_in, U" \n"); trim(path_out, U" \n");
-
-	cout << u8"#===========================#" << endl;
-	cout << u8"#   欢迎使用 PhysWikiScan   #" << endl;
-	cout << u8"#===========================#\n" << endl;
 	
 	if (argc > 1) {
 		if (strcmp(argv[1], ".") == 0) {
@@ -49,9 +45,10 @@ int main(int argc, char *argv[]) {
 			// check a label, add one if necessary
 			cout << "TODO: check a label, add one if necessary" << endl;
 		}
-		else if (strcmp(argv[1], "entry") == 0) {
+		else if (strcmp(argv[1], "entry") == 0 && argc == 3) {
 			// process a single entry
-			cout << "TODO: process a single entry" << endl;
+			Str32 entry = utf8to32(Str(argv[2]));
+			PhysWikiOnlineSingle(entry, path_in, path_out);
 		}
 		else {
 			cout << "unknown command!" << endl;
@@ -59,7 +56,11 @@ int main(int argc, char *argv[]) {
 		return 0;
 	}
 	else {
-		cout << "input \".\" for complete run, input [entry] for single run" << endl;
+		cout << u8"#===========================#" << endl;
+		cout << u8"#   欢迎使用 PhysWikiScan   #" << endl;
+		cout << u8"#===========================#\n" << endl;
+
+		cout << u8"完整运行请输入 \".\", 单词条转换请输入词条文件名（不含 .tex）" << endl;
 		Str entry; std::cin >> entry;
 		if (entry == ".")
 			PhysWikiOnline(path_in, path_out);
