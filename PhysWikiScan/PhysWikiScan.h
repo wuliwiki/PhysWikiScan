@@ -975,7 +975,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline void dep_json(vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
+inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
 {
 	Str32 str;
 	// write entries
@@ -983,7 +983,8 @@ inline void dep_json(vector_I<Str32> titles, vector_I<Long> links, Str32_I path_
 	for (Long i = 0; i < titles.size(); ++i) {
 		if (titles[i].empty())
 			continue;
-		str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1},\n";
+		str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1, \"url\": \"../online/" +
+			entries[i] + ".html\"},\n";
 	}
 	str.pop_back(); str.pop_back();
 	str += U"\n  ],\n";
@@ -1050,7 +1051,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	write_vec_str(ids, U"data/ids.txt");
 
 	// generate dep.json
-	dep_json(titles, links, path_out);
+	dep_json(entries, titles, links, path_out);
 
 	// 2nd loop through tex files
 	// deal with autoref
