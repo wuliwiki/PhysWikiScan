@@ -69,7 +69,7 @@ inline Lcomp INV(Lcomp_I x)
 template <class T1, class T2>
 inline Bool is_in(const T1 &elm, const T2 &vec)
 {
-	for (Long i = 0; i < vec.size(); ++i)
+	for (Long i = 0; i < Size(vec); ++i)
 		if (elm == vec[i])
 			return true;
 	return false;

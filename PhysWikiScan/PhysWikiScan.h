@@ -7,10 +7,10 @@
 using namespace slisc;
 Str32 err_msg;
 
-// get the title (defined as the first comment, no space after %)
+// get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
 // return -1 if error, 0 if successful
-inline Long GetTitle(Str32_O title, Str32_I str)
+inline Long get_title(Str32_O title, Str32_I str)
 {
 	if (str.at(0) != U'%') {
 		err_msg = U"请在第一行注释标题!"; // break point here
@@ -365,7 +365,7 @@ inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> ent
 				return N;
 			command_arg(depEntry, temp, ind1, 0, 't');
 			Long i; Bool flag = false;
-			for (i = 0; i < entryNames.size(); ++i) {
+			for (i = 0; i < Size(entryNames); ++i) {
 				if (depEntry == entryNames[i]) {
 					flag = true; break;
 				}
@@ -595,29 +595,94 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 	return N;
 }
 
+// update entries.txt and titles.txt
+// return the number of entries in PhysWiki.tex
+// return -1 if failed
+inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str32_I path_in, Str32_I path_out)
+{
+	entries.clear(); titles.clear();
+	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
+	RemoveNoEntry(entries);
+	if (entries.size() <= 0)
+		return -1;
+
+	Long N = 0, ind0 = 0;
+
+	//keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
+	Str32 title; // chinese entry name, chapter name, or part name
+	Str32 entryName; // entry label
+	Str32 str; read_file(str, path_in + "PhysWiki.tex");
+	CRLF_to_LF(str);
+	titles.resize(entries.size());
+
+	// remove comments
+	Intvs intvComm;
+	find_comment(intvComm, str);
+	for (Long i = intvComm.size() - 1; i >= 0; --i)
+		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
+
+	while (true) {
+		ind0 = str.find(U"\\entry", ind0);
+		if (ind0 < 0)
+			break;
+		// get chinese title and entry label
+		++N;
+		command_arg(title, str, ind0);
+		replace(title, U"\\ ", U" ");
+		if (title.empty()) {
+			err_msg = U"PhysWiki.tex 中词条中文名不能为空!";
+			return -1;  // break point here
+		}
+		command_arg(entryName, str, ind0, 1);
+
+		// record Chinese title
+		Long ind = search(entryName, entries);
+		if (ind < 0) {
+			err_msg = U"PhysWiki.tex 中词条文件未找到!";
+			return -1; // break point here
+		}
+		titles[ind] = title;
+		++ind0;
+	}
+
+	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，将被忽略" << endl;
+	for (Long i = 0; i < Size(titles); ++i) {
+		if (titles[i].empty()) {
+			cout << entries[i] << endl;
+			entries.erase(entries.begin() + i, entries.begin() + i + 1);
+			titles.erase(titles.begin() + i, titles.begin() + i + 1);
+		}
+	}
+	cout << endl;
+	return N;
+}
+
 // create table of content from PhysWiki.tex
 // path must end with '\\'
 // return the number of entries
 // names is a list of filenames
-// output chinese titles,  titles[i] is the chinese title of names[i]
-// if names[i] is not in PhysWiki.tex, then titles[i] is empty
-inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str32_I path_in, Str32_I path_out)
+// output chinese titles,  titles[i] is the chinese title of entries[i]
+// if entries[i] is not in PhysWiki.tex, it will be deleted
+inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
 	vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
 	vector<Str32> chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
 							U"十", U"十一", U"十二", U"十三", U"十四", U"十五"};
 	//keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
-	Str32 newcomm;
-	read_file(newcomm, "PhysWikiScan/newcommand.html");
-	CRLF_to_LF(newcomm);
+	
 	Str32 title; // chinese entry name, chapter name, or part name
 	Str32 entryName; // entry label
-	Str32 str; read_file(str, path_in + "PhysWiki.tex");
+	Str32 newcomm;
+	Str32 str, toc;
+
+	read_file(newcomm, "PhysWikiScan/newcommand.html");
+	CRLF_to_LF(newcomm);
+	read_file(str, path_in + "PhysWiki.tex");
 	CRLF_to_LF(str);
-	Str32 toc; read_file(toc, "PhysWikiScan/index_template.html"); // read html template
-	CRLF_to_LF(str);
-	titles.resize(entries.size());
+	read_file(toc, "PhysWikiScan/index_template.html"); // read html template
+	CRLF_to_LF(toc);
+
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
 	toc.replace(ind0, 17, U"小时物理百科");
 	ind0 = toc.find(U"PhysWikiCommand", ind0);
@@ -644,6 +709,7 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 	find_comment(intvComm, str);
 	for (i = intvComm.size() - 1; i >= 0; --i)
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
+
 	while (true) {
 		ind1 = find(ikey, str, keys, ind1);
 		if (ind1 < 0)
@@ -667,7 +733,6 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 				err_msg = U"PhysWiki.tex 中词条文件未找到!";
 				return -1; // break point here
 			}
-			titles[ind] = title;
 			++ind1;
 		}
 		else if (ikey == 1) { // found "\chapter"
@@ -700,15 +765,6 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 	}
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path_out + "index.html");
-	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，将被忽略" << endl;
-	for (i = 0; i < Size(titles); ++i) {
-		if (titles[i].empty()) {
-			cout << entries[i] << endl;
-			entries.erase(entries.begin() + i, entries.begin() + i + 1);
-			titles.erase(titles.begin() + i, titles.begin() + i + 1);
-		}
-	}
-	cout << endl;
 	return N;
 }
 
@@ -837,10 +893,10 @@ inline Long OneFile4(Str32_I path)
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_IO<Long> links,
-	Str32_I path_in, Str32_I path_out, vector_I<Str32> names, vector_I<Str32> titles, Long_I ind)
+	Str32_I path_in, Str32_I path_out, vector_I<Str32> entries, vector_I<Str32> titles, Long_I ind)
 {
 	Str32 str;
-	read_file(str, path_in + "contents/" + names[ind] + ".tex"); // read tex file
+	read_file(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
 	CRLF_to_LF(str);
 	Str32 title;
 	// read html template and \newcommand{}
@@ -851,7 +907,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	read_file(newcomm, "PhysWikiScan/newcommand.html");
 	CRLF_to_LF(newcomm);
 	// read title from first comment
-	if (GetTitle(title, str) < 0)
+	if (get_title(title, str) < 0)
 		return -1;
 	if (!titles[ind].empty() && title != titles[ind]) {
 		err_msg = U"中文标题不符: " + title + " | " + titles[ind];
@@ -885,7 +941,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	if (Enumerate(str) < 0)
 		return -1;
 	// add html id for links
-	if (EnvLabel(id, label, names[ind], str) < 0)
+	if (EnvLabel(id, label, entries[ind], str) < 0)
 		return -1;
 	// process table environments
 	if (Table(str) < 0)
@@ -902,7 +958,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	if (FigureEnvironment(str, path_out) < 0)
 		return -1;
 	// get dependent entries from \pentry{}
-	if (depend_entry(links, str, names, ind) < 0)
+	if (depend_entry(links, str, entries, ind) < 0)
 		return -1;
 	// process \pentry{}
 	if (pentry(str) < 0)
@@ -969,7 +1025,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 		return -1;
 	}
 	// save html file
-	write_file(html, path_out + names[ind] + ".html");
+	write_file(html, path_out + entries[ind] + ".html");
 	return 0;
 }
 
@@ -980,7 +1036,7 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 	Str32 str;
 	// write entries
 	str += U"{\n  \"nodes\": [\n";
-	for (Long i = 0; i < titles.size(); ++i) {
+	for (Long i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty())
 			continue;
 		str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1, \"url\": \"../online/" +
@@ -991,7 +1047,7 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 
 	// write links
 	str += U"  \"links\": [\n";
-	for (Long i = 0; i < links.size()/2; ++i) {
+	for (Long i = 0; i < Size(links)/2; ++i) {
 		if (titles[links[2*i]].empty() || titles[links[2*i+1]].empty())
 			continue;
 		str += U"  {\"source\": \"" + titles[links[2*i]] + "\", ";
@@ -1007,14 +1063,14 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
 	vector<Str32> entries; // name in \entry{}, also .tex file name
-	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
-	RemoveNoEntry(entries);
-	if (entries.size() <= 0) return;
-
-	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ..." << endl;
-
 	vector<Str32> titles; // Chinese titles in \entry{}
-	while (TableOfContent(titles, entries, path_in, path_out) < 0) {
+	entries_titles(titles, entries, path_in, path_out);
+	write_vec_str(titles, U"data/titles.txt");
+	write_vec_str(entries, U"data/entries.txt");
+
+	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
+
+	while (table_of_contents(titles, entries, path_in, path_out) < 0) {
 		if (!Input().Bool("重试?")) {
 			cout << err_msg << endl;
 			exit(EXIT_FAILURE);
@@ -1030,17 +1086,18 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	// 1st loop through tex files
 	// files are processed independently
 	// `IdList` and `LabelList` are recorded for 2nd loop
-	cout << u8"======  第 1 轮转换 ======\n" << endl;
+	cout << u8"======  第 1 轮转换 ======\n\n" << endl;
 	for (Long i = 0; i < Size(entries); ++i) {
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		current_entry = entries[i];
-		if (debug(U"QSHOnr"))
+		if (debug(U"BECSup"))
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i) < 0) {
+			cout << err_msg << endl;
 			if (!Input().Bool("try again?"))
 				exit(EXIT_FAILURE);
 		}
@@ -1081,7 +1138,6 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_out)
 {
 	current_entry = entry;
-	vector<Str32> ; // name in \entry{}, also .tex file name
 
 	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
 	// the number in id is the n-th occurrence of the same type of environment

@@ -8,7 +8,7 @@ namespace slisc {
 template <class T, class Tv>
 inline Long search(const T &elm, const Tv &vec)
 {
-	for (Long i = 0; i < vec.size(); ++i) {
+	for (Long i = 0; i < Size(vec); ++i) {
 		if (elm == vec[i])
 			return i;
 	}
