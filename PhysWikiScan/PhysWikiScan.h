@@ -999,7 +999,7 @@ inline void dep_json(vector_I<Str32> titles, vector_I<Long> links, Str32_I path_
 	}
 	str.pop_back(); str.pop_back();
 	str += U"\n  ]\n}\n";
-	write_file(str, path_out + "dep.json");
+	write_file(str, path_out + "../tree/data/dep.json");
 }
 
 // convert PhysWiki/ folder to littleshi.cn/online folder
