@@ -633,7 +633,10 @@ inline Long TableOfContent(vector_O<Str32> titles, vector_IO<Str32> entries, Str
 		U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"
 		U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"
 		U"<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n"
-		U"<a href = \"../\">返回主页</a>\n"
+		U"<a href = \"../\">返回主页</a>\n\n"
+		U"<div class=\"w3-content\" style=\"max-width:400px;\">\n"
+		U"	<a href=\"../tree\"><img src=\"../tree.png\" style=\"width:100%;\" alt=\"目录树\"></a><br>\n"
+		U"</div>\n<br>\n\n"
 		, ind0);
 
 	// remove comments
