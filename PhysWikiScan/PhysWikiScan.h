@@ -1125,6 +1125,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(ids, labels, entries[i], html) < 0) {
+			cout << err_msg << endl;
 			Input().Bool("already in second scan, please rerun the program!");
 			exit(EXIT_FAILURE);
 		}
