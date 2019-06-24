@@ -651,6 +651,7 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 			cout << entries[i] << endl;
 			entries.erase(entries.begin() + i, entries.begin() + i + 1);
 			titles.erase(titles.begin() + i, titles.begin() + i + 1);
+			--i;
 		}
 	}
 	cout << endl;
