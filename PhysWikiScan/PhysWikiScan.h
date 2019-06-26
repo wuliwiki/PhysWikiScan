@@ -524,7 +524,7 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 			if (label0 == label[i]) break;
 		}
 		if (i == label.size()) {
-			err_msg = U"label \"" + label0 +"\" 未找到!";
+			err_msg = U"label \"" + label0 + U"\" 未找到!";
 			return -1; // break point here
 		}
 		ind4 = find_num(id[i], 0);
@@ -1149,20 +1149,26 @@ inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_ou
 	read_vec_str(entries, U"data/entries.txt");
 	read_vec_str(titles, U"data/titles.txt");
 	if (labels.size() != ids.size()) {
-		write_file("error\n"
-			"内部错误： labels.txt 与 ids.txt 长度不符", "data/status.txt");
+		err_msg = U"error\n"
+			"内部错误： labels.txt 与 ids.txt 长度不符";
+		cout << err_msg << endl;
+		write_file(err_msg, "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
 	if (entries.size() != titles.size()) {
-		write_file("error\n"
-			"内部错误： entries.txt 与 titles.txt 长度不符", "data/status.txt");
+		err_msg = U"error\n"
+			"内部错误： entries.txt 与 titles.txt 长度不符";
+		cout << err_msg << endl;
+		write_file(err_msg, "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
 
 	Long i = search(entry, entries);
 	if (i < 0) {
-		write_file("error\n"
-			"entries.txt 中未找到该词条!", "data/status.txt");
+		err_msg = U"error\n"
+			"entries.txt 中未找到该词条!";
+		cout << err_msg << endl;
+		write_file(err_msg, "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
 
@@ -1175,9 +1181,12 @@ inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_ou
 	vector<Long> links;
 	if (PhysWikiOnline1(ids, labels, links,
 		path_in, path_out, entries, titles, i) < 0) {
+		cout << err_msg << endl;
 		write_file("error\n" + err_msg + "\n", "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
+	write_vec_str(labels, U"data/labels.txt");
+	write_vec_str(ids, U"data/ids.txt");
 
 	// 2nd loop through tex files
 	// deal with autoref
@@ -1188,11 +1197,13 @@ inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_ou
 	read_file(html, path_out + entries[i] + ".html"); // read html file
 	// process \autoref and \upref
 	if (autoref(ids, labels, entries[i], html) < 0) {
+		cout << err_msg << endl;
 		write_file("error\n" + err_msg + "\n", "data/status.txt");
 		exit(EXIT_FAILURE);
 	}
 	write_file(html, path_out + entries[i] + ".html"); // save html file
 
+	cout << "done" << endl;
 	write_file("done\n", "data/status.txt");
 	cout << endl;
 }
