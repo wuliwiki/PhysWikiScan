@@ -1137,10 +1137,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 // like PhysWikiOnline, but convert only one file
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_out)
+inline void PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I path_out)
 {
-	current_entry = entry;
-
 	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
 	// the number in id is the n-th occurrence of the same type of environment
 	vector<Str32> labels, ids, entries, titles;
@@ -1163,47 +1161,54 @@ inline void PhysWikiOnlineSingle(Str32_I entry, Str32_I path_in, Str32_I path_ou
 		exit(EXIT_FAILURE);
 	}
 
-	Long i = search(entry, entries);
-	if (i < 0) {
-		err_msg = U"error\n"
-			"entries.txt 中未找到该词条!";
-		cout << err_msg << endl;
-		write_file(err_msg, "data/status.txt");
-		exit(EXIT_FAILURE);
-	}
-
 	// 1st loop through tex files
 	// files are processed independently
 	// `IdList` and `LabelList` are recorded for 2nd loop
-	// ======  第 1 轮转换 ======
+	cout << u8"======  第 1 轮转换 ======\n\n" << endl;
 
 	// main process
 	vector<Long> links;
-	if (PhysWikiOnline1(ids, labels, links,
-		path_in, path_out, entries, titles, i) < 0) {
-		cout << err_msg << endl;
-		write_file("error\n" + err_msg + "\n", "data/status.txt");
-		exit(EXIT_FAILURE);
+	for (Long i = 0; i < entryN.size(); ++i) {
+		current_entry = entryN[i];
+		Long ind = search(entryN[i], entries);
+		if (ind < 0) {
+			err_msg = U"error\n"
+				"entries.txt 中未找到该词条!";
+			cout << err_msg << endl;
+			write_file(err_msg, "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
+
+		if (PhysWikiOnline1(ids, labels, links,
+			path_in, path_out, entries, titles, ind) < 0) {
+			cout << err_msg << endl;
+			write_file("error\n" + err_msg + "\n", "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
 	}
+	
 	write_vec_str(labels, U"data/labels.txt");
 	write_vec_str(ids, U"data/ids.txt");
 
 	// 2nd loop through tex files
 	// deal with autoref
 	// need `IdList` and `LabelList` from 1st loop
-	// ====== 第 2 轮转换 ======
+	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
 	Str32 html;
-	read_file(html, path_out + entries[i] + ".html"); // read html file
-	// process \autoref and \upref
-	if (autoref(ids, labels, entries[i], html) < 0) {
-		cout << err_msg << endl;
-		write_file("error\n" + err_msg + "\n", "data/status.txt");
-		exit(EXIT_FAILURE);
+	for (Long i = 0; i < entryN.size(); ++i) {
+		current_entry = entryN[i];
+		read_file(html, path_out + entries[i] + ".html"); // read html file
+		// process \autoref and \upref
+		if (autoref(ids, labels, entries[i], html) < 0) {
+			cout << err_msg << endl;
+			write_file("error\n" + err_msg + "\n", "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
+		write_file(html, path_out + entries[i] + ".html"); // save html file
 	}
-	write_file(html, path_out + entries[i] + ".html"); // save html file
 
-	cout << "done" << endl;
+	cout << "done!" << endl;
 	write_file("done\n", "data/status.txt");
 	cout << endl;
 }

@@ -1,8 +1,8 @@
+输入路径 0 (默认)
+../PhysWiki/
+输出路径 0
+../littleshi.cn/root/online/
 输入路径 1
 ../PhysWiki/
 输出路径 1
-../littleshi.cn/root/online/
-输入路径 2
-../PhysWikiScanTest/scratch/
-输出路径 2
-../PhysWikiScanTest/preview/
+../littleshi.cn/root/changed/
