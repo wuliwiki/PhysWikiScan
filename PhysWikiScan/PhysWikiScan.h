@@ -603,8 +603,10 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 	entries.clear(); titles.clear();
 	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
 	RemoveNoEntry(entries);
-	if (entries.size() <= 0)
+	if (entries.size() == 0) {
+		err_msg = U"未找到任何词条";
 		return -1;
+	}
 
 	Long N = 0, ind0 = 0;
 
@@ -660,10 +662,9 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 
 // create table of content from PhysWiki.tex
 // path must end with '\\'
-// return the number of entries
+// return the number of entries, return -1 if failed
 // names is a list of filenames
-// output chinese titles,  titles[i] is the chinese title of entries[i]
-// if entries[i] is not in PhysWiki.tex, it will be deleted
+// titles[i] is the chinese title of entries[i]
 inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
 {
 	Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
@@ -1137,7 +1138,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 // like PhysWikiOnline, but convert only one file
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline void PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I path_out)
+inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I path_out)
 {
 	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
 	// the number in id is the n-th occurrence of the same type of environment
@@ -1147,18 +1148,12 @@ inline void PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	read_vec_str(entries, U"data/entries.txt");
 	read_vec_str(titles, U"data/titles.txt");
 	if (labels.size() != ids.size()) {
-		err_msg = U"error\n"
-			"内部错误： labels.txt 与 ids.txt 长度不符";
-		cout << err_msg << endl;
-		write_file(err_msg, "data/status.txt");
-		exit(EXIT_FAILURE);
+		err_msg = U"内部错误： labels.txt 与 ids.txt 长度不符";
+		return -1;
 	}
 	if (entries.size() != titles.size()) {
-		err_msg = U"error\n"
-			"内部错误： entries.txt 与 titles.txt 长度不符";
-		cout << err_msg << endl;
-		write_file(err_msg, "data/status.txt");
-		exit(EXIT_FAILURE);
+		err_msg = U"内部错误： entries.txt 与 titles.txt 长度不符";
+		return -1;
 	}
 
 	// 1st loop through tex files
@@ -1172,18 +1167,13 @@ inline void PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
 		if (ind < 0) {
-			err_msg = U"error\n"
-				"entries.txt 中未找到该词条!";
-			cout << err_msg << endl;
-			write_file(err_msg, "data/status.txt");
-			exit(EXIT_FAILURE);
+			err_msg = U"entries.txt 中未找到该词条!";
+			return -1;
 		}
 
 		if (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, ind) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg + "\n", "data/status.txt");
-			exit(EXIT_FAILURE);
+			return -1;
 		}
 	}
 	
@@ -1198,19 +1188,19 @@ inline void PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	Str32 html;
 	for (Long i = 0; i < entryN.size(); ++i) {
 		current_entry = entryN[i];
-		read_file(html, path_out + entries[i] + ".html"); // read html file
+		Long ind = search(entryN[i], entries);
+		read_file(html, path_out + entries[ind] + ".html"); // read html file
 		// process \autoref and \upref
-		if (autoref(ids, labels, entries[i], html) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg + "\n", "data/status.txt");
-			exit(EXIT_FAILURE);
+		if (autoref(ids, labels, entries[ind], html) < 0) {
+			return -1;
 		}
-		write_file(html, path_out + entries[i] + ".html"); // save html file
+		write_file(html, path_out + entries[ind] + ".html"); // save html file
 	}
 
 	cout << "done!" << endl;
 	write_file("done\n", "data/status.txt");
 	cout << endl;
+	return 0;
 }
 
 // check format error of .tex files in path0

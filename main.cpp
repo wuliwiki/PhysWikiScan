@@ -68,8 +68,9 @@ int main(int argc, char *argv[]) {
 	else {
 		// input args
 		cout << u8"请输入 PhysWikiScan 的 arguments" << endl;
-		Str temp; std::cin >> temp;
-		Long ind0 = 0, ind1;
+		Str temp; getline(std::cin, temp);
+		Long ind0, ind1 = 0;
+		ind0 = temp.find_first_not_of(' ', ind1);
 		for (Int i = 0; i < 100; ++i) {
 			ind1 = temp.find(' ', ind0);
 			if (ind1 < 0) {
@@ -79,43 +80,63 @@ int main(int argc, char *argv[]) {
 			}
 				
 			args.push_back(utf8to32(temp.substr(ind0, ind1 - ind0)));
-			trim(args.back());
-			ind0 = ind1;
+			ind0 = temp.find_first_not_of(' ', ind1);
 		}
 	}
 
 	get_path(path_in, path_out, args);
 
 	if (args[0] == U"." && args.size() == 1) {
+		// interactive full run (ask to try again in error)
 		PhysWikiOnline(path_in, path_out);
 	}
-	else if (args[0] == U"--titles") { // update chinese titles
+	else if (args[0] == U"--titles") {
 		// update entries.tex and titles.tex
-		cout << "TODO: update entries.tex and titles.tex" << endl;
+		vector<Str32> titles, entries;
+		if (entries_titles(titles, entries, path_in, path_out) < 0) {
+			cout << err_msg << endl;
+			write_file("err\n" + err_msg, "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
+		write_vec_str(titles, U"data/titles.txt");
+		write_vec_str(entries, U"data/entries.txt");
 	}
 	else if (args[0] == U"--toc") {
-		// update table of contents (index.html)
-		cout << "TODO: update table of contents (index.html)" << endl;
+		// update entries.tex and titles.tex
+		vector<Str32> titles, entries;
+		Long ret1 = entries_titles(titles, entries, path_in, path_out);
+		write_vec_str(titles, U"data/titles.txt");
+		write_vec_str(entries, U"data/entries.txt");
+		Long ret2 = table_of_contents(titles, entries, path_in, path_out);
+		if (ret1 < 0 || ret2 < 0) {
+			cout << err_msg << endl;
+			write_file("err\n" + err_msg, "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
 	}
 	else if (args[0] == U"--toc-changed") {
 		// update table of changed entries (changed.html) from data/changed.txt
-		cout << "TODO: update table of changed entries (changed.html) from data/changed.txt" << endl;
+		SLS_ERR("TODO: update table of changed entries (changed.html) from data/changed.txt");
 	}
 	else if (args[0] == U"--autoref") {
 		// check a label, add one if necessary
-		cout << "TODO: check a label, add one if necessary" << endl;
+		SLS_ERR("TODO: check a label, add one if necessary");
 	}
 	else if (args[0] == U"--entry") {
 		// process a single entry
 		vector<Str32> entryN;
 		Str32 temp;
-		for (Int i = 3; i < argc; ++i) {
-			temp = utf8to32(Str(argv[2]));
+		for (Int i = 1; i < args.size(); ++i) {
+			temp = args[i];
 			if (temp[0] == '-' && temp[1] == '-')
 				break;
 			entryN.push_back(temp);
 		}
-		PhysWikiOnlineN(entryN, path_in, path_out);
+		if (PhysWikiOnlineN(entryN, path_in, path_out) < 0) {
+			cout << err_msg << endl;
+			write_file("err\n" + err_msg, "data/status.txt");
+			exit(EXIT_FAILURE);
+		}
 	}
 	else {
 		cout << "illegal command!" << endl;
