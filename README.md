@@ -1,18 +1,19 @@
 ## 使用说明
 * 在 `set_path.txt` 中设置输入路径和输出路径。
 * 输入路径可以是 `PhysWiki` 文件夹， 只会读取所有 `tex` 文件和 `m` 文件。 `PhysWiki.tex` 文件用于生成目录。
-* 程序只会输出 `html` 文件到输出路径， 不会改变其他任何文件。
+* 程序默认使用 `set_path.txt` 的路径 0 （即 `--path 0`）， 网页编辑器需要使用路径 1 （`--path 1`）， 这个选项必须在最后
+* 程序只会输出 `html` 文件到输出路径（覆盖同名文件）， 不会改变其他文件。
 * 输出路径中需要有所有 `svg` 或 `png` 图片。
-* 如果不想调试代码， Windows 下直接运行 PhysWikiScan.exe 即可（无需安装 Visual Studio）, 但是无法设置路径。
-* 注意 PhysWiki.tex 中不存在的词条也会被转成 html, 但不会在 `index.html` 中的目录中出现。 这些词条在运行的时候会提示 warning。
+* 如果不想调试代码， Windows 下直接运行 `PhysWikiScan.exe` 即可（无需安装 Visual Studio）, 但是无法设置路径。
+* `PhysWiki.tex` 中不存在的词条不会被 `PhysWikiScan .` 命令转换。 这些词条在运行的时候会提示 warning。
 
 ## PhysWikiScan 所有控制行命令
 * `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
-* `PhysWikiScan titles`: 只更新 `entries.txt` 和 `titles.txt`
-* `PhysWikiScan toc`: 生成完整目录 `index.html`
-* `PhysWikiScan toc-changed`：生成目录 `changed.html`， 只含有 `changed.txt` 中列出的词条
-* `PhysWikiScan entry fname`：单个词条转换， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
-* `PhysWikiScan autoref fname eq 8` 查找 `fname.tex` 词条的网页公式序号 (8) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{fname_eq#}`， 把插入的 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `added`， 更新 `ids.tex` 和 `labels.tex` （必须已经存在）。 如果 label 已经存在， 就直接把 label 保存到 autoref.txt 第 1 行， 第 2 行为 `exist`。 
+* `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
+* `PhysWikiScan --toc`: 生成完整目录 `index.html`
+* `PhysWikiScan --toc-changed`：生成目录 `changed.html`， 只含有 `changed.txt` 中列出的词条
+* `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
+* `PhysWikiScan --autoref fname_eq8` 查找 `fname.tex` 词条的网页公式序号 (8) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{fname_eq#}`， 把插入的 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `added`， 更新 `ids.tex` 和 `labels.tex` （必须已经存在）。 如果 label 已经存在， 就直接把 label 保存到 autoref.txt 第 1 行， 第 2 行为 `exist`。 
 
 ## 开发笔记
 * 如果想用 Visual Studio 调试代码， 打开 PhysWikiScan.sln， 按 F5 即可编译并运行。
