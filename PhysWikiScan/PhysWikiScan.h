@@ -598,7 +598,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 // update entries.txt and titles.txt
 // return the number of entries in PhysWiki.tex
 // return -1 if failed
-inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str32_I path_in, Str32_I path_out)
+inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str32_I path_in)
 {
 	entries.clear(); titles.clear();
 	file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
@@ -767,6 +767,68 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 	}
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path_out + "index.html");
+	return N;
+}
+
+// create table of content from PhysWiki.tex
+// path must end with '\\'
+// return the number of entries, return -1 if failed
+// names is a list of filenames
+// titles[i] is the chinese title of entries[i]
+inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
+{
+	Long i{}, N{}, ind0{};
+	//keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
+	
+	Str32 entryName; // entry label
+	Str32 newcomm;
+	Str32 toc;
+	vector<Str32> changed, authors;
+
+	read_file(newcomm, "PhysWikiScan/newcommand.html");
+	CRLF_to_LF(newcomm);
+	read_vec_str(changed, U"data/changed.txt");
+	read_vec_str(authors, U"data/authors.txt");
+	read_file(toc, "PhysWikiScan/index_template.html"); // read html template
+	CRLF_to_LF(toc);
+
+	ind0 = toc.find(U"PhysWikiHTMLtitle");
+	toc.replace(ind0, 17, U"小时物理百科草稿");
+	ind0 = toc.find(U"PhysWikiCommand", ind0);
+	toc.erase(ind0, 15); toc.insert(ind0, newcomm);
+	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
+	toc.erase(ind0, 16);
+
+	ind0 = insert(toc,
+		U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"
+		U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"
+		U"<h1>小时物理百科草稿</h1>\n</div>\n\n"
+		U"<div class = \"w3-container\"><p>\n"
+		U"<a href = \"../\">返回主页</a>\n\n"
+		U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
+		U"<h3 align = \"center\">草稿</h3>\n"
+		U"</div>\n\n<div class = \"w3-container\">\n"
+		, ind0);
+
+	for (Long i = 0; i < Size(changed); ++i) {
+		Long ind = changed[i].rfind('.');
+		if (changed[i].substr(ind + 1) != U"tex")
+			continue;
+		entryName = changed[i].substr(0, ind);
+		// get chinese title and entry label
+		++N;
+		// get Chinese title
+		ind = search(entryName, entries);
+		if (ind < 0) {
+			err_msg = U"内部错误： changed.txt 中词条文件未找到!";
+			return -1; // break point here
+		}
+		// insert entry into html table of contents
+		ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
+			+ titles[ind] + U"（" + authors[i] + U"）" + U"</a>　\n", ind0);
+	}
+	toc.insert(ind0, U"</p>\n</div>");
+	write_file(toc, path_out + "changed.html");
 	return N;
 }
 
@@ -1066,7 +1128,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
 	vector<Str32> entries; // name in \entry{}, also .tex file name
 	vector<Str32> titles; // Chinese titles in \entry{}
-	entries_titles(titles, entries, path_in, path_out);
+	entries_titles(titles, entries, path_in);
 	write_vec_str(titles, U"data/titles.txt");
 	write_vec_str(entries, U"data/entries.txt");
 
@@ -1163,7 +1225,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 
 	// main process
 	vector<Long> links;
-	for (Long i = 0; i < entryN.size(); ++i) {
+	for (Long i = 0; i < Size(entryN); ++i) {
 		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
 		if (ind < 0) {
@@ -1186,7 +1248,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
 	Str32 html;
-	for (Long i = 0; i < entryN.size(); ++i) {
+	for (Long i = 0; i < Size(entryN); ++i) {
 		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
 		read_file(html, path_out + entries[ind] + ".html"); // read html file
@@ -1197,9 +1259,6 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 		write_file(html, path_out + entries[ind] + ".html"); // save html file
 	}
 
-	cout << "done!" << endl;
-	write_file("done\n", "data/status.txt");
-	cout << endl;
 	return 0;
 }
 

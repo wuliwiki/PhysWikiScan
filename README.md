@@ -8,6 +8,7 @@
 * `PhysWiki.tex` 中不存在的词条不会被 `PhysWikiScan .` 命令转换。 这些词条在运行的时候会提示 warning。
 
 ## PhysWikiScan 所有控制行命令
+* 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
 * `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
 * `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`

@@ -113,9 +113,8 @@ inline Bool file_exist(Str32_I fname) {
 	return file_exist(utf32to8(fname));
 }
 
-// read a line from a string, convert to UTF-32
-// str[start] must be the firs character of the line
-// return the start of the next line
+// read a line from a string, from str[start] to 1 char before '\n'
+// return the start of the next line, return -1 if out of bound
 // if the file ends with `\n`, then the line.back() is not empty
 inline Long get_line(Str32_O line, Str32_I str, Long_I start)
 {
