@@ -1,5 +1,5 @@
-PhysWikiScan:main.cpp PhysWikiScan/PhysWikiScan.h
-	g++ -O3 --std=c++17 main.cpp -o PhysWikiScan.x
+PhysWikiScan:main.cpp lib/PhysWikiScan.h
+	g++ -O3 --std=c++17 main.cpp -o PhysWikiScan
 
 clean:
-	rm -f PhysWikiScan.x *.o *.gch
+	rm -f PhysWikiScan *.o *.gch

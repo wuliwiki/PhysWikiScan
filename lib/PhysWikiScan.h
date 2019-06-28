@@ -678,11 +678,11 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 	Str32 newcomm;
 	Str32 str, toc;
 
-	read_file(newcomm, "PhysWikiScan/newcommand.html");
+	read_file(newcomm, "lib/newcommand.html");
 	CRLF_to_LF(newcomm);
 	read_file(str, path_in + "PhysWiki.tex");
 	CRLF_to_LF(str);
-	read_file(toc, "PhysWikiScan/index_template.html"); // read html template
+	read_file(toc, "lib/index_template.html"); // read html template
 	CRLF_to_LF(toc);
 
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -785,11 +785,11 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	Str32 toc;
 	vector<Str32> changed, authors;
 
-	read_file(newcomm, "PhysWikiScan/newcommand.html");
+	read_file(newcomm, "lib/newcommand.html");
 	CRLF_to_LF(newcomm);
 	read_vec_str(changed, U"data/changed.txt");
 	read_vec_str(authors, U"data/authors.txt");
-	read_file(toc, "PhysWikiScan/index_template.html"); // read html template
+	read_file(toc, "lib/index_template.html"); // read html template
 	CRLF_to_LF(toc);
 
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -965,10 +965,10 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	Str32 title;
 	// read html template and \newcommand{}
 	Str32 html;
-	read_file(html, "PhysWikiScan/entry_template.html");
+	read_file(html, "lib/entry_template.html");
 	CRLF_to_LF(html);
 	Str32 newcomm;
-	read_file(newcomm, "PhysWikiScan/newcommand.html");
+	read_file(newcomm, "lib/newcommand.html");
 	CRLF_to_LF(newcomm);
 	// read title from first comment
 	if (get_title(title, str) < 0)

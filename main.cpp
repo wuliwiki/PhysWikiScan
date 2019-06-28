@@ -1,4 +1,4 @@
-﻿#include "PhysWikiScan/PhysWikiScan.h"
+﻿#include "lib/PhysWikiScan.h"
 
 // get arguments
 void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])

@@ -393,7 +393,7 @@ template <class T, SLS_IF(!is_contain<T>())>
 constexpr T contain_type_fun() { return T(); };
 
 template <class T>
-constexpr Char major()
+constexpr Char Major()
 {
 	if (is_Cmat<T>() || is_FixCmat<T>() || is_Cmat3d<T>())
 		return 'c';
