@@ -1162,7 +1162,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		while (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i) < 0) {
 			cout << err_msg << endl;
-			if (!Input().getBool("try again?"))
+			if (!Input().getBool("重试?"))
 				exit(EXIT_FAILURE);
 		}
 	}

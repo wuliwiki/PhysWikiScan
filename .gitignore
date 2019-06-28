@@ -5,3 +5,4 @@ x64/
 ids.txt
 labels.txt
 PhysWikiScan
+*.vcxproj.user
