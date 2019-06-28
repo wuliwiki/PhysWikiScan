@@ -194,7 +194,7 @@ inline Bool index_in_env(Long& iname, Long ind, vector_I<Str32> names, Str32_I s
 	Intvs intv;
 	for (Long i = 0; i < Size(names); ++i) {
 		while (find_env(intv, str, names[i]) < 0) {
-			Input().Bool("failed! retry?");
+			Input().getBool("failed! retry?");
 		}
 		if (is_in(ind, intv)) {
 			iname = i;

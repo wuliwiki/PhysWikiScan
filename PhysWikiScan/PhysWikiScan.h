@@ -1135,7 +1135,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
 
 	while (table_of_contents(titles, entries, path_in, path_out) < 0) {
-		if (!Input().Bool("重试?")) {
+		if (!Input().getBool("重试?")) {
 			cout << err_msg << endl;
 			exit(EXIT_FAILURE);
 		}
@@ -1162,7 +1162,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		while (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i) < 0) {
 			cout << err_msg << endl;
-			if (!Input().Bool("try again?"))
+			if (!Input().getBool("try again?"))
 				exit(EXIT_FAILURE);
 		}
 	}
@@ -1190,7 +1190,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		// process \autoref and \upref
 		if (autoref(ids, labels, entries[i], html) < 0) {
 			cout << err_msg << endl;
-			Input().Bool("already in second scan, please rerun the program!");
+			Input().getBool("already in second scan, please rerun the program!");
 			exit(EXIT_FAILURE);
 		}
 		write_file(html, path_out + entries[i] + ".html"); // save html file

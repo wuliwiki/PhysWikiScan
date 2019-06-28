@@ -3,7 +3,9 @@
 #include <sstream>
 #include <fstream>
 #include <codecvt>
+#ifdef _MSC_VER
 #include <filesystem>
+#endif
 
 namespace slisc {
 
@@ -73,13 +75,13 @@ inline void file_list(vector_O<Str> fnames, Str_I path)
 
 	// create unused temporary file name
 	for (Long i = 0; i < 1000; ++i) {
-		if (i == 999) error("too many temporary files!");
+		if (i == 999) SLS_ERR("too many temporary files!");
 		temp_fname = temp_fname_pref + to_string(i);
 		if (!file_exist(temp_fname)) break;
 	}
 	
 	// save a list of all files (no folder) to temporary file
-	system(("ls -p " + path + " | grep -v / > " + temp_fname).c_str());
+	Int ret = system(("ls -p " + path + " | grep -v / > " + temp_fname).c_str());
 
 	// read the temporary file
 	ifstream fin(temp_fname);
