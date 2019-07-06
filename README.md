@@ -23,6 +23,7 @@
 * 每次 commit 以前编译一个 release 版本， 将 x64/Release/PhysWikiScan.exe 拷贝到 PhysWikiScan 目录下， 测试并写上日期。
 
 ## BUG
+* `.` 模式下运行， 如果重试， `dep.json` 就会生成重复的 link。 解决方法： 不要在 `PhysWikiOnline1()` 里面读取 `pentry()`， 而是专门搞一个 `loop` 来专门读取每个文件中的 `pentry()`。 这样又可以加一个单独的选项 `PhysWiki --tree`。 `PhysWiki .` 需要包含 `PhysWiki --tree` 功能
 * table 没有标题
 * 文献引用还没有处理
 * 处理 bug 的截图
@@ -38,3 +39,4 @@
 * 为了在搜索引擎中更方便搜到， 在每个词条的 html 中 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`
 * 添加 C++ 高亮功能
 * 在 `dep.json` 文件中添加章节信息， 给每个部分显示为不同颜色
+* `\autoref{}` 外部引用时程序要检查 `\upref{}` 是否存在， 否则报错。

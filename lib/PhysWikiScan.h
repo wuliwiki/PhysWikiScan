@@ -582,7 +582,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 		command_arg(entryName, str, ind0);
 		trim(entryName);
 		if (!file_exist(path_in + "contents/" + utf32to8(entryName) + ".tex")) {
-			err_msg = U"\\upref 引用的文件未找到!";
+			err_msg = U"\\upref 引用的文件未找到： " + utf32to8(entryName) + ".tex";
 			return -1; // break point here
 		}
 		right = skip_command(str, ind0, 1);
