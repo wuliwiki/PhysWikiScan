@@ -155,7 +155,36 @@ int main(int argc, char *argv[]) {
 	}
 	else if (args[0] == U"--autoref") {
 		// check a label, add one if necessary
-		check_add_label(args[1], args[2], args[3]);
+		if (args.size() != 4) {
+			err_msg = U"内部错误： --autoref 必须要有 3 个 arguments!";
+			cout << err_msg << endl;
+			write_file("error\n" + err_msg, "data/status.txt");
+			return 0;
+		}
+		vector<Str32> labels, ids;
+		read_vec_str(labels, U"data/labels.txt");
+		read_vec_str(ids, U"data/ids.txt");
+		Str32 label;
+		Long ret = check_add_label(label, args[1], args[2],
+			atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);
+		vector<Str32> output;
+		if (ret == -1) { // error
+			cout << err_msg << endl;
+			write_file("error\n" + err_msg, "data/status.txt");
+			return 0;
+		}
+		else if (ret == 0) { // added
+			labels.push_back(label);
+			ids.push_back(args[2] + args[3]);
+			write_vec_str(labels, U"data/labels.txt");
+			write_vec_str(ids, U"data/ids.txt");
+			output = { label, U"added" };
+		}
+		else // ret == 1, already exist
+			output = {label, U"exist"};
+		cout << output[0] << endl;
+		cout << output[1] << endl;
+		write_vec_str(output, U"data/autoref.txt");
 	}
 	else if (args[0] == U"--entry") {
 		// process a single entry

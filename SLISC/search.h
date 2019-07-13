@@ -6,9 +6,9 @@ namespace slisc {
 // see if elm == vec[i], return i
 // return -1 if not found
 template <class T, class Tv>
-inline Long search(const T &elm, const Tv &vec)
+inline Long search(const T &elm, const Tv &vec, Long start = 0)
 {
-	for (Long i = 0; i < Size(vec); ++i) {
+	for (Long i = start; i < Size(vec); ++i) {
 		if (elm == vec[i])
 			return i;
 	}

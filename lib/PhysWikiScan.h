@@ -568,20 +568,20 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // if exist, 1, output label
 // if doesn't exist, return 0
 // if failed, return -1
-Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind, Str32_I path_in)
+Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
+	vector_I<Str32> labels, vector_I<Str32> ids, Str32_I path_in)
 {
-	Long i = 0;
-	Long ind0, N{}, Neq{}, ienv{};
-	Bool inEq;
-	Str32 entry, label0, idNum, newtab, file;
+	Long ind0 = 0;
+	Str32 label0, idNum, newtab;
 	vector<Str32> envNames{ U"equation", U"align", U"gather" };
 
-	vector<Str32> labels, ids;
-	read_vec_str(labels, U"data/labels.txt");
-	read_vec_str(ids, U"data/ids.txt");
-
-	ind0 = search(envName + num2str(ind), ids);
-	if (ind0 >= 0) { // label already exist
+	while (true) {
+		ind0 = search(envName + num2str(ind), ids, ind0);
+		if (ind0 < 0)
+			break;
+		if (labels[ind0].substr(0, entry.size()) != entry) {
+			++ind0; continue;
+		}
 		label = labels[ind0];
 		return 1;
 	}
@@ -593,7 +593,11 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind, St
 		return -1;
 	}
 	Str32 str;
-	read_file(str, file);
+	read_file(str, full_name);
+
+	// find comments
+	Intvs intvComm;
+	find_comment(intvComm, str);
 
 	if (envName == U"eq");
 	else if (envName == U"fig");
@@ -614,37 +618,52 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind, St
 			return -1;
 		}
 
-		str.insert(intvEnv[2 * ind], U"\label{}");
+		new_label_name(label, envName, entry, str);
+		str.insert(intvEnv[2 * ind], U"\\label{" + label + "}");
+		write_file(str, full_name);
+		return 0;
 	}
 	else { // count equations
-		idN = find_env(intvEnv, str.substr(0, ind4), U"equation");
-		Ngather = find_env(intvEnv, str.substr(0, ind4), U"gather");
-		if (Ngather > 0) {
-			for (i = 0; i < Ngather; ++i) {
-				for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
-					if (str.at(j) == '\\' && str.at(j + 1) == '\\')
+		ind0 = 0;
+		Long idN = 0;
+		vector<Str32> eq_envs = { U"equation", U"gather", U"align" };
+		Str32 env0;
+		while (true) {
+			ind0 = find_command(str, U"begin", ind0);
+			if (is_in(ind0, intvComm)) {
+				++ind0; continue;
+			}
+			command_arg(env0, str, ind0);
+			Long ienv = search(env0, eq_envs);
+			if (ienv < 0) {
+				++ind0; continue;
+			}
+			// found one of eq_envs
+			++idN;
+			if (idN == ind) {
+				new_label_name(label, envName, entry, str);
+				ind0 = skip_command(str, ind0, 1);
+				str.insert(ind0, U"\\label{" + label + "}");
+				write_file(str, full_name);
+				return 0;
+			}
+			if (ienv > 0) {// found gather or align
+				Long ind1 = skip_env(str, ind0);
+				for (Long i = ind0; i < ind1; ++i) {
+					if (str.substr(i, 2) == U"\\\\") {
 						++idN;
+						if (idN == ind) {
+							new_label_name(label, envName, entry, str);
+							ind0 = skip_command(str, ind0, 1);
+							str.insert(i + 2, U"\n\\label{" + label + "}");
+							write_file(str, full_name);
+							return 0;
+						}
+					}		
 				}
-				++idN;
 			}
+			++ind0;
 		}
-		Nalign = find_env(intvEnv, str.substr(0, ind4), U"align");
-		if (Nalign > 0) {
-			for (i = 0; i < Nalign; ++i) {
-				for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
-					if (str.at(j) == '\\' && str.at(j + 1) == '\\')
-						++idN;
-				}
-				++idN;
-			}
-		}
-		if (envName == U"gather" || envName == U"align") {
-			for (i = ind4; i < ind5; ++i) {
-				if (str.at(i) == U'\\' && str.at(i + 1) == U'\\')
-					++idN;
-			}
-		}
-		++idN;
 	}
 }
 

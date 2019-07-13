@@ -203,7 +203,7 @@ template <class T>
 inline Str32 num2str(const T &num)
 {
 	Str32 str;
-	num2str(str, const T &num);
+	num2str(str, num);
 	return str;
 }
 
@@ -228,13 +228,13 @@ inline Long CRLF_to_LF(Str32_IO str)
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> key, Long_I start)
+inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> keys, Long_I start)
 {
 	Long i{}, ind0{}, Nkey{}, imin;
-	Nkey = key.size();
+	Nkey = keys.size();
 	imin = str.size();
 	for (i = 0; i < Nkey; ++i) {
- 		ind0 = str.find(key[i], start);
+ 		ind0 = str.find(keys[i], start);
  		if (ind0 >= start && ind0 < imin) {
  			imin = ind0; ikey = i;
  		}
