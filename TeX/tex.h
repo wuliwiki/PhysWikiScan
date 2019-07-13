@@ -148,8 +148,12 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 		ind0 = find_command_spec(str, U"begin", env, ind0);
 		if (ind0 < 0)
 			return intv.size();
-		if (option == 'i')
-			ind0 = skip_command(str, ind0, 1);
+		if (option == 'i') {
+			if (env == U"exam" || env == U"exer")
+				ind0 = skip_command(str, ind0, 2);
+			else
+				ind0 = skip_command(str, ind0, 1);
+		}
 		intv.pushL(ind0);
 
 		// find "\end{env}"

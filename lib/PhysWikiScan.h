@@ -568,15 +568,14 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // if exist, 1, output label
 // if doesn't exist, return 0
 // if failed, return -1
-Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
+Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 	vector_I<Str32> labels, vector_I<Str32> ids, Str32_I path_in)
 {
 	Long ind0 = 0;
-	Str32 label0, idNum, newtab;
-	vector<Str32> envNames{ U"equation", U"align", U"gather" };
+	Str32 label0, newtab;
 
 	while (true) {
-		ind0 = search(envName + num2str(ind), ids, ind0);
+		ind0 = search(idName + num2str(ind), ids, ind0);
 		if (ind0 < 0)
 			break;
 		if (labels[ind0].substr(0, entry.size()) != entry) {
@@ -599,27 +598,26 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
 	Intvs intvComm;
 	find_comment(intvComm, str);
 
-	if (envName == U"eq");
-	else if (envName == U"fig");
-	else if (envName == U"ex");
-	else if (envName == U"exe");
-	else if (envName == U"tab");
-	else {
+	vector<Str32> idNames = { U"eq", U"fig", U"ex", U"exe", U"tab" };
+	vector<Str32> envNames = { U"equation", U"figure", U"exam", U"exer", U"table"};
+
+	Long idNum = search(idName, idNames);
+	if (idNum < 0) {
 		err_msg = U"\\label 类型错误， 必须为 eq/fig/ex/exe/tab 之一!";
 		return -1; // break point here
 	}
 	
 	// count environment display number starting at ind4
 	Intvs intvEnv;
-	if (envName != U"eq") {
-		Long Nid = find_env(intvEnv, str, envName, 'i');
-		if (ind >= Nid) {
+	if (idName != U"eq") {
+		Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
+		if (ind > Nid) {
 			err_msg = U"被引用对象不存在!";
 			return -1;
 		}
 
-		new_label_name(label, envName, entry, str);
-		str.insert(intvEnv[2 * ind], U"\\label{" + label + "}");
+		new_label_name(label, idName, entry, str);
+		str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
 		write_file(str, full_name);
 		return 0;
 	}
@@ -645,7 +643,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
 			// found one of eq_envs
 			++idN;
 			if (idN == ind) {
-				new_label_name(label, envName, entry, str);
+				new_label_name(label, idName, entry, str);
 				ind0 = skip_command(str, ind0, 1);
 				str.insert(ind0, U"\\label{" + label + "}");
 				write_file(str, full_name);
@@ -657,7 +655,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
 					if (str.substr(i, 2) == U"\\\\") {
 						++idN;
 						if (idN == ind) {
-							new_label_name(label, envName, entry, str);
+							new_label_name(label, idName, entry, str);
 							ind0 = skip_command(str, ind0, 1);
 							str.insert(i + 2, U"\n\\label{" + label + "}");
 							write_file(str, full_name);
