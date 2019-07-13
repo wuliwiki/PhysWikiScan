@@ -614,7 +614,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
 	if (envName != U"eq") {
 		Long Nid = find_env(intvEnv, str, envName, 'i');
 		if (ind >= Nid) {
-			err_msg = U"公式不存在!";
+			err_msg = U"被引用对象不存在!";
 			return -1;
 		}
 
@@ -630,6 +630,10 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind,
 		Str32 env0;
 		while (true) {
 			ind0 = find_command(str, U"begin", ind0);
+			if (ind0 < 0) {
+				err_msg = U"被引用公式不存在!";
+				return -1;
+			}
 			if (is_in(ind0, intvComm)) {
 				++ind0; continue;
 			}
