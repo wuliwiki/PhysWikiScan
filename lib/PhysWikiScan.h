@@ -186,7 +186,7 @@ inline Long paragraph_tag(Str32_IO str)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryName, Str32_IO str)
+inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels, Str32_I entryName, Str32_IO str)
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -235,12 +235,12 @@ inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryN
 		ind0 = expect(str, U"{", ind5 + 6);
 		ind3 = expect(str, entryName + U'_' + idName, ind0);
 		if (ind3 < 0) {
-			err_msg = U"label 格式错误， 是否为 \"" + utf32to8(entryName + U'_' + idName) + "\"？";
+			err_msg = U"label 格式错误， 是否为 \"" + entryName + U'_' + idName + U"\"？";
 			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
-		label.push_back(str.substr(ind0, ind3 - ind0));
-		trim(label.back());
+		labels.push_back(str.substr(ind0, ind3 - ind0));
+		trim(labels.back());
 		// count idNum, insert html id tag, delete label
 		Intvs intvEnv;
 		if (idName != U"eq") {
@@ -277,9 +277,9 @@ inline Long EnvLabel(vector_IO<Str32> id, vector_IO<Str32> label, Str32_I entryN
 			++idN;
 		}
 		num2str(idNum, idN);
-		id.push_back(idName + idNum);
+		ids.push_back(idName + idNum);
 		str.erase(ind5, ind3 - ind5 + 1);
-		str.insert(ind4, U"<span id = \"" + id.back() + U"\"></span>");
+		str.insert(ind4, U"<span id = \"" + ids.back() + U"\"></span>");
 		ind0 = ind4 + 6;
 	}
 }
@@ -478,7 +478,7 @@ inline Long ExerciseEnvironment(Str32_IO str)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName, Str32_IO str)
+inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryName, Str32_IO str)
 {
 	unsigned i{};
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
@@ -520,15 +520,15 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 		ind3 = str.find('}', ind3);
 		// find id of the label
 		label0 = str.substr(ind1, ind3 - ind1); trim(label0);
-		for (i = 0; i < label.size(); ++i) {
-			if (label0 == label[i]) break;
+		for (i = 0; i < labels.size(); ++i) {
+			if (label0 == labels[i]) break;
 		}
-		if (i == label.size()) {
+		if (i == labels.size()) {
 			err_msg = U"label \"" + label0 + U"\" 未找到!";
 			return -1; // break point here
 		}
-		ind4 = find_num(id[i], 0);
-		idNum = id[i].substr(ind4);		
+		ind4 = find_num(ids[i], 0);
+		idNum = ids[i].substr(ind4);		
 		entry = str.substr(ind1, ind2 - ind1);
 		if (entry != entryName) {// reference the same entry
 			newtab = U"target = \"_blank\"";
@@ -538,9 +538,113 @@ inline Long autoref(vector_I<Str32> id, vector_I<Str32> label, Str32_I entryName
 			str.insert(ind3 + 1, U" </a>");
 		str.insert(ind3 + 1, kind + U' ' + idNum);
 		if (!inEq)
-			str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + id[i] + U"\" " + newtab + U">");
+			str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + ids[i] + U"\" " + newtab + U">");
 		str.erase(ind0, ind3 - ind0 + 1);
 		++N;
+	}
+}
+
+// get a new label name for an environment for an entry
+void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
+{
+	Str32 label0;
+	for (Long num = 1; ; ++num) {
+		Long ind0 = 0;
+		while (true) {
+			label = entry + "_" + envName + num2str(num);
+			ind0 = find_command(str, U"label", ind0);
+			if (ind0 < 0)
+				return; // label is unique
+			command_arg(label0, str, ind0, 0);
+			if (label == label0)
+				break;
+			++ind0;
+		}
+	}
+}
+
+// check if a label exist, if not, add it
+// ind is not the label number, but the displayed number
+// if exist, 1, output label
+// if doesn't exist, return 0
+// if failed, return -1
+Long check_add_label(Str32_O label, Str32_I entry, Str32_I envName, Long ind, Str32_I path_in)
+{
+	Long i = 0;
+	Long ind0, N{}, Neq{}, ienv{};
+	Bool inEq;
+	Str32 entry, label0, idNum, newtab, file;
+	vector<Str32> envNames{ U"equation", U"align", U"gather" };
+
+	vector<Str32> labels, ids;
+	read_vec_str(labels, U"data/labels.txt");
+	read_vec_str(ids, U"data/ids.txt");
+
+	ind0 = search(envName + num2str(ind), ids);
+	if (ind0 >= 0) { // label already exist
+		label = labels[ind0];
+		return 1;
+	}
+
+	// label does not exist
+	Str32 full_name = path_in + "/contents/" + entry + ".tex";
+	if (!file_exist(full_name)) {
+		err_msg = U"文件不存在： " + entry + ".tex";
+		return -1;
+	}
+	Str32 str;
+	read_file(str, file);
+
+	if (envName == U"eq");
+	else if (envName == U"fig");
+	else if (envName == U"ex");
+	else if (envName == U"exe");
+	else if (envName == U"tab");
+	else {
+		err_msg = U"\\label 类型错误， 必须为 eq/fig/ex/exe/tab 之一!";
+		return -1; // break point here
+	}
+	
+	// count environment display number starting at ind4
+	Intvs intvEnv;
+	if (envName != U"eq") {
+		Long Nid = find_env(intvEnv, str, envName, 'i');
+		if (ind >= Nid) {
+			err_msg = U"公式不存在!";
+			return -1;
+		}
+
+		str.insert(intvEnv[2 * ind], U"\label{}");
+	}
+	else { // count equations
+		idN = find_env(intvEnv, str.substr(0, ind4), U"equation");
+		Ngather = find_env(intvEnv, str.substr(0, ind4), U"gather");
+		if (Ngather > 0) {
+			for (i = 0; i < Ngather; ++i) {
+				for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
+					if (str.at(j) == '\\' && str.at(j + 1) == '\\')
+						++idN;
+				}
+				++idN;
+			}
+		}
+		Nalign = find_env(intvEnv, str.substr(0, ind4), U"align");
+		if (Nalign > 0) {
+			for (i = 0; i < Nalign; ++i) {
+				for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
+					if (str.at(j) == '\\' && str.at(j + 1) == '\\')
+						++idN;
+				}
+				++idN;
+			}
+		}
+		if (envName == U"gather" || envName == U"align") {
+			for (i = ind4; i < ind5; ++i) {
+				if (str.at(i) == U'\\' && str.at(i + 1) == U'\\')
+					++idN;
+			}
+		}
+		++idN;
 	}
 }
 
@@ -581,8 +685,8 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 			return N;
 		command_arg(entryName, str, ind0);
 		trim(entryName);
-		if (!file_exist(path_in + "contents/" + utf32to8(entryName) + ".tex")) {
-			err_msg = U"\\upref 引用的文件未找到： " + utf32to8(entryName) + ".tex";
+		if (!file_exist(path_in + U"contents/" + entryName + U".tex")) {
+			err_msg = U"\\upref 引用的文件未找到： " + entryName + U".tex";
 			return -1; // break point here
 		}
 		right = skip_command(str, ind0, 1);
@@ -812,6 +916,10 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 
 	for (Long i = 0; i < Size(changed); ++i) {
 		Long ind = changed[i].rfind('.');
+		if (ind < 0) {
+			err_msg = U"内部错误： changed.txt 中文件必须有后缀名!";
+			return -1; // break point here
+		}
 		if (changed[i].substr(ind + 1) != U"tex")
 			continue;
 		entryName = changed[i].substr(0, ind);
@@ -956,7 +1064,7 @@ inline Long OneFile4(Str32_I path)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_IO<Long> links,
+inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vector_IO<Long> links,
 	Str32_I path_in, Str32_I path_out, vector_I<Str32> entries, vector_I<Str32> titles, Long_I ind)
 {
 	Str32 str;
@@ -1005,7 +1113,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> id, vector_IO<Str32> label, vector_
 	if (Enumerate(str) < 0)
 		return -1;
 	// add html id for links
-	if (EnvLabel(id, label, entries[ind], str) < 0)
+	if (EnvLabel(ids, labels, entries[ind], str) < 0)
 		return -1;
 	// process table environments
 	if (Table(str) < 0)

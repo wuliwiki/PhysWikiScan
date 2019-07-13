@@ -35,6 +35,7 @@
 * 正文中禁止 \\ 换行，以及其他禁止的格式如 `noindent`
 
 ## New Features
+* 命令行加一个搜索并替换空心句号的选项。 FileSeek 还是太慢。
 * 表格像公式一样可以拖动，以便在移动设备上看
 * 为了在搜索引擎中更方便搜到， 在每个词条的 html 中 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`
 * 添加 C++ 高亮功能
@@ -43,3 +44,5 @@
 * 没有被用到的文件/图片全部都要警告
 * 正文中不应该有空格（尤其是文字和符号之间）， 除了 `\autoref{}` 前面不加空格后面要。
 * PhysWikiCheck 检查 latex 代码中 `\autoref{}` 前面是否没有空格而后面有
+* 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
+* PhysWikiCheck 使用命令行选项调用

@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
 	}
 	else if (args[0] == U"--autoref") {
 		// check a label, add one if necessary
-		SLS_ERR("TODO: check a label, add one if necessary");
+		check_add_label(args[1], args[2], args[3]);
 	}
 	else if (args[0] == U"--entry") {
 		// process a single entry

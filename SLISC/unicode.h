@@ -199,6 +199,14 @@ inline void num2str(Str32_O str, const T &num)
 	utf8to32(str, str0);
 }
 
+template <class T>
+inline Str32 num2str(const T &num)
+{
+	Str32 str;
+	num2str(str, const T &num);
+	return str;
+}
+
  // same as str.insert(), but return one index after key after insertion
 inline Long insert(Str32_IO str, Str32_I key, Long start)
 {
