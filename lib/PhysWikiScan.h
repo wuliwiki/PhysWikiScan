@@ -912,8 +912,21 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 
 	read_file(newcomm, "lib/newcommand.html");
 	CRLF_to_LF(newcomm);
+	if (!file_exist(U"data/changed.txt")) {
+		err_msg = U"内部错误： data/changed.txt 不存在!";
+		return -1;
+	}
 	read_vec_str(changed, U"data/changed.txt");
+	if (!file_exist(U"data/authors.txt")) {
+		err_msg = U"内部错误： data/authors.txt 不存在!";
+		return -1;
+	}
 	read_vec_str(authors, U"data/authors.txt");
+	if (changed.size() != authors.size()) {
+		err_msg = U"内部错误： changed.txt 和 authors.txt 行数不同!";
+		return -1;
+	}
+
 	read_file(toc, "lib/index_template.html"); // read html template
 	CRLF_to_LF(toc);
 
@@ -1334,9 +1347,25 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	// html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
 	// the number in id is the n-th occurrence of the same type of environment
 	vector<Str32> labels, ids, entries, titles;
-	read_vec_str(labels, U"data/labels.txt");
+	if (!file_exist(U"data/labels.txt")) {
+		err_msg = U"内部错误： data/labels.txt 不存在!";
+		return -1;
+	}
+	read_vec_str(labels, U"data/ids.txt");
+	if (!file_exist(U"data/ids.txt")) {
+		err_msg = U"内部错误： data/ids.txt 不存在!";
+		return -1;
+	}
 	read_vec_str(ids, U"data/ids.txt");
+	if (!file_exist(U"data/entries.txt")) {
+		err_msg = U"内部错误： data/entries.txt 不存在!";
+		return -1;
+	}
 	read_vec_str(entries, U"data/entries.txt");
+	if (!file_exist(U"data/titles.txt")) {
+		err_msg = U"内部错误： data/titles.txt 不存在!";
+		return -1;
+	}
 	read_vec_str(titles, U"data/titles.txt");
 	if (labels.size() != ids.size()) {
 		err_msg = U"内部错误： labels.txt 与 ids.txt 长度不符";

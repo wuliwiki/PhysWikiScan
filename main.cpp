@@ -13,6 +13,10 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
 	}
 	else {
 		// input args
+		cout << u8"#===========================#" << endl;
+		cout << u8"#     PhysWikiScan          #" << endl;
+		cout << u8"#===========================#\n" << endl;
+
 		cout << u8"请输入 arguments" << endl;
 		Str temp; getline(std::cin, temp);
 		Long ind0, ind1 = 0;
@@ -35,6 +39,10 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
 Long get_path(Str32_O path_in, Str32_O path_out, vector_I<Str32> args)
 {
 	Str32 temp, line;
+	if (!file_exist("set_path.txt")) {
+		err_msg = U"内部错误： set_path.txt 不存在!";
+		return -1;
+	}
 	read_file(temp, "set_path.txt");
 	CRLF_to_LF(temp);
 	vector<Str32> paths_in, paths_out;
@@ -92,10 +100,6 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_I<Str32> args)
 
 int main(int argc, char *argv[]) {
 	using namespace slisc;
-	
-	cout << u8"#===========================#" << endl;
-	cout << u8"#     PhysWikiScan          #" << endl;
-	cout << u8"#===========================#\n" << endl;
 
 	vector<Str32> args;
 	get_args(args, argc, argv);
@@ -107,8 +111,7 @@ int main(int argc, char *argv[]) {
 	// html will be output to here
 	Str32 path_out;
 	if (get_path(path_in, path_out, args) < 0) {
-		cout << err_msg << endl;
-		write_file("error\n" + err_msg, "data/status.txt");
+		cerr << err_msg << endl;
 		return 0;
 	}
 
@@ -122,8 +125,7 @@ int main(int argc, char *argv[]) {
 		// update entries.txt and titles.txt
 		vector<Str32> titles, entries;
 		if (entries_titles(titles, entries, path_in) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 		write_vec_str(titles, U"data/titles.txt");
@@ -133,11 +135,17 @@ int main(int argc, char *argv[]) {
 		// table of contents
 		// read entries.txt and titles.txt, then generate index.html from PhysWiki.tex
 		vector<Str32> titles, entries;
-		read_vec_str(titles, U"data/titles.txt");
-		read_vec_str(entries, U"data/entries.txt");
+		if (file_exist(U"data/titles.txt"))
+			read_vec_str(titles, U"data/titles.txt");
+		if (file_exist(U"data/entries.txt"))
+			read_vec_str(entries, U"data/entries.txt");
+		if (titles.size() != entries.size()) {
+			err_msg = U"内部错误： titles.txt 和 entries.txt 行数不同!";
+			cerr << err_msg << endl;
+			return 0;
+		}
 		if (table_of_contents(titles, entries, path_in, path_out) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 	}
@@ -145,11 +153,17 @@ int main(int argc, char *argv[]) {
 		// table of contents
 		// read entries.txt and titles.txt, then generate changed.html from changed.txt
 		vector<Str32> titles, entries;
-		read_vec_str(titles, U"data/titles.txt");
-		read_vec_str(entries, U"data/entries.txt");
+		if (file_exist(U"data/titles.txt"))
+			read_vec_str(titles, U"data/titles.txt");
+		if (file_exist(U"data/entries.txt"))
+			read_vec_str(entries, U"data/entries.txt");
+		if (titles.size() != entries.size()) {
+			err_msg = U"内部错误： titles.txt 和 entries.txt 行数不同!";
+			cerr << err_msg << endl;
+			return 0;
+		}
 		if (table_of_changed(titles, entries, path_in, path_out) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 	}
@@ -157,20 +171,20 @@ int main(int argc, char *argv[]) {
 		// check a label, add one if necessary
 		if (args.size() != 4) {
 			err_msg = U"内部错误： --autoref 必须要有 3 个 arguments!";
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 		vector<Str32> labels, ids;
-		read_vec_str(labels, U"data/labels.txt");
-		read_vec_str(ids, U"data/ids.txt");
+		if (file_exist(U"data/labels.txt"))
+			read_vec_str(labels, U"data/labels.txt");
+		if (file_exist(U"data/ids.txt"))
+			read_vec_str(ids, U"data/ids.txt");
 		Str32 label;
 		Long ret = check_add_label(label, args[1], args[2],
 			atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);
 		vector<Str32> output;
 		if (ret == -1) { // error
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 		else if (ret == 0) { // added
@@ -197,21 +211,23 @@ int main(int argc, char *argv[]) {
 			entryN.push_back(temp);
 		}
 		if (PhysWikiOnlineN(entryN, path_in, path_out) < 0) {
-			cout << err_msg << endl;
-			write_file("error\n" + err_msg, "data/status.txt");
+			cerr << err_msg << endl;
 			return 0;
 		}
 	}
 	else {
 		err_msg = U"内部错误： 命令未找到";
-		cout << err_msg << endl;
-		write_file("error\n" + err_msg, "data/status.txt");
+		cerr << err_msg << endl;
 		return 0;
 	}
 	
 	// PhysWikiCheck(U"../PhysWiki/contents/");
 
 	cout << "done!" << endl;
-	write_file("done\n", "data/status.txt");
+	if (argc <= 1) {
+		cout << "按任意键退出..." << endl;
+		getchar();
+	}
+		
 	return 0;
 }
