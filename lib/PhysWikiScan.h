@@ -1063,6 +1063,36 @@ inline Long MatlabComLine(Str32_IO str)
 	return N;
 }
 
+inline Long cppComLine(Str32_IO str)
+{
+	Long N = 0, ind0 = 0;
+	Intvs intvIn, intvOut;
+	Str32 code;
+	N = find_env(intvIn, str, U"lstlisting");
+	N = find_env(intvOut, str, U"lstlisting", 'o');
+	for (Long i = N - 1; i >= 0; --i) {
+		ind0 = expect(str, U"[", intvIn.L(i));
+		ind0 = pair_brace(str, ind0, U'[');
+		code = str.substr(ind0 + 1, intvIn.R(i) - ind0);
+		if (code[0] != U'\n' || code.back() != U'\n') {
+			cout << "wrong format of Matlab command line environment!" << endl;
+			return -1;
+		}
+		code = code.substr(1, code.size() - 2);
+		Matlab_highlight(code);
+
+		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
+		ind0 = intvOut.L(i);
+		ind0 = insert(str,
+			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
+			"<div class = \"nospace\"><pre class = \"mcode\">\n"
+			+ code +
+			U"\n</pre></div></div>"
+			, ind0);
+	}
+	return N;
+}
+
 // find \bra{}\ket{} and mark
 inline Long OneFile4(Str32_I path)
 {
