@@ -1322,7 +1322,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	// 1st loop through tex files
 	// files are processed independently
 	// `IdList` and `LabelList` are recorded for 2nd loop
-	cout << u8"======  第 1 轮转换 ======\n\n" << endl;
+	cout << u8"======  第 1 轮转换 ======\n" << endl;
 	for (Long i = 0; i < Size(entries); ++i) {
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
@@ -1381,7 +1381,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 		err_msg = U"内部错误： data/labels.txt 不存在!";
 		return -1;
 	}
-	read_vec_str(labels, U"data/ids.txt");
+	read_vec_str(labels, U"data/labels.txt");
 	if (!file_exist(U"data/ids.txt")) {
 		err_msg = U"内部错误： data/ids.txt 不存在!";
 		return -1;
@@ -1409,7 +1409,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	// 1st loop through tex files
 	// files are processed independently
 	// `IdList` and `LabelList` are recorded for 2nd loop
-	cout << u8"======  第 1 轮转换 ======\n\n" << endl;
+	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 
 	// main process
 	vector<Long> links;
@@ -1420,6 +1420,10 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 			err_msg = U"entries.txt 中未找到该词条!";
 			return -1;
 		}
+
+		cout << std::setw(5) << std::left << ind
+			<< std::setw(10) << std::left << entries[ind]
+			<< std::setw(20) << std::left << titles[ind] << endl;
 
 		if (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, ind) < 0) {
@@ -1433,12 +1437,16 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	// 2nd loop through tex files
 	// deal with autoref
 	// need `IdList` and `LabelList` from 1st loop
-	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+	cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
 	Str32 html;
 	for (Long i = 0; i < Size(entryN); ++i) {
 		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
+		cout << std::setw(5) << std::left << ind
+			<< std::setw(10) << std::left << entries[ind]
+			<< std::setw(20) << std::left << titles[ind] << endl;
+
 		read_file(html, path_out + entries[ind] + ".html"); // read html file
 		// process \autoref and \upref
 		if (autoref(ids, labels, entries[ind], html) < 0) {
@@ -1447,6 +1455,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 		write_file(html, path_out + entries[ind] + ".html"); // save html file
 	}
 
+	cout << "\n\n" << endl;
 	return 0;
 }
 

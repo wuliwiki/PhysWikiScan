@@ -3,6 +3,7 @@
 // get arguments
 void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
 {
+	args.clear();
 	if (argc > 1) {
 		// convert argv to args
 		Str temp;
@@ -35,8 +36,8 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
 	}
 }
 
-// get path
-Long get_path(Str32_O path_in, Str32_O path_out, vector_I<Str32> args)
+// get path and remove --path options from args
+Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
 {
 	Str32 temp, line;
 	if (!file_exist("set_path.txt")) {
@@ -89,6 +90,7 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_I<Str32> args)
 			err_msg = U"illegal --path argument!";
 			return -1;
 		}
+		args.pop_back(); args.pop_back();
 	}
 	else { // default path
 		path_in = paths_in[0];
@@ -117,7 +119,7 @@ int main(int argc, char *argv[]) {
 
 	// === parse arguments ===
 
-	if (args[0] == U".") {
+	if (args[0] == U"." && args.size() == 1) {
 		// interactive full run (ask to try again in error)
 		PhysWikiOnline(path_in, path_out);
 	}
@@ -131,7 +133,7 @@ int main(int argc, char *argv[]) {
 		write_vec_str(titles, U"data/titles.txt");
 		write_vec_str(entries, U"data/entries.txt");
 	}
-	else if (args[0] == U"--toc") {
+	else if (args[0] == U"--toc" && args.size() == 1) {
 		// table of contents
 		// read entries.txt and titles.txt, then generate index.html from PhysWiki.tex
 		vector<Str32> titles, entries;
@@ -149,7 +151,7 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
-	else if (args[0] == U"--toc-changed") {
+	else if (args[0] == U"--toc-changed" && args.size() == 1) {
 		// table of contents
 		// read entries.txt and titles.txt, then generate changed.html from changed.txt
 		vector<Str32> titles, entries;
@@ -167,13 +169,8 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
-	else if (args[0] == U"--autoref") {
+	else if (args[0] == U"--autoref" && args.size() == 4) {
 		// check a label, add one if necessary
-		if (args.size() != 4) {
-			err_msg = U"内部错误： --autoref 必须要有 3 个 arguments!";
-			cerr << err_msg << endl;
-			return 0;
-		}
 		vector<Str32> labels, ids;
 		if (file_exist(U"data/labels.txt"))
 			read_vec_str(labels, U"data/labels.txt");
@@ -200,7 +197,7 @@ int main(int argc, char *argv[]) {
 		cout << output[1] << endl;
 		write_vec_str(output, U"data/autoref.txt");
 	}
-	else if (args[0] == U"--entry") {
+	else if (args[0] == U"--entry" && args.size() > 1) {
 		// process a single entry
 		vector<Str32> entryN;
 		Str32 temp;
@@ -216,7 +213,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	else {
-		err_msg = U"内部错误： 命令未找到";
+		err_msg = U"内部错误： 命令不合法";
 		cerr << err_msg << endl;
 		return 0;
 	}

@@ -38,7 +38,7 @@
 ## New Features
 * 命令行加一个搜索并替换空心句号的选项。 FileSeek 还是太慢。
 * 表格像公式一样可以拖动，以便在移动设备上看
-* 为了在搜索引擎中更方便搜到， 在每个词条的 html 中 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`
+* 为了在搜索引擎中更方便搜到， 在每个词条的 html 中添加 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`。 keyword 已经在 tex 文档开始注释
 * 添加 C++ 高亮功能
 * 在 `dep.json` 文件中添加章节信息， 给每个部分显示为不同颜色
 * `\autoref{}` 外部引用时程序要检查 `\upref{}` 是否存在， 否则报错。
