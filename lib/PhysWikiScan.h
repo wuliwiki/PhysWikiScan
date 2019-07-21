@@ -913,10 +913,10 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	read_file(newcomm, "lib/newcommand.html");
 	CRLF_to_LF(newcomm);
 	if (!file_exist(U"data/changed.txt")) {
-		err_msg = U"内部错误： data/changed.txt 不存在!";
-		return -1;
+		write_vec_str(vector<Str32>(), U"data/changed.txt");
 	}
-	read_vec_str(changed, U"data/changed.txt");
+	else
+		read_vec_str(changed, U"data/changed.txt");
 	if (!file_exist(U"data/authors.txt")) {
 		err_msg = U"内部错误： data/authors.txt 不存在!";
 		return -1;
@@ -957,12 +957,14 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 		if (changed[i].substr(ind + 1) != U"tex")
 			continue;
 		entryName = changed[i].substr(0, ind);
+		if (entryName == U"PhysWiki") // ignore PhysWiki
+			continue;
 		// get chinese title and entry label
 		++N;
 		// get Chinese title
 		ind = search(entryName, entries);
 		if (ind < 0) {
-			err_msg = U"内部错误： changed.txt 中词条文件未找到!";
+			err_msg = U"内部错误： changed.txt 中词条文件未找到： " + entryName;
 			return -1; // break point here
 		}
 		// insert entry into html table of contents
