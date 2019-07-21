@@ -824,6 +824,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 		U"<div class = \"w3-container\"><p>\n"
 		U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"
 		U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"
+		U"<a href = \"../changed/changed.html\" target = \"_blank\">编辑中</a>　\n"
 		U"<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n"
 		U"<a href = \"../\">返回主页</a>\n\n"
 		U"<div class=\"w3-content\" style=\"max-width:400px;\">\n"
