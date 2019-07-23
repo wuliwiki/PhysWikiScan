@@ -5,7 +5,7 @@
 * 程序只会输出 `html` 文件到输出路径（覆盖同名文件）， 不会改变其他文件。
 * 输出路径中需要有所有 `svg` 或 `png` 图片。
 * 如果不想调试代码， Windows 下直接运行 `PhysWikiScan.exe` 即可（无需安装 Visual Studio）, 但是无法设置路径。
-* `PhysWiki.tex` 中不存在的词条不会被 `PhysWikiScan .` 命令转换。 这些词条在运行的时候会提示 warning。
+* `PhysWiki.tex` 中不存在的词条也会被 `PhysWikiScan .` 命令转换。 这些词条在运行的时候会提示 warning。
 * 在 linux 系统中（g++ 编译器）， 用 `make` 编译， `make clean` 清空编译产生的文件。
 * 程序默认输出到 `stdout`， 如果有错误， 会输出到 `stderr`。
 

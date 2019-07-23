@@ -772,12 +772,14 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 		++ind0;
 	}
 
-	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，将被忽略" << endl;
+	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，但仍会被编译" << endl;
 	for (Long i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty()) {
 			cout << entries[i] << endl;
-			entries.erase(entries.begin() + i, entries.begin() + i + 1);
-			titles.erase(titles.begin() + i, titles.begin() + i + 1);
+			read_file(str, path_in + U"contents/" + entries[i] + ".tex");
+			CRLF_to_LF(str);
+			get_title(title, str);
+			titles[i] = title;
 			--i;
 		}
 	}
