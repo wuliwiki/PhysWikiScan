@@ -394,7 +394,6 @@ inline Long RemoveNoEntry(vector_IO<Str32> names)
 {
 	Long i{}, j{}, N{}, Nnames{}, Nnames0;
 	vector<Str32> names0; // names to remove
-	names0.push_back(U"Sample");
 	names0.push_back(U"FrontMatters");
 	// add other names here
 	Nnames = names.size();
