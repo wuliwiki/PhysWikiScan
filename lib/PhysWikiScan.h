@@ -564,7 +564,7 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 
 // check if a label exist, if not, add it
 // ind is not the label number, but the displayed number
-// if exist, 1, output label
+// if exist, return 1, output label
 // if doesn't exist, return 0
 // if failed, return -1
 Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
@@ -577,7 +577,8 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 		ind0 = search(idName + num2str(ind), ids, ind0);
 		if (ind0 < 0)
 			break;
-		if (labels[ind0].substr(0, entry.size()) != entry) {
+		Long len = labels[ind0].rfind(U'_');
+		if (labels[ind0].substr(0, len) != entry) {
 			++ind0; continue;
 		}
 		label = labels[ind0];
