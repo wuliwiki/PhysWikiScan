@@ -15,6 +15,21 @@ inline Long search(const T &elm, const Tv &vec, Long start = 0)
 	return -1;
 }
 
+// check if v[i] == v[j] for any i and j
+// return the index of one of the repeated elements
+// return -1 if no reapeat
+template <class Tv>
+inline Long find_repeat(Tv v)
+{
+	for (Long i = 0; i < v.size(); ++i) {
+		for (Long j = i + 1; j < v.size(); ++j) {
+			if (v[i] == v[j])
+				return i;
+		}
+	}
+	return -1;
+}
+
 // search ind so that v[ind] == s
 // same as lookupInt(), but Int operator-(v[i], s) must be implemented
 // operator-(v[i], s) only need to return the correct sign

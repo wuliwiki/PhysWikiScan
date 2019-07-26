@@ -186,7 +186,8 @@ inline Long paragraph_tag(Str32_IO str)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels, Str32_I entryName, Str32_IO str)
+inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
+	Str32_I entryName, Str32_IO str, Bool_I allow_label_repeat)
 {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -194,6 +195,7 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels, Str32_I entr
 	Str32 envName; // "equation" or "figure" or "exam"...
 	Str32 idNum{}; // id = idName + idNum
 	Long idN{}; // convert to idNum
+	Str32 label, id;
 	while (true) {
 		ind5 = str.find(U"\\label", ind0);
 		if (ind5 < 0) return N;
@@ -239,8 +241,18 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels, Str32_I entr
 			return -1; // break point here
 		}
 		ind3 = str.find(U"}", ind3);
-		labels.push_back(str.substr(ind0, ind3 - ind0));
-		trim(labels.back());
+		
+		label = str.substr(ind0, ind3 - ind0);
+		trim(label);
+		Long ind = search(label, labels);
+		if (ind < 0)
+			labels.push_back(label);
+		else if (!allow_label_repeat) {
+			err_msg = U"标签多次定义： " + labels[ind] + U" （该错误不支持重试）";
+			cerr << err_msg << endl;
+			exit(EXIT_SUCCESS);
+		}
+		
 		// count idNum, insert html id tag, delete label
 		Intvs intvEnv;
 		if (idName != U"eq") {
@@ -277,9 +289,13 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels, Str32_I entr
 			++idN;
 		}
 		num2str(idNum, idN);
-		ids.push_back(idName + idNum);
+		id = idName + idNum;
+		if (ind < 0)
+			ids.push_back(id);
+		else
+			ids[ind] = id;
 		str.erase(ind5, ind3 - ind5 + 1);
-		str.insert(ind4, U"<span id = \"" + ids.back() + U"\"></span>");
+		str.insert(ind4, U"<span id = \"" + id + U"\"></span>");
 		ind0 = ind4 + 6;
 	}
 }
@@ -1134,7 +1150,8 @@ inline Long OneFile4(Str32_I path)
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vector_IO<Long> links,
-	Str32_I path_in, Str32_I path_out, vector_I<Str32> entries, vector_I<Str32> titles, Long_I ind)
+	Str32_I path_in, Str32_I path_out, vector_I<Str32> entries,
+	vector_I<Str32> titles, Long_I ind, Bool_I allow_label_repeat)
 {
 	Str32 str;
 	read_file(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1182,7 +1199,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	if (Enumerate(str) < 0)
 		return -1;
 	// add html id for links
-	if (EnvLabel(ids, labels, entries[ind], str) < 0)
+	if (EnvLabel(ids, labels, entries[ind], str, allow_label_repeat) < 0)
 		return -1;
 	// process table environments
 	if (Table(str) < 0)
@@ -1337,7 +1354,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 			cout << "one file debug" << endl;
 		// main process
 		while (PhysWikiOnline1(ids, labels, links,
-			path_in, path_out, entries, titles, i) < 0) {
+			path_in, path_out, entries, titles, i, false) < 0) {
 			cout << err_msg << endl;
 			if (!Input().getBool("重试?"))
 				exit(EXIT_FAILURE);
@@ -1387,6 +1404,12 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 		return -1;
 	}
 	read_vec_str(labels, U"data/labels.txt");
+	Long ind = find_repeat(labels);
+	if (ind >= 0) {
+		err_msg = U"内部错误： labels.txt 存在重复：" + labels[ind];
+		cerr << err_msg << endl;
+		return 0;
+	}
 	if (!file_exist(U"data/ids.txt")) {
 		err_msg = U"内部错误： data/ids.txt 不存在!";
 		return -1;
@@ -1431,7 +1454,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 			<< std::setw(20) << std::left << titles[ind] << endl;
 
 		if (PhysWikiOnline1(ids, labels, links,
-			path_in, path_out, entries, titles, ind) < 0) {
+			path_in, path_out, entries, titles, ind, true) < 0) {
 			return -1;
 		}
 	}

@@ -172,8 +172,15 @@ int main(int argc, char *argv[]) {
 	else if (args[0] == U"--autoref" && args.size() == 4) {
 		// check a label, add one if necessary
 		vector<Str32> labels, ids;
-		if (file_exist(U"data/labels.txt"))
+		if (file_exist(U"data/labels.txt")) {
 			read_vec_str(labels, U"data/labels.txt");
+			Long ind = find_repeat(labels);
+			if (ind >= 0) {
+				err_msg = U"内部错误： labels.txt 存在重复：" + labels[ind];
+				cerr << err_msg << endl;
+				return 0;
+			}
+		}
 		if (file_exist(U"data/ids.txt"))
 			read_vec_str(ids, U"data/ids.txt");
 		Str32 label;
@@ -185,8 +192,15 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 		else if (ret == 0) { // added
-			labels.push_back(label);
-			ids.push_back(args[2] + args[3]);
+			Str32 id = args[2] + args[3];
+			Long i = search(label, labels);
+			if (i < 0) {
+				labels.push_back(label);
+				ids.push_back(id);
+			}
+			else {
+				ids[i] = id;
+			}
 			write_vec_str(labels, U"data/labels.txt");
 			write_vec_str(ids, U"data/ids.txt");
 			output = { label, U"added" };
