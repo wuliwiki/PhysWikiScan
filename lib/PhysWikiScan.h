@@ -1267,7 +1267,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 		return -1;
 	if (MatlabComLine(str) < 0)
 		return -1;
-	Command2Tag(U"x", U"<span class = \"w3-text-teal\">", U"</span>", str);
+	Command2Tag(U"x", U"<code>", U"</code>", str);
 	// footnote
 	footnote(str);
 	// delete redundent commands
