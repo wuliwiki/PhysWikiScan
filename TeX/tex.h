@@ -383,6 +383,8 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	if (lstinline_intv(intv1, str) < 0)
 		return -1;
 	if (combine(intv, intv1) < 0) return -1;
+	find_env(intv1, str, U"lstlisting", 'o');
+	if (combine(intv, intv1) < 0) return -1;
 	// command environments
 	find_env(intv1, str, U"Command", 'o');
 	if (combine(intv, intv1) < 0) return -1;

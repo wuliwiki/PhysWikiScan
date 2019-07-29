@@ -3,6 +3,28 @@
 
 namespace slisc {
 
+// check if each line size is less than limit
+// return the line number if limit exceeded
+// return -1 if ok
+inline Long line_size_lim(Str32_I str, Long_I lim)
+{
+	Long ind0 = 0, line = 0, ind_old = 0;
+	while (true) {
+		ind0 = str.find(U"\n", ind0);
+		++line;
+		if (ind0 < 0) {
+			if (str.size() - ind_old > lim)
+				return line;
+			else
+				return -1;
+		}
+		if (ind0 - ind_old > lim)
+			return line;
+		++ind0;
+		ind_old = ind0;
+	}
+}
+
 // find all strings in a matlab code
 inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 {

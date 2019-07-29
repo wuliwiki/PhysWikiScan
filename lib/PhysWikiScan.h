@@ -998,7 +998,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 }
 
 // create line number string to insert in the first column of table
-inline Long code_table(Str32_O table_str, Str32_I code)
+inline void code_table(Str32_O table_str, Str32_I code)
 {
 	Str32 num, line_nums;
 	Long ind1 = 0, i = 0;
@@ -1045,6 +1045,10 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 		}
 		read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
+		if (line_size_lim(code, 78) >= 0) {
+			err_msg = U"Matlab 单行代码过长！";
+			return -1;
+		}
 		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		Matlab_highlight(code);
 
@@ -1084,6 +1088,10 @@ inline Long MatlabComLine(Str32_IO str)
 			return -1;
 		}
 		code = code.substr(1, code.size() - 2);
+		if (line_size_lim(code, 78) >= 0) {
+			err_msg = U"Matlab 单行代码过长！";
+			return -1;
+		}
 		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		Matlab_highlight(code);
 
