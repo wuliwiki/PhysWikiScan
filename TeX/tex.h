@@ -7,16 +7,6 @@
 
 namespace slisc {
 
-// for debug purpose, set conditional breakpoint by checking this name
-inline Str32 current_entry;
-
-inline Bool debug(Str32_I entry)
-{
-	if (current_entry == entry)
-		return true;
-	return false;
-}
-
 // check if an index is inside "lstinline|...|"
 inline Bool is_in_lstinline(Str32_I str, Long_I ind)
 {

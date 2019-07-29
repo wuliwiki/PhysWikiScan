@@ -1369,9 +1369,6 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		cout    << std::setw(5)  << std::left << i
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
-		current_entry = entries[i];
-		if (debug(U"BECSup"))
-			cout << "one file debug" << endl;
 		// main process
 		if (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i, false) < 0) {
@@ -1397,9 +1394,6 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 				<< std::setw(10)  << std::left << entries[i]
 				<< std::setw(20) << std::left << titles[i] << endl;
 		read_file(html, path_out + entries[i] + ".html"); // read html file
-		current_entry = entries[i];
-		if (debug(U"QSHOnr"))
-			cout << "one file debug" << endl;
 		// process \autoref and \upref
 		if (autoref(ids, labels, entries[i], html) < 0) {
 			cout << err_msg << endl;
@@ -1461,7 +1455,6 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	// main process
 	vector<Long> links;
 	for (Long i = 0; i < Size(entryN); ++i) {
-		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
 		if (ind < 0) {
 			err_msg = U"entries.txt 中未找到该词条!";
@@ -1488,7 +1481,6 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 
 	Str32 html;
 	for (Long i = 0; i < Size(entryN); ++i) {
-		current_entry = entryN[i];
 		Long ind = search(entryN[i], entries);
 		cout << std::setw(5) << std::left << ind
 			<< std::setw(10) << std::left << entries[ind]
