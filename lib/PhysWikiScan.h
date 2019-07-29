@@ -1020,6 +1020,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 		}
 		read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
 		CRLF_to_LF(code);
+		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		Matlab_highlight(code);
 
 		// insert code
@@ -1076,6 +1077,7 @@ inline Long MatlabComLine(Str32_IO str)
 			return -1;
 		}
 		code = code.substr(1, code.size() - 2);
+		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		Matlab_highlight(code);
 
 		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);

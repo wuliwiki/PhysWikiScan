@@ -487,6 +487,7 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 inline Long lstinline(Str32_IO str)
 {
 	Long N{}, ind0{}, ind1{}, ind2{};
+	Str32 arg;
 	while (true) {
 		ind0 = find_command(str, U"lstinline", ind0);
 		if (ind0 < 0)
@@ -496,8 +497,9 @@ inline Long lstinline(Str32_IO str)
 		if (ind1 < 0)
 			return -1;
 		ind2 = str.find(U"|", ind1 + 1);
-		str.replace(ind2, 1, U"</code>");
-		str.replace(ind0, ind1 - ind0 + 1, U"<code>");
+		arg = str.substr(ind1 + 1, ind2 - ind1 - 1);
+		replace(arg, U"<", U"&lt"); replace(arg, U">", U"&gt");
+		str.replace(ind0, ind2 - ind0 + 1, U"<code>" + arg + U"</code>");
 		ind0 = ind2;
 		++N;
 	}
