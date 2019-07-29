@@ -997,6 +997,31 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	return N;
 }
 
+// create line number string to insert in the first column of table
+inline Long code_table(Str32_O table_str, Str32_I code)
+{
+	Str32 num, line_nums;
+	Long ind1 = 0, i = 0;
+	while (true) {
+		ind1 = code.find(U'\n', ind1);
+		if (ind1 < 0)
+			break;
+		num2str(num, ++i);
+		line_nums += num + U"<br>";
+		++ind1;
+	}
+	line_nums.erase(line_nums.size() - 4, 4);
+	table_str =
+		U"<table class=\"code\"><tr class=\"code\"><td class=\"linenum\">\n"
+		+ line_nums +
+		U"\n</td><td class=\"code\">\n"
+		U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
+		U"<div class = \"nospace\"><pre class = \"mcode\">\n"
+		+ code +
+		U"</pre></div></div>\n"
+		U"</td></tr></table>";
+}
+
 // process Matlab code (\code command)
 inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 {
@@ -1026,30 +1051,12 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 		// insert code
 		// for download button, use
 		// U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"
-		Str32 title, line_nums, num;
-		Long ind1 = 0, i = 0;
-		while (true) {
-			ind1 = code.find(U'\n', ind1);
-			if (ind1 < 0) break;
-			num2str(num, ++i);
-			line_nums += num + U"<br>";
-			++ind1;
-		}
-		line_nums.erase(line_nums.size() - 4, 4);
+		Str32 title, code_tab_str;
+		code_table(code_tab_str, code);
 
 		if (show_title)
 			title = U"<h6><b>　　" + name + U".m</b></h6>\n";
-		str.replace(ind0, skip_command(str, ind0, 1) - ind0,
-			title +
-			U"<table class=\"code\"><tr class=\"code\"><td class=\"linenum\">\n"
-			+ line_nums +
-			U"\n</td><td class=\"code\">\n"
-			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
-			U"<div class = \"nospace\"><pre class = \"mcode\">\n"
-			+ code +
-			U"</pre></div></div>\n"
-			U"</td></tr></table>"
-		);
+		str.replace(ind0, skip_command(str, ind0, 1) - ind0, title + code_tab_str);
 		++N;
 	}
 }
