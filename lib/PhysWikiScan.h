@@ -317,16 +317,37 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 		ind0 = expect(str, U"=", ind0);
 		ind0 = find_num(str, ind0);
 		str2double(width, str, ind0);
+
 		// get file name of figure
 		indName1 = str.find(U"figures/", ind0) + 8;
-		indName2 = str.find(U".pdf", intvFig.L(i)) - 1;
-		if (indName2 < 0)
-			indName2 = str.find(U".png", intvFig.L(i)) - 1;
-		if (indName2 < 0) {
+		indName2 = str.find(U"}", ind0) - 1;
+		if (indName1 < 0 || indName2 < 0) {
 			err_msg = U"读取图片名错误!"; // breakpoint here
 			return -1;
 		}
 		figName = str.substr(indName1, indName2 - indName1 + 1);
+		trim(figName);
+
+		// get format
+		Long Nname = figName.size();
+		if (figName.substr(Nname - 4, 4) == U".png") {
+			format = U"png";
+			figName = figName.substr(0, Nname - 4);
+		}
+		else if (figName.substr(Nname - 4, 4) == U".pdf") {
+			format = U"svg";
+			figName = figName.substr(0, Nname - 4);
+		}
+		else {
+			err_msg = U"图片格式不支持!";
+			return -1; // break point here
+		}
+
+		if (!file_exist(path_out + figName + U"." + format)) {
+			err_msg = U"图片 \"" + path_out + figName + U"." + format + U"\" 未找到!";
+			return -1; // break point here
+		}
+
 		// get caption of figure
 		ind0 = find_command(str, U"caption", ind0);
 		if (ind0 < 0) {
@@ -338,20 +359,11 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 		caption = str.substr(ind0, ind1 - ind0);
 		str.erase(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1); // delete environment
 
-		// test img file existence
-		if (file_exist(path_out + figName + ".svg"))
-			format = U".svg";
-		else if (file_exist(path_out + figName + ".png"))
-			format = U".png";
-		else {
-			err_msg = U"图片 \"" + figName + "\" 未找到!";
-			return -1; // break point here
-		}
 		// insert html code
 		num2str(widthPt, (Long)(33.4 * width));
 		num2str(figNo, i + 1);
 		str.insert(intvFig.L(i), U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-			+ U"pt;\">\n" + U"<img src = \"" + figName + format
+			+ U"pt;\">\n" + U"<img src = \"" + figName + U"." + format
 			+ U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
 			+ U"：" + caption + U"</div>");
 		++N;

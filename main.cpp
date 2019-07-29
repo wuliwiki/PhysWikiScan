@@ -234,9 +234,9 @@ int main(int argc, char *argv[]) {
 	
 	// PhysWikiCheck(U"../PhysWiki/contents/");
 
-	cout << "done!" << endl;
+	cout << u8"done!" << endl;
 	if (argc <= 1) {
-		cout << "按任意键退出..." << endl;
+		cout << u8"按任意键退出..." << endl;
 		getchar();
 	}
 		
