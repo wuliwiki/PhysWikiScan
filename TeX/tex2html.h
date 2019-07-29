@@ -24,6 +24,18 @@ inline Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
 	return N;
 }
 
+// check if an index is in an HTML tag "<name>...</name>
+inline Bool is_in_tag(Str32_I str, Str32_I name, Long_I ind)
+{
+	Long ind1 = str.rfind(U"<" + name + U">", ind);
+	if (ind1 < 0)
+		return false;
+	Long ind2 = str.rfind(U"</" + name + U">", ind);
+	if (ind2 < ind1)
+		return true;
+	return false;
+}
+
 // ensure space around '<' and '>' in equation env. and $$ env
 // return number of spaces added
 // return -1 if failed
@@ -201,10 +213,11 @@ inline Long NormalTextEscape(Str32_IO str)
 	if (Nnorm < 0) return -1;
 	for (i = Nnorm - 1; i >= 0; --i) {
 		temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-		N1 = TextEscape(temp); if (N1 < 0) continue;
+		N1 = TextEscape(temp);
+		if (N1 < 0)
+			continue;
 		N += N1;
-		str.erase(intv.L(i), intv.R(i) - intv.L(i) + 1);
-		str.insert(intv.L(i), temp);
+		str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, temp);
 	}
 	return N;
 }
@@ -221,7 +234,7 @@ inline Long Table(Str32_IO str)
 	N = find_env(intv, str, U"table", 'o');
 	if (N == 0) return 0;
 	for (i = N - 1; i >= 0; --i) {
-		ind0 = str.find(U"\\caption");
+		ind0 = find_command(str, U"caption", intv.L(i));
 		if (ind0 < 0 || ind0 > intv.R(i)) {
 			cout << "table no caption!" << endl; return -1;  // break point here
 		}

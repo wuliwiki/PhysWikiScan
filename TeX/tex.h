@@ -17,6 +17,18 @@ inline Bool debug(Str32_I entry)
 	return false;
 }
 
+// check if an index is inside "lstinline|...|"
+inline Bool is_in_lstinline(Str32_I str, Long_I ind)
+{
+	Long ind0 = str.rfind(U"|", ind);
+	if (ind0 < 2)
+		return false;
+	ind0 = ExpectKeyReverse(str, U"\\lstinline", ind0 - 1);
+	if (ind0 < -1)
+		return false;
+	return true;
+}
+
 // find text command '\name', return the index of '\'
 // output the index of "name.back()"
 inline Long find_command(Str32_I str, Str32_I name, Long_I start)
@@ -26,11 +38,33 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 		ind0 = str.find(U"\\" + name, ind0);
 		if (ind0 < 0)
 			return -1;
+		// check if is in \lstinline|...|
+		if (is_in_lstinline(str, ind0)) {
+			++ind0; continue;
+		}
+
 		// check right
 		if (!is_letter(str[ind0 + name.size() + 1]))
 			return ind0;
 		++ind0;
 	}
+}
+
+// find one of multiple commands
+// return -1 if not found
+inline Long find_command(Long_O ikey, Str32_I str, vector_I<Str32> names, Long_I start)
+{
+	Long i_min = 100000000;
+	ikey = -1;
+	for (Long i = 0; i < Size(names); ++i) {
+		Long ind = find_command(str, names[i], start);
+		if (ind >= 0 && ind < i_min) {
+			i_min = ind; ikey = i;
+		}
+	}
+	if (i_min < 100000000)
+		return i_min;
+	return -1;
 }
 
 // skipt command with 'Narg' arguments (command name can only have letters)
@@ -224,6 +258,30 @@ inline Long find_comment(Intvs_O intv, Str32_I str)
 	return intv.size();
 }
 
+// find interval of all "\lstinline|...|"
+// return -1 if failed
+inline Long lstinline_intv(Intvs_O intv, Str32_I str)
+{
+	Long N{}, ind0{}, ind1{}, ind2{};
+	intv.clear();
+	while (true) {
+		ind0 = find_command(str, U"lstinline", ind0);
+		if (ind0 < 0)
+			break;
+		ind1 = ind0 + 10;
+		ind1 = expect(str, U"|", ind1); --ind1;
+		if (ind1 < 0)
+			return -1;
+		ind2 = str.find(U"|", ind1 + 1);
+		if (ind2 < 0)
+			return -1;
+		intv.pushL(ind0); intv.pushR(ind2);
+		ind0 = ind2;
+		++N;
+	}
+	return N;
+}
+
 // find the range of inline equations using $$
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $$ environments found.
@@ -232,13 +290,18 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 	intv.clear();
 	Long N{}; // number of $$
 	Long ind0{};
-	Intvs intvComm; // result from FindComment
+	Intvs intvComm, intvLstinline, intvLst; // result from FindComment
 	find_comment(intvComm, str);
+	find_env(intvLst, str, U"lstlisting", 'o');
+	lstinline_intv(intvLstinline, str);
 	while (true) {
 		ind0 = str.find(U"$", ind0);
-		if (ind0 < 0) {
+		if (ind0 < 0)
 			break;
-		} // did not find
+		if (is_in(ind0, intvLstinline) ||
+			is_in(ind0, intvLst)) {
+			++ind0;  continue;
+		}
 		if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
 			++ind0; continue;
 		}
@@ -327,6 +390,9 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	// equation environments
 	find_env(intv1, str, U"equation", 'o');
 	if (combine(intv, intv1) < 0) return -1;
+	if (lstinline_intv(intv1, str) < 0)
+		return -1;
+	if (combine(intv, intv1) < 0) return -1;
 	// command environments
 	find_env(intv1, str, U"Command", 'o');
 	if (combine(intv, intv1) < 0) return -1;
@@ -410,6 +476,29 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 		str.insert(ind2, strRight);
 		str.erase(ind0, ind1 - ind0 + 1);
 		str.insert(ind0, strLeft);
+		++N;
+	}
+	return N;
+}
+
+// replace lstinline|...| with <code>...</code> tags
+// return the number replaced
+// return -1 if failed
+inline Long lstinline(Str32_IO str)
+{
+	Long N{}, ind0{}, ind1{}, ind2{};
+	while (true) {
+		ind0 = find_command(str, U"lstinline", ind0);
+		if (ind0 < 0)
+			break;
+		ind1 = ind0 + 10;
+		ind1 = expect(str, U"|", ind1); --ind1;
+		if (ind1 < 0)
+			return -1;
+		ind2 = str.find(U"|", ind1 + 1);
+		str.replace(ind2, 1, U"</code>");
+		str.replace(ind0, ind1 - ind0 + 1, U"<code>");
+		ind0 = ind2;
 		++N;
 	}
 	return N;

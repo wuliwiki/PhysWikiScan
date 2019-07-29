@@ -58,8 +58,8 @@ inline Long paragraph_tag(Str32_IO str)
 	Str32 temp, env, end, begin = U"<p>　　\n";
 
 	// "begin", and commands that cannot be in a paragraph
-	vector<Str32> commands = {U"\\begin",
-		U"\\subsection", U"\\subsubsection", U"\\pentry", U"\\code", U"\\Code"};
+	vector<Str32> commands = {U"begin",
+		U"subsection", U"subsubsection", U"pentry", U"code", U"Code"};
 
 	// environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
 	vector<Str32> envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
@@ -81,7 +81,7 @@ inline Long paragraph_tag(Str32_IO str)
 			next = 'f';
 		}
 		else {
-			ind0 = find(ikey, str, commands, ind0);
+			ind0 = find_command(ikey, str, commands, ind0);
 			if (ind0 < 0)
 				next = 'f';
 			else {
@@ -197,7 +197,7 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 	Long idN{}; // convert to idNum
 	Str32 label, id;
 	while (true) {
-		ind5 = str.find(U"\\label", ind0);
+		ind5 = find_command(str, U"label", ind0);
 		if (ind5 < 0) return N;
 		// make sure label is inside an environment
 		ind2 = str.rfind(U"\\end", ind5);
@@ -248,9 +248,8 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 		if (ind < 0)
 			labels.push_back(label);
 		else if (!allow_label_repeat) {
-			err_msg = U"标签多次定义： " + labels[ind] + U" （该错误不支持重试）";
-			cerr << err_msg << endl;
-			exit(EXIT_SUCCESS);
+			err_msg = U"标签多次定义： " + labels[ind];
+			return -1;
 		}
 		
 		// count idNum, insert html id tag, delete label
@@ -329,7 +328,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 		}
 		figName = str.substr(indName1, indName2 - indName1 + 1);
 		// get caption of figure
-		ind0 = str.find(U"\\caption", ind0);
+		ind0 = find_command(str, U"caption", ind0);
 		if (ind0 < 0) {
 			err_msg = U"图片标题未找到!";
 			return -1; // break point here
@@ -502,7 +501,10 @@ inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryNa
 	vector<Str32> envNames{U"equation", U"align", U"gather"};
 	while (true) {
 		newtab.clear(); file.clear();
-		ind0 = str.find(U"\\autoref", ind0);
+		ind0 = find_command(str, U"autoref", ind0);
+		if (is_in_tag(str, U"code", ind0)) {
+			++ind0; continue;
+		}
 		if (ind0 < 0)
 			return N;
 		inEq = index_in_env(ienv, ind0, envNames, str);
@@ -1063,10 +1065,14 @@ inline Long MatlabComLine(Str32_IO str)
 	N = find_env(intvOut, str, U"lstlisting", 'o');
 	for (i = N - 1; i >= 0; --i) {
 		ind0 = expect(str, U"[", intvIn.L(i));
+		if (ind0 < 0) {
+			SLS_WARN("lstlisting: no language specified!");
+			continue;
+		}
 		ind0 = pair_brace(str, ind0, U'[');
 		code = str.substr(ind0+1, intvIn.R(i)-ind0);
 		if (code[0] != U'\n' || code.back() != U'\n') {
-			cout << "wrong format of Matlab command line environment!" << endl;
+			err_msg = U"Matlab 控制行环境格式错误!";
 			return -1;
 		}
 		code = code.substr(1, code.size() - 2);
@@ -1267,6 +1273,11 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 		return -1;
 	if (MatlabComLine(str) < 0)
 		return -1;
+	if (lstinline(str) < 0) {
+		err_msg = U"lstinline 格式错误， 请使用 lstinline|...|";
+		return -1;
+	}
+
 	Command2Tag(U"x", U"<code>", U"</code>", str);
 	// footnote
 	footnote(str);
@@ -1328,9 +1339,9 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 	cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
 
-	while (table_of_contents(titles, entries, path_in, path_out) < 0) {
+	if (table_of_contents(titles, entries, path_in, path_out) < 0) {
+		cout << err_msg << endl;
 		if (!Input().getBool("重试?")) {
-			cout << err_msg << endl;
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1353,11 +1364,10 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 		if (debug(U"BECSup"))
 			cout << "one file debug" << endl;
 		// main process
-		while (PhysWikiOnline1(ids, labels, links,
+		if (PhysWikiOnline1(ids, labels, links,
 			path_in, path_out, entries, titles, i, false) < 0) {
 			cout << err_msg << endl;
-			if (!Input().getBool("重试?"))
-				exit(EXIT_FAILURE);
+			exit(EXIT_FAILURE);
 		}
 	}
 
