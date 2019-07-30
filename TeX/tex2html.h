@@ -231,6 +231,9 @@ inline Long Table(Str32_IO str)
 	Intvs intv;
 	vector<Long> indLine; // stores the position of "\hline"
 	Str32 caption;
+	Str32 str_beg = U"<div class = \"eq\" align = \"center\">"
+		U"<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
+	Str32 str_end = U"</td></tr></table>\n</div></div>";
 	N = find_env(intv, str, U"table", 'o');
 	if (N == 0) return 0;
 	for (i = N - 1; i >= 0; --i) {
@@ -249,18 +252,15 @@ inline Long Table(Str32_IO str)
 			ind0 += 5;
 		}
 		Nline = indLine.size();
-		str.erase(indLine[Nline - 1], 6);
-		str.insert(indLine[Nline - 1], U"</td></tr></table>");
+		str.replace(indLine[Nline - 1], 6, str_end);
 		ind0 = ExpectKeyReverse(str, U"\\\\", indLine[Nline - 1] - 1);
 		str.erase(ind0 + 1, 2);
 		for (j = Nline - 2; j > 0; --j) {
-			str.erase(indLine[j], 6);
-			str.insert(indLine[j], U"</td></tr><tr><td>");
+			str.replace(indLine[j], 6, U"</td></tr><tr><td>");
 			ind0 = ExpectKeyReverse(str, U"\\\\", indLine[j] - 1);
 			str.erase(ind0 + 1, 2);
 		}
-		str.erase(indLine[0], 6);
-		str.insert(indLine[0], U"<table><tr><td>");
+		str.replace(indLine[0], 6, str_beg);
 	}
 	// second round, replace '&' with tags
 	// delete latex code
@@ -275,10 +275,12 @@ inline Long Table(Str32_IO str)
 			str.insert(ind0, U"</td><td>");
 			ind1 += 8;
 		}
-		ind0 = str.rfind(U"</table>", ind1) + 8;
+		ind0 = str.rfind(str_end, ind1) + str_end.size();
 		str.erase(ind0, ind1 - ind0 + 1);
-		ind0 = str.find(U"<table>", intv.L(i)) - 1;
-		str.erase(intv.L(i), ind0 - intv.L(i) + 1);
+		ind0 = str.find(str_beg, intv.L(i)) - 1;
+		str.replace(intv.L(i), ind0 - intv.L(i) + 1,
+			U"<div align = \"center\"> 表" + num2str(i + 1) + U"：" +
+			caption + U"</div>");
 	}
 	return N;
 }

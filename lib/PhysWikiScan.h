@@ -849,21 +849,6 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
 	toc.erase(ind0, 16);
 
-	ind0 = insert(toc,
-		U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"
-		U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"
-		U"<h1>小时物理</h1>\n</div>\n\n"
-		U"<div class = \"w3-container\"><p>\n"
-		U"<a href = \"license.html\" target = \"_blank\">版权声明</a>　\n"
-		U"<a href = \"about.html\" target = \"_blank\">项目介绍</a>　\n"
-		U"<a href = \"../changed/changed.html\" target = \"_blank\">编辑中</a>　\n"
-		U"<a href = \"readme.html\" target = \"_blank\">使用说明</a>　\n"
-		U"<a href = \"../\">返回主页</a>\n\n"
-		U"<div class=\"w3-content\" style=\"max-width:400px;\">\n"
-		U"	<a href=\"../tree\"><img src=\"../tree.png\" style=\"width:100%;\" alt=\"目录树\"></a><br>\n"
-		U"</div>\n<br>\n\n"
-		, ind0);
-
 	// remove comments
 	Intvs intvComm;
 	find_comment(intvComm, str);
