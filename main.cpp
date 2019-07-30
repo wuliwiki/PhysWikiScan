@@ -226,6 +226,11 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 	}
+	else if (args[0] == U"--all-commands") {
+		vector<Str32> commands;
+		all_commands(commands, path_in + U"contents/");
+		write_vec_str(commands, U"data/commands.txt");
+	}
 	else {
 		err_msg = U"内部错误： 命令不合法";
 		cerr << err_msg << endl;

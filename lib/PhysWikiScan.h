@@ -1518,6 +1518,27 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 	return 0;
 }
 
+// search all commands
+inline void all_commands(vector_O<Str32> commands, Str32_I in_path)
+{
+	vector<Str32> fnames;
+	Str32 str, name;
+	file_list_ext(fnames, in_path, U"tex");
+	for (Long i = 0; i < fnames.size(); ++i) {
+		read_file(str, in_path + fnames[i]);
+		Long ind0 = 0;
+		while (true) {
+			ind0 = str.find(U"\\", ind0);
+			if (ind0 < 0)
+				break;
+			command_name(name, str, ind0);
+			if (!is_in(name, commands))
+				commands.push_back(name);
+			++ind0;
+		}
+	}
+}
+
 // check format error of .tex files in path0
 inline void PhysWikiCheck(Str32_I path0)
 {

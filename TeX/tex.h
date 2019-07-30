@@ -86,6 +86,13 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 	return ind0;
 }
 
+// get the name of the command starting at str[ind]
+inline void command_name(Str32_O name, Str32_I str, Long_I ind)
+{
+	Long ind1 = skip_command(str, ind);
+	name = str.substr(ind, ind1 - ind);
+}
+
 // get the i-th command argument
 // return the next index of the i-th '}'
 // when "option" is 't', trim white spaces on both sides of "arg"
