@@ -955,17 +955,6 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
 	toc.erase(ind0, 16);
 
-	ind0 = insert(toc,
-		U"<img src = \"../title.png\" alt = \"图\" style = \"width:100%;\">\n"
-		U"<div class = \"w3-container w3-center w3-blue w3-text-white\">\n"
-		U"<h1>小时物理草稿</h1>\n</div>\n\n"
-		U"<div class = \"w3-container\"><p>\n"
-		U"<a href = \"../\">返回主页</a>\n\n"
-		U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
-		U"<h3 align = \"center\">草稿</h3>\n"
-		U"</div>\n\n<div class = \"w3-container\">\n"
-		, ind0);
-
 	for (Long i = 0; i < Size(changed); ++i) {
 		Long ind = changed[i].rfind('.');
 		if (ind < 0) {
