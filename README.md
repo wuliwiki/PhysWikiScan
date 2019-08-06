@@ -43,7 +43,7 @@
 * 表格像公式一样可以拖动，以便在移动设备上看
 * 为了在搜索引擎中更方便搜到， 在每个词条的 html 中添加 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`。 keyword 已经在 tex 文档开始注释
 * 添加 C++ 高亮功能
-* 实现 lstinline| |
+* 实现 `lstinline| |`
 * 在 `dep.json` 文件中添加章节信息， 给每个部分显示为不同颜色
 * `\autoref{}` 外部引用时程序要检查 `\upref{}` 是否存在， 否则报错。
 * 没有被用到的文件/图片全部都要警告
@@ -51,3 +51,4 @@
 * PhysWikiCheck 检查 latex 代码中 `\autoref{}` 前面是否没有空格而后面有
 * 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
 * PhysWikiCheck 使用命令行选项调用
+* 把所有 `svg` 都用 PhysWiki repo 来管理， 且每次编译时都把 `png` 和 `svg` 移动过去。 确认即使把输出路径清空也可以顺利编译
