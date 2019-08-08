@@ -39,6 +39,7 @@
 * Matlab 小括号里面的 end 不高亮
 
 ## New Features
+* 每个页面下面的 “编辑词条” 链接直接打开该词条， 如 `wuli.wiki/editor/?entry=AMAdd`
 * 命令行加一个搜索并替换空心句号的选项。 FileSeek 还是太慢。
 * 表格像公式一样可以拖动，以便在移动设备上看
 * 为了在搜索引擎中更方便搜到， 在每个词条的 html 中添加 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`。 keyword 已经在 tex 文档开始注释
