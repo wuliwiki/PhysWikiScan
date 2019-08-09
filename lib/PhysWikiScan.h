@@ -65,7 +65,7 @@ inline Long paragraph_tag(Str32_IO str)
 	vector<Str32> envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
 
 	// environments that needs paragraph tags inside
-	vector<Str32> envs_p = { U"exam", U"exer"};
+	vector<Str32> envs_p = { U"example", U"exercise"};
 
 	// 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
 	char next, last = 'n';
@@ -192,7 +192,7 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 	Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
 		Ngather{}, Nalign{}, i{}, j{};
 	Str32 idName; // "eq" or "fig" or "ex"...
-	Str32 envName; // "equation" or "figure" or "exam"...
+	Str32 envName; // "equation" or "figure" or "example"...
 	Str32 idNum{}; // id = idName + idNum
 	Long idN{}; // convert to idNum
 	Str32 label, id;
@@ -214,11 +214,11 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 		else if (expect(str, U"figure", ind1) > 0) {
 			idName = U"fig"; envName = U"figure";
 		}
-		else if (expect(str, U"exam", ind1) > 0) {
-			idName = U"ex"; envName = U"exam";
+		else if (expect(str, U"example", ind1) > 0) {
+			idName = U"ex"; envName = U"example";
 		}
-		else if (expect(str, U"exer", ind1) > 0) {
-			idName = U"exe"; envName = U"exer";
+		else if (expect(str, U"exercise", ind1) > 0) {
+			idName = U"exe"; envName = U"exercise";
 		}
 		else if (expect(str, U"table", ind1) > 0) {
 			idName = U"tab"; envName = U"table";
@@ -444,7 +444,7 @@ inline Long ExampleEnvironment(Str32_IO str)
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
 	while (true) {
-		ind0 = find_command_spec(str, U"begin", U"exam", ind0);
+		ind0 = find_command_spec(str, U"begin", U"example", ind0);
 		if (ind0 < 0)
 			return N;
 		++N; num2str(exNo, N);
@@ -452,7 +452,7 @@ inline Long ExampleEnvironment(Str32_IO str)
 
 		// positions of the environment
 		Long ind1 = skip_command(str, ind0, 2);
-		Long ind2 = find_command_spec(str, U"end", U"exam", ind0);
+		Long ind2 = find_command_spec(str, U"end", U"example", ind0);
 		Long ind3 = skip_command(str, ind2, 1);
 
 		//// add <p> </p>
@@ -476,7 +476,7 @@ inline Long ExerciseEnvironment(Str32_IO str)
 	Intvs intvIn, intvOut;
 	Str32 exName, exNo;
 	while (true) {
-		ind0 = find_command_spec(str, U"begin", U"exer", ind0);
+		ind0 = find_command_spec(str, U"begin", U"exercise", ind0);
 		if (ind0 < 0)
 			return N;
 		++N; num2str(exNo, N);
@@ -484,7 +484,7 @@ inline Long ExerciseEnvironment(Str32_IO str)
 
 		// positions of the environment
 		Long ind1 = skip_command(str, ind0, 2);
-		Long ind2 = find_command_spec(str, U"end", U"exer", ind0);
+		Long ind2 = find_command_spec(str, U"end", U"exercise", ind0);
 		Long ind3 = skip_command(str, ind2, 1);
 
 		//// add <p> </p>
@@ -629,7 +629,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 	find_comment(intvComm, str);
 
 	vector<Str32> idNames = { U"eq", U"fig", U"ex", U"exe", U"tab" };
-	vector<Str32> envNames = { U"equation", U"figure", U"exam", U"exer", U"table"};
+	vector<Str32> envNames = { U"equation", U"figure", U"example", U"exercise", U"table"};
 
 	Long idNum = search(idName, idNames);
 	if (idNum < 0) {
