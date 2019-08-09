@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "../SLISC/file.h"
+#include "../SLISC/unicode.h"
 #include "../SLISC/input.h"
 #include "../TeX/tex2html.h"
 #include "../Matlab/matlab2html.h"
@@ -303,12 +304,12 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png, if doesn't exist, return -1
 // path must end with '\\'
-inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
+inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
 {
 	Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
 	double width{}; // figure width in cm
 	Intvs intvFig;
-	Str32 figName;
+	Str32 figName, fname_in, fname_out;
 	Str32 format, caption, widthPt, figNo;
 	Nfig = find_env(intvFig, str, U"figure", 'o');
 	for (i = Nfig - 1; i >= 0; --i) {
@@ -343,10 +344,14 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out)
 			return -1; // break point here
 		}
 
-		if (!file_exist(path_out + figName + U"." + format)) {
-			err_msg = U"图片 \"" + path_out + figName + U"." + format + U"\" 未找到!";
+		fname_in = path_in + U"figures/" + figName + U"." + format;
+		fname_out = path_out + figName + U"." + format;
+		if (!file_exist(fname_in)) {
+			err_msg = U"图片 \"" + fname_in + U"\" 未找到!";
 			return -1; // break point here
 		}
+
+		file_copy(fname_out, fname_in, true);
 
 		// get caption of figure
 		ind0 = find_command(str, U"caption", ind0);
@@ -1222,7 +1227,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	if (ExerciseEnvironment(str) < 0)
 		return -1;
 	// process figure environments
-	if (FigureEnvironment(str, path_out) < 0)
+	if (FigureEnvironment(str, path_out, path_in) < 0)
 		return -1;
 	// get dependent entries from \pentry{}
 	if (depend_entry(links, str, entries, ind) < 0)

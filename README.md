@@ -52,4 +52,3 @@
 * PhysWikiCheck 检查 latex 代码中 `\autoref{}` 前面是否没有空格而后面有
 * 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
 * PhysWikiCheck 使用命令行选项调用
-* 把所有 `svg` 都用 PhysWiki repo 来管理， 且每次编译时都把 `png` 和 `svg` 移动过去。 确认即使把输出路径清空也可以顺利编译

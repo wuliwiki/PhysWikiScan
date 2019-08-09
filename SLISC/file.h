@@ -147,4 +147,19 @@ inline void file_list_ext(vector_O<Str> fnames, Str_I path, Str_I ext, Bool_I ke
 	file_list(fnames0, path);
 	file_ext(fnames, fnames0, ext, keep_ext);
 }
+
+// copy a file (read then write)
+inline void file_copy(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
+{
+	if (!file_exist(fname_in))
+		SLS_ERR("file not found!");
+	if (file_exist(fname_out) && !replace)
+		SLS_ERR("destination file already exist, use `replace = true` to replace!");
+	ifstream fin(fname_in, std::ios::binary);
+	ofstream fout(fname_out, std::ios::binary);
+	fout << fin.rdbuf();
+	fin.close();
+	fout.close();
+}
+
 } // namespace slisc

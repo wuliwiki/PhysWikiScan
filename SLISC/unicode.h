@@ -645,4 +645,10 @@ inline void file_list_ext(vector_O<Str32> fnames, Str32_I path, Str32_I ext, Boo
 	for (Long i = 0; i < Size(fnames8); ++i)
 		fnames.push_back(utf8to32(fnames8[i]));
 }
+
+inline void file_copy(Str32_I fname_out, Str32_I fname_in, Bool_I replace)
+{
+	file_copy(utf32to8(fname_out), utf32to8(fname_in), replace);
+}
+
 } // namespace slisc
