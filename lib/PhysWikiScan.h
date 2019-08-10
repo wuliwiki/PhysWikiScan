@@ -1258,8 +1258,8 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	MathFunction(U"exp", str);    MathFunction(U"log", str);
 	MathFunction(U"ln", str);
 	// replace \name{} with html tags
-	Command2Tag(U"subsection", U"<h5 class = \"w3-text-indigo\"><b>", U"</b></h5>", str);
-	Command2Tag(U"subsubsection", U"<h5><b>", U"</b></h5>", str);
+	Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
+	Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
 	Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
 	// replace \upref{} with link icon
 	if (upref(str, path_in) < 0)

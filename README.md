@@ -52,3 +52,4 @@
 * PhysWikiCheck 检查 latex 代码中 `\autoref{}` 前面是否没有空格而后面有
 * 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
 * PhysWikiCheck 使用命令行选项调用
+* link 前面也加一个图标， 像超理一样
