@@ -1336,7 +1336,7 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 	write_file(str, path_out + "../tree/data/dep.json");
 }
 
-// convert PhysWiki/ folder to littleshi.cn/online folder
+// convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
 	vector<Str32> entries; // name in \entry{}, also .tex file name
