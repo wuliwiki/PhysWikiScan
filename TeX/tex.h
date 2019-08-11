@@ -180,7 +180,7 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 		if (ind0 < 0)
 			return intv.size();
 		if (option == 'i') {
-			if (env == U"exam" || env == U"exer")
+			if (env == U"example" || env == U"exercise")
 				ind0 = skip_command(str, ind0, 2);
 			else
 				ind0 = skip_command(str, ind0, 1);
@@ -417,14 +417,14 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	find_all_command_intv(intv1, U"subsubsection", str);
 	if (combine(intv, intv1) < 0) return -1;
 	//  \begin{exam}{} and \end{exam}
-	FindAllBegin(intv1, U"exam", str, '2');
+	FindAllBegin(intv1, U"example", str, '2');
 	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"exam", str);
+	FindEnd(intv1, U"example", str);
 	if (combine(intv, intv1) < 0) return -1;
 	//  exer\begin{exer}{} and \end{exer}
-	FindAllBegin(intv1, U"exer", str, '2');
+	FindAllBegin(intv1, U"exercise", str, '2');
 	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"exer", str);
+	FindEnd(intv1, U"exercise", str);
 	if (combine(intv, intv1) < 0) return -1;
 	// invert range
 	return invert(indNorm, intv, str.size());
