@@ -893,7 +893,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 	 		++chapNo;
 	 		if (chapNo > 0)
 	 			ind0 = insert(toc, U"</p>", ind0);
-	 		ind0 = insert(toc, U"\n\n<h5><b>第" + chineseNo[chapNo] + U"章 " + title
+	 		ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
 	 			+ U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p>\n", ind0);
 			++ind1;
 	 	}
@@ -907,7 +907,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 			
 	 		ind0 = insert(toc,
 				U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
-				U"<h3 align = \"center\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
+				U"<h2 align = \"center\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
 				U"</div>\n\n<div class = \"w3-container\">\n"
 				, ind0);
 			++ind1;
@@ -1050,7 +1050,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 		code_table(code_tab_str, code);
 
 		if (show_title)
-			title = U"<h6><b>　　" + name + U".m</b></h6>\n";
+			title = U"<p><b>　　" + name + U".m</b></p>\n";
 		str.replace(ind0, skip_command(str, ind0, 1) - ind0, title + code_tab_str);
 		++N;
 	}
