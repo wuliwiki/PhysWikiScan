@@ -894,7 +894,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 	 		if (chapNo > 0)
 	 			ind0 = insert(toc, U"</p>", ind0);
 	 		ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
-	 			+ U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p>\n", ind0);
+	 			+ U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
 			++ind1;
 	 	}
 	 	else if (ikey == 0){ // found "\part"
@@ -950,7 +950,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 		return -1;
 	}
 
-	read_file(toc, "lib/index_template.html"); // read html template
+	read_file(toc, "lib/changed_template.html"); // read html template
 	CRLF_to_LF(toc);
 
 	ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -959,6 +959,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	toc.erase(ind0, 15); toc.insert(ind0, newcomm);
 	ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
 	toc.erase(ind0, 16);
+	ind0 = insert(toc, U"<p>\n", ind0);
 
 	for (Long i = 0; i < Size(changed); ++i) {
 		Long ind = changed[i].rfind('.');
@@ -981,7 +982,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 		}
 		// insert entry into html table of contents
 		ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
-			+ titles[ind] + U"（" + authors[i] + U"）" + U"</a>　\n", ind0);
+			+ titles[ind] + U"（" + authors[i] + U"）" + U"</a><br>\n", ind0);
 	}
 	toc.insert(ind0, U"</p>\n</div>");
 	write_file(toc, path_out + "changed.html");
