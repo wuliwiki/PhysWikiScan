@@ -13,7 +13,7 @@ inline Long line_size_lim(Str32_I str, Long_I lim)
 		ind0 = str.find(U"\n", ind0);
 		++line;
 		if (ind0 < 0) {
-			if (str.size() - ind_old > lim)
+			if (Size(str) - ind_old > lim)
 				return line;
 			else
 				return -1;

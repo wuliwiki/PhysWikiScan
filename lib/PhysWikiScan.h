@@ -1504,7 +1504,7 @@ inline void all_commands(vector_O<Str32> commands, Str32_I in_path)
 	vector<Str32> fnames;
 	Str32 str, name;
 	file_list_ext(fnames, in_path, U"tex");
-	for (Long i = 0; i < fnames.size(); ++i) {
+	for (Long i = 0; i < Size(fnames); ++i) {
 		read_file(str, in_path + fnames[i]);
 		Long ind0 = 0;
 		while (true) {

@@ -21,8 +21,8 @@ inline Long search(const T &elm, const Tv &vec, Long start = 0)
 template <class Tv>
 inline Long find_repeat(Tv v)
 {
-	for (Long i = 0; i < v.size(); ++i) {
-		for (Long j = i + 1; j < v.size(); ++j) {
+	for (Long i = 0; i < Size(v); ++i) {
+		for (Long j = i + 1; j < Size(v); ++j) {
 			if (v[i] == v[j])
 				return i;
 		}
