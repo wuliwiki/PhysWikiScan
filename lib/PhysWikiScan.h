@@ -29,6 +29,11 @@ inline Long get_title(Str32_O title, Str32_I str)
 		return -1;
 	}
 	title = str.substr(ind0, ind1 - ind0);
+	ind0 = title.find(U"\\");
+	if (ind0 >= 0) {
+		err_msg = U"注释的标题不能含有 “\\” !"; // break point here
+		return -1;
+	}
 	return 0;
 }
 
