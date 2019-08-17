@@ -220,6 +220,18 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
 		else if (expect(str, U"figure", ind1) > 0) {
 			idName = U"fig"; envName = U"figure";
 		}
+		else if (expect(str, U"definition", ind1) > 0) {
+			idName = U"def"; envName = U"definition";
+		}
+		else if (expect(str, U"lemma", ind1) > 0) {
+			idName = U"lem"; envName = U"lemma";
+		}
+		else if (expect(str, U"theorem", ind1) > 0) {
+			idName = U"the"; envName = U"theorem";
+		}
+		else if (expect(str, U"corollary", ind1) > 0) {
+			idName = U"cor"; envName = U"corollary";
+		}
 		else if (expect(str, U"example", ind1) > 0) {
 			idName = U"ex"; envName = U"example";
 		}
@@ -446,68 +458,45 @@ inline Long RemoveNoEntry(vector_IO<Str32> names)
 	return N;
 }
 
-// example is already not in a paragraph
-// return number of examples processed, return -1 if failed
-inline Long ExampleEnvironment(Str32_IO str)
+// these environments are already not in a paragraph
+// return number of environments processed, return -1 if failed
+inline Long theorem_like_env(Str32_IO str)
 {
-	Long i{}, N{}, ind0{}, ind1{};
+	Long N, N_tot, ind0, ind1{};
 	Intvs intvIn, intvOut;
-	Str32 exName, exNo;
-	while (true) {
-		ind0 = find_command_spec(str, U"begin", U"example", ind0);
-		if (ind0 < 0)
-			return N;
-		++N; num2str(exNo, N);
-		command_arg(exName, str, ind0, 1);
+	Str32 env_title, env_num;
+	vector<Str32> envNames = {U"definition", U"lemma", U"theorem",
+		U"corollary", U"example", U"exercise"};
+	vector<Str32> envCnNames = {U"定义", U"引理", U"定理",
+		U"推论", U"例", U"习题"};
+	vector<Str32> envBorderColors = { U"w3-border-red", U"w3-border-red", U"w3-border-red",
+		U"w3-border-red", U"w3-border-yellow", U"w3-border-green" };
+	for (Long i = 0; i < Size(envNames); ++i) {
+		ind0 = 0; N = 0;
+		while (true) {
+			ind0 = find_command_spec(str, U"begin", envNames[i], ind0);
+			if (ind0 < 0)
+				break;
+			++N; num2str(env_num, N);
+			++N_tot;
+			command_arg(env_title, str, ind0, 1);
 
-		// positions of the environment
-		Long ind1 = skip_command(str, ind0, 2);
-		Long ind2 = find_command_spec(str, U"end", U"example", ind0);
-		Long ind3 = skip_command(str, ind2, 1);
+			// positions of the environment
+			Long ind1 = skip_command(str, ind0, 2);
+			Long ind2 = find_command_spec(str, U"end", envNames[i], ind0);
+			Long ind3 = skip_command(str, ind2, 1);
 
-		//// add <p> </p>
-		//Str32 temp = str.substr(ind1, ind2 - ind1);
-		//ParagraphTag(temp);
-		
-		// replace
-		str.replace(ind2, ind3 - ind2, U"</div>\n");
-		// str.replace(ind1, ind2 - ind1, temp);
-		str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel w3-border-yellow w3-leftbar\">\n <h5><b>例"
-			+ exNo + U"</b>　" + exName + U"</h5>\n");
+			// replace
+			str.replace(ind2, ind3 - ind2, U"</div>\n");
+			// str.replace(ind1, ind2 - ind1, temp);
+			str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel "
+				+ envBorderColors[i]
+				+ U" w3-leftbar\">\n <h5><b>"
+				+ envCnNames[i]
+				+ env_num + U"</b>　" + env_title + U"</h5>\n");
+		}
 	}
-	return N;
-}
-
-// example is already not in a paragraph
-// return number of examples processed, return -1 if failed
-inline Long ExerciseEnvironment(Str32_IO str)
-{
-	Long i{}, N{}, ind0{}, ind1{};
-	Intvs intvIn, intvOut;
-	Str32 exName, exNo;
-	while (true) {
-		ind0 = find_command_spec(str, U"begin", U"exercise", ind0);
-		if (ind0 < 0)
-			return N;
-		++N; num2str(exNo, N);
-		command_arg(exName, str, ind0, 1);
-
-		// positions of the environment
-		Long ind1 = skip_command(str, ind0, 2);
-		Long ind2 = find_command_spec(str, U"end", U"exercise", ind0);
-		Long ind3 = skip_command(str, ind2, 1);
-
-		//// add <p> </p>
-		//Str32 temp = str.substr(ind1, ind2 - ind1);
-		//ParagraphTag(temp);
-
-		// replace
-		str.replace(ind2, ind3 - ind2, U"</div>\n");
-		// str.replace(ind1, ind2 - ind1, temp);
-		str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel w3-border-green w3-leftbar\">\n <h5><b>习题"
-			+ exNo + U"</b>　" + exName + U"</h5>\n");
-	}
-	return N;
+	return N_tot;
 }
 
 // replace autoref with html link
@@ -549,11 +538,15 @@ inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryNa
 		idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
 		if (idName == U"eq") kind = U"式";
 		else if (idName == U"fig") kind = U"图";
+		else if (idName == U"def") kind = U"定义";
+		else if (idName == U"lem") kind = U"引理";
+		else if (idName == U"the") kind = U"定理";
+		else if (idName == U"cor") kind = U"推论";
 		else if (idName == U"ex") kind = U"例";
 		else if (idName == U"exe") kind = U"练习";
 		else if (idName == U"tab") kind = U"表";
 		else {
-			err_msg = U"\\label 类型错误， 必须为 eq/fig/ex/exe/tab 之一!";
+			err_msg = U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!";
 			return -1; // break point here
 		}
 		ind3 = str.find('}', ind3);
@@ -638,12 +631,14 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 	Intvs intvComm;
 	find_comment(intvComm, str);
 
-	vector<Str32> idNames = { U"eq", U"fig", U"ex", U"exe", U"tab" };
-	vector<Str32> envNames = { U"equation", U"figure", U"example", U"exercise", U"table"};
+	vector<Str32> idNames = { U"eq", U"fig", U"def", U"lem",
+		U"the", U"cor", U"ex", U"exe", U"tab" };
+	vector<Str32> envNames = { U"equation", U"figure", U"definition", U"lemma",
+		U"theorem", U"corollary", U"example", U"exercise", U"table"};
 
 	Long idNum = search(idName, idNames);
 	if (idNum < 0) {
-		err_msg = U"\\label 类型错误， 必须为 eq/fig/ex/exe/tab 之一!";
+		err_msg = U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!";
 		return -1; // break point here
 	}
 	
@@ -1228,9 +1223,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	if (EqOmitTag(str) < 0)
 		return -1;
 	// process example and exercise environments
-	if (ExampleEnvironment(str) < 0)
-		return -1;
-	if (ExerciseEnvironment(str) < 0)
+	if (theorem_like_env(str) < 0)
 		return -1;
 	// process figure environments
 	if (FigureEnvironment(str, path_out, path_in) < 0)
