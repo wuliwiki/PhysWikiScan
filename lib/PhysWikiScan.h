@@ -462,7 +462,7 @@ inline Long RemoveNoEntry(vector_IO<Str32> names)
 // return number of environments processed, return -1 if failed
 inline Long theorem_like_env(Str32_IO str)
 {
-	Long N, N_tot, ind0, ind1{};
+	Long N, N_tot = 0, ind0, ind1{};
 	Intvs intvIn, intvOut;
 	Str32 env_title, env_num;
 	vector<Str32> envNames = {U"definition", U"lemma", U"theorem",
