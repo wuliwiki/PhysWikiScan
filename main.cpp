@@ -101,6 +101,9 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
 }
 
 int main(int argc, char *argv[]) {
+#ifdef _MSC_VER
+	SLS_ERR("this program can only be called from a linux shell with source-highlight installed!");
+#endif
 	using namespace slisc;
 
 	vector<Str32> args;

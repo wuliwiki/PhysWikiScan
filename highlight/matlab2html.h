@@ -147,7 +147,7 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 // highlight matlab code
 // str is Matlab code only
 // return the number of highlight
-inline Long Matlab_highlight(Str32_IO str)
+inline Long Matlab_highlight(Str32_IO code)
 {
 	// ======= settings ========
 	vector<Str32> keywords = { U"break", U"case", U"catch", U"classdef",
@@ -163,12 +163,14 @@ inline Long Matlab_highlight(Str32_IO str)
 	// ==========================
 
 	Long N = 0;
+	// replace "<" and ">"
+	replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 	// highlight keywords
-	N += Matlab_keywords(str, keywords, keyword_class);
+	N += Matlab_keywords(code, keywords, keyword_class);
 	// highlight comments
-	Matlab_comment(str, comm_class);
+	Matlab_comment(code, comm_class);
 	// highlight strings
-	Matlab_string(str, str_class);
+	Matlab_string(code, str_class);
 	return N;
 }
 

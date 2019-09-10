@@ -1042,7 +1042,6 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 			err_msg = U"Matlab 单行代码过长！";
 			return -1;
 		}
-		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		trim(code, U"\n ");
 		Matlab_highlight(code);
 
@@ -1097,16 +1096,15 @@ inline Long lstlisting(Str32_IO str)
 			err_msg = U"单行代码过长!";
 			return -1;
 		}
-		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
 		
 		// highlight
 		if (lang == U"MatlabCom")
 			Matlab_highlight(code);
-		/*else if (lang == U"cpp") {
+		else if (lang == U"cpp") {
 			if (cpp_highlight(code) < 0) {
 				return -1;
 			}
-		}*/
+		}
 		else {
 			// language not supported, no highlight
 			if (!lang.empty())
