@@ -990,17 +990,17 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
 	return N;
 }
 
-// create line number string to insert in the first column of table
+// add line numbers to the code (using table)
 inline void code_table(Str32_O table_str, Str32_I code)
 {
-	Str32 num, line_nums;
-	Long ind1 = 0, i = 0;
+	Str32 line_nums;
+	Long ind1 = 0, N = 0;
 	while (true) {
+		++N;
+		line_nums += num2str(N) + U"<br>";
 		ind1 = code.find(U'\n', ind1);
 		if (ind1 < 0)
 			break;
-		num2str(num, ++i);
-		line_nums += num + U"<br>";
 		++ind1;
 	}
 	line_nums.erase(line_nums.size() - 4, 4);
@@ -1011,7 +1011,7 @@ inline void code_table(Str32_O table_str, Str32_I code)
 		U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
 		U"<div class = \"nospace\"><pre class = \"mcode\">\n"
 		+ code +
-		U"</pre></div></div>\n"
+		U"\n</pre></div></div>\n"
 		U"</td></tr></table>";
 }
 
@@ -1043,6 +1043,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 			return -1;
 		}
 		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
+		trim(code, U"\n ");
 		Matlab_highlight(code);
 
 		// insert code
@@ -1068,6 +1069,7 @@ inline Long lstlisting(Str32_IO str)
 	find_env(intvIn, str, U"lstlisting", 'i');
 	Long N = find_env(intvOut, str, U"lstlisting", 'o');
 	Str32 lang = U""; // language
+	Str32 code_tab_str;
 	for (Long i = N - 1; i >= 0; --i) {
 		// get language
 		ind0 = expect(str, U"[", intvIn.L(i));
@@ -1100,24 +1102,20 @@ inline Long lstlisting(Str32_IO str)
 		// highlight
 		if (lang == U"MatlabCom")
 			Matlab_highlight(code);
-		/*else if (lang == U"cpp")
-			if (cpp_highlight(code) < 0)
-				err_msg = U"source-highlight 调用错误， 请确保控制行可以调用该命令";
-			*/
+		/*else if (lang == U"cpp") {
+			if (cpp_highlight(code) < 0) {
+				return -1;
+			}
+		}*/
 		else {
 			// language not supported, no highlight
 			if (!lang.empty())
 				SLS_WARN("lstlisting 环境不支持 " + utf32to8(lang) + " 语言， 未添加高亮！");
 		}
 
-		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
-		ind0 = intvOut.L(i);
-		ind0 = insert(str,
-			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
-			"<div class = \"nospace\"><pre class = \"mcode\">\n"
-			+ code +
-			U"\n</pre></div></div>"
-			, ind0);
+		code_table(code_tab_str, code);
+
+		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, code_tab_str);
 	}
 	return N;
 }
