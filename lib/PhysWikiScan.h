@@ -3,7 +3,8 @@
 #include "../SLISC/unicode.h"
 #include "../SLISC/input.h"
 #include "../TeX/tex2html.h"
-#include "../Matlab/matlab2html.h"
+#include "../highlight/matlab2html.h"
+#include "../highlight/cpp2html.h"
 
 using namespace slisc;
 Str32 err_msg;
@@ -1071,37 +1072,43 @@ inline Long lstlisting(Str32_IO str)
 		// get language
 		ind0 = expect(str, U"[", intvIn.L(i));
 		if (ind0 > 0) {
-			ind0 = pair_brace(str, ind0, U'[');
-			Long ind1 = expect(str, U"language", ind0);
-			if (ind1 < 0) {
+			Long ind1 = pair_brace(str, ind0, U'[');
+			ind0 = expect(str, U"language", ind0);
+			if (ind0 < 0) {
 				err_msg = U"lstlisting 方括号中指定语言格式错误!";
 				return -1;
 			}
-			ind1 = expect(str, U"=", ind1);
-			if (ind1 < 0) {
+			ind0 = expect(str, U"=", ind0);
+			if (ind0 < 0) {
 				err_msg = U"lstlisting 方括号中指定语言格式错误!";
 				return -1;
 			}
 			lang = str.substr(ind0, ind1 - ind0); trim(lang);
-			ind0 = ind1;
+			ind0 = ind1 + 1;
 		}
-		code = str.substr(ind0 + 1, intvIn.R(i) - ind0);
-		if (code[0] != U'\n' || code.back() != U'\n') {
-			err_msg = U"lstlisting 环境格式错误!";
-			return -1;
+		else {
+			ind0 = intvIn.L(i);
 		}
-		code = code.substr(1, code.size() - 2);
+		code = str.substr(ind0, intvIn.R(i) + 1 - ind0);
+		trim(code, U"\n ");
 		if (line_size_lim(code, 78) >= 0) {
 			err_msg = U"单行代码过长!";
 			return -1;
 		}
 		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
-
+		
 		// highlight
 		if (lang == U"MatlabCom")
 			Matlab_highlight(code);
-		else if (lang == U"cpp")
-			cpp_highlight(code);
+		/*else if (lang == U"cpp")
+			if (cpp_highlight(code) < 0)
+				err_msg = U"source-highlight 调用错误， 请确保控制行可以调用该命令";
+			*/
+		else {
+			// language not supported, no highlight
+			if (!lang.empty())
+				SLS_WARN("lstlisting 环境不支持 " + utf32to8(lang) + " 语言， 未添加高亮！");
+		}
 
 		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
 		ind0 = intvOut.L(i);
@@ -1264,7 +1271,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 		return -1;
 	if (MatlabCode(str, path_in, true) < 0)
 		return -1;
-	if (MatlabComLine(str) < 0)
+	if (lstlisting(str) < 0)
 		return -1;
 	if (lstinline(str) < 0) {
 		err_msg = U"lstinline 格式错误， 请使用 lstinline|...|";

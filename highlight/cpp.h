@@ -4,13 +4,13 @@
 
 namespace slisc {
 
-// find intervals of all comments in a cpp code
-inline Long cpp_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
+// find intervals of all comments using double slash
+inline Long cpp_comments_slash(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 {
 	Long ind0 = 0;
 	Long N = 0;
 	while (true) {
-		ind0 = str.find(U'%', ind0);
+		ind0 = str.find(U"//", ind0);
 		if (ind0 < 0) {
 			return intv.size();
 		}

@@ -17,7 +17,7 @@ inline Long Matlab_is_trans(Str32_I str, Long_I ind)
 }
 
 // find intervals of all comments in a matlab code (including '%', not including '\n')
-// "strings" are the ranges of all
+// "strings" are the ranges of all strings
 inline Long Matlab_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 {
 	Long ind0 = 0;
