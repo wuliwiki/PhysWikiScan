@@ -1057,65 +1057,51 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 	}
 }
 
-// process lstlisting[language=MatlabCom] environments to display Matlab Command Line
+// process all lstlisting environments
 // return the number of \Command{} processed, return -1 if failed
-// TODO: make sure it's \begin{lstlisting}[language=MatlabCom], not any lstlisting
-inline Long MatlabComLine(Str32_IO str)
+inline Long lstlisting(Str32_IO str)
 {
-	Long i{}, j{}, N{}, ind0{};
+	Long ind0 = 0;
 	Intvs intvIn, intvOut;
 	Str32 code;
-	N = find_env(intvIn, str, U"lstlisting");
-	N = find_env(intvOut, str, U"lstlisting", 'o');
-	for (i = N - 1; i >= 0; --i) {
+	find_env(intvIn, str, U"lstlisting", 'i');
+	Long N = find_env(intvOut, str, U"lstlisting", 'o');
+	Str32 lang = U""; // language
+	for (Long i = N - 1; i >= 0; --i) {
+		// get language
 		ind0 = expect(str, U"[", intvIn.L(i));
-		if (ind0 < 0) {
-			SLS_WARN("lstlisting: no language specified!");
-			continue;
+		if (ind0 > 0) {
+			ind0 = pair_brace(str, ind0, U'[');
+			Long ind1 = expect(str, U"language", ind0);
+			if (ind1 < 0) {
+				err_msg = U"lstlisting 方括号中指定语言格式错误!";
+				return -1;
+			}
+			ind1 = expect(str, U"=", ind1);
+			if (ind1 < 0) {
+				err_msg = U"lstlisting 方括号中指定语言格式错误!";
+				return -1;
+			}
+			lang = str.substr(ind0, ind1 - ind0); trim(lang);
+			ind0 = ind1;
 		}
-		ind0 = pair_brace(str, ind0, U'[');
-		code = str.substr(ind0+1, intvIn.R(i)-ind0);
+		code = str.substr(ind0 + 1, intvIn.R(i) - ind0);
 		if (code[0] != U'\n' || code.back() != U'\n') {
-			err_msg = U"Matlab 控制行环境格式错误!";
+			err_msg = U"lstlisting 环境格式错误!";
 			return -1;
 		}
 		code = code.substr(1, code.size() - 2);
 		if (line_size_lim(code, 78) >= 0) {
-			err_msg = U"Matlab 单行代码过长！";
+			err_msg = U"单行代码过长!";
 			return -1;
 		}
 		replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
-		Matlab_highlight(code);
 
-		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
-		ind0 = intvOut.L(i);
-		ind0 = insert(str,
-			U"<div class = \"w3-code notranslate w3-pale-yellow\">\n"
-			"<div class = \"nospace\"><pre class = \"mcode\">\n"
-			+ code +
-			U"\n</pre></div></div>"
-			, ind0);
-	}
-	return N;
-}
-
-inline Long cppComLine(Str32_IO str)
-{
-	Long N = 0, ind0 = 0;
-	Intvs intvIn, intvOut;
-	Str32 code;
-	N = find_env(intvIn, str, U"lstlisting");
-	N = find_env(intvOut, str, U"lstlisting", 'o');
-	for (Long i = N - 1; i >= 0; --i) {
-		ind0 = expect(str, U"[", intvIn.L(i));
-		ind0 = pair_brace(str, ind0, U'[');
-		code = str.substr(ind0 + 1, intvIn.R(i) - ind0);
-		if (code[0] != U'\n' || code.back() != U'\n') {
-			cout << "wrong format of Matlab command line environment!" << endl;
-			return -1;
-		}
-		code = code.substr(1, code.size() - 2);
-		Matlab_highlight(code);
+		// highlight
+		if (lang == U"MatlabCom")
+			Matlab_highlight(code);
+		else if (lang == U"cpp")
+			cpp_highlight(code);
 
 		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
 		ind0 = intvOut.L(i);
