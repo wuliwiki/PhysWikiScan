@@ -801,7 +801,7 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 		// record Chinese title
 		Long ind = search(entryName, entries);
 		if (ind < 0) {
-			err_msg = U"PhysWiki.tex 中词条文件未找到!";
+			err_msg = U"PhysWiki.tex 中词条文件 " + entryName + U" 未找到!";
 			return -1; // break point here
 		}
 		titles[ind] = title;
