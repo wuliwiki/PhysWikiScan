@@ -881,7 +881,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 			// record Chinese title
 			Long ind = search(entryName, entries);
 			if (ind < 0) {
-				err_msg = U"PhysWiki.tex 中词条文件未找到!";
+				err_msg = U"PhysWiki.tex 中词条文件 " + entryName + " 未找到!";
 				return -1; // break point here
 			}
 			++ind1;
