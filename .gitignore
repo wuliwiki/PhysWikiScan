@@ -4,3 +4,4 @@ Release/
 x64/
 PhysWikiScan
 *.vcxproj.user
+npm-debug.log
