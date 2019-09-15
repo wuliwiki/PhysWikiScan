@@ -836,12 +836,13 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 	cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，但仍会被编译" << endl;
 	for (Long i = 0; i < Size(titles); ++i) {
 		if (titles[i].empty()) {
-			cout << entries[i] << endl;
 			read_file(str, path_in + U"contents/" + entries[i] + ".tex");
 			CRLF_to_LF(str);
 			get_title(title, str);
 			titles[i] = title;
 			--i;
+			cout << std::setw(10) << std::left << entries[i]
+				<< std::setw(20) << std::left << title << endl;
 		}
 	}
 	cout << endl;
@@ -1172,6 +1173,47 @@ inline Long OneFile4(Str32_I path)
 	return N;
 }
 
+// get keywords from the comment in the second line
+// return numbers of keywords found
+// e.g. "关键词1|关键词2|关键词3"
+inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
+{
+	keywords.clear();
+	Str32 word;
+	Long ind0 = str.find(U"\n", 0);
+	if (ind0 < 0) {
+		err_msg = U"没有注释标题!";
+		return -1;
+	}
+	ind0++;
+	ind0 = expect(str, U"%", ind0);
+	if (ind0 < 0)
+		return 0;
+	Str32 line; get_line(line, str, ind0);
+	ind0 = 0;
+	while (true) {
+		Long ind1 = line.find(U"|", ind0);
+		if (ind1 < 0)
+			break;
+		word = line.substr(ind0, ind1 - ind0);
+		trim(word);
+		if (word.empty()) {
+			err_msg = U"关键词不能为空！";
+			return -1;
+		}
+		keywords.push_back(word);
+		ind0 = ind1 + 1;
+	}
+	word = line.substr(ind0);
+	trim(word);
+	if (word.empty()) {
+		err_msg = U"关键词不能为空！";
+		return -1;
+	}
+	keywords.push_back(word);
+	return keywords.size();
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
@@ -1196,6 +1238,19 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	// read title from first comment
 	if (get_title(title, str) < 0)
 		return -1;
+	// add keyword meta to html
+	vector<Str32> keywords;
+	if (get_keywords(keywords, str) > 0) {
+		Str32 keywords_str = keywords[0];
+		for (Long i = 1; i < Size(keywords); ++i) {
+			keywords_str += U"," + keywords[i];
+		}
+		replace(html, U"PhysWikiHTMLKeywords", keywords_str);
+	}
+	else {
+		replace(html, U"PhysWikiHTMLKeywords", U"高中物理, 物理竞赛, 大学物理, 高等数学");
+	}
+
 	if (!titles[ind].empty() && title != titles[ind]) {
 		err_msg = U"中文标题不符: " + title + " | " + titles[ind];
 		return -1;
@@ -1419,7 +1474,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 	cout << endl;
 }
 
-// like PhysWikiOnline, but convert only one file
+// like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
 inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I path_out)
 {

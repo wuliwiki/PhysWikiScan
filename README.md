@@ -48,7 +48,6 @@
 * 每个页面下面的 “编辑词条” 链接直接打开该词条， 如 `wuli.wiki/editor/?entry=AMAdd`
 * 命令行加一个搜索并替换空心句号的选项。 FileSeek 还是太慢。
 * 表格像公式一样可以拖动，以便在移动设备上看
-* 为了在搜索引擎中更方便搜到， 在每个词条的 html 中添加 `<meta name="keywords" content="xxxx"/>` 详见 `littleshi.cn/index.html`。 keyword 已经在 tex 文档开始注释
 * 添加 C++ 高亮功能
 * 实现 `lstinline| |`
 * 在 `dep.json` 文件中添加章节信息， 给每个部分显示为不同颜色
@@ -59,6 +58,6 @@
 * 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
 * PhysWikiCheck 使用命令行选项调用
 * link 前面也加一个图标， 像超理一样
-* 代码块应该也像表格和公式一样可以拖动。
+* 代码块应该也像表格和公式一样可以拖动， 而且需要可以上下拖动。 每行长度不应该有限制。
 * 取消 \Code{}, \code{}, \cpp{}, \Cpp{} 的定义
 * 取消 \link{}{} 的定义， 让欧阳改编辑器， 链接插入 \href{}{}
