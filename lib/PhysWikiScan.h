@@ -705,16 +705,41 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 	}
 }
 
-// replace "link{name}{http://example.com}"
-// to <a href="http://example.com">name</a>
+// replace "\href{http://example.com}{name}"
+// with <a href="http://example.com">name</a>
+inline Long href(Str32_IO str)
+{
+	Long ind0 = 0, N = 0;
+	Str32 name, url;
+	while (true) {
+		ind0 = find_command(str, U"href", ind0);
+		if (ind0 < 0)
+			return N;
+		command_arg(url, str, ind0, 0);
+		command_arg(name, str, ind0, 1);
+		if (url.substr(0, 7) != U"http://" &&
+			url.substr(0, 8) != U"https://") {
+			err_msg = U"链接格式错误: " + url;
+			return -1;
+		}
+
+		Long ind1 = skip_command(str, ind0, 2);
+		str.replace(ind0, ind1 - ind0,
+			"<a href=\"" + url + "\">" + name + "</a>");
+		++N; ++ind0;
+	}
+}
+
+// replace "\link{name}{http://example.com}"
+// with <a href="http://example.com">name</a>
 inline Long link(Str32_IO str)
 {
 	Long ind0 = 0, N = 0;
+	Str32 name, url;
 	while (true) {
 		ind0 = find_command(str, U"link", ind0);
 		if (ind0 < 0)
 			return N;
-		Str32 name, url;
 		command_arg(name, str, ind0, 0);
 		command_arg(url, str, ind0, 1);
 		if (url.substr(0, 7) != U"http://" &&
@@ -1254,6 +1279,8 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 		return -1;
 	// replace \link{}{} with <a href="">...</a>
 	if (link(str) < 0)
+		return -1;
+	if (href(str) < 0)
 		return -1;
 	// replace environments with html tags
 	Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
