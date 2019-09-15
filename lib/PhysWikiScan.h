@@ -1187,9 +1187,17 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
 	}
 	ind0++;
 	ind0 = expect(str, U"%", ind0);
-	if (ind0 < 0)
+	if (ind0 < 0) {
+		SLS_WARN("请在第二行注释关键词： 例如 \"%关键词1|关键词2|关键词3\"，至少两个！");
 		return 0;
+	}
 	Str32 line; get_line(line, str, ind0);
+	Long tmp = line.find(U"|", 0);
+	if (tmp < 0) {
+		SLS_WARN("请在第二行注释关键词： 例如 \"%关键词1|关键词2|关键词3\"，至少两个！");
+		return 0;
+	}
+
 	ind0 = 0;
 	while (true) {
 		Long ind1 = line.find(U"|", ind0);
