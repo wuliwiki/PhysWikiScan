@@ -1222,6 +1222,23 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
 	return keywords.size();
 }
 
+inline Long inline_eq_space(Str32_IO str)
+{
+	Intvs intv;
+	find_inline_eq(intv, str, 'o');
+	for (Long i = intv.size() - 1; i >= 0; --i) {
+		Long ind0 = intv.R(i) + 1;
+		if (is_chinese(str[ind0])) {
+			str.insert(str.begin() + ind0, U' ');
+		}
+		ind0 = intv.L(i) - 1;
+		if (is_chinese(str[ind0])) {
+			str.insert(str.begin() + ind0 + 1, U' ');
+		}
+	}
+	return 0;
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
@@ -1279,6 +1296,9 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 	for (Long i = intvComm.size() - 1; i >= 0; --i) {
 		str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 	}
+	// add spaces around inline equation
+	if (inline_eq_space(str) < 0)
+		return -1;
 	// escape characters
 	if (NormalTextEscape(str) < 0)
 		return -1;

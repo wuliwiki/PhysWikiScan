@@ -651,4 +651,17 @@ inline void file_copy(Str32_I fname_out, Str32_I fname_in, Bool_I replace)
 	file_copy(utf32to8(fname_out), utf32to8(fname_in), replace);
 }
 
+// check if is a chinese character
+// reference: https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
+inline Bool is_chinese(Char32_I c)
+{
+	if (c >= U'\u2E80' && c <= U'\u2FD5' ||
+		c >= U'\u3190' && c <= U'\u319f' ||
+		c >= U'\u3400' && c <= U'\u4DBF' ||
+		c >= U'\u4E00' && c <= U'\u9FCC' ||
+		c >= U'\uF900' && c <= U'\uFAAD')
+		return true;
+	return false;
+}
+
 } // namespace slisc
