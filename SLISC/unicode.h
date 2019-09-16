@@ -652,6 +652,7 @@ inline void file_copy(Str32_I fname_out, Str32_I fname_in, Bool_I replace)
 }
 
 // check if is a chinese character
+// does not include punctuations
 // reference: https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
 inline Bool is_chinese(Char32_I c)
 {
