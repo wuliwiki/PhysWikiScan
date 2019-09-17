@@ -9,7 +9,7 @@ namespace slisc {
 template <class T, SLS_IF(is_scalar<T>())>
 inline Bool ISNAN(const T &s)
 {
-	return s != s;
+    return s != s;
 }
 
 template<class T>
@@ -19,7 +19,7 @@ constexpr const T &MIN(const T &a, const T &b)
 template<class T>
 constexpr const T &MAX(const T &a, const T &b)
 {
-	return a < b ? b : a;
+    return a < b ? b : a;
 }
 
 template<class T>
@@ -45,7 +45,7 @@ inline T SIGN(const T &a, const T &b)
 template <class T, SLS_IF(is_vector<T>() || is_basic_str<T>())>
 inline Long Size(const T &v)
 {
-	return (Long)v.size();
+    return (Long)v.size();
 }
 
 // for SWAP, use std::swap instead
@@ -69,10 +69,10 @@ inline Lcomp INV(Lcomp_I x)
 template <class T1, class T2>
 inline Bool is_in(const T1 &elm, const T2 &vec)
 {
-	for (Long i = 0; i < Size(vec); ++i)
-		if (elm == vec[i])
-			return true;
-	return false;
+    for (Long i = 0; i < Size(vec); ++i)
+        if (elm == vec[i])
+            return true;
+    return false;
 }
 
 // check if two scalars have the same types and values
@@ -80,10 +80,10 @@ inline Bool is_in(const T1 &elm, const T2 &vec)
 template <class T1, class T2>
 constexpr Bool is_equiv(const T1 &s1, const T2 &s2)
 {
-	if constexpr (is_same<T1, T2>()) {
-		return s1 == s2;
-	}
-	return false;
+    if constexpr (is_same<T1, T2>()) {
+        return s1 == s2;
+    }
+    return false;
 }
 
 // convert bool and character to Int, others unchanged

@@ -27,42 +27,42 @@ using std::integral_constant;
 template <class T1, class T2>
 constexpr Bool is_same()
 {
-	return std::is_same<T1, T2>::value;
+    return std::is_same<T1, T2>::value;
 }
 
 // is_integral<T> checks if T = bool, character types, integer types
 template <class T>
 constexpr Bool is_integral()
 {
-	return std::is_integral<T>::value;
+    return std::is_integral<T>::value;
 }
 
 // is_floating_point<T> checks if T = float, double, long double
 template <class T>
 constexpr Bool is_floating_point()
 {
-	return std::is_floating_point<T>::value;
+    return std::is_floating_point<T>::value;
 }
 
 // is_arithmetic<T> checks if T = integral type || floating point type
 template <class T>
 constexpr Bool is_arithmetic()
 {
-	return std::is_arithmetic<T>::value;
+    return std::is_arithmetic<T>::value;
 }
 
 // is_fundamental<T> checks if T = arithmetic type || void || null pointer
 template <class T>
 constexpr Bool is_fundamental()
 {
-	return std::is_fundamental<T>::value;
+    return std::is_fundamental<T>::value;
 }
 
 // is_signed<T> checks if T(-1) < T(0)
 template <class T>
 constexpr Bool is_signed()
 {
-	return std::is_signed<T>::value;
+    return std::is_signed<T>::value;
 }
 
 // check if T is a specific type
@@ -70,73 +70,73 @@ constexpr Bool is_signed()
 template<class T>
 constexpr Bool is_Bool()
 {
-	return is_same<T, Bool>();
+    return is_same<T, Bool>();
 }
 
 template<class T>
 constexpr Bool is_Char()
 {
-	return is_same<T, Char>();
+    return is_same<T, Char>();
 }
 
 template<class T>
 constexpr Bool is_Uchar()
 {
-	return is_same<T, Uchar>();
+    return is_same<T, Uchar>();
 }
 
 template<class T>
 constexpr Bool is_Int()
 {
-	return is_same<T, Int>();
+    return is_same<T, Int>();
 }
 
 template<class T>
 constexpr Bool is_Llong()
 {
-	return is_same<T, Llong>();
+    return is_same<T, Llong>();
 }
 
 template<class T>
 constexpr Bool is_Float()
 {
-	return is_same<T, Float>();
+    return is_same<T, Float>();
 }
 
 template<class T>
 constexpr Bool is_Doub()
 {
-	return is_same<T, Doub>();
+    return is_same<T, Doub>();
 }
 
 template<class T>
 constexpr Bool is_Ldoub()
 {
-	return is_same<T, Ldoub>();
+    return is_same<T, Ldoub>();
 }
 
 template<class T>
 constexpr Bool is_Fcomp()
 {
-	return is_same<T, Fcomp>();
+    return is_same<T, Fcomp>();
 }
 
 template<class T>
 constexpr Bool is_Comp()
 {
-	return is_same<T, Comp>();
+    return is_same<T, Comp>();
 }
 
 template<class T>
 constexpr Bool is_Lcomp()
 {
-	return is_same<T, Lcomp>();
+    return is_same<T, Lcomp>();
 }
 
 template<class T>
 constexpr Bool is_Imag()
 {
-	return is_same<T, Imag>();
+    return is_same<T, Imag>();
 }
 
 // type_num<T>() maps each scalr type to a unique number
@@ -149,65 +149,65 @@ constexpr Bool is_Imag()
 template <class T>
 constexpr Int type_num()
 {
-	if (is_Bool<T>()) return 0;
-	if (is_Char<T>()) return 1;
-	if (is_Int<T>()) return 2;
-	if (is_Llong<T>()) return 3;
+    if (is_Bool<T>()) return 0;
+    if (is_Char<T>()) return 1;
+    if (is_Int<T>()) return 2;
+    if (is_Llong<T>()) return 3;
 
-	if (is_Float<T>()) return 20;
-	if (is_Doub<T>()) return 21;
-	if (is_Ldoub<T>()) return 22;
+    if (is_Float<T>()) return 20;
+    if (is_Doub<T>()) return 21;
+    if (is_Ldoub<T>()) return 22;
 
-	if (is_Fcomp<T>()) return 40;
-	if (is_Comp<T>()) return 41;
-	if (is_Lcomp<T>()) return 42;
+    if (is_Fcomp<T>()) return 40;
+    if (is_Comp<T>()) return 41;
+    if (is_Lcomp<T>()) return 42;
 
-	if (is_Imag<T>()) return 61;
+    if (is_Imag<T>()) return 61;
 
-	return -1;
+    return -1;
 }
 
 // is_real<T> checks if is a real scalar
 constexpr Bool is_real(Int_I type_num)
 {
-	return type_num >= 0 && type_num < 40;
+    return type_num >= 0 && type_num < 40;
 }
 
 template<class T>
 constexpr Bool is_real()
 {
-	return is_real(type_num<T>());
+    return is_real(type_num<T>());
 }
 
 // is_comp<T> checks if T is a scalar of complex<> type
 constexpr Bool is_comp(Int_I type_num)
 {
-	return type_num >= 40 && type_num < 60;
+    return type_num >= 40 && type_num < 60;
 }
 
 template<class T>
 constexpr Bool is_comp()
 {
-	return is_comp(type_num<T>());
+    return is_comp(type_num<T>());
 }
 
 // checks if T is a scalar of ImagNum<> type
 constexpr Bool is_imag(Int_I type_num)
 {
-	return type_num >= 60 && type_num < 80;
+    return type_num >= 60 && type_num < 80;
 }
 
 template<class T>
 constexpr Bool is_imag()
 {
-	return is_imag(type_num<T>());
+    return is_imag(type_num<T>());
 }
 
 // is_scalar<T> checks if is a scalar
 template<class T>
 constexpr Bool is_scalar()
 {
-	return type_num<T>() >= 0;
+    return type_num<T>() >= 0;
 }
 
 // check if is a specific container type
@@ -217,7 +217,7 @@ template <class T> struct is_vector_imp<vector<T>> : true_type {};
 template<class T>
 constexpr Bool is_vector()
 {
-	return is_vector_imp<T>();
+    return is_vector_imp<T>();
 }
 
 template <class T> struct is_basic_str_imp : false_type {};
@@ -225,7 +225,7 @@ template <class T> struct is_basic_str_imp<std::basic_string<T>> : true_type {};
 template<class T>
 constexpr Bool is_basic_str()
 {
-	return is_basic_str_imp<T>();
+    return is_basic_str_imp<T>();
 }
 
 template <class T> struct is_Vector_imp : false_type {};
@@ -233,7 +233,7 @@ template <class T> struct is_Vector_imp<Vector<T>> : integral_constant<Bool, is_
 template<class T>
 constexpr Bool is_Vector()
 {
-	return is_Vector_imp<T>();
+    return is_Vector_imp<T>();
 }
 
 template <class T> struct is_Matrix_imp : false_type {};
@@ -241,7 +241,7 @@ template <class T> struct is_Matrix_imp<Matrix<T>> : integral_constant<Bool, is_
 template<class T>
 constexpr Bool is_Matrix()
 {
-	return is_Matrix_imp<T>();
+    return is_Matrix_imp<T>();
 }
 
 template <class T> struct is_Cmat_imp : false_type {};
@@ -249,7 +249,7 @@ template <class T> struct is_Cmat_imp<Cmat<T>> : integral_constant<Bool, is_scal
 template<class T>
 constexpr Bool is_Cmat()
 {
-	return is_Cmat_imp<T>();
+    return is_Cmat_imp<T>();
 }
 
 template <class T> struct is_FixVec_imp : false_type {};
@@ -257,7 +257,7 @@ template <class T, Long N> struct is_FixVec_imp<FixVec<T, N>> : integral_constan
 template<class T>
 constexpr Bool is_FixVec()
 {
-	return is_FixVec_imp<T>();
+    return is_FixVec_imp<T>();
 }
 
 template <class T> struct is_Svector_imp : false_type {};
@@ -265,7 +265,7 @@ template <class T> struct is_Svector_imp<Svector<T>> : integral_constant<Bool, i
 template<class T>
 constexpr Bool is_Svector()
 {
-	return is_Svector_imp<T>();
+    return is_Svector_imp<T>();
 }
 
 template <class T> struct is_Scmat_imp : false_type {};
@@ -273,12 +273,12 @@ template <class T> struct is_Scmat_imp<Scmat<T>> : integral_constant<Bool, is_sc
 template<class T>
 constexpr Bool is_Scmat()
 {
-	return is_Scmat_imp<T>();
+    return is_Scmat_imp<T>();
 }
 
 template <class T> constexpr Bool is_dense_vec()
 {
-	return is_Vector<T>() || is_FixVec<T>() || is_Svector<T>();
+    return is_Vector<T>() || is_FixVec<T>() || is_Svector<T>();
 }
 
 template <class T> struct is_FixCmat_imp : false_type {};
@@ -286,7 +286,7 @@ template <class T, Long Nr, Long Nc> struct is_FixCmat_imp<FixCmat<T, Nr, Nc>> :
 template<class T>
 constexpr Bool is_FixCmat()
 {
-	return is_FixCmat_imp<T>();
+    return is_FixCmat_imp<T>();
 }
 
 template <class T> struct is_Mat3d_imp : false_type {};
@@ -294,7 +294,7 @@ template <class T> struct is_Mat3d_imp<Mat3d<T>> : integral_constant<Bool, is_sc
 template<class T>
 constexpr Bool is_Mat3d()
 {
-	return is_Mat3d_imp<T>();
+    return is_Mat3d_imp<T>();
 }
 
 template <class T> struct is_Cmat3d_imp : false_type {};
@@ -302,7 +302,7 @@ template <class T> struct is_Cmat3d_imp<Cmat3d<T>> : integral_constant<Bool, is_
 template<class T>
 constexpr Bool is_Cmat3d()
 {
-	return is_Cmat3d_imp<T>();
+    return is_Cmat3d_imp<T>();
 }
 
 template <class T> struct is_Diag_imp : false_type {};
@@ -310,7 +310,7 @@ template <class T> struct is_Diag_imp<Diag<T>> : integral_constant<Bool, is_scal
 template<class T>
 constexpr Bool is_Diag()
 {
-	return is_Diag_imp<T>();
+    return is_Diag_imp<T>();
 }
 
 template <class T> struct is_MatCoo_imp : false_type {};
@@ -318,7 +318,7 @@ template <class T> struct is_MatCoo_imp<MatCoo<T>> : integral_constant<Bool, is_
 template<class T>
 constexpr Bool is_MatCoo()
 {
-	return is_MatCoo_imp<T>();
+    return is_MatCoo_imp<T>();
 }
 
 template <class T> struct is_MatCooH_imp : false_type {};
@@ -326,65 +326,65 @@ template <class T> struct is_MatCooH_imp<MatCooH<T>> : integral_constant<Bool, i
 template<class T>
 constexpr Bool is_MatCooH()
 {
-	return is_MatCooH_imp<T>();
+    return is_MatCooH_imp<T>();
 }
 
 // check if is fixed-size container
 template <class T> constexpr Bool is_fixed()
 {
-	return is_FixVec<T>() || is_FixCmat<T>();
+    return is_FixVec<T>() || is_FixCmat<T>();
 }
 
 // check if is dense matrix (2D)
 template <class T> constexpr Bool is_dense_mat()
 {
-	return is_Matrix<T>() || is_Cmat<T>() || is_FixCmat<T>();
+    return is_Matrix<T>() || is_Cmat<T>() || is_FixCmat<T>();
 }
 
 // check if is dense 3D array
 template <class T> constexpr Bool is_dense_mat3()
 {
-	return is_Mat3d<T>() || is_Cmat3d<T>();
+    return is_Mat3d<T>() || is_Cmat3d<T>();
 }
 
 // check if is dense container (including fixed-size)
 template <class T> constexpr Bool is_dense()
 {
-	return is_dense_vec<T>() || is_dense_mat<T>() || is_Mat3d<T>() || is_Cmat3d<T>();
+    return is_dense_vec<T>() || is_dense_mat<T>() || is_Mat3d<T>() || is_Cmat3d<T>();
 }
 
 // check if is sparse vector/matrix
 template <class T> constexpr Bool is_sparse()
 {
-	return is_Diag<T>() || is_MatCoo<T>() || is_MatCooH<T>();
+    return is_Diag<T>() || is_MatCoo<T>() || is_MatCooH<T>();
 }
 
 template <class T>
 constexpr Int contain_num()
 {
-	if (is_Vector<T>()) return 0;
-	else if (is_Matrix<T>()) return 1;
-	else if (is_Cmat<T>()) return 2;
-	else if (is_Mat3d<T>()) return 3;
-	else if (is_Cmat3d<T>()) return 4;
+    if (is_Vector<T>()) return 0;
+    else if (is_Matrix<T>()) return 1;
+    else if (is_Cmat<T>()) return 2;
+    else if (is_Mat3d<T>()) return 3;
+    else if (is_Cmat3d<T>()) return 4;
 
-	else if (is_FixVec<T>()) return 20;
-	else if (is_FixCmat<T>()) return 22;
+    else if (is_FixVec<T>()) return 20;
+    else if (is_FixCmat<T>()) return 22;
 
-	else if (is_Diag<T>()) return 31; // TODO: start from 30
-	else if (is_MatCoo<T>()) return 32;
-	else if (is_MatCooH<T>()) return 33;
+    else if (is_Diag<T>()) return 31; // TODO: start from 30
+    else if (is_MatCoo<T>()) return 32;
+    else if (is_MatCooH<T>()) return 33;
 
-	else if (is_Svector<T>()) return 40;
-	// TODO: Scmat return ?
+    else if (is_Svector<T>()) return 40;
+    // TODO: Scmat return ?
 
-	return -1;
+    return -1;
 }
 
 // check if is a slisc container
 template <class T> constexpr Bool is_contain()
 {
-	return contain_num<T>() >= 0;
+    return contain_num<T>() >= 0;
 }
 
 // contain_type<T> is T::value_type, if T is a container
@@ -395,27 +395,27 @@ constexpr T contain_type_fun() { return T(); };
 template <class T>
 constexpr Char Major()
 {
-	if (is_Cmat<T>() || is_FixCmat<T>() || is_Cmat3d<T>())
-		return 'c';
-	else if (is_Matrix<T>() || is_Mat3d<T>())
-		return 'r';
-	else {
-		cout << contain_num<T>() << endl;
-		SLS_ERR("unknown!");
-	}
+    if (is_Cmat<T>() || is_FixCmat<T>() || is_Cmat3d<T>())
+        return 'c';
+    else if (is_Matrix<T>() || is_Mat3d<T>())
+        return 'r';
+    else {
+        cout << contain_num<T>() << endl;
+        SLS_ERR("unknown!");
+    }
 }
 
 template <class T>
 constexpr Int ndims()
 {
-	if (is_dense_vec<T>() || is_FixVec<T>() || is_Svector<T>())
-		return 1;
-	else if (is_dense_mat<T>() || is_sparse<T>() || is_Scmat<T>())
-		return 2;
-	else if (is_Mat3d<T>() || is_Cmat3d<T>())
-		return 3;
-	else
-		SLS_ERR("unknown!");
+    if (is_dense_vec<T>() || is_FixVec<T>() || is_Svector<T>())
+        return 1;
+    else if (is_dense_mat<T>() || is_sparse<T>() || is_Scmat<T>())
+        return 2;
+    else if (is_Mat3d<T>() || is_Cmat3d<T>())
+        return 3;
+    else
+        SLS_ERR("unknown!");
 }
 
 template <class T, SLS_IF(is_contain<T>())>
@@ -425,30 +425,30 @@ template <class T> using contain_type = decltype(contain_type_fun<T>());
 
 template <class T> constexpr Bool is_real_dense()
 {
-	return is_dense<T>() && is_real<contain_type<T>>();
+    return is_dense<T>() && is_real<contain_type<T>>();
 }
 
 template <class T> constexpr Bool is_comp_dense()
 {
-	return is_dense<T>() && is_comp<contain_type<T>>();
+    return is_dense<T>() && is_comp<contain_type<T>>();
 }
 
 // check if is a real slisc container
 template <class T> constexpr Bool is_real_contain()
 {
-	return is_contain<T>() && is_real<contain_type<T>>();
+    return is_contain<T>() && is_real<contain_type<T>>();
 }
 
 // check if is a complex slisc container
 template <class T> constexpr Bool is_comp_contain()
 {
-	return is_contain<T>() && is_comp<contain_type<T>>();
+    return is_contain<T>() && is_comp<contain_type<T>>();
 }
 
 // check if two containers are the same (value_type can be different)
 template <class T1, class T2> constexpr Bool is_same_contain()
 {
-	return is_contain<T1>() && contain_num<T1>() == contain_num<T2>();
+    return is_contain<T1>() && contain_num<T1>() == contain_num<T2>();
 }
 
 // for Tc = complex<Tr>
@@ -463,7 +463,7 @@ template <class T> using rm_comp = typename rm_comp_imp<T>::type;
 template <class T, Int val, SLS_IF(is_scalar<T>())>
 struct Sconst
 {
-	static constexpr T value = val;
+    static constexpr T value = val;
 };
 
 // Aconst<T, val>::value is a constexpr variable of a real scalar
@@ -471,14 +471,14 @@ struct Sconst
 template <class T, Int val, SLS_IF(is_scalar<T>())>
 struct Rconst
 {
-	static constexpr rm_comp<T> value = val;
+    static constexpr rm_comp<T> value = val;
 };
 
 // Cconst<T, real, imag = 0>::value is a constexpr variable of a complex scalar
 template <class T, Int real, Int imag = 0, SLS_IF(is_comp<T>())>
 struct Cconst
 {
-	static constexpr T value = T(real, imag);
+    static constexpr T value = T(real, imag);
 };
 
 // === type mapping ===
@@ -489,39 +489,39 @@ struct Cconst
 // might be used to enable operator=,+=,-=,*=,/= etc.
 constexpr Bool is_promo(Int_I type_num1, Int_I type_num2)
 {
-	if (type_num2 >= 0 && type_num2 < 40) {
-		if (is_real(type_num1)) {
-			if (type_num1 >= type_num2)
-				return true;
-		}
-		else { // is_comp<T1>()
-			if (type_num1 - type_num2 >= 20)
-				return true;
-		}
-	}
-	else if (is_comp(type_num2)) {
-		if (is_comp(type_num2)) {
-			if (type_num1 >= type_num2)
-				return true;
-		}
-	}
-	else if (is_imag(type_num2)) {
-		if (is_imag(type_num1)) {
-			if (type_num1 >= type_num2)
-				return true;
-		}
-		if (is_comp(type_num1)) {
-			if (type_num2 - type_num1 >= 20)
-				return true;
-		}
-	}
-	return false;
+    if (type_num2 >= 0 && type_num2 < 40) {
+        if (is_real(type_num1)) {
+            if (type_num1 >= type_num2)
+                return true;
+        }
+        else { // is_comp<T1>()
+            if (type_num1 - type_num2 >= 20)
+                return true;
+        }
+    }
+    else if (is_comp(type_num2)) {
+        if (is_comp(type_num2)) {
+            if (type_num1 >= type_num2)
+                return true;
+        }
+    }
+    else if (is_imag(type_num2)) {
+        if (is_imag(type_num1)) {
+            if (type_num1 >= type_num2)
+                return true;
+        }
+        if (is_comp(type_num1)) {
+            if (type_num2 - type_num1 >= 20)
+                return true;
+        }
+    }
+    return false;
 }
 
 template <class T1, class T2>
 constexpr Bool is_promo()
 {
-	return is_promo(type_num<T1>(), type_num<T2>());
+    return is_promo(type_num<T1>(), type_num<T2>());
 }
 
 // promo_type<T1,T2> is the smallest type that both T1, T2 can losslessly converted to
@@ -530,44 +530,44 @@ constexpr Bool is_promo()
 // e.g. Bool + Doub = Doub; Int + Comp = Comp; Doub + Fcomp = Comp;
 
 template <class T1, class T2,
-	SLS_IF(is_real<T1>() && is_real<T2>() && type_num<T1>() >= type_num<T2>())>
+    SLS_IF(is_real<T1>() && is_real<T2>() && type_num<T1>() >= type_num<T2>())>
 auto promo_type_fun() { return T1(); }
 
 template <class T1, class T2,
-	SLS_IF(is_real<T1>() && is_real<T2>() && type_num<T1>() < type_num<T2>())>
+    SLS_IF(is_real<T1>() && is_real<T2>() && type_num<T1>() < type_num<T2>())>
 auto promo_type_fun() { return T2(); }
 
 template <class T1, class T2,
-	SLS_IF(is_comp<T1>() && is_comp<T2>() && type_num<T1>() >= type_num<T2>())>
+    SLS_IF(is_comp<T1>() && is_comp<T2>() && type_num<T1>() >= type_num<T2>())>
 auto promo_type_fun() { return T1(); }
 
 template <class T1, class T2,
-	SLS_IF(is_comp<T1>() && is_comp<T2>() && type_num<T1>() < type_num<T2>())>
+    SLS_IF(is_comp<T1>() && is_comp<T2>() && type_num<T1>() < type_num<T2>())>
 auto promo_type_fun() { return T2(); }
 
 template <class Tr, class Tc,
-	SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() >= 20)>
+    SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() >= 20)>
 auto promo_type_fun() { return Tc(); }
 
 template <class Tc, class Tr,
-	SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() >= 20)>
+    SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() >= 20)>
 auto promo_type_fun() { return Tc(); }
 
 template <class Tr, class Tc,
-	SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() < 20)>
+    SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() < 20)>
 auto promo_type_fun() { return complex<Tr>(); }
 
 template <class Tc, class Tr,
-	SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() < 20)>
+    SLS_IF(is_real<Tr>() && is_comp<Tc>() && type_num<Tc>() - type_num<Tr>() < 20)>
 auto promo_type_fun() { return complex<Tr>(); }
 
 template <class Ti, class Tc,
-	SLS_IF(is_imag<Ti>() && is_comp<Tc>() && type_num<Ti>() - type_num<Tc>() <= 20)>
-	auto promo_type_fun() { return Tc(); }
+    SLS_IF(is_imag<Ti>() && is_comp<Tc>() && type_num<Ti>() - type_num<Tc>() <= 20)>
+    auto promo_type_fun() { return Tc(); }
 
 template <class Ti, class Tc,
-	SLS_IF(is_imag<Ti>() && is_comp<Tc>() && type_num<Ti>() - type_num<Tc>() > 20)>
-	auto promo_type_fun() { return complex<typename Ti::value_type>(); }
+    SLS_IF(is_imag<Ti>() && is_comp<Tc>() && type_num<Ti>() - type_num<Tc>() > 20)>
+    auto promo_type_fun() { return complex<typename Ti::value_type>(); }
 
 template <class T1, class T2> using promo_type = decltype(promo_type_fun<T1, T2>());
 

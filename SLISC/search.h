@@ -8,11 +8,11 @@ namespace slisc {
 template <class T, class Tv>
 inline Long search(const T &elm, const Tv &vec, Long start = 0)
 {
-	for (Long i = start; i < Size(vec); ++i) {
-		if (elm == vec[i])
-			return i;
-	}
-	return -1;
+    for (Long i = start; i < Size(vec); ++i) {
+        if (elm == vec[i])
+            return i;
+    }
+    return -1;
 }
 
 // check if v[i] == v[j] for any i and j
@@ -21,13 +21,13 @@ inline Long search(const T &elm, const Tv &vec, Long start = 0)
 template <class Tv>
 inline Long find_repeat(Tv v)
 {
-	for (Long i = 0; i < Size(v); ++i) {
-		for (Long j = i + 1; j < Size(v); ++j) {
-			if (v[i] == v[j])
-				return i;
-		}
-	}
-	return -1;
+    for (Long i = 0; i < Size(v); ++i) {
+        for (Long j = i + 1; j < Size(v); ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
 }
 
 // search ind so that v[ind] == s
@@ -41,32 +41,32 @@ inline Long find_repeat(Tv v)
 template <class T, class T1>
 inline Int lookupInt(Long_O ind, const T1 &v, const T &s)
 {
-	Int diff;
-	Long i, N = v.size(), ind1 = 0, ind2 = N - 1;
-	if (N < 1) return -3;
-	diff = v[0] - s;
-	if (diff > 0) return -1;
-	if (diff == 0) {
-		ind = 0; return 0;
-	}
-	diff = v[ind2] - s;
-	if (diff < 0) return 1;
-	
-	// N >= 2 from here
-	if (diff == 0) {
-		ind = ind2; return 0;
-	}
-	// N > 2 from here
-	for (i = 0; i < N; ++i) {
-		ind = (ind1 + ind2) / 2;
-		diff = v[ind] - s;
-		if (diff == 0) return 0;
-		if (diff > 0) ind2 = ind;
-		else ind1 = ind;
-		if (ind2 - ind1 == 1) {
-			ind = ind1; return -2;
-		}
-	}
-	SLS_ERR("slisc::lookup(): unknown error!");
+    Int diff;
+    Long i, N = v.size(), ind1 = 0, ind2 = N - 1;
+    if (N < 1) return -3;
+    diff = v[0] - s;
+    if (diff > 0) return -1;
+    if (diff == 0) {
+        ind = 0; return 0;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) return 1;
+    
+    // N >= 2 from here
+    if (diff == 0) {
+        ind = ind2; return 0;
+    }
+    // N > 2 from here
+    for (i = 0; i < N; ++i) {
+        ind = (ind1 + ind2) / 2;
+        diff = v[ind] - s;
+        if (diff == 0) return 0;
+        if (diff > 0) ind2 = ind;
+        else ind1 = ind;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return -2;
+        }
+    }
+    SLS_ERR("slisc::lookup(): unknown error!");
 }
 } // namespace slisc
