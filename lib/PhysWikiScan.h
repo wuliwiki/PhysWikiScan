@@ -980,9 +980,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
     read_file(toc, "lib/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
-    ind0 = toc.find(U"PhysWikiHTMLtitle");
-    toc.replace(ind0, 17, U"小时物理草稿");
-    ind0 = toc.find(U"PhysWikiCommand", ind0);
+    ind0 = toc.find(U"PhysWikiCommand");
     toc.erase(ind0, 15); toc.insert(ind0, newcomm);
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     toc.erase(ind0, 16);
