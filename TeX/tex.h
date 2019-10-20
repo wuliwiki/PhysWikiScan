@@ -416,16 +416,37 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     // subsubsection command
     find_all_command_intv(intv1, U"subsubsection", str);
     if (combine(intv, intv1) < 0) return -1;
-    //  \begin{exam}{} and \end{exam}
+
+    //  \begin{example}{} and \end{example}
     FindAllBegin(intv1, U"example", str, '2');
     if (combine(intv, intv1) < 0) return -1;
     FindEnd(intv1, U"example", str);
     if (combine(intv, intv1) < 0) return -1;
-    //  exer\begin{exer}{} and \end{exer}
+    //  exer\begin{exercise}{} and \end{exercise}
     FindAllBegin(intv1, U"exercise", str, '2');
     if (combine(intv, intv1) < 0) return -1;
     FindEnd(intv1, U"exercise", str);
     if (combine(intv, intv1) < 0) return -1;
+	//  exer\begin{theorem}{} and \end{theorem}
+	FindAllBegin(intv1, U"theorem", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"theorem", str);
+	if (combine(intv, intv1) < 0) return -1;
+	//  exer\begin{definition}{} and \end{definition}
+	FindAllBegin(intv1, U"definition", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"definition", str);
+	if (combine(intv, intv1) < 0) return -1;
+	//  exer\begin{lemma}{} and \end{lemma}
+	FindAllBegin(intv1, U"lemma", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"lemma", str);
+	if (combine(intv, intv1) < 0) return -1;
+	//  exer\begin{corollary}{} and \end{corollary}
+	FindAllBegin(intv1, U"corollary", str, '2');
+	if (combine(intv, intv1) < 0) return -1;
+	FindEnd(intv1, U"corollary", str);
+	if (combine(intv, intv1) < 0) return -1;
     // invert range
     return invert(indNorm, intv, str.size());
 }
