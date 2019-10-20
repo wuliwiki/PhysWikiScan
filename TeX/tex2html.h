@@ -227,7 +227,7 @@ inline Long NormalTextEscape(Str32_IO str)
 // must be used after EnvLabel()
 inline Long Table(Str32_IO str)
 {
-    Long i{}, j{}, N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
+    Long N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
     Intvs intv;
     vector<Long> indLine; // stores the position of "\hline"
     Str32 caption;
@@ -236,7 +236,8 @@ inline Long Table(Str32_IO str)
     Str32 str_end = U"</td></tr></table>\n</div></div>";
     N = find_env(intv, str, U"table", 'o');
     if (N == 0) return 0;
-    for (i = N - 1; i >= 0; --i) {
+    for (Long i = N - 1; i >= 0; --i) {
+		indLine.clear();
         ind0 = find_command(str, U"caption", intv.L(i));
         if (ind0 < 0 || ind0 > intv.R(i)) {
             cout << "table no caption!" << endl; return -1;  // break point here
@@ -255,7 +256,7 @@ inline Long Table(Str32_IO str)
         str.replace(indLine[Nline - 1], 6, str_end);
         ind0 = ExpectKeyReverse(str, U"\\\\", indLine[Nline - 1] - 1);
         str.erase(ind0 + 1, 2);
-        for (j = Nline - 2; j > 0; --j) {
+        for (Long j = Nline - 2; j > 0; --j) {
             str.replace(indLine[j], 6, U"</td></tr><tr><td>");
             ind0 = ExpectKeyReverse(str, U"\\\\", indLine[j] - 1);
             str.erase(ind0 + 1, 2);
@@ -266,7 +267,7 @@ inline Long Table(Str32_IO str)
     // delete latex code
     // TODO: add title
     find_env(intv, str, U"table", 'o');
-    for (i = N - 1; i >= 0; --i) {
+    for (Long i = N - 1; i >= 0; --i) {
         ind0 = intv.L(i) + 12; ind1 = intv.R(i);
         while (true) {
             ind0 = str.find('&', ind0);
