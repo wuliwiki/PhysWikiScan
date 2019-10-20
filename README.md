@@ -27,40 +27,29 @@
 
 ## BUG
 * `.` 模式下运行， 如果重试， `dep.json` 就会生成重复的 link。 解决方法： 不要在 `PhysWikiOnline1()` 里面读取 `pentry()`， 而是专门搞一个 `loop` 来专门读取每个文件中的 `pentry()`。 这样又可以加一个单独的选项 `PhysWiki --tree`。 `PhysWiki .` 需要包含 `PhysWiki --tree` 功能
-* table 没有标题
 * 文献引用还没有处理
 * 处理 bug 的截图
-* Matlab 代码块不会自动换行， 因为是 verbatim
-* `end` keyword 用于 slicing 的时候不能高亮， html 和 lstlisting 都有这个问题
-* 处理 bibliographies
+* Matlab 小括号里面的 end 不高亮
 * `\eentry` 和 `\rentry` 没有处理
-* 看看能不能根据预备知识给每个词条生成一个学习路线图（线性的或者树状的）
-* 正文中禁止 \\ 换行，以及其他禁止的格式如 `noindent`
+* 正文中禁止 \\ 换行，以及其他禁止的格式如 `\noindent`
 * 段末注释会导致不能分段（必须要空两行才行）
 * `\textbackslash` 后面需要删除一个空格（如果有）
-* Matlab 小括号里面的 end 不高亮
 * 例题和习题中的标题仍然是 `<h5>`
-* 编译 `\lstinline|\begin|` 会出错
+* 编译 `\lstinline|\begin|` 会出错， 最好的解决办法应该是先把 `\lstinline||` 里面的内容储存起来， 最后再粘贴回去
 * 中文字符间的英文两边有无空格都不应该影响排版
 
 ## New Features
-* `--path` 后面可以指定绝对路径
 * 保证 aligned 环境里面不能有空行（equation 环境也不行吗？）
 * 注意微软雅黑是收费的！ 用免费字体（方正的？）
 * 每个页面下面的 “编辑词条” 链接直接打开该词条， 如 `wuli.wiki/editor/?entry=AMAdd`
-* 命令行加一个搜索并替换空心句号的选项。 FileSeek 还是太慢。
-* 表格像公式一样可以拖动，以便在移动设备上看
-* 添加 C++ 高亮功能
-* 实现 `lstinline| |`
+* `lstinline| |` 还有一些 bug
 * 在 `dep.json` 文件中添加章节信息， 给每个部分显示为不同颜色
 * `\autoref{}` 外部引用时程序要检查 `\upref{}` 是否存在， 否则报错。
 * 没有被用到的文件/图片全部都要警告
-* 正文中不应该有空格（尤其是文字和符号之间）， 除了 `\autoref{}` 前面不加空格后面要。
+* 正文中不需要有空格（尤其是文字和符号之间）， 除了 `\autoref{}` 前面不加空格后面要。
 * PhysWikiCheck 检查 latex 代码中 `\autoref{}` 前面是否没有空格而后面有
 * 正文中的英文逗号句号啥的在 PhysWikiCheck 中检查（是不是已经有这个功能了）
 * PhysWikiCheck 使用命令行选项调用
-* link 前面也加一个图标， 像超理一样
-* 代码块应该也像表格和公式一样可以拖动， 而且需要可以上下拖动。 每行长度不应该有限制。
+* 代码块应该也像公式一样可以拖动， 而且需要可以上下拖动。 每行长度不应该有限制。
 * 取消 \Code{}, \code{}, \cpp{}, \Cpp{} 的定义
-* 取消 \link{}{} 的定义， 让欧阳改编辑器， 链接插入 \href{}{}
 * 中文双引号和外面的中文之间要加空格
