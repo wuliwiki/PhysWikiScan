@@ -36,43 +36,66 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
     }
 }
 
+// read set_path.txt
+// return paths_in.size()
+Long read_path_file(vector_O<Str32> paths_in, vector_O<Str32> paths_out)
+{
+	Str32 temp, line;
+	if (!file_exist("set_path.txt")) {
+		err_msg = U"内部错误： set_path.txt 不存在!";
+		return -1;
+	}
+	read_file(temp, "set_path.txt");
+	CRLF_to_LF(temp);
+
+	Long ind0 = 0;
+	for (Long i = 0; i < 100; ++i) {
+		ind0 = skip_line(temp, ind0);
+		if (ind0 < 0) {
+			err_msg = U"内部错误： path.txt 格式";
+			return -1;
+		}
+		ind0 = get_line(line, temp, ind0);
+		if (ind0 < 0) {
+			err_msg = U"内部错误： path.txt 格式";
+			return -1;
+		}
+		paths_in.push_back(line); trim(paths_in.back());
+		ind0 = skip_line(temp, ind0);
+		if (ind0 < 0) {
+			err_msg = U"内部错误： path.txt 格式";
+			return -1;
+		}
+		ind0 = get_line(line, temp, ind0);
+		paths_out.push_back(line); trim(paths_out.back());
+		if (ind0 < 0) {
+			break;
+		}
+	}
+	return paths_in.size();
+}
+
 // get path and remove --path options from args
+// return 0 if successful, return -1 if failed
 Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
 {
-    Str32 temp, line;
-    if (!file_exist("set_path.txt")) {
-        err_msg = U"内部错误： set_path.txt 不存在!";
-        return -1;
-    }
-    read_file(temp, "set_path.txt");
-    CRLF_to_LF(temp);
-    vector<Str32> paths_in, paths_out;
-    Long ind0 = 0;
-    for (Long i = 0; i < 100; ++i) {
-        ind0 = skip_line(temp, ind0);
-        if (ind0 < 0) {
-            err_msg = U"内部错误： path.txt 格式";
-            return -1;
-        }
-        ind0 = get_line(line, temp, ind0);
-        if (ind0 < 0) {
-            err_msg = U"内部错误： path.txt 格式";
-            return -1;
-        }
-        paths_in.push_back(line); trim(paths_in.back());
-        ind0 = skip_line(temp, ind0);
-        if (ind0 < 0) {
-            err_msg = U"内部错误： path.txt 格式";
-            return -1;
-        }
-        ind0 = get_line(line, temp, ind0);
-        paths_out.push_back(line); trim(paths_out.back());
-        if (ind0 < 0) {
-            break;
-        }
-    }
-
     Long N = args.size();
+
+	// detect absolute path
+	if (args.size() > 2 && args[N - 3] == U"--path-in-out") {
+		path_in = args[N - 2];
+		path_out = args[N - 1];
+		cout << "--path-in-out" << endl;
+		cout << path_in << endl;
+		cout << path_out << endl;
+		args.pop_back(); args.pop_back(); args.pop_back();
+		return 0;
+	}
+
+	// use path number in set_path.txt
+	vector<Str32> paths_in, paths_out;
+	if (read_path_file(paths_in, paths_out) < 0)
+		return -1;
     if (args.size() > 1 && args[N - 2] == U"--path") {
         if (args[N - 1] == U"0") {
             path_in = paths_in[0];
@@ -97,7 +120,7 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
         path_out = paths_out[0];
     }
 
-    return paths_in.size();
+	return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -116,8 +139,7 @@ int main(int argc, char *argv[]) {
     // input folder, put tex files and code files here
     // same directory structure with PhysWiki
     Str32 path_in;
-    // output folder, put png, svg in here
-    // html will be output to here
+	// output folder, for html and images
     Str32 path_out;
     if (get_path(path_in, path_out, args) < 0) {
         cerr << err_msg << endl;
