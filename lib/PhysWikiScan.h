@@ -796,8 +796,7 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 
     Long N = 0, ind0 = 0;
 
-    //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
-    Str32 title; // chinese entry name, chapter name, or part name
+    Str32 title;
     Str32 entryName; // entry label
     Str32 str; read_file(str, path_in + "PhysWiki.tex");
     CRLF_to_LF(str);
@@ -840,7 +839,6 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
             CRLF_to_LF(str);
             get_title(title, str);
             titles[i] = title;
-            --i;
             cout << std::setw(10) << std::left << entries[i]
                 << std::setw(20) << std::left << title << endl;
         }
