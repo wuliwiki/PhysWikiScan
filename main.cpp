@@ -125,11 +125,11 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
 
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
-#ifdef NDEBUG
-    SLS_ERR("this program can only be called from a linux shell with source-highlight installed!");
-#else
     SLS_WARN("gnu source-highlight is disabled in Visual Studio! Use VS for debug only!");
-#endif
+	cout << endl;
+	cout << "=======================================" << endl;
+	cout << "= Visual Studio 测试模式， 不含代码高亮 =" << endl;
+	cout << "=======================================\n" << endl;
 #endif
     using namespace slisc;
 
