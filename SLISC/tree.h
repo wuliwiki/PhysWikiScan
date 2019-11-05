@@ -27,7 +27,7 @@ void tree_gen(vector<Node> &tree, const vector<Long> &links)
 Long tree_all_dep_imp(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
 {
     static Long Niter = 0;
-    cout << "tree debug: ind = " << ind << ", level = " << Niter << endl;
+    // cout << "tree debug: ind = " << ind << ", level = " << Niter << endl;
     if (Niter > 300) {
         return -1-ind;
     }
