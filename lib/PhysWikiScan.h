@@ -731,31 +731,6 @@ inline Long href(Str32_IO str)
     }
 }
 
-// replace "\link{name}{http://example.com}"
-// with <a href="http://example.com">name</a>
-inline Long link(Str32_IO str)
-{
-    Long ind0 = 0, N = 0;
-    Str32 name, url;
-    while (true) {
-        ind0 = find_command(str, U"link", ind0);
-        if (ind0 < 0)
-            return N;
-        command_arg(name, str, ind0, 0);
-        command_arg(url, str, ind0, 1);
-        if (url.substr(0, 7) != U"http://" &&
-            url.substr(0, 8) != U"https://") {
-            err_msg = U"链接格式错误: " + url;
-            return -1;
-        }
-
-        Long ind1 = skip_command(str, ind0, 2);
-        str.replace(ind0, ind1 - ind0,
-            "<a href=\"" + url + "\">" + name + "</a>");
-        ++N; ++ind0;
-    }
-}
-
 // process upref
 // path must end with '\\'
 inline Long upref(Str32_IO str, Str32_I path_in)
@@ -1378,9 +1353,6 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     // replace \upref{} with link icon
     if (upref(str, path_in) < 0)
-        return -1;
-    // replace \link{}{} with <a href="">...</a>
-    if (link(str) < 0)
         return -1;
     if (href(str) < 0)
         return -1;
