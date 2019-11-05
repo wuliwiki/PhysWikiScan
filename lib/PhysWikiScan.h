@@ -1074,12 +1074,12 @@ inline Long lstlisting(Str32_IO str)
             Long ind1 = pair_brace(str, ind0, U'[');
             ind0 = expect(str, U"language", ind0);
             if (ind0 < 0) {
-                err_msg = U"lstlisting 方括号中指定语言格式错误!";
+                err_msg = U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!";
                 return -1;
             }
             ind0 = expect(str, U"=", ind0);
             if (ind0 < 0) {
-                err_msg = U"lstlisting 方括号中指定语言格式错误!";
+                err_msg = U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!";
                 return -1;
             }
             lang = str.substr(ind0, ind1 - ind0); trim(lang);
@@ -1097,6 +1097,8 @@ inline Long lstlisting(Str32_IO str)
         
         // highlight
         if (lang == U"MatlabCom")
+            Matlab_highlight(code);
+        else if (lang == U"MyMatlab")
             Matlab_highlight(code);
         else if (lang == U"cpp") {
             if (cpp_highlight(code) < 0) {
