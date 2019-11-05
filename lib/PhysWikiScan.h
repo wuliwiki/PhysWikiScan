@@ -1424,12 +1424,14 @@ inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
         exit(EXIT_FAILURE);
     }
     if (Size(links1) > 0) {
-        cout << "多余的预备知识：" << endl;
+        cout << "\n" << endl;
+        cout << "==============  多余的预备知识  ==============" << endl;
         for (Long i = 0; i < Size(links1); i += 2) {
             Long ind1 = links1[i], ind2 = links1[i + 1];
             cout << titles[ind1] << " (" << entries[ind1] << ") -> "
                 << titles[ind2] << " (" << entries[ind2] << ")" << endl;
         }
+        cout << "=============================================\n" << endl;
     }
 
     // write links
