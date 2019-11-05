@@ -2,6 +2,7 @@
 #include "../SLISC/file.h"
 #include "../SLISC/unicode.h"
 #include "../SLISC/input.h"
+#include "../SLISC/tree.h"
 #include "../TeX/tex2html.h"
 #include "../highlight/matlab2html.h"
 #include "../highlight/cpp2html.h"
@@ -1424,7 +1425,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
+inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
 {
     Str32 str;
     // write entries
@@ -1438,6 +1439,25 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
     str.pop_back(); str.pop_back();
     str += U"\n  ],\n";
 
+    // report redundency
+    vector<Node> tree;
+    vector<Long> links1;
+    tree_gen(tree, links);
+    Long ret = tree_redundant(links1, tree);
+    if (ret < 0) {
+        err_msg = "预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！";
+        cout << err_msg << endl;
+        exit(EXIT_FAILURE);
+    }
+    if (Size(links1) > 0) {
+        cout << "多余的预备知识：" << endl;
+        for (Long i = 0; i < Size(links1); i += 2) {
+            Long ind1 = links1[i], ind2 = links1[i + 1];
+            cout << titles[ind1] << " (" << entries[ind1] << ") -> "
+                << titles[ind2] << " (" << entries[ind2] << ")" << endl;
+        }
+    }
+
     // write links
     str += U"  \"links\": [\n";
     for (Long i = 0; i < Size(links)/2; ++i) {
@@ -1450,6 +1470,7 @@ inline void dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
     str.pop_back(); str.pop_back();
     str += U"\n  ]\n}\n";
     write_file(str, path_out + "../tree/data/dep.json");
+    return 0;
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
