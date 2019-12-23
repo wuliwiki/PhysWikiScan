@@ -6,12 +6,12 @@ namespace slisc {
 
 struct Node
 {
-    vector<Long> last; // last nodes
-    vector<Long> next; // next nodes
+    vecLong last; // last nodes
+    vecLong next; // next nodes
 };
 
 // links[2n] -> links[2n+1]
-void tree_gen(vector<Node> &tree, const vector<Long> &links)
+void tree_gen(vector<Node> &tree, vecLong_I links)
 {
     Long Nlink = links.size();
     tree.resize(Nlink);
@@ -24,14 +24,14 @@ void tree_gen(vector<Node> &tree, const vector<Long> &links)
 
 // iterative implementation of tree_all_dep()
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_all_dep_imp(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
+Long tree_all_dep_imp(vecLong_O deps, const vector<Node> &tree, Long_I ind)
 {
     static Long Niter = 0;
     // cout << "tree debug: ind = " << ind << ", level = " << Niter << endl;
     if (Niter > 300) {
         return -1-ind;
     }
-    for (Long i = 0; i < Size(tree[ind].last); ++i) {
+    for (Long i = 0; i < size(tree[ind].last); ++i) {
         Long ind0 = tree[ind].last[i];
         deps.push_back(ind0);
         ++Niter;
@@ -45,7 +45,7 @@ Long tree_all_dep_imp(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
 
 // find all upstream nodes of a tree, and the distances
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_all_dep(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
+Long tree_all_dep(vecLong_O deps, const vector<Node> &tree, Long_I ind)
 {
     deps.clear();
     Long ret = tree_all_dep_imp(deps, tree, ind);
@@ -54,7 +54,7 @@ Long tree_all_dep(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
     while (true) {
         Long ret = find_repeat(deps);
         if (ret < 0) {
-            return Size(deps);
+            return size(deps);
         }
         deps.erase(deps.begin() + ret);
     }
@@ -62,21 +62,21 @@ Long tree_all_dep(vector<Long> &deps, const vector<Node> &tree, Long_I ind)
 
 // find redundant i.e. if A->B->...C, then A->C is redundent
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_redundant(vector<Long> &links, const vector<Node> &tree)
+Long tree_redundant(vecLong_O links, const vector<Node> &tree)
 {
-    vector<Long> deps;
-    for (Long i = 0; i < Size(tree); ++i) {
+    vecLong deps;
+    for (Long i = 0; i < Long(tree.size()); ++i) {
         deps.clear();
         Long ret = tree_all_dep_imp(deps, tree, i);
         if (ret < 0)
             return ret;
-        for (Long j = 0; j < Size(tree[i].last); ++j) {
+        for (Long j = 0; j < size(tree[i].last); ++j) {
             Long ind = search(tree[i].last[j], deps);
             if (ind >= 0) {
                 deps.erase(deps.begin() + ind);
             }
         }
-        for (Long j = 0; j < Size(tree[i].last); ++j) {
+        for (Long j = 0; j < size(tree[i].last); ++j) {
             Long ind = search(tree[i].last[j], deps);
             if (ind >= 0) {
                 links.push_back(deps[ind]);
@@ -84,7 +84,7 @@ Long tree_redundant(vector<Long> &links, const vector<Node> &tree)
             }
         }
     }
-    return Size(links) / 2;
+    return size(links) / 2;
 }
 
 } // namespace slisc

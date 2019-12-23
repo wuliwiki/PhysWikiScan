@@ -42,11 +42,11 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 
 // find one of multiple commands
 // return -1 if not found
-inline Long find_command(Long_O ikey, Str32_I str, vector_I<Str32> names, Long_I start)
+inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I start)
 {
     Long i_min = 100000000;
     ikey = -1;
-    for (Long i = 0; i < Size(names); ++i) {
+    for (Long i = 0; i < size(names); ++i) {
         Long ind = find_command(str, names[i], start);
         if (ind >= 0 && ind < i_min) {
             i_min = ind; ikey = i;
@@ -68,7 +68,7 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 {
     Long i;
     Bool found = false;
-    for (i = ind + 1; i < Size(str); ++i) {
+    for (i = ind + 1; i < size(str); ++i) {
         if (!is_letter(str[i])) {
             found = true; break;
         }
@@ -224,10 +224,10 @@ inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
 // see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of names[iname], -1 if return false
 // TODO: check if this function works.
-inline Bool index_in_env(Long& iname, Long ind, vector_I<Str32> names, Str32_I str)
+inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
 {
     Intvs intv;
-    for (Long i = 0; i < Size(names); ++i) {
+    for (Long i = 0; i < size(names); ++i) {
         if (find_env(intv, str, names[i]) < 0) {
             throw Str32(U"environment " + names[i] + " not found!");
         }
@@ -453,11 +453,11 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 
 // detect unnecessary braces and add "删除标记"
 // return the number of braces pairs removed
-inline Long RemoveBraces(vector_I<Long> ind_left, vector_I<Long> ind_right,
-    vector_I<Long> ind_RmatchL, Str32_IO str)
+inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
+    vecLong_I ind_RmatchL, Str32_IO str)
 {
     unsigned i, N{};
-    vector<Long> ind; // redundent right brace index
+    vecLong ind; // redundent right brace index
     for (i = 1; i < ind_right.size(); ++i)
         // there must be no space between redundent {} and neiboring braces.
         if (ind_right[i] == ind_right[i - 1] + 1 &&

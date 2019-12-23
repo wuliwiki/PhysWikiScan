@@ -13,10 +13,10 @@ class Intvs;
 typedef const Intvs &Intvs_I;
 typedef Intvs &Intvs_O, &Intvs_IO;
 
-class Intvs : public vector<Long>
+class Intvs : public vecLong
 {
 public:
-    typedef vector<Long> Base;
+    typedef vecLong Base;
 
     void push(Long_I left, Long_I right);
 
@@ -50,7 +50,7 @@ inline void Intvs::push(Long_I left, Long_I right)
 #ifdef SLS_CHECK_BOUNDS
     if (left < 0 || right < 0)
         SLS_ERR("must be non-negative!");
-    if (isodd(Base::size()))
+    if (isodd((Long)Base::size()))
         SLS_ERR("last pair not finished!");
 #endif
     push_back(left);
@@ -62,7 +62,7 @@ inline void Intvs::pushL(Long_I i)
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0)
         SLS_ERR("must be non-negative!");
-    if (isodd(Base::size()))
+    if (isodd((Long)Base::size()))
         SLS_ERR("last pair not finished!");
 #endif
     push_back(i);
@@ -73,7 +73,7 @@ inline void Intvs::pushR(Long_I i)
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0)
         SLS_ERR("must be non-negative!");
-    if (!isodd(Base::size()))
+    if (!isodd((Long)Base::size()))
         SLS_ERR("left not pushed!");
 #endif
     push_back(i);
@@ -86,13 +86,13 @@ inline void Intvs::push_back(Long_I i)
 
 inline void Intvs::check_pair() const
 {
-    if (isodd(Base::size()))
+    if (isodd((Long)Base::size()))
         SLS_ERR("side is odd!");
 }
 
 inline Long Intvs::size() const
 {
-    if (isodd(Base::size()))
+    if (isodd((Long)Base::size()))
         SLS_ERR("last pair unfinished!");
     return Base::size() / 2;
 }
@@ -203,7 +203,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
     }
 
     // load start and end, and sort
-    vector<Long> start, end;
+    vecLong start, end;
     for (i = 0; i < N1; ++i)
         start.push_back(ind1.L(i));
     for (i = 0; i < N1; ++i)
@@ -218,7 +218,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
     ind.clear();
     ind.pushL(start[0]);
     i = 0;
-    while (i < Size(start) - 1) {
+    while (i < size(start) - 1) {
         if (end[i] > start[i + 1]) {
             if (end[i] > end[i + 1]) {
                 end[i + 1] = end[i]; ++i;

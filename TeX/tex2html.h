@@ -229,7 +229,7 @@ inline Long Table(Str32_IO str)
 {
     Long N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
     Intvs intv;
-    vector<Long> indLine; // stores the position of "\hline"
+    vecLong indLine; // stores the position of "\hline"
     Str32 caption;
     Str32 str_beg = U"<div class = \"eq\" align = \"center\">"
         U"<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
@@ -292,7 +292,7 @@ inline Long Itemize(Str32_IO str)
 {
     Long i{}, j{}, N{}, Nitem{}, ind0{};
     Intvs intvIn, intvOut;
-    vector<Long> indItem; // positions of each "\item"
+    vecLong indItem; // positions of each "\item"
     N = find_env(intvIn, str, U"itemize");
     find_env(intvOut, str, U"itemize", 'o');
     for (i = N - 1; i >= 0; --i) {
@@ -340,7 +340,7 @@ inline Long Enumerate(Str32_IO str)
 {
     Long i{}, j{}, N{}, Nitem{}, ind0{};
     Intvs intvIn, intvOut;
-    vector<Long> indItem; // positions of each "\item"
+    vecLong indItem; // positions of each "\item"
     N = find_env(intvIn, str, U"enumerate");
     find_env(intvOut, str, U"enumerate", 'o');
     for (i = N - 1; i >= 0; --i) {

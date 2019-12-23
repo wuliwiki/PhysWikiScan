@@ -60,14 +60,14 @@ inline Long paragraph_tag(Str32_IO str)
     Str32 temp, env, end, begin = U"<p>　　\n";
 
     // "begin", and commands that cannot be in a paragraph
-    vector<Str32> commands = {U"begin",
+    vecStr32 commands = {U"begin",
         U"subsection", U"subsubsection", U"pentry", U"code", U"Code"};
 
     // environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
-    vector<Str32> envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
+    vecStr32 envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
 
     // environments that needs paragraph tags inside
-    vector<Str32> envs_p = { U"example", U"exercise"};
+    vecStr32 envs_p = { U"example", U"exercise"};
 
     // 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
     char next, last = 'n';
@@ -188,7 +188,7 @@ inline Long paragraph_tag(Str32_IO str)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
+inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     Str32_I entryName, Str32_IO str, Bool_I allow_label_repeat)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
@@ -384,7 +384,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
 // get dependent entries from \pentry{}
 // links are file names, not chinese titles
 // links[i][0] --> links[i][1]
-inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> entryNames, Long_I ind)
+inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, Long_I ind)
 {
     Long ind0 = 0, N = 0;
     Str32 temp;
@@ -402,7 +402,7 @@ inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> ent
                 return N;
             command_arg(depEntry, temp, ind1, 0, 't');
             Long i; Bool flag = false;
-            for (i = 0; i < Size(entryNames); ++i) {
+            for (i = 0; i < size(entryNames); ++i) {
                 if (depEntry == entryNames[i]) {
                     flag = true; break;
                 }
@@ -426,10 +426,10 @@ inline Long pentry(Str32_IO str)
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
-inline Long RemoveNoEntry(vector_IO<Str32> names)
+inline Long RemoveNoEntry(vecStr32_IO names)
 {
     Long i{}, j{}, N{}, Nnames{}, Nnames0;
-    vector<Str32> names0; // names to remove
+    vecStr32 names0; // names to remove
     names0.push_back(U"FrontMatters");
     // add other names here
     Nnames = names.size();
@@ -452,13 +452,13 @@ inline Long theorem_like_env(Str32_IO str)
     Long N, N_tot = 0, ind0, ind1{};
     Intvs intvIn, intvOut;
     Str32 env_title, env_num;
-    vector<Str32> envNames = {U"definition", U"lemma", U"theorem",
+    vecStr32 envNames = {U"definition", U"lemma", U"theorem",
         U"corollary", U"example", U"exercise"};
-    vector<Str32> envCnNames = {U"定义", U"引理", U"定理",
+    vecStr32 envCnNames = {U"定义", U"引理", U"定理",
         U"推论", U"例", U"习题"};
-    vector<Str32> envBorderColors = { U"w3-border-red", U"w3-border-red", U"w3-border-red",
+    vecStr32 envBorderColors = { U"w3-border-red", U"w3-border-red", U"w3-border-red",
         U"w3-border-red", U"w3-border-yellow", U"w3-border-green" };
-    for (Long i = 0; i < Size(envNames); ++i) {
+    for (Long i = 0; i < size(envNames); ++i) {
         ind0 = 0; N = 0;
         while (true) {
             ind0 = find_command_spec(str, U"begin", envNames[i], ind0);
@@ -490,13 +490,13 @@ inline Long theorem_like_env(Str32_IO str)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryName, Str32_IO str)
+inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str)
 {
     unsigned i{};
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
     Bool inEq;
     Str32 entry, label0, idName, idNum, kind, newtab, file;
-    vector<Str32> envNames{U"equation", U"align", U"gather"};
+    vecStr32 envNames{U"equation", U"align", U"gather"};
     while (true) {
         newtab.clear(); file.clear();
         ind0 = find_command(str, U"autoref", ind0);
@@ -583,7 +583,7 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // if doesn't exist, return 0
 // if failed, return -1
 Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
-    vector_I<Str32> labels, vector_I<Str32> ids, Str32_I path_in)
+    vecStr32_I labels, vecStr32_I ids, Str32_I path_in)
 {
     Long ind0 = 0;
     Str32 label0, newtab;
@@ -612,9 +612,9 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     Intvs intvComm;
     find_comment(intvComm, str);
 
-    vector<Str32> idNames = { U"eq", U"fig", U"def", U"lem",
+    vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
         U"the", U"cor", U"ex", U"exe", U"tab" };
-    vector<Str32> envNames = { U"equation", U"figure", U"definition", U"lemma",
+    vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
         U"theorem", U"corollary", U"example", U"exercise", U"table"};
 
     Long idNum = search(idName, idNames);
@@ -638,7 +638,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     else { // count equations
         ind0 = 0;
         Long idN = 0;
-        vector<Str32> eq_envs = { U"equation", U"gather", U"align" };
+        vecStr32 eq_envs = { U"equation", U"gather", U"align" };
         Str32 env0;
         while (true) {
             ind0 = find_command(str, U"begin", ind0);
@@ -734,7 +734,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 // update entries.txt and titles.txt
 // return the number of entries in PhysWiki.tex
 // return -1 if failed
-inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str32_I path_in)
+inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_in)
 {
     entries.clear(); titles.clear();
     file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
@@ -780,7 +780,7 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
     }
 
     cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，但仍会被编译" << endl;
-    for (Long i = 0; i < Size(titles); ++i) {
+    for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
             read_file(str, path_in + U"contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
@@ -799,11 +799,11 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
 // return the number of entries, return -1 if failed
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
+inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
 {
     Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
-    vector<Str32> keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
-    vector<Str32> chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
+    vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
+    vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
                             U"十", U"十一", U"十二", U"十三", U"十四", U"十五"};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
@@ -893,7 +893,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
 // return the number of entries, return -1 if failed
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, Str32_I path_in, Str32_I path_out)
+inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
 {
     Long i{}, N{}, ind0{};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
@@ -901,12 +901,12 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
     Str32 entryName; // entry label
     Str32 newcomm;
     Str32 toc;
-    vector<Str32> changed, authors;
+    vecStr32 changed, authors;
 
     read_file(newcomm, "lib/newcommand.html");
     CRLF_to_LF(newcomm);
     if (!file_exist(U"data/changed.txt")) {
-        write_vec_str(vector<Str32>(), U"data/changed.txt");
+        write_vec_str(vecStr32(), U"data/changed.txt");
     }
     else
         read_vec_str(changed, U"data/changed.txt");
@@ -927,7 +927,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"<p>\n", ind0);
 
-    for (Long i = 0; i < Size(changed); ++i) {
+    for (Long i = 0; i < size(changed); ++i) {
         Long ind = changed[i].rfind('.');
         if (ind < 0) {
             throw Str32(U"内部错误： changed.txt 中文件必须有后缀名!");
@@ -1110,7 +1110,7 @@ inline Long OneFile4(Str32_I path)
 // get keywords from the comment in the second line
 // return numbers of keywords found
 // e.g. "关键词1|关键词2|关键词3"
-inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
+inline Long get_keywords(vecStr32_O keywords, Str32_I str)
 {
     keywords.clear();
     Str32 word;
@@ -1157,7 +1157,7 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
 inline Long chinese_alpha_num_space(Str32_IO str)
 {
     Long N = 0;
-    for (Long i = Size(str) - 1; i >= 1; --i) {
+    for (Long i = size(str) - 1; i >= 1; --i) {
         if (is_chinese(str[i - 1]) && is_alphanum(str[i])) {
             str.insert(str.begin() + i, U' ');
             ++N;
@@ -1195,9 +1195,9 @@ inline Long inline_eq_space(Str32_IO str)
 // return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vector_IO<Long> links,
-    Str32_I path_in, Str32_I path_out, vector_I<Str32> entries,
-    vector_I<Str32> titles, Long_I ind, Bool_I allow_label_repeat)
+inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
+    Str32_I path_in, Str32_I path_out, vecStr32_I entries,
+    vecStr32_I titles, Long_I ind, Bool_I allow_label_repeat)
 {
     Str32 str;
     read_file(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1214,10 +1214,10 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
     if (get_title(title, str) < 0)
         return -1;
     // add keyword meta to html
-    vector<Str32> keywords;
+    vecStr32 keywords;
     if (get_keywords(keywords, str) > 0) {
         Str32 keywords_str = keywords[0];
-        for (Long i = 1; i < Size(keywords); ++i) {
+        for (Long i = 1; i < size(keywords); ++i) {
             keywords_str += U"," + keywords[i];
         }
         replace(html, U"PhysWikiHTMLKeywords", keywords_str);
@@ -1352,12 +1352,12 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<Long> links, Str32_I path_out)
+inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str32_I path_out)
 {
     Str32 str;
     // write entries
     str += U"{\n  \"nodes\": [\n";
-    for (Long i = 0; i < Size(titles); ++i) {
+    for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
         str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1, \"url\": \"../online/" +
@@ -1368,16 +1368,16 @@ inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 
     // report redundency
     vector<Node> tree;
-    vector<Long> links1;
+    vecLong links1;
     tree_gen(tree, links);
     Long ret = tree_redundant(links1, tree);
     if (ret < 0) {
         throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
     }
-    if (Size(links1) > 0) {
+    if (size(links1) > 0) {
         cout << "\n" << endl;
         cout << "==============  多余的预备知识  ==============" << endl;
-        for (Long i = 0; i < Size(links1); i += 2) {
+        for (Long i = 0; i < size(links1); i += 2) {
             Long ind1 = links1[i], ind2 = links1[i + 1];
             cout << titles[ind1] << " (" << entries[ind1] << ") -> "
                 << titles[ind2] << " (" << entries[ind2] << ")" << endl;
@@ -1387,7 +1387,7 @@ inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 
     // write links
     str += U"  \"links\": [\n";
-    for (Long i = 0; i < Size(links)/2; ++i) {
+    for (Long i = 0; i < size(links)/2; ++i) {
         if (titles[links[2*i]].empty() || titles[links[2*i+1]].empty())
             continue;
         str += U"  {\"source\": \"" + titles[links[2*i]] + "\", ";
@@ -1403,8 +1403,8 @@ inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 {
-    vector<Str32> entries; // name in \entry{}, also .tex file name
-    vector<Str32> titles; // Chinese titles in \entry{}
+    vecStr32 entries; // name in \entry{}, also .tex file name
+    vecStr32 titles; // Chinese titles in \entry{}
     entries_titles(titles, entries, path_in);
     write_vec_str(titles, U"data/titles.txt");
     write_vec_str(entries, U"data/entries.txt");
@@ -1414,16 +1414,16 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
     table_of_contents(titles, entries, path_in, path_out);
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
-    vector<Long> links;
+    vecLong links;
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vector<Str32> labels, ids;
+    vecStr32 labels, ids;
 
     // 1st loop through tex files
     // files are processed independently
     // `IdList` and `LabelList` are recorded for 2nd loop
     cout << u8"======  第 1 轮转换 ======\n" << endl;
-    for (Long i = 0; i < Size(entries); ++i) {
+    for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
@@ -1444,7 +1444,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
     // need `IdList` and `LabelList` from 1st loop
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str32 html;
-    for (Long i = 0; i < Size(entries); ++i) {
+    for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
@@ -1458,11 +1458,11 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I path_out)
+inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vector<Str32> labels, ids, entries, titles;
+    vecStr32 labels, ids, entries, titles;
     if (!file_exist(U"data/labels.txt")) {
         throw Str32(U"内部错误： data/labels.txt 不存在!");
     }
@@ -1496,8 +1496,8 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
     cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 
     // main process
-    vector<Long> links;
-    for (Long i = 0; i < Size(entryN); ++i) {
+    vecLong links;
+    for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         if (ind < 0) {
             throw Str32(U"entries.txt 中未找到该词条!");
@@ -1522,7 +1522,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
     cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
     Str32 html;
-    for (Long i = 0; i < Size(entryN); ++i) {
+    for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         cout << std::setw(5) << std::left << ind
             << std::setw(10) << std::left << entries[ind]
@@ -1541,12 +1541,12 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
 }
 
 // search all commands
-inline void all_commands(vector_O<Str32> commands, Str32_I in_path)
+inline void all_commands(vecStr32_O commands, Str32_I in_path)
 {
-    vector<Str32> fnames;
+    vecStr32 fnames;
     Str32 str, name;
     file_list_ext(fnames, in_path, U"tex");
-    for (Long i = 0; i < Size(fnames); ++i) {
+    for (Long i = 0; i < size(fnames); ++i) {
         read_file(str, in_path + fnames[i]);
         Long ind0 = 0;
         while (true) {
@@ -1554,7 +1554,7 @@ inline void all_commands(vector_O<Str32> commands, Str32_I in_path)
             if (ind0 < 0)
                 break;
             command_name(name, str, ind0);
-            if (!is_in(name, commands))
+            if (!search(name, commands))
                 commands.push_back(name);
             ++ind0;
         }
@@ -1565,7 +1565,7 @@ inline void all_commands(vector_O<Str32> commands, Str32_I in_path)
 inline void PhysWikiCheck(Str32_I path0)
 {
     Long ind0{};
-    vector<Str32> names;
+    vecStr32 names;
     file_list_ext(names, path0, U"tex", false);
     //RemoveNoEntry(names);
     if (names.size() <= 0) return;

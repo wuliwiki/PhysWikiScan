@@ -1,7 +1,7 @@
 ﻿#include "lib/PhysWikiScan.h"
 
 // get arguments
-void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
+void get_args(vecStr32_O args, Int_I argc, Char *argv[])
 {
     args.clear();
     if (argc > 1) {
@@ -25,7 +25,7 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
         for (Int i = 0; i < 100; ++i) {
             ind1 = temp.find(' ', ind0);
             if (ind1 < 0) {
-                if (Size(temp) > ind0)
+                if (size(temp) > ind0)
                     args.push_back(utf8to32(temp.substr(ind0)));
                 break;
             }
@@ -38,7 +38,7 @@ void get_args(vector_O<Str32> args, Int_I argc, Char *argv[])
 
 // read set_path.txt
 // return paths_in.size()
-Long read_path_file(vector_O<Str32> paths_in, vector_O<Str32> paths_out)
+Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out)
 {
 	Str32 temp, line;
 	if (!file_exist("set_path.txt")) {
@@ -73,7 +73,7 @@ Long read_path_file(vector_O<Str32> paths_in, vector_O<Str32> paths_out)
 
 // get path and remove --path options from args
 // return 0 if successful, return -1 if failed
-Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
+Long get_path(Str32_O path_in, Str32_O path_out, vecStr32_IO args)
 {
     Long N = args.size();
 
@@ -89,7 +89,7 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
 	}
 
 	// use path number in set_path.txt
-	vector<Str32> paths_in, paths_out;
+	vecStr32 paths_in, paths_out;
 	if (read_path_file(paths_in, paths_out) < 0)
 		return -1;
     if (args.size() > 1 && args[N - 2] == U"--path") {
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
 #endif
     using namespace slisc;
 
-    vector<Str32> args;
+    vecStr32 args;
     get_args(args, argc, argv);
 
     // input folder, put tex files and code files here
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
-        vector<Str32> titles, entries;
+        vecStr32 titles, entries;
         try {entries_titles(titles, entries, path_in);}
 		catch (Str32_I msg) {
             cerr << msg << endl;
@@ -166,7 +166,7 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from PhysWiki.tex
-        vector<Str32> titles, entries;
+        vecStr32 titles, entries;
         if (file_exist(U"data/titles.txt"))
             read_vec_str(titles, U"data/titles.txt");
         if (file_exist(U"data/entries.txt"))
@@ -184,7 +184,7 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--toc-changed" && args.size() == 1) {
         // table of contents
         // read entries.txt and titles.txt, then generate changed.html from changed.txt
-        vector<Str32> titles, entries;
+        vecStr32 titles, entries;
         if (file_exist(U"data/titles.txt"))
             read_vec_str(titles, U"data/titles.txt");
         if (file_exist(U"data/entries.txt"))
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
-        vector<Str32> labels, ids;
+        vecStr32 labels, ids;
         if (file_exist(U"data/labels.txt")) {
             read_vec_str(labels, U"data/labels.txt");
             Long ind = find_repeat(labels);
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
             cerr << msg << endl;
             return 0;
         }
-        vector<Str32> output;
+        vecStr32 output;
         if (ret == 0) { // added
             Str32 id = args[2] + args[3];
             Long i = search(label, labels);
@@ -243,7 +243,7 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process a single entry
-        vector<Str32> entryN;
+        vecStr32 entryN;
         Str32 temp;
         for (Int i = 1; i < args.size(); ++i) {
             temp = args[i];
@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
         }
     }
     else if (args[0] == U"--all-commands") {
-        vector<Str32> commands;
+        vecStr32 commands;
         all_commands(commands, path_in + U"contents/");
         write_vec_str(commands, U"data/commands.txt");
     }

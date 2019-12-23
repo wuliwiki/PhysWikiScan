@@ -13,7 +13,7 @@ inline Long line_size_lim(Str32_I str, Long_I lim)
         ind0 = str.find(U"\n", ind0);
         ++line;
         if (ind0 < 0) {
-            if (Size(str) - ind_old > lim)
+            if (size(str) - ind_old > lim)
                 return line;
             else
                 return -1;
@@ -60,7 +60,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
 // highlight Matlab keywords
 // str is Matlab code only
 // replace keywords with <span class="keyword_class">...</span>
-inline Long Matlab_keywords(Str32_IO str, vector_I<Str32> keywords, Str32_I keyword_class)
+inline Long Matlab_keywords(Str32_IO str, vecStr32_I keywords, Str32_I keyword_class)
 {
     // find comments and strings
     Intvs intv_comm, intv_str;
@@ -73,15 +73,15 @@ inline Long Matlab_keywords(Str32_IO str, vector_I<Str32> keywords, Str32_I keyw
         // process str backwards so that unprocessed ranges doesn't change
 
         // find the last keyword
-        vector<Long> ikeys;
+        vecLong ikeys;
         ind0 = rfind(ikeys, str, keywords, ind0);
         if (ind0 < 0)
             break;
 
         // in case of multiple match, use the longest keyword (e.g. elseif/else)
         Long ikey, max_size = 0;
-        for (Long i = 0; i < Size(ikeys); ++i) {
-            if (max_size < Size(keywords[ikeys[i]])) {
+        for (Long i = 0; i < size(ikeys); ++i) {
+            if (max_size < size(keywords[ikeys[i]])) {
                 max_size = keywords[ikeys[i]].size();
                 ikey = ikeys[i];
             }
@@ -150,7 +150,7 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 inline Long Matlab_highlight(Str32_IO code)
 {
     // ======= settings ========
-    vector<Str32> keywords = { U"break", U"case", U"catch", U"classdef",
+    vecStr32 keywords = { U"break", U"case", U"catch", U"classdef",
         U"continue", U"else", U"elseif", U"end", U"for", U"function",
         U"global", U"if", U"otherwie", U"parfor", U"persistent",
         U"return", U"spmd", U"switch", U"try", U"while"};

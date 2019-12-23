@@ -18,10 +18,10 @@ public:
     ofstream m_out; // write file
     Int m_n; // variable numbers
     Str fname; // name of the opened file
-    vector<Str> m_name; // variable names
-    vector<Int> m_type; // variable types
-    vector<vector<Long>> m_size; // variable dimensions
-    vector<Long> m_ind; // variable positions (line indices)
+    vecStr m_name; // variable names
+    vecInt m_type; // variable types
+    vector<vecLong> m_size; // variable dimensions
+    vecLong m_ind; // variable positions (line indices)
 
     // open a file, return 0 if success
     // return -2 if reading failed (e.g. file is not finished, wrong format)
@@ -139,7 +139,7 @@ struct Matt_file_not_complete {};
 inline void Matt::get_profile()
 {
     Int i, j, n, temp;
-    vector<Long> size;
+    vecLong size;
     Str name;
     ifstream &fin = m_in;
 
