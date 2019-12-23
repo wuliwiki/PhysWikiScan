@@ -1,28 +1,417 @@
 #pragma once
-#include "global.h"
+#include "arithmetic.h"
+#include "slice_arith.h"
 
 namespace slisc {
 
 // see if elm == vec[i], return i
 // return -1 if not found
-template <class T, class Tv>
-inline Long search(const T &elm, const Tv &vec, Long start = 0)
+inline Long search(Int_I s, VecInt_I v, Long start = 0)
 {
-    for (Long i = start; i < Size(vec); ++i) {
-        if (elm == vec[i])
+	Long N = size(v);
+    for (Long i = start; i < N; ++i) {
+        if (s == v[i])
             return i;
     }
     return -1;
 }
 
+inline Long search(Llong_I s, VecLong_I v, Long start = 0)
+{
+	Long N = size(v);
+    for (Long i = start; i < N; ++i) {
+        if (s == v[i])
+            return i;
+    }
+    return -1;
+}
+
+inline Long search(Str_I s, vecStr_I v, Long start = 0)
+{
+	Long N = size(v);
+    for (Long i = start; i < N; ++i) {
+        if (s == v[i])
+            return i;
+    }
+    return -1;
+}
+
+
+// return true, output ind: if v[ind] == s, else return false
+// v is in ascending order
+// if s < v[0], ind = -1;
+// if s > v[N-1], ind = N-1;
+// else, v[ind] < s < v[ind+1];
+// algorithm: bisection
+inline Bool lookup(Long_O ind, VecInt_I v, Int_I s)
+{
+    Long N = v.size(), ind1 = 0, ind2 = N - 1;
+#ifdef SLS_CHECK_SHAPE
+    if (N < 1)
+		SLS_ERR("empty container!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    else if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = N - 1; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, VecInt_I v, Int_I s, Long ind1, Long ind2)
+{
+#ifdef SLS_CHECK_SHAPE
+	Long N = ind2 - ind1 + 1;
+    if (N < 1)
+		SLS_ERR("range error!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = ind2; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s)
+{
+    Long N = v.size(), ind1 = 0, ind2 = N - 1;
+#ifdef SLS_CHECK_SHAPE
+    if (N < 1)
+		SLS_ERR("empty container!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    else if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = N - 1; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s, Long ind1, Long ind2)
+{
+#ifdef SLS_CHECK_SHAPE
+	Long N = ind2 - ind1 + 1;
+    if (N < 1)
+		SLS_ERR("range error!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = ind2; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s)
+{
+    Long N = v.size(), ind1 = 0, ind2 = N - 1;
+#ifdef SLS_CHECK_SHAPE
+    if (N < 1)
+		SLS_ERR("empty container!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    else if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = N - 1; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s, Long ind1, Long ind2)
+{
+#ifdef SLS_CHECK_SHAPE
+	Long N = ind2 - ind1 + 1;
+    if (N < 1)
+		SLS_ERR("range error!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = ind2; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, vecInt_I v, Int_I s)
+{
+    Long N = v.size(), ind1 = 0, ind2 = N - 1;
+#ifdef SLS_CHECK_SHAPE
+    if (N < 1)
+		SLS_ERR("empty container!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    else if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = N - 1; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, vecInt_I v, Int_I s, Long ind1, Long ind2)
+{
+#ifdef SLS_CHECK_SHAPE
+	Long N = ind2 - ind1 + 1;
+    if (N < 1)
+		SLS_ERR("range error!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = ind2; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s)
+{
+    Long N = v.size(), ind1 = 0, ind2 = N - 1;
+#ifdef SLS_CHECK_SHAPE
+    if (N < 1)
+		SLS_ERR("empty container!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    else if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = N - 1; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s, Long ind1, Long ind2)
+{
+#ifdef SLS_CHECK_SHAPE
+	Long N = ind2 - ind1 + 1;
+    if (N < 1)
+		SLS_ERR("range error!");
+#endif
+    Long diff = s - v[0];
+    if (diff < 0) {
+		ind = -1; return false;
+	}
+    if (diff == 0) {
+        ind = 0; return true;
+    }
+    diff = v[ind2] - s;
+    if (diff < 0) {
+		ind = ind2; return false;
+	}
+    if (diff == 0) {
+        ind = ind2; return true;
+    }
+    while (true) {
+        ind = (ind1 + ind2) / 2;
+        Long diff = v[ind] - s;
+        if (diff > 0)
+			ind2 = ind;
+        else if (diff < 0)
+			ind1 = ind;
+		else
+			return true;
+        if (ind2 - ind1 == 1) {
+            ind = ind1; return false;
+        }
+    }
+}
+
+
 // check if v[i] == v[j] for any i and j
 // return the index of one of the repeated elements
 // return -1 if no reapeat
-template <class Tv>
-inline Long find_repeat(Tv v)
+inline Long find_repeat(vecStr_I v)
 {
-    for (Long i = 0; i < Size(v); ++i) {
-        for (Long j = i + 1; j < Size(v); ++j) {
+	Long N = size(v);
+    for (Long i = 0; i < N; ++i) {
+        for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
         }
@@ -30,43 +419,96 @@ inline Long find_repeat(Tv v)
     return -1;
 }
 
-// search ind so that v[ind] == s
-// same as lookupInt(), but Int operator-(v[i], s) must be implemented
-// operator-(v[i], s) only need to return the correct sign
-// return 0, output ind: if s is found
-// return -1: if s is not found and s < v[0]
-// return 1: if s is not found and v[end] < s
-// return -2: if s is not found and v[0] < s < v[end], output ind so that v[ind] < s < v[ind+1]
-// return -3: if s is not found because v.size() == 0
-template <class T, class T1>
-inline Int lookupInt(Long_O ind, const T1 &v, const T &s)
+inline Long find_repeat(VecChar_I v)
 {
-    Int diff;
-    Long i, N = v.size(), ind1 = 0, ind2 = N - 1;
-    if (N < 1) return -3;
-    diff = v[0] - s;
-    if (diff > 0) return -1;
-    if (diff == 0) {
-        ind = 0; return 0;
-    }
-    diff = v[ind2] - s;
-    if (diff < 0) return 1;
-    
-    // N >= 2 from here
-    if (diff == 0) {
-        ind = ind2; return 0;
-    }
-    // N > 2 from here
-    for (i = 0; i < N; ++i) {
-        ind = (ind1 + ind2) / 2;
-        diff = v[ind] - s;
-        if (diff == 0) return 0;
-        if (diff > 0) ind2 = ind;
-        else ind1 = ind;
-        if (ind2 - ind1 == 1) {
-            ind = ind1; return -2;
+	Long N = size(v);
+    for (Long i = 0; i < N; ++i) {
+        for (Long j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
         }
     }
-    SLS_ERR("slisc::lookup(): unknown error!");
+    return -1;
 }
+
+inline Long find_repeat(VecInt_I v)
+{
+	Long N = size(v);
+    for (Long i = 0; i < N; ++i) {
+        for (Long j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(VecLlong_I v)
+{
+	Long N = size(v);
+    for (Long i = 0; i < N; ++i) {
+        for (Long j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+
+// search a row from a matrix
+// starting from the row `start`
+// return the row index, return -1 if not found
+inline Long search_row(VecInt_I v, CmatInt_I a, Long_I start = 0)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (v.size() != a.n2())
+        SLS_ERR("wrong shape");
+#endif
+    for (Long i = start; i < a.n1(); ++i) {
+        if (v == slice2(a, i))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_row(VecLlong_I v, CmatLlong_I a, Long_I start = 0)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (v.size() != a.n2())
+        SLS_ERR("wrong shape");
+#endif
+    for (Long i = start; i < a.n1(); ++i) {
+        if (v == slice2(a, i))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_row(DvecLlong_I v, CmatLlong_I a, Long_I start = 0)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (v.size() != a.n2())
+        SLS_ERR("wrong shape");
+#endif
+    for (Long i = start; i < a.n1(); ++i) {
+        if (v == slice2(a, i))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_row(VecDoub_I v, CmatDoub_I a, Long_I start = 0)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (v.size() != a.n2())
+        SLS_ERR("wrong shape");
+#endif
+    for (Long i = start; i < a.n1(); ++i) {
+        if (v == slice2(a, i))
+            return i;
+    }
+    return -1;
+}
+
 } // namespace slisc

@@ -1,5 +1,5 @@
 #pragma once
-#include "scalar_arith.h"
+#include "arithmetic.h"
 #include <sstream>
 #include <fstream>
 #include <locale>
@@ -120,7 +120,7 @@ inline Long get_line(Str32_O line, Str32_I str, Long_I start)
 {
     Long ind = str.find(U'\n', start);
     line = str.substr(start, ind - start);
-    if (ind < 0 || ind == str.size() - 1)
+    if (ind < 0 || ind == size(str) - 1)
         return -1;
     return ind + 1;
 }
@@ -131,7 +131,7 @@ inline Long get_line(Str32_O line, Str32_I str, Long_I start)
 inline Long skip_line(Str32_I &str, Long_I start)
 {
     Long ind = str.find(U'\n', start);
-    if (ind < 0 || ind == str.size() - 1)
+    if (ind < 0 || ind == size(str) - 1)
         return -1;
     return ind + 1;
 }
@@ -165,10 +165,10 @@ inline void write_file(Str32_I str32, Str32_I fname)
 // write a vector of strings to file
 // no `\n` allowed in each string
 // file will be ended by a return
-inline void write_vec_str(vector_I<Str32> vec_str, Str32_I fname)
+inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 {
     Str32 str;
-    for (Long i = 0; i < Size(vec_str); ++i) {
+    for (Long i = 0; i < size(vec_str); ++i) {
         str += vec_str[i] + U'\n';
     }
     write_file(str, fname);
@@ -176,7 +176,7 @@ inline void write_vec_str(vector_I<Str32> vec_str, Str32_I fname)
 
 // read the file written by `write_vec_str()`
 // file must be ended by a return
-inline void read_vec_str(vector_O<Str32> vec_str, Str32_I fname)
+inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
 {
     Str32 str;
     vec_str.clear();
@@ -191,21 +191,77 @@ inline void read_vec_str(vector_O<Str32> vec_str, Str32_I fname)
     }
 }
 
-template <class T>
-inline void num2str(Str32_O str, const T &num)
+inline void num2str(Str32_O str, Char_I num)
 {
     Str str0;
     num2str(str0, num);
     utf8to32(str, str0);
 }
 
-template <class T>
-inline Str32 num2str(const T &num)
+inline void num2str(Str32_O str, Int_I num)
+{
+    Str str0;
+    num2str(str0, num);
+    utf8to32(str, str0);
+}
+
+inline void num2str(Str32_O str, Llong_I num)
+{
+    Str str0;
+    num2str(str0, num);
+    utf8to32(str, str0);
+}
+
+inline void num2str(Str32_O str, Float_I num)
+{
+    Str str0;
+    num2str(str0, num);
+    utf8to32(str, str0);
+}
+
+inline void num2str(Str32_O str, Doub_I num)
+{
+    Str str0;
+    num2str(str0, num);
+    utf8to32(str, str0);
+}
+
+
+inline Str32 num2str32(Char_I num)
 {
     Str32 str;
     num2str(str, num);
     return str;
 }
+
+inline Str32 num2str32(Int_I num)
+{
+    Str32 str;
+    num2str(str, num);
+    return str;
+}
+
+inline Str32 num2str32(Llong_I num)
+{
+    Str32 str;
+    num2str(str, num);
+    return str;
+}
+
+inline Str32 num2str32(Float_I num)
+{
+    Str32 str;
+    num2str(str, num);
+    return str;
+}
+
+inline Str32 num2str32(Doub_I num)
+{
+    Str32 str;
+    num2str(str, num);
+    return str;
+}
+
 
  // same as str.insert(), but return one index after key after insertion
 inline Long insert(Str32_IO str, Str32_I key, Long start)
@@ -228,7 +284,7 @@ inline Long CRLF_to_LF(Str32_IO str)
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> keys, Long_I start)
+inline Long find(Long_O ikey, Str32_I str, vecStr32_I keys, Long_I start)
 {
     Long i{}, ind0{}, Nkey{}, imin;
     Nkey = keys.size();
@@ -239,7 +295,7 @@ inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> keys, Long_I start)
              imin = ind0; ikey = i;
          }
     }
-    if (imin == str.size()) imin = -1;
+    if (imin == size(str)) imin = -1;
     return imin;
 }
 
@@ -247,7 +303,7 @@ inline Long find(Long_O ikey, Str32_I str, vector_I<Str32> keys, Long_I start)
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
 // keyword will be found even if starting from the middle of it
-inline Long rfind(Long_O ikey, Str32_I str, vector_I<Str32> key, Long_I start)
+inline Long rfind(Long_O ikey, Str32_I str, vecStr32_I key, Long_I start)
 {
     Long i{}, ind0{}, Nkey{}, imax;
     Nkey = key.size();
@@ -263,7 +319,7 @@ inline Long rfind(Long_O ikey, Str32_I str, vector_I<Str32> key, Long_I start)
 
 // same as FindMultipleReverse, but able to deal with multiple match
 // return the number of matches, return -1 if not found
-inline Long rfind(vector_O<Long> ikey, Str32_I str, vector_I<Str32> key, Long_I start)
+inline Long rfind(vecLong_O ikey, Str32_I str, vecStr32_I key, Long_I start)
 {
     Long i{}, ind0{}, Nkey{}, imax;
     Nkey = key.size();
@@ -350,7 +406,7 @@ inline Long trim(Str32_IO str, Str32_I key = U" ")
 // check if a character is a letter (a-z, A-Z)
 inline Bool is_letter(Char32_I c)
 {
-    if (c >= U'a' && c <= U'z' || c >= U'A' && c <= U'Z')
+    if ((c >= U'a' && c <= U'z') || (c >= U'A' && c <= U'Z'))
         return true;
     return false;
 }
@@ -387,7 +443,7 @@ inline Bool is_whole_word(Str32_I str, Long_I ind, Long_I count)
         return false;
     // check right
     ind0 += 1 + count;
-    if (ind0 < Size(str) && is_alphanum_(str[ind0]))
+    if (ind0 < size(str) && is_alphanum_(str[ind0]))
         return false;
     return true;
 }
@@ -430,7 +486,7 @@ inline Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
 // TODO: replace this with basic_string::find_first_not_of
 inline Long NextNoSpace(Str32_O c, Str32_I str, Long start)
 {
-    for (Long i = start; i < Size(str); ++i) {
+    for (Long i = start; i < size(str); ++i) {
         c = str.at(i);
         if (c == U" ")
             continue;
@@ -447,7 +503,6 @@ inline Long ExpectKeyReverse(Str32_I str, Str32_I key, Long start)
     if (start < 0)
         return -2;
     Long ind = start;
-    Long L = str.size();
     Long L0 = key.size();
     Long ind0 = L0 - 1;
     Char32 c0, c;
@@ -493,7 +548,7 @@ inline Long str2int(Long_O num, Str32_I str, Long start)
         SLS_ERR("not a number!"); return -1;  // break point here
     }
     num = c - '0';
-    for (i = start + 1; i < Size(str); ++i) {
+    for (i = start + 1; i < size(str); ++i) {
         c = str.at(i);
         if (c >= '0' && c <= '9')
             num = 10 * num + (Long)(c - '0');
@@ -576,7 +631,7 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 
     Char32 c, c0 = ' ';
     Long Nleft = 1;
-    for (Long i = ind + 1; i < Size(str); i++)
+    for (Long i = ind + 1; i < size(str); i++)
     {
         c = str.at(i);
         if (c == left && c0 != '\\')
@@ -595,12 +650,11 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 // match braces
 // return -1 means failure, otherwise return number of {} paired
 // output ind_left, ind_right, ind_RmatchL
-inline Long MatchBraces(vector_O<Long> ind_left, vector_O<Long> ind_right,
-    vector_O<Long> ind_RmatchL, Str32_I str, Long start, Long end)
+inline Long MatchBraces(vecLong_O ind_left, vecLong_O ind_right,
+    vecLong_O ind_RmatchL, Str32_I str, Long start, Long end)
 {
     ind_left.resize(0); ind_right.resize(0); ind_RmatchL.resize(0);
     Char32 c, c_last = ' ';
-    Bool continuous{ false };
     Long Nleft = 0, Nright = 0;
     vector<Bool> Lmatched;
     Bool matched;
@@ -637,12 +691,12 @@ inline Long MatchBraces(vector_O<Long> ind_left, vector_O<Long> ind_right,
 }
 
 // list all files in current directory, with a given extension
-inline void file_list_ext(vector_O<Str32> fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
+inline void file_list_ext(vecStr32_O fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
 {
-    vector<Str> fnames8;
+    vecStr fnames8;
     fnames.resize(0);
     file_list_ext(fnames8, utf32to8(path), utf32to8(ext), keep_ext);
-    for (Long i = 0; i < Size(fnames8); ++i)
+    for (Long i = 0; i < size(fnames8); ++i)
         fnames.push_back(utf8to32(fnames8[i]));
 }
 
@@ -656,11 +710,11 @@ inline void file_copy(Str32_I fname_out, Str32_I fname_in, Bool_I replace)
 // reference: https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
 inline Bool is_chinese(Char32_I c)
 {
-    if (c >= U'\u2E80' && c <= U'\u2FD5' ||
-        c >= U'\u3190' && c <= U'\u319f' ||
-        c >= U'\u3400' && c <= U'\u4DBF' ||
-        c >= U'\u4E00' && c <= U'\u9FCC' ||
-        c >= U'\uF900' && c <= U'\uFAAD')
+    if ((c >= U'\u2E80' && c <= U'\u2FD5') ||
+        (c >= U'\u3190' && c <= U'\u319f') ||
+        (c >= U'\u3400' && c <= U'\u4DBF') ||
+        (c >= U'\u4E00' && c <= U'\u9FCC') ||
+        (c >= U'\uF900' && c <= U'\uFAAD'))
         return true;
     return false;
 }
