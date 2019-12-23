@@ -42,8 +42,7 @@ Long read_path_file(vector_O<Str32> paths_in, vector_O<Str32> paths_out)
 {
 	Str32 temp, line;
 	if (!file_exist("set_path.txt")) {
-		err_msg = U"内部错误： set_path.txt 不存在!";
-		return -1;
+		throw Str32(U"内部错误： set_path.txt 不存在!");
 	}
 	read_file(temp, "set_path.txt");
 	CRLF_to_LF(temp);
@@ -52,19 +51,16 @@ Long read_path_file(vector_O<Str32> paths_in, vector_O<Str32> paths_out)
 	for (Long i = 0; i < 100; ++i) {
 		ind0 = skip_line(temp, ind0);
 		if (ind0 < 0) {
-			err_msg = U"内部错误： path.txt 格式";
-			return -1;
+			throw Str32(U"内部错误： path.txt 格式");
 		}
 		ind0 = get_line(line, temp, ind0);
 		if (ind0 < 0) {
-			err_msg = U"内部错误： path.txt 格式";
-			return -1;
+			throw Str32(U"内部错误： path.txt 格式");
 		}
 		paths_in.push_back(line); trim(paths_in.back());
 		ind0 = skip_line(temp, ind0);
 		if (ind0 < 0) {
-			err_msg = U"内部错误： path.txt 格式";
-			return -1;
+			throw Str32(U"内部错误： path.txt 格式");
 		}
 		ind0 = get_line(line, temp, ind0);
 		paths_out.push_back(line); trim(paths_out.back());
@@ -110,8 +106,7 @@ Long get_path(Str32_O path_in, Str32_O path_out, vector_IO<Str32> args)
             path_out = paths_out[2];
         }
         else {
-            err_msg = U"illegal --path argument!";
-            return -1;
+            throw Str32(U"illegal --path argument!");
         }
         args.pop_back(); args.pop_back();
     }
@@ -141,8 +136,9 @@ int main(int argc, char *argv[]) {
     Str32 path_in;
 	// output folder, for html and images
     Str32 path_out;
-    if (get_path(path_in, path_out, args) < 0) {
-        cerr << err_msg << endl;
+    try {get_path(path_in, path_out, args);}
+	catch (Str32_I msg) {
+        cerr << msg << endl;
         return 0;
     }
 
@@ -150,13 +146,18 @@ int main(int argc, char *argv[]) {
 
     if (args[0] == U"." && args.size() == 1) {
         // interactive full run (ask to try again in error)
-        PhysWikiOnline(path_in, path_out);
+        try {PhysWikiOnline(path_in, path_out);}
+		catch (Str32_I msg) {
+			cerr << msg << endl;
+			return 0;
+		}
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
         vector<Str32> titles, entries;
-        if (entries_titles(titles, entries, path_in) < 0) {
-            cerr << err_msg << endl;
+        try {entries_titles(titles, entries, path_in);}
+		catch (Str32_I msg) {
+            cerr << msg << endl;
             return 0;
         }
         write_vec_str(titles, U"data/titles.txt");
@@ -171,12 +172,12 @@ int main(int argc, char *argv[]) {
         if (file_exist(U"data/entries.txt"))
             read_vec_str(entries, U"data/entries.txt");
         if (titles.size() != entries.size()) {
-            err_msg = U"内部错误： titles.txt 和 entries.txt 行数不同!";
-            cerr << err_msg << endl;
+            cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        if (table_of_contents(titles, entries, path_in, path_out) < 0) {
-            cerr << err_msg << endl;
+        try {table_of_contents(titles, entries, path_in, path_out);}
+		catch (Str32_I msg) {
+            cerr << msg << endl;
             return 0;
         }
     }
@@ -189,12 +190,12 @@ int main(int argc, char *argv[]) {
         if (file_exist(U"data/entries.txt"))
             read_vec_str(entries, U"data/entries.txt");
         if (titles.size() != entries.size()) {
-            err_msg = U"内部错误： titles.txt 和 entries.txt 行数不同!";
-            cerr << err_msg << endl;
+            cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        if (table_of_changed(titles, entries, path_in, path_out) < 0) {
-            cerr << err_msg << endl;
+        try {table_of_changed(titles, entries, path_in, path_out);}
+		catch (Str32_I msg) {
+            cerr << msg << endl;
             return 0;
         }
     }
@@ -205,22 +206,22 @@ int main(int argc, char *argv[]) {
             read_vec_str(labels, U"data/labels.txt");
             Long ind = find_repeat(labels);
             if (ind >= 0) {
-                err_msg = U"内部错误： labels.txt 存在重复：" + labels[ind];
-                cerr << err_msg << endl;
+                cerr << U"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
                 return 0;
             }
         }
         if (file_exist(U"data/ids.txt"))
             read_vec_str(ids, U"data/ids.txt");
         Str32 label;
-        Long ret = check_add_label(label, args[1], args[2],
-            atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);
-        vector<Str32> output;
-        if (ret == -1) { // error
-            cerr << err_msg << endl;
+		Long ret;
+        try {ret = check_add_label(label, args[1], args[2],
+            atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);}
+		catch (Str32_I msg) {
+            cerr << msg << endl;
             return 0;
         }
-        else if (ret == 0) { // added
+        vector<Str32> output;
+        if (ret == 0) { // added
             Str32 id = args[2] + args[3];
             Long i = search(label, labels);
             if (i < 0) {
@@ -250,8 +251,9 @@ int main(int argc, char *argv[]) {
                 break;
             entryN.push_back(temp);
         }
-        if (PhysWikiOnlineN(entryN, path_in, path_out) < 0) {
-            cerr << err_msg << endl;
+        try {PhysWikiOnlineN(entryN, path_in, path_out);}
+		catch (Str32_I msg) {
+            cerr << msg << endl;
             return 0;
         }
     }
@@ -261,8 +263,7 @@ int main(int argc, char *argv[]) {
         write_vec_str(commands, U"data/commands.txt");
     }
     else {
-        err_msg = U"内部错误： 命令不合法";
-        cerr << err_msg << endl;
+        cerr << U"内部错误： 命令不合法" << endl;
         return 0;
     }
     
@@ -273,6 +274,6 @@ int main(int argc, char *argv[]) {
         cout << u8"按任意键退出..." << endl;
         getchar();
     }
-        
+
     return 0;
 }

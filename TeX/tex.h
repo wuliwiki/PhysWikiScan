@@ -228,8 +228,8 @@ inline Bool index_in_env(Long& iname, Long ind, vector_I<Str32> names, Str32_I s
 {
     Intvs intv;
     for (Long i = 0; i < Size(names); ++i) {
-        while (find_env(intv, str, names[i]) < 0) {
-            Input().getBool("failed! retry?");
+        if (find_env(intv, str, names[i]) < 0) {
+            throw Str32(U"environment " + names[i] + " not found!");
         }
         if (is_in(ind, intv)) {
             iname = i;

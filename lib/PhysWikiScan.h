@@ -1,14 +1,12 @@
 ﻿#pragma once
 #include "../SLISC/file.h"
 #include "../SLISC/unicode.h"
-#include "../SLISC/input.h"
 #include "../SLISC/tree.h"
 #include "../TeX/tex2html.h"
 #include "../highlight/matlab2html.h"
 #include "../highlight/cpp2html.h"
 
 using namespace slisc;
-Str32 err_msg;
 
 // get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
@@ -16,25 +14,21 @@ Str32 err_msg;
 inline Long get_title(Str32_O title, Str32_I str)
 {
     if (str.at(0) != U'%') {
-        err_msg = U"请在第一行注释标题!"; // break point here
-        return -1;
+        throw Str32(U"请在第一行注释标题!"); // break point here
     }
     Str32 c;
     Long ind0 = NextNoSpace(c, str, 1);
     if (ind0 < 0) {
-        err_msg = U"标题不能为空!"; // break point here
-        return -1;
+        throw Str32(U"标题不能为空!"); // break point here
     }
     Long ind1 = str.find(U'\n', ind0);
     if (ind1 < 0) {
-        err_msg = U"正文不能为空!"; // break point here
-        return -1;
+        throw Str32(U"正文不能为空!"); // break point here
     }
     title = str.substr(ind0, ind1 - ind0);
     ind0 = title.find(U"\\");
     if (ind0 >= 0) {
-        err_msg = U"注释的标题不能含有 “\\” !"; // break point here
-        return -1;
+        throw Str32(U"注释的标题不能含有 “\\” !"); // break point here
     }
     return 0;
 }
@@ -211,8 +205,7 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
         if (ind2 >= ind4) {
-            err_msg = U"label 不在环境内!"; // break point here
-            return -1;
+            throw Str32(U"label 不在环境内!"); // break point here
         }
         // detect environment kind
         ind1 = expect(str, U"{", ind4 + 6);
@@ -250,15 +243,13 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
             idName = U"eq"; envName = U"align";
         }
         else {
-            err_msg = U"该环境不支持 label!";
-            return -1; // break point here
+            throw Str32(U"该环境不支持 label!");
         }
         // check label format and save label
         ind0 = expect(str, U"{", ind5 + 6);
         ind3 = expect(str, entryName + U'_' + idName, ind0);
         if (ind3 < 0) {
-            err_msg = U"label 格式错误， 是否为 \"" + entryName + U'_' + idName + U"\"？";
-            return -1; // break point here
+            throw Str32(U"label 格式错误， 是否为 \"" + entryName + U'_' + idName + U"\"？");
         }
         ind3 = str.find(U"}", ind3);
         
@@ -268,8 +259,7 @@ inline Long EnvLabel(vector_IO<Str32> ids, vector_IO<Str32> labels,
         if (ind < 0)
             labels.push_back(label);
         else if (!allow_label_repeat) {
-            err_msg = U"标签多次定义： " + labels[ind];
-            return -1;
+            throw Str32(U"标签多次定义： " + labels[ind]);
         }
         
         // count idNum, insert html id tag, delete label
@@ -342,8 +332,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
         indName1 = str.find(U"figures/", ind0) + 8;
         indName2 = str.find(U"}", ind0) - 1;
         if (indName1 < 0 || indName2 < 0) {
-            err_msg = U"读取图片名错误!"; // breakpoint here
-            return -1;
+            throw Str32(U"读取图片名错误!"); // breakpoint here
         }
         figName = str.substr(indName1, indName2 - indName1 + 1);
         trim(figName);
@@ -359,15 +348,13 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
             figName = figName.substr(0, Nname - 4);
         }
         else {
-            err_msg = U"图片格式不支持!";
-            return -1; // break point here
+            throw Str32(U"图片格式不支持!");
         }
 
         fname_in = path_in + U"figures/" + figName + U"." + format;
         fname_out = path_out + figName + U"." + format;
         if (!file_exist(fname_in)) {
-            err_msg = U"图片 \"" + fname_in + U"\" 未找到!";
-            return -1; // break point here
+            throw Str32(U"图片 \"" + fname_in + U"\" 未找到!");
         }
 
         file_copy(fname_out, fname_in, true);
@@ -375,8 +362,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
         if (ind0 < 0) {
-            err_msg = U"图片标题未找到!";
-            return -1; // break point here
+            throw Str32(U"图片标题未找到!");
         }
         ind0 = expect(str, U"{", ind0 + 8);
         ind1 = pair_brace(str, ind0);
@@ -422,8 +408,7 @@ inline Long depend_entry(vector_IO<Long> links, Str32_I str, vector_I<Str32> ent
                 }
             }
             if (!flag) {
-                err_msg = U"\\upref 引用的文件未找到: " + depEntry + ".tex";
-                return -1;
+                throw Str32(U"\\upref 引用的文件未找到: " + depEntry + ".tex");
             }
             links.push_back(i);
             links.push_back(ind);
@@ -523,19 +508,16 @@ inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryNa
         inEq = index_in_env(ienv, ind0, envNames, str);
         ind1 = expect(str, U"{", ind0 + 8);
         if (ind1 < 0) {
-            err_msg = U"\\autoref 变量不能为空!";
-            return -1;
+            throw Str32(U"\\autoref 变量不能为空!");
         }
         ind1 = NextNoSpace(entry, str, ind1);
         ind2 = str.find('_', ind1);
         if (ind2 < 0) {
-            err_msg = U"\\autoref 格式错误!";
-            return -1;
+            throw Str32(U"\\autoref 格式错误!");
         }
         ind3 = find_num(str, ind2);
         if (ind3 < 0) {
-            err_msg = U"autoref 格式错误!";
-            return -1;
+            throw Str32(U"autoref 格式错误!");
         }
         idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
         if (idName == U"eq") kind = U"式";
@@ -548,8 +530,7 @@ inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryNa
         else if (idName == U"exe") kind = U"练习";
         else if (idName == U"tab") kind = U"表";
         else {
-            err_msg = U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!";
-            return -1; // break point here
+            throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!");
         }
         ind3 = str.find('}', ind3);
         // find id of the label
@@ -558,11 +539,10 @@ inline Long autoref(vector_I<Str32> ids, vector_I<Str32> labels, Str32_I entryNa
             if (label0 == labels[i]) break;
         }
         if (i == labels.size()) {
-            err_msg = U"label \"" + label0 + U"\" 未找到!";
-            return -1; // break point here
+            throw Str32(U"label \"" + label0 + U"\" 未找到!");
         }
         ind4 = find_num(ids[i], 0);
-        idNum = ids[i].substr(ind4);        
+        idNum = ids[i].substr(ind4);     
         entry = str.substr(ind1, ind2 - ind1);
         if (entry != entryName) {// reference the same entry
             newtab = U"target = \"_blank\"";
@@ -623,8 +603,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     // label does not exist
     Str32 full_name = path_in + "/contents/" + entry + ".tex";
     if (!file_exist(full_name)) {
-        err_msg = U"文件不存在： " + entry + ".tex";
-        return -1;
+        throw Str32(U"文件不存在： " + entry + ".tex");
     }
     Str32 str;
     read_file(str, full_name);
@@ -640,8 +619,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 
     Long idNum = search(idName, idNames);
     if (idNum < 0) {
-        err_msg = U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!";
-        return -1; // break point here
+        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!");
     }
     
     // count environment display number starting at ind4
@@ -649,8 +627,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     if (idName != U"eq") {
         Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
         if (ind > Nid) {
-            err_msg = U"被引用对象不存在!";
-            return -1;
+            throw Str32(U"被引用对象不存在!");
         }
 
         new_label_name(label, idName, entry, str);
@@ -666,8 +643,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
         while (true) {
             ind0 = find_command(str, U"begin", ind0);
             if (ind0 < 0) {
-                err_msg = U"被引用公式不存在!";
-                return -1;
+                throw Str32(U"被引用公式不存在!");
             }
             if (is_in(ind0, intvComm)) {
                 ++ind0; continue;
@@ -720,8 +696,7 @@ inline Long href(Str32_IO str)
         command_arg(name, str, ind0, 1);
         if (url.substr(0, 7) != U"http://" &&
             url.substr(0, 8) != U"https://") {
-            err_msg = U"链接格式错误: " + url;
-            return -1;
+            throw Str32(U"链接格式错误: " + url);
         }
 
         Long ind1 = skip_command(str, ind0, 2);
@@ -744,8 +719,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
         command_arg(entryName, str, ind0);
         trim(entryName);
         if (!file_exist(path_in + U"contents/" + entryName + U".tex")) {
-            err_msg = U"\\upref 引用的文件未找到： " + entryName + U".tex";
-            return -1; // break point here
+            throw Str32(U"\\upref 引用的文件未找到： " + entryName + U".tex");
         }
         right = skip_command(str, ind0, 1);
         str.replace(ind0, right - ind0,
@@ -766,8 +740,7 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
     file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
     RemoveNoEntry(entries);
     if (entries.size() == 0) {
-        err_msg = U"未找到任何词条";
-        return -1;
+        throw Str32(U"未找到任何词条");
     }
 
     Long N = 0, ind0 = 0;
@@ -793,16 +766,14 @@ inline Long entries_titles(vector_O<Str32> titles, vector_O<Str32> entries, Str3
         command_arg(title, str, ind0);
         replace(title, U"\\ ", U" ");
         if (title.empty()) {
-            err_msg = U"PhysWiki.tex 中词条中文名不能为空!";
-            return -1;  // break point here
+            throw Str32(U"PhysWiki.tex 中词条中文名不能为空!");
         }
         command_arg(entryName, str, ind0, 1);
 
         // record Chinese title
         Long ind = search(entryName, entries);
         if (ind < 0) {
-            err_msg = U"PhysWiki.tex 中词条文件 " + entryName + U" 未找到!";
-            return -1; // break point here
+            throw Str32(U"PhysWiki.tex 中词条文件 " + entryName + U" 未找到!");
         }
         titles[ind] = title;
         ++ind0;
@@ -871,8 +842,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
             if (title.empty()) {
-                err_msg = U"PhysWiki.tex 中词条中文名不能为空!";
-                return -1;  // break point here
+                throw Str32(U"PhysWiki.tex 中词条中文名不能为空!");
             }
             command_arg(entryName, str, ind1, 1);
             // insert entry into html table of contents
@@ -881,8 +851,7 @@ inline Long table_of_contents(vector_I<Str32> titles, vector_I<Str32> entries, S
             // record Chinese title
             Long ind = search(entryName, entries);
             if (ind < 0) {
-                err_msg = U"PhysWiki.tex 中词条文件 " + entryName + " 未找到!";
-                return -1; // break point here
+                throw Str32(U"PhysWiki.tex 中词条文件 " + entryName + " 未找到!");
             }
             ++ind1;
         }
@@ -942,13 +911,11 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
     else
         read_vec_str(changed, U"data/changed.txt");
     if (!file_exist(U"data/authors.txt")) {
-        err_msg = U"内部错误： data/authors.txt 不存在!";
-        return -1;
+        throw Str32(U"内部错误： data/authors.txt 不存在!");
     }
     read_vec_str(authors, U"data/authors.txt");
     if (changed.size() != authors.size()) {
-        err_msg = U"内部错误： changed.txt 和 authors.txt 行数不同!";
-        return -1;
+        throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
     }
 
     read_file(toc, "lib/changed_template.html"); // read html template
@@ -963,8 +930,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
     for (Long i = 0; i < Size(changed); ++i) {
         Long ind = changed[i].rfind('.');
         if (ind < 0) {
-            err_msg = U"内部错误： changed.txt 中文件必须有后缀名!";
-            return -1; // break point here
+            throw Str32(U"内部错误： changed.txt 中文件必须有后缀名!");
         }
         if (changed[i].substr(ind + 1) != U"tex")
             continue;
@@ -976,8 +942,7 @@ inline Long table_of_changed(vector_I<Str32> titles, vector_I<Str32> entries, St
         // get Chinese title
         ind = search(entryName, entries);
         if (ind < 0) {
-            err_msg = U"内部错误： changed.txt 中词条文件未找到： " + entryName;
-            return -1; // break point here
+            throw Str32(U"内部错误： changed.txt 中词条文件未找到： " + entryName);
         }
         // insert entry into html table of contents
         ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
@@ -1031,14 +996,12 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
         command_arg(name, str, ind0);
         // read file
         if (!file_exist(path_in + "codes/" + utf32to8(name) + ".m")) {
-            err_msg = U"代码文件 \"" + utf32to8(name) + ".m\" 未找到!";
-            return -1; // break point here
+            throw Str32(U"代码文件 \"" + utf32to8(name) + ".m\" 未找到!");
         }
         read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
         CRLF_to_LF(code);
         if (line_size_lim(code, 78) >= 0) {
-            err_msg = U"Matlab 单行代码过长！";
-            return -1;
+            throw Str32(U"Matlab 单行代码过长！");
         }
         trim(code, U"\n ");
         Matlab_highlight(code);
@@ -1074,13 +1037,11 @@ inline Long lstlisting(Str32_IO str)
             Long ind1 = pair_brace(str, ind0, U'[');
             ind0 = expect(str, U"language", ind0);
             if (ind0 < 0) {
-                err_msg = U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!";
-                return -1;
+                throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
             }
             ind0 = expect(str, U"=", ind0);
             if (ind0 < 0) {
-                err_msg = U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!";
-                return -1;
+                throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
             }
             lang = str.substr(ind0, ind1 - ind0); trim(lang);
             ind0 = ind1 + 1;
@@ -1091,8 +1052,7 @@ inline Long lstlisting(Str32_IO str)
         code = str.substr(ind0, intvIn.R(i) + 1 - ind0);
         trim(code, U"\n ");
         if (line_size_lim(code, 78) >= 0) {
-            err_msg = U"单行代码过长!";
-            return -1;
+            throw Str32(U"单行代码过长!");
         }
         
         // highlight
@@ -1156,8 +1116,7 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
     Str32 word;
     Long ind0 = str.find(U"\n", 0);
     if (ind0 < 0) {
-        err_msg = U"没有注释标题!";
-        return -1;
+        throw Str32(U"没有注释标题!");
     }
     ind0++;
     ind0 = expect(str, U"%", ind0);
@@ -1180,8 +1139,7 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
         word = line.substr(ind0, ind1 - ind0);
         trim(word);
         if (word.empty()) {
-            err_msg = U"关键词不能为空！";
-            return -1;
+            throw Str32(U"关键词不能为空！");
         }
         keywords.push_back(word);
         ind0 = ind1 + 1;
@@ -1189,8 +1147,7 @@ inline Long get_keywords(vector_O<Str32> keywords, Str32_I str)
     word = line.substr(ind0);
     trim(word);
     if (word.empty()) {
-        err_msg = U"关键词不能为空！";
-        return -1;
+        throw Str32(U"关键词不能为空！");
     }
     keywords.push_back(word);
     return keywords.size();
@@ -1270,18 +1227,15 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
     }
 
     if (!titles[ind].empty() && title != titles[ind]) {
-        err_msg = U"中文标题不符: " + title + " | " + titles[ind];
-        return -1;
+        throw Str32(U"中文标题不符: " + title + " | " + titles[ind]);
     }
     // insert \newcommand{}
     if (replace(html, U"PhysWikiCommand", newcomm) != 1) {
-        err_msg = U"newcommand.html 格式错误!";
-        return -1;
+        throw Str32(U"newcommand.html 格式错误!");
     }
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
-        err_msg = U"newcommand.html 格式错误!";
-        return -1;
+        throw Str32(U"newcommand.html 格式错误!");
     }
     // remove comments
     Intvs intvComm;
@@ -1373,8 +1327,7 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
     if (lstlisting(str) < 0)
         return -1;
     if (lstinline(str) < 0) {
-        err_msg = U"lstinline 格式错误， 请使用 lstinline|...|";
-        return -1;
+        throw Str32(U"lstinline 格式错误， 请使用 lstinline|...|");
     }
 
     Command2Tag(U"x", U"<code>", U"</code>", str);
@@ -1384,12 +1337,12 @@ inline Long PhysWikiOnline1(vector_IO<Str32> ids, vector_IO<Str32> labels, vecto
     replace(str, U"\\dfracH", U"");
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1) {
-        err_msg = U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!";
+        throw Str32(U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!");
         return -1;
     }
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1) {
-        err_msg = U"\"PhysWikiHTMLbody\" 在 entry_template.html 中未找到!";
+        throw Str32(U"\"PhysWikiHTMLbody\" 在 entry_template.html 中未找到!");
         return -1;
     }
     // save html file
@@ -1419,9 +1372,7 @@ inline Long dep_json(vector_I<Str32> entries, vector_I<Str32> titles, vector_I<L
     tree_gen(tree, links);
     Long ret = tree_redundant(links1, tree);
     if (ret < 0) {
-        err_msg = "预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！";
-        cout << err_msg << endl;
-        exit(EXIT_FAILURE);
+        throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
     }
     if (Size(links1) > 0) {
         cout << "\n" << endl;
@@ -1460,12 +1411,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
     cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
 
-    if (table_of_contents(titles, entries, path_in, path_out) < 0) {
-        cout << err_msg << endl;
-        if (!Input().getBool("重试?")) {
-            exit(EXIT_FAILURE);
-        }
-    }
+    table_of_contents(titles, entries, path_in, path_out);
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
     vector<Long> links;
@@ -1482,11 +1428,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        if (PhysWikiOnline1(ids, labels, links,
-            path_in, path_out, entries, titles, i, false) < 0) {
-            cout << err_msg << endl;
-            exit(EXIT_FAILURE);
-        }
+        PhysWikiOnline1(ids, labels, links,
+            path_in, path_out, entries, titles, i, false);
     }
 
     // save id and label data
@@ -1507,11 +1450,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
                 << std::setw(20) << std::left << titles[i] << endl;
         read_file(html, path_out + entries[i] + ".html"); // read html file
         // process \autoref and \upref
-        if (autoref(ids, labels, entries[i], html) < 0) {
-            cout << err_msg << endl;
-            Input().getBool("already in second scan, please rerun the program!");
-            exit(EXIT_FAILURE);
-        }
+        autoref(ids, labels, entries[i], html);
         write_file(html, path_out + entries[i] + ".html"); // save html file
     }
     cout << endl;
@@ -1525,38 +1464,30 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
     // the number in id is the n-th occurrence of the same type of environment
     vector<Str32> labels, ids, entries, titles;
     if (!file_exist(U"data/labels.txt")) {
-        err_msg = U"内部错误： data/labels.txt 不存在!";
-        return -1;
+        throw Str32(U"内部错误： data/labels.txt 不存在!");
     }
     read_vec_str(labels, U"data/labels.txt");
     Long ind = find_repeat(labels);
     if (ind >= 0) {
-        err_msg = U"内部错误： labels.txt 存在重复：" + labels[ind];
-        cerr << err_msg << endl;
-        return 0;
+        throw Str32(U"内部错误： labels.txt 存在重复：" + labels[ind]);
     }
     if (!file_exist(U"data/ids.txt")) {
-        err_msg = U"内部错误： data/ids.txt 不存在!";
-        return -1;
+        throw Str32(U"内部错误： data/ids.txt 不存在!");
     }
     read_vec_str(ids, U"data/ids.txt");
     if (!file_exist(U"data/entries.txt")) {
-        err_msg = U"内部错误： data/entries.txt 不存在!";
-        return -1;
+        throw Str32(U"内部错误： data/entries.txt 不存在!");
     }
     read_vec_str(entries, U"data/entries.txt");
     if (!file_exist(U"data/titles.txt")) {
-        err_msg = U"内部错误： data/titles.txt 不存在!";
-        return -1;
+        throw Str32(U"内部错误： data/titles.txt 不存在!");
     }
     read_vec_str(titles, U"data/titles.txt");
     if (labels.size() != ids.size()) {
-        err_msg = U"内部错误： labels.txt 与 ids.txt 长度不符";
-        return -1;
+        throw Str32(U"内部错误： labels.txt 与 ids.txt 长度不符");
     }
     if (entries.size() != titles.size()) {
-        err_msg = U"内部错误： entries.txt 与 titles.txt 长度不符";
-        return -1;
+        throw Str32(U"内部错误： entries.txt 与 titles.txt 长度不符");
     }
 
     // 1st loop through tex files
@@ -1569,8 +1500,7 @@ inline Long PhysWikiOnlineN(vector_I<Str32> entryN, Str32_I path_in, Str32_I pat
     for (Long i = 0; i < Size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         if (ind < 0) {
-            err_msg = U"entries.txt 中未找到该词条!";
-            return -1;
+            throw Str32(U"entries.txt 中未找到该词条!");
         }
 
         cout << std::setw(5) << std::left << ind
