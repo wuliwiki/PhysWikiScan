@@ -24,31 +24,33 @@ void tree_gen(vector<Node> &tree, vecLong_I links)
 
 // iterative implementation of tree_all_dep()
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_all_dep_imp(vecLong_O deps, const vector<Node> &tree, Long_I ind)
+Long tree_all_dep_imp(vecLong_O deps, const vector<Node> &tree, Long_I ind, vecStr32_I vector, Long Niter = 0)
 {
-    static Long Niter = 0;
+	++Niter;
     // cout << "tree debug: ind = " << ind << ", level = " << Niter << endl;
     if (Niter > 300) {
+		SLS_WARN("too many levels of dependencies! returning...");
         return -1-ind;
     }
     for (Long i = 0; i < size(tree[ind].last); ++i) {
         Long ind0 = tree[ind].last[i];
         deps.push_back(ind0);
-        ++Niter;
-        Long ret = tree_all_dep_imp(deps, tree, ind0);
-        if (ret < 0)
-            return ret;
-        --Niter;
+        Long ret = tree_all_dep_imp(deps, tree, ind0, vector, Niter);
+		--Niter;
+        if (ret < 0) {
+			cout << "debug: Niter = " << Niter << "  vector[" << ind << "] = " << vector[ind] << endl;
+			return ret;
+		}
     }
     return 0;
 }
 
 // find all upstream nodes of a tree, and the distances
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_all_dep(vecLong_O deps, const vector<Node> &tree, Long_I ind)
+Long tree_all_dep(vecLong_O deps, const vector<Node> &tree, Long_I ind, vecStr32_I vector)
 {
     deps.clear();
-    Long ret = tree_all_dep_imp(deps, tree, ind);
+    Long ret = tree_all_dep_imp(deps, tree, ind, vector);
     if (ret < 0)
         return ret;
     while (true) {
@@ -62,12 +64,12 @@ Long tree_all_dep(vecLong_O deps, const vector<Node> &tree, Long_I ind)
 
 // find redundant i.e. if A->B->...C, then A->C is redundent
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
-Long tree_redundant(vecLong_O links, const vector<Node> &tree)
+Long tree_redundant(vecLong_O links, const vector<Node> &tree, vecStr32_I vector)
 {
     vecLong deps;
     for (Long i = 0; i < Long(tree.size()); ++i) {
         deps.clear();
-        Long ret = tree_all_dep_imp(deps, tree, i);
+        Long ret = tree_all_dep_imp(deps, tree, i, vector);
         if (ret < 0)
             return ret;
         for (Long j = 0; j < size(tree[i].last); ++j) {
