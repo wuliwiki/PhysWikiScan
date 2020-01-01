@@ -175,19 +175,17 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
     // find comments including the ones in lstlisting (doesn't matter)
     find_comments(intvComm, str, U"%");
     while (true) {
-        // find "\begin{env}"
         ind0 = find_command_spec(str, U"begin", env, ind0);
         if (ind0 < 0)
             return intv.size();
         if (option == 'i') {
-            if (env == U"example" || env == U"exercise")
+            if (env == U"example" || env == U"exercise" || env == U"definition" || env == U"lemma" || env == U"theorem" || env == U"corollary")
                 ind0 = skip_command(str, ind0, 2);
             else
                 ind0 = skip_command(str, ind0, 1);
         }
         intv.pushL(ind0);
 
-        // find "\end{env}"
         ind0 = find_command_spec(str, U"end", env, ind0);
         if (ind0 < 0)
             return -1;
