@@ -38,7 +38,7 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
 
 // read set_path.txt
 // return paths_in.size()
-Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out)
+Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_data)
 {
 	Str32 temp, line;
 	if (!file_exist("set_path.txt")) {
@@ -49,21 +49,35 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out)
 
 	Long ind0 = 0;
 	for (Long i = 0; i < 100; ++i) {
+        // paths_in
 		ind0 = skip_line(temp, ind0);
 		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式");
+			throw Str32(U"内部错误： path.txt 格式 (a)");
 		}
 		ind0 = get_line(line, temp, ind0);
 		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式");
+			throw Str32(U"内部错误： path.txt 格式 (b)");
 		}
 		paths_in.push_back(line); trim(paths_in.back());
+
+        // paths_out
 		ind0 = skip_line(temp, ind0);
 		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式");
+			throw Str32(U"内部错误： path.txt 格式 (c)");
 		}
-		ind0 = get_line(line, temp, ind0);
-		paths_out.push_back(line); trim(paths_out.back());
+        ind0 = get_line(line, temp, ind0);
+        if (ind0 < 0) {
+			throw Str32(U"内部错误： path.txt 格式 (b)");
+		}
+        paths_out.push_back(line); trim(paths_out.back());
+
+        // paths_data
+		ind0 = skip_line(temp, ind0);
+		if (ind0 < 0) {
+			throw Str32(U"内部错误： path.txt 格式 (c)");
+		}
+        ind0 = get_line(line, temp, ind0);
+        paths_data.push_back(line); trim(paths_out.back());
 		if (ind0 < 0) {
 			break;
 		}
@@ -73,46 +87,34 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out)
 
 // get path and remove --path options from args
 // return 0 if successful, return -1 if failed
-Long get_path(Str32_O path_in, Str32_O path_out, vecStr32_IO args)
+Long get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, vecStr32_IO args)
 {
     Long N = args.size();
 
-	// detect absolute path
-	if (args.size() > 2 && args[N - 3] == U"--path-in-out") {
-		path_in = args[N - 2];
-		path_out = args[N - 1];
-		cout << "--path-in-out" << endl;
-		cout << path_in << endl;
-		cout << path_out << endl;
-		args.pop_back(); args.pop_back(); args.pop_back();
+	// directly specify path
+	if (args.size() > 3 && args[N - 4] == U"--path-in-out-data") {
+		path_in = args[N - 3];
+		path_out = args[N - 2];
+        path_data = args[N - 1];
+		args.erase(args.begin() + N - 4, args.end());
 		return 0;
 	}
 
 	// use path number in set_path.txt
-	vecStr32 paths_in, paths_out;
-	if (read_path_file(paths_in, paths_out) < 0)
+	vecStr32 paths_in, paths_out, paths_data;
+	if (read_path_file(paths_in, paths_out, paths_data) < 0)
 		return -1;
     if (args.size() > 1 && args[N - 2] == U"--path") {
-        if (args[N - 1] == U"0") {
-            path_in = paths_in[0];
-            path_out = paths_out[0];
-        }
-        else if (args[N - 1] == U"1") {
-            path_in = paths_in[1];
-            path_out = paths_out[1];
-        }
-        else if (args[N - 1] == U"2") {
-            path_in = paths_in[2];
-            path_out = paths_out[2];
-        }
-        else {
-            throw Str32(U"illegal --path argument!");
-        }
+        size_t i = str2int(args[N - 1]);
+        path_in = paths_in[i];
+        path_out = paths_out[i];
+        path_data = path_data[i];
         args.pop_back(); args.pop_back();
     }
     else { // default path
         path_in = paths_in[0];
         path_out = paths_out[0];
+        path_data = paths_data[0];
     }
 
 	return 0;
@@ -136,7 +138,9 @@ int main(int argc, char *argv[]) {
     Str32 path_in;
 	// output folder, for html and images
     Str32 path_out;
-    try {get_path(path_in, path_out, args);}
+    // data folder
+    Str32 path_data;
+    try {get_path(path_in, path_out, path_data, args);}
 	catch (Str32_I msg) {
         cerr << msg << endl;
         return 0;
@@ -146,7 +150,7 @@ int main(int argc, char *argv[]) {
 
     if (args[0] == U"." && args.size() == 1) {
         // interactive full run (ask to try again in error)
-        try {PhysWikiOnline(path_in, path_out);}
+        try {PhysWikiOnline(path_in, path_out, path_data);}
 		catch (Str32_I msg) {
 			cerr << msg << endl;
 			return 0;
@@ -193,7 +197,7 @@ int main(int argc, char *argv[]) {
             cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        try {table_of_changed(titles, entries, path_in, path_out);}
+        try {table_of_changed(titles, entries, path_in, path_out, path_data);}
 		catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
@@ -251,7 +255,7 @@ int main(int argc, char *argv[]) {
                 break;
             entryN.push_back(temp);
         }
-        try {PhysWikiOnlineN(entryN, path_in, path_out);}
+        try {PhysWikiOnlineN(entryN, path_in, path_out, path_data);}
 		catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;

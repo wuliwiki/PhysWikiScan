@@ -893,7 +893,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
 // return the number of entries, return -1 if failed
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
+inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out, Str32_I path_data)
 {
     Long i{}, N{}, ind0{};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
@@ -905,15 +905,15 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
 
     read_file(newcomm, "lib/newcommand.html");
     CRLF_to_LF(newcomm);
-    if (!file_exist(U"data/changed.txt")) {
-        write_vec_str(vecStr32(), U"data/changed.txt");
+    if (!file_exist(path_data + U"changed.txt")) {
+        write_vec_str(vecStr32(), path_data + U"changed.txt");
     }
     else
-        read_vec_str(changed, U"data/changed.txt");
-    if (!file_exist(U"data/authors.txt")) {
-        throw Str32(U"内部错误： data/authors.txt 不存在!");
+        read_vec_str(changed, path_data + U"changed.txt");
+    if (!file_exist(path_data + U"authors.txt")) {
+        throw Str32(U"内部错误：" + path_data + U"authors.txt 不存在!");
     }
-    read_vec_str(authors, U"data/authors.txt");
+    read_vec_str(authors, path_data + U"authors.txt");
     if (changed.size() != authors.size()) {
         throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
     }
@@ -1396,18 +1396,18 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
     }
     str.pop_back(); str.pop_back();
     str += U"\n  ]\n}\n";
-    write_file(str, path_out + "../tree/data/dep.json");
+    write_file(str, path_out + U"../tree/data/dep.json");
     return 0;
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
-inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
+inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
     vecStr32 titles; // Chinese titles in \entry{}
     entries_titles(titles, entries, path_in);
-    write_vec_str(titles, U"data/titles.txt");
-    write_vec_str(entries, U"data/entries.txt");
+    write_vec_str(titles, path_data + U"titles.txt");
+    write_vec_str(entries, path_data + U"entries.txt");
 
     cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
 
@@ -1433,11 +1433,12 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
     }
 
     // save id and label data
-    write_vec_str(labels, U"data/labels.txt");
-    write_vec_str(ids, U"data/ids.txt");
+    write_vec_str(labels, path_data + U"labels.txt");
+    write_vec_str(ids, path_data + U"ids.txt");
 
     // generate dep.json
-    dep_json(entries, titles, links, path_out);
+    if (path_out == U"../littleshi.cn/root/online/" || path_out == U"../littleshi.cn/root/changed/")
+        dep_json(entries, titles, links, path_out);
 
     // 2nd loop through tex files
     // deal with autoref
@@ -1458,31 +1459,31 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out)
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out)
+inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out, Str32_I path_data)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
     vecStr32 labels, ids, entries, titles;
-    if (!file_exist(U"data/labels.txt")) {
-        throw Str32(U"内部错误： data/labels.txt 不存在!");
+    if (!file_exist(path_data + U"labels.txt")) {
+        throw Str32(U"内部错误： " + path_data + U"labels.txt 不存在!");
     }
-    read_vec_str(labels, U"data/labels.txt");
+    read_vec_str(labels, path_data + U"labels.txt");
     Long ind = find_repeat(labels);
     if (ind >= 0) {
         throw Str32(U"内部错误： labels.txt 存在重复：" + labels[ind]);
     }
-    if (!file_exist(U"data/ids.txt")) {
-        throw Str32(U"内部错误： data/ids.txt 不存在!");
+    if (!file_exist(path_data + U"ids.txt")) {
+        throw Str32(U"内部错误： " + path_data + U"ids.txt 不存在!");
     }
-    read_vec_str(ids, U"data/ids.txt");
-    if (!file_exist(U"data/entries.txt")) {
-        throw Str32(U"内部错误： data/entries.txt 不存在!");
+    read_vec_str(ids, path_data + U"ids.txt");
+    if (!file_exist(path_data + U"entries.txt")) {
+        throw Str32(U"内部错误： " + path_data + U"entries.txt 不存在!");
     }
-    read_vec_str(entries, U"data/entries.txt");
-    if (!file_exist(U"data/titles.txt")) {
-        throw Str32(U"内部错误： data/titles.txt 不存在!");
+    read_vec_str(entries, path_data + U"entries.txt");
+    if (!file_exist(path_data + U"titles.txt")) {
+        throw Str32(U"内部错误： " + path_data + U"titles.txt 不存在!");
     }
-    read_vec_str(titles, U"data/titles.txt");
+    read_vec_str(titles, path_data + U"titles.txt");
     if (labels.size() != ids.size()) {
         throw Str32(U"内部错误： labels.txt 与 ids.txt 长度不符");
     }
@@ -1513,8 +1514,8 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
         }
     }
     
-    write_vec_str(labels, U"data/labels.txt");
-    write_vec_str(ids, U"data/ids.txt");
+    write_vec_str(labels, path_data + U"labels.txt");
+    write_vec_str(ids, path_data + U"ids.txt");
 
     // 2nd loop through tex files
     // deal with autoref

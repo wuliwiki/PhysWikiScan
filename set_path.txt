@@ -2,7 +2,11 @@
 ../PhysWiki/
 输出路径 0
 ../littleshi.cn/root/online/
+data 路径 0
+data/
 输入路径 1
 ../PhysWiki/
 输出路径 1
 ../littleshi.cn/root/changed/
+data 路径 1
+data/

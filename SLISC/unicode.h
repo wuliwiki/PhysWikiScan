@@ -539,7 +539,7 @@ inline Long find_num(Str32_I str, Long start)
 // get non-negative integer from string
 // return the index after the last digit, return -1 if failed
 // str[start] must be a number
-inline Long str2int(Long_O num, Str32_I str, Long start)
+inline Long str2int(Long_O num, Str32_I str, Long start = 0)
 {
     Long i{};
     Char32 c;
@@ -556,6 +556,12 @@ inline Long str2int(Long_O num, Str32_I str, Long start)
             return i;
     }
     return i;
+}
+
+inline Long str2int(Str32_I str)
+{
+    Long num; str2int(num, str);
+    return num;
 }
 
 // get non-negative double from string
