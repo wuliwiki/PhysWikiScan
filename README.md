@@ -11,6 +11,10 @@
 * 在 linux 系统中（g++ 编译器）， 用 `make` 编译， `make clean` 清空编译产生的文件。
 * 程序默认输出到 `stdout`， 如果有错误， 会输出到 `stderr`。
 
+## Visual Studio 编译
+* 目前除 Matlab 代码的高亮需要调用 linux 命令行的 gnu source-highlight 项目， 所以在 Windows 下这些代码不会被高亮。
+* 在任意版本 Visual Studio 中（需要支持 c++17）， 新建 empty project， 设置 c++17 标准（因为要使用 filesystem 头文件）， 设置 64 位编译即可。 目前使用 Visual Studio 2019 测试成功。
+
 ## PhysWikiScan 所有控制行命令
 * 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
 * `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`

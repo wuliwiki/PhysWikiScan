@@ -1,5 +1,6 @@
 #pragma once
 #include "arithmetic.h"
+#include "search.h"
 #include <sstream>
 #include <fstream>
 #include <codecvt>

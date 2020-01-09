@@ -1,4 +1,7 @@
-﻿#include "lib/PhysWikiScan.h"
+﻿#ifdef _MSC_VER
+#define SLS_HAS_FILESYSTEM
+#endif
+#include "lib/PhysWikiScan.h"
 
 // get arguments
 void get_args(vecStr32_O args, Int_I argc, Char *argv[])
