@@ -237,7 +237,7 @@ inline Long Table(Str32_IO str)
     N = find_env(intv, str, U"table", 'o');
     if (N == 0) return 0;
     for (Long i = N - 1; i >= 0; --i) {
-		indLine.clear();
+        indLine.clear();
         ind0 = find_command(str, U"caption", intv.L(i));
         if (ind0 < 0 || ind0 > intv.R(i)) {
             cout << "table no caption!" << endl; return -1;  // break point here

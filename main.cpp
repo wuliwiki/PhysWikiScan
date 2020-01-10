@@ -43,49 +43,49 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
 // return paths_in.size()
 Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_data)
 {
-	Str32 temp, line;
-	if (!file_exist("set_path.txt")) {
-		throw Str32(U"内部错误： set_path.txt 不存在!");
-	}
-	read_file(temp, "set_path.txt");
-	CRLF_to_LF(temp);
+    Str32 temp, line;
+    if (!file_exist("set_path.txt")) {
+        throw Str32(U"内部错误： set_path.txt 不存在!");
+    }
+    read_file(temp, "set_path.txt");
+    CRLF_to_LF(temp);
 
-	Long ind0 = 0;
-	for (Long i = 0; i < 100; ++i) {
+    Long ind0 = 0;
+    for (Long i = 0; i < 100; ++i) {
         // paths_in
-		ind0 = skip_line(temp, ind0);
-		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式 (a)");
-		}
-		ind0 = get_line(line, temp, ind0);
-		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式 (b)");
-		}
-		paths_in.push_back(line); trim(paths_in.back());
-
-        // paths_out
-		ind0 = skip_line(temp, ind0);
-		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式 (c)");
-		}
+        ind0 = skip_line(temp, ind0);
+        if (ind0 < 0) {
+            throw Str32(U"内部错误： path.txt 格式 (a)");
+        }
         ind0 = get_line(line, temp, ind0);
         if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式 (b)");
-		}
+            throw Str32(U"内部错误： path.txt 格式 (b)");
+        }
+        paths_in.push_back(line); trim(paths_in.back());
+
+        // paths_out
+        ind0 = skip_line(temp, ind0);
+        if (ind0 < 0) {
+            throw Str32(U"内部错误： path.txt 格式 (c)");
+        }
+        ind0 = get_line(line, temp, ind0);
+        if (ind0 < 0) {
+            throw Str32(U"内部错误： path.txt 格式 (b)");
+        }
         paths_out.push_back(line); trim(paths_out.back());
 
         // paths_data
-		ind0 = skip_line(temp, ind0);
-		if (ind0 < 0) {
-			throw Str32(U"内部错误： path.txt 格式 (c)");
-		}
+        ind0 = skip_line(temp, ind0);
+        if (ind0 < 0) {
+            throw Str32(U"内部错误： path.txt 格式 (c)");
+        }
         ind0 = get_line(line, temp, ind0);
         paths_data.push_back(line); trim(paths_out.back());
-		if (ind0 < 0) {
-			break;
-		}
-	}
-	return paths_in.size();
+        if (ind0 < 0) {
+            break;
+        }
+    }
+    return paths_in.size();
 }
 
 // get path and remove --path options from args
@@ -94,19 +94,19 @@ Long get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, vecStr32_IO 
 {
     Long N = args.size();
 
-	// directly specify path
-	if (args.size() > 3 && args[N - 4] == U"--path-in-out-data") {
-		path_in = args[N - 3];
-		path_out = args[N - 2];
+    // directly specify path
+    if (args.size() > 3 && args[N - 4] == U"--path-in-out-data") {
+        path_in = args[N - 3];
+        path_out = args[N - 2];
         path_data = args[N - 1];
-		args.erase(args.begin() + N - 4, args.end());
-		return 0;
-	}
+        args.erase(args.begin() + N - 4, args.end());
+        return 0;
+    }
 
-	// use path number in set_path.txt
-	vecStr32 paths_in, paths_out, paths_data;
-	if (read_path_file(paths_in, paths_out, paths_data) < 0)
-		return -1;
+    // use path number in set_path.txt
+    vecStr32 paths_in, paths_out, paths_data;
+    if (read_path_file(paths_in, paths_out, paths_data) < 0)
+        return -1;
     if (args.size() > 1 && args[N - 2] == U"--path") {
         size_t i = str2int(args[N - 1]);
         path_in = paths_in[i];
@@ -120,16 +120,16 @@ Long get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, vecStr32_IO 
         path_data = paths_data[0];
     }
 
-	return 0;
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
     SLS_WARN("gnu source-highlight is disabled in Visual Studio! Use VS for debug only!");
-	cout << endl;
-	cout << "=======================================" << endl;
-	cout << "= Visual Studio 测试模式， 不含代码高亮 =" << endl;
-	cout << "=======================================\n" << endl;
+    cout << endl;
+    cout << "=======================================" << endl;
+    cout << "= Visual Studio 测试模式， 不含代码高亮 =" << endl;
+    cout << "=======================================\n" << endl;
 #endif
     using namespace slisc;
 
@@ -139,12 +139,12 @@ int main(int argc, char *argv[]) {
     // input folder, put tex files and code files here
     // same directory structure with PhysWiki
     Str32 path_in;
-	// output folder, for html and images
+    // output folder, for html and images
     Str32 path_out;
     // data folder
     Str32 path_data;
     try {get_path(path_in, path_out, path_data, args);}
-	catch (Str32_I msg) {
+    catch (Str32_I msg) {
         cerr << msg << endl;
         return 0;
     }
@@ -154,16 +154,16 @@ int main(int argc, char *argv[]) {
     if (args[0] == U"." && args.size() == 1) {
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline(path_in, path_out, path_data);}
-		catch (Str32_I msg) {
-			cerr << msg << endl;
-			return 0;
-		}
+        catch (Str32_I msg) {
+            cerr << msg << endl;
+            return 0;
+        }
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
         vecStr32 titles, entries;
         try {entries_titles(titles, entries, path_in);}
-		catch (Str32_I msg) {
+        catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
         }
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         try {table_of_contents(titles, entries, path_in, path_out);}
-		catch (Str32_I msg) {
+        catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
         }
@@ -201,7 +201,7 @@ int main(int argc, char *argv[]) {
             return 0;
         }
         try {table_of_changed(titles, entries, path_in, path_out, path_data);}
-		catch (Str32_I msg) {
+        catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
         }
@@ -220,10 +220,10 @@ int main(int argc, char *argv[]) {
         if (file_exist(U"data/ids.txt"))
             read_vec_str(ids, U"data/ids.txt");
         Str32 label;
-		Long ret;
+        Long ret;
         try {ret = check_add_label(label, args[1], args[2],
             atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);}
-		catch (Str32_I msg) {
+        catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
         }
@@ -259,7 +259,7 @@ int main(int argc, char *argv[]) {
             entryN.push_back(temp);
         }
         try {PhysWikiOnlineN(entryN, path_in, path_out, path_data);}
-		catch (Str32_I msg) {
+        catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
         }

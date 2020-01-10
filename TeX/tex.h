@@ -425,26 +425,26 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     if (combine(intv, intv1) < 0) return -1;
     FindEnd(intv1, U"exercise", str);
     if (combine(intv, intv1) < 0) return -1;
-	//  exer\begin{theorem}{} and \end{theorem}
-	FindAllBegin(intv1, U"theorem", str, '2');
-	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"theorem", str);
-	if (combine(intv, intv1) < 0) return -1;
-	//  exer\begin{definition}{} and \end{definition}
-	FindAllBegin(intv1, U"definition", str, '2');
-	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"definition", str);
-	if (combine(intv, intv1) < 0) return -1;
-	//  exer\begin{lemma}{} and \end{lemma}
-	FindAllBegin(intv1, U"lemma", str, '2');
-	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"lemma", str);
-	if (combine(intv, intv1) < 0) return -1;
-	//  exer\begin{corollary}{} and \end{corollary}
-	FindAllBegin(intv1, U"corollary", str, '2');
-	if (combine(intv, intv1) < 0) return -1;
-	FindEnd(intv1, U"corollary", str);
-	if (combine(intv, intv1) < 0) return -1;
+    //  exer\begin{theorem}{} and \end{theorem}
+    FindAllBegin(intv1, U"theorem", str, '2');
+    if (combine(intv, intv1) < 0) return -1;
+    FindEnd(intv1, U"theorem", str);
+    if (combine(intv, intv1) < 0) return -1;
+    //  exer\begin{definition}{} and \end{definition}
+    FindAllBegin(intv1, U"definition", str, '2');
+    if (combine(intv, intv1) < 0) return -1;
+    FindEnd(intv1, U"definition", str);
+    if (combine(intv, intv1) < 0) return -1;
+    //  exer\begin{lemma}{} and \end{lemma}
+    FindAllBegin(intv1, U"lemma", str, '2');
+    if (combine(intv, intv1) < 0) return -1;
+    FindEnd(intv1, U"lemma", str);
+    if (combine(intv, intv1) < 0) return -1;
+    //  exer\begin{corollary}{} and \end{corollary}
+    FindAllBegin(intv1, U"corollary", str, '2');
+    if (combine(intv, intv1) < 0) return -1;
+    FindEnd(intv1, U"corollary", str);
+    if (combine(intv, intv1) < 0) return -1;
     // invert range
     return invert(indNorm, intv, str.size());
 }
