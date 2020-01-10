@@ -111,7 +111,7 @@ Long get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, vecStr32_IO 
         size_t i = str2int(args[N - 1]);
         path_in = paths_in[i];
         path_out = paths_out[i];
-        path_data = path_data[i];
+        path_data = paths_data[i];
         args.pop_back(); args.pop_back();
     }
     else { // default path
