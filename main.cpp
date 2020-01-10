@@ -167,17 +167,17 @@ int main(int argc, char *argv[]) {
             cerr << msg << endl;
             return 0;
         }
-        write_vec_str(titles, U"data/titles.txt");
-        write_vec_str(entries, U"data/entries.txt");
+        write_vec_str(titles, path_data + U"titles.txt");
+        write_vec_str(entries, path_data + U"entries.txt");
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from PhysWiki.tex
         vecStr32 titles, entries;
-        if (file_exist(U"data/titles.txt"))
-            read_vec_str(titles, U"data/titles.txt");
-        if (file_exist(U"data/entries.txt"))
-            read_vec_str(entries, U"data/entries.txt");
+        if (file_exist(path_data + U"titles.txt"))
+            read_vec_str(titles, path_data + U"titles.txt");
+        if (file_exist(path_data + U"entries.txt"))
+            read_vec_str(entries, path_data + U"entries.txt");
         if (titles.size() != entries.size()) {
             cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
@@ -192,10 +192,10 @@ int main(int argc, char *argv[]) {
         // table of contents
         // read entries.txt and titles.txt, then generate changed.html from changed.txt
         vecStr32 titles, entries;
-        if (file_exist(U"data/titles.txt"))
-            read_vec_str(titles, U"data/titles.txt");
-        if (file_exist(U"data/entries.txt"))
-            read_vec_str(entries, U"data/entries.txt");
+        if (file_exist(path_data + U"titles.txt"))
+            read_vec_str(titles, path_data + U"titles.txt");
+        if (file_exist(path_data + U"entries.txt"))
+            read_vec_str(entries, path_data + U"entries.txt");
         if (titles.size() != entries.size()) {
             cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
@@ -209,16 +209,16 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         vecStr32 labels, ids;
-        if (file_exist(U"data/labels.txt")) {
-            read_vec_str(labels, U"data/labels.txt");
+        if (file_exist(path_data + U"labels.txt")) {
+            read_vec_str(labels, path_data + U"labels.txt");
             Long ind = find_repeat(labels);
             if (ind >= 0) {
                 cerr << U"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
                 return 0;
             }
         }
-        if (file_exist(U"data/ids.txt"))
-            read_vec_str(ids, U"data/ids.txt");
+        if (file_exist(path_data + U"ids.txt"))
+            read_vec_str(ids, path_data + U"ids.txt");
         Str32 label;
         Long ret;
         try {ret = check_add_label(label, args[1], args[2],
@@ -238,15 +238,15 @@ int main(int argc, char *argv[]) {
             else {
                 ids[i] = id;
             }
-            write_vec_str(labels, U"data/labels.txt");
-            write_vec_str(ids, U"data/ids.txt");
+            write_vec_str(labels, path_data + U"labels.txt");
+            write_vec_str(ids, path_data + U"ids.txt");
             output = { label, U"added" };
         }
         else // ret == 1, already exist
             output = {label, U"exist"};
         cout << output[0] << endl;
         cout << output[1] << endl;
-        write_vec_str(output, U"data/autoref.txt");
+        write_vec_str(output, path_data + U"autoref.txt");
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process a single entry
@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--all-commands") {
         vecStr32 commands;
         all_commands(commands, path_in + U"contents/");
-        write_vec_str(commands, U"data/commands.txt");
+        write_vec_str(commands, path_data + U"commands.txt");
     }
     else {
         cerr << U"内部错误： 命令不合法" << endl;
