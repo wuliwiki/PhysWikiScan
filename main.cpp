@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
-        // read entries.txt and titles.txt, then generate index.html from PhysWiki.tex
+        // read entries.txt and titles.txt, then generate index.html from main.tex
         vecStr32 titles, entries;
         if (file_exist(path_data + U"titles.txt"))
             read_vec_str(titles, path_data + U"titles.txt");

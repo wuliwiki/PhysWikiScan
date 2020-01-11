@@ -732,7 +732,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 }
 
 // update entries.txt and titles.txt
-// return the number of entries in PhysWiki.tex
+// return the number of entries in main.tex
 // return -1 if failed
 inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_in)
 {
@@ -747,7 +747,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
 
     Str32 title;
     Str32 entryName; // entry label
-    Str32 str; read_file(str, path_in + "PhysWiki.tex");
+    Str32 str; read_file(str, path_in + "main.tex");
     CRLF_to_LF(str);
     titles.resize(entries.size());
 
@@ -766,20 +766,20 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
         command_arg(title, str, ind0);
         replace(title, U"\\ ", U" ");
         if (title.empty()) {
-            throw Str32(U"PhysWiki.tex 中词条中文名不能为空!");
+            throw Str32(U"main.tex 中词条中文名不能为空!");
         }
         command_arg(entryName, str, ind0, 1);
 
         // record Chinese title
         Long ind = search(entryName, entries);
         if (ind < 0) {
-            throw Str32(U"PhysWiki.tex 中词条文件 " + entryName + U" 未找到!");
+            throw Str32(U"main.tex 中词条文件 " + entryName + U" 未找到!");
         }
         titles[ind] = title;
         ++ind0;
     }
 
-    cout << u8"\n\n警告: 以下词条没有被 PhysWiki.tex 收录，但仍会被编译" << endl;
+    cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
             read_file(str, path_in + U"contents/" + entries[i] + ".tex");
@@ -794,7 +794,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     return N;
 }
 
-// create table of content from PhysWiki.tex
+// create table of content from main.tex
 // path must end with '\\'
 // return the number of entries, return -1 if failed
 // names is a list of filenames
@@ -814,7 +814,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
 
     read_file(newcomm, "lib/newcommand.html");
     CRLF_to_LF(newcomm);
-    read_file(str, path_in + "PhysWiki.tex");
+    read_file(str, path_in + "main.tex");
     CRLF_to_LF(str);
     read_file(toc, "lib/index_template.html"); // read html template
     CRLF_to_LF(toc);
@@ -842,7 +842,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
             if (title.empty()) {
-                throw Str32(U"PhysWiki.tex 中词条中文名不能为空!");
+                throw Str32(U"main.tex 中词条中文名不能为空!");
             }
             command_arg(entryName, str, ind1, 1);
             // insert entry into html table of contents
@@ -851,7 +851,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
             // record Chinese title
             Long ind = search(entryName, entries);
             if (ind < 0) {
-                throw Str32(U"PhysWiki.tex 中词条文件 " + entryName + " 未找到!");
+                throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到!");
             }
             ++ind1;
         }
@@ -888,7 +888,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
     return N;
 }
 
-// create table of content from PhysWiki.tex
+// create table of content from main.tex
 // path must end with '\\'
 // return the number of entries, return -1 if failed
 // names is a list of filenames
@@ -1409,7 +1409,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
     write_vec_str(titles, path_data + U"titles.txt");
     write_vec_str(entries, path_data + U"entries.txt");
 
-    cout << u8"正在从 PhysWiki.tex 生成目录 index.html ...\n" << endl;
+    cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
     table_of_contents(titles, entries, path_in, path_out);
 
