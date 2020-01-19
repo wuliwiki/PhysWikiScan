@@ -224,8 +224,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
                 end[i + 1] = end[i]; ++i;
             }
             else {
-                cout << "error! range overlap!" << endl;
-                return -1;  // break point here
+                throw Str32(U"error! range overlap!");
             }
         }
         else if (end[i] == start[i + 1] - 1)

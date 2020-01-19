@@ -253,25 +253,26 @@ inline Long find_comment(Intvs_O intv, Str32_I str)
     return intv.size();
 }
 
-// find interval of all "\lstinline|...|"
+// find interval of all "\lstinline *...*"
 // return -1 if failed
 inline Long lstinline_intv(Intvs_O intv, Str32_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
+	Char32 dlm;
     intv.clear();
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
-        ind1 = ind0 + 10;
-        ind1 = expect(str, U"|", ind1); --ind1;
+		ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
             return -1;
-        ind2 = str.find(U"|", ind1 + 1);
+		dlm = str[ind1];
+        ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
             return -1;
         intv.pushL(ind0); intv.pushR(ind2);
-        ind0 = ind2;
+        ind0 = ind2 + 1;
         ++N;
     }
     return N;
@@ -285,16 +286,14 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
     intv.clear();
     Long N{}; // number of $$
     Long ind0{};
-    Intvs intvComm, intvLstinline, intvLst; // result from FindComment
+    Intvs intvComm, intvLst; // result from FindComment
     find_comment(intvComm, str);
     find_env(intvLst, str, U"lstlisting", 'o');
-    lstinline_intv(intvLstinline, str);
     while (true) {
         ind0 = str.find(U"$", ind0);
         if (ind0 < 0)
             break;
-        if (is_in(ind0, intvLstinline) ||
-            is_in(ind0, intvLst)) {
+        if (is_in(ind0, intvLst)) {
             ++ind0;  continue;
         }
         if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
@@ -377,18 +376,18 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
     Intvs intv, intv1;
+	if (lstinline_intv(intv, str) < 0)
+		return -1;
+	find_env(intv1, str, U"lstlisting", 'o');
+	if (combine(intv, intv1) < 0) return -1;
     // comments
-    find_comment(intv, str);
+    find_comment(intv1, str);
+	if (combine(intv, intv1) < 0) return -1;
     // inline equation environments
     find_inline_eq(intv1, str, 'o');
     if (combine(intv, intv1) < 0) return -1;
     // equation environments
     find_env(intv1, str, U"equation", 'o');
-    if (combine(intv, intv1) < 0) return -1;
-    if (lstinline_intv(intv1, str) < 0)
-        return -1;
-    if (combine(intv, intv1) < 0) return -1;
-    find_env(intv1, str, U"lstlisting", 'o');
     if (combine(intv, intv1) < 0) return -1;
     // command environments
     find_env(intv1, str, U"Command", 'o');
@@ -499,26 +498,57 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
     return N;
 }
 
-// replace lstinline|...| with <code>...</code> tags
-// return the number replaced
-// return -1 if failed
-inline Long lstinline(Str32_IO str)
+// replace verbatim environments with index number `ind`, to escape normal processing
+// store original text in str_verb[ind] (replace `<` and `>` with `&lt` and `&gt`
+inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
-    Long N{}, ind0{}, ind1{}, ind2{};
-    Str32 arg;
+	Long ind0 = 0, ind1, ind2;
+	Char32 dlm;
+	// lstinline
+	while (true) {
+		ind0 = find_command(str, U"lstinline", ind0);
+		if (ind0 < 0)
+			break;
+		ind1 = str.find_first_not_of(U' ', ind0 + 10);
+		if (ind1 < 0)
+			throw Str32(U"\\lstinline 没有开始！");
+		dlm = str[ind1];
+        if (dlm == U'{')
+            throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
+		ind2 = str.find(dlm, ind1 + 1);
+		if (ind2 < 0)
+			throw Str32(U"\\lstinline 没有闭合！");
+		if (ind2 - ind1 == 1)
+			throw Str32(U"\\lstinline 不能为空");
+
+		str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
+		replace(str_verb.back(), U"<", U"&lt");
+		replace(str_verb.back(), U">", U"&gt");
+		str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
+		++ind0;
+	}
+	// TODO: process lstlisting
+	return str_verb.size();
+}
+
+// replace `\lstinline{ind}` with `<code>str_verb[ind]</code>`
+// return the number replaced
+inline Long lstinline(Str32_IO str, vecStr32_I str_verb)
+{
+    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
+    Str32 ind_str, tmp;
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
-        ind1 = ind0 + 10;
-        ind1 = expect(str, U"|", ind1); --ind1;
+		ind1 = expect(str, U"|", ind0 + 10); --ind1;
         if (ind1 < 0)
-            return -1;
+			throw Str32(U"内部错误： expect `|` after `lstinline`");
         ind2 = str.find(U"|", ind1 + 1);
-        arg = str.substr(ind1 + 1, ind2 - ind1 - 1);
-        replace(arg, U"<", U"&lt"); replace(arg, U">", U"&gt");
-        str.replace(ind0, ind2 - ind0 + 1, U"<code>" + arg + U"</code>");
-        ind0 = ind2;
+		ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
+		tmp = U"<code>" + str_verb[str2int(ind_str)] + U"</code>";
+        str.replace(ind0, ind2 - ind0 + 1, tmp);
+        ind0 += tmp.size();
         ++N;
     }
     return N;

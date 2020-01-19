@@ -1241,6 +1241,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
         throw Str32(U"newcommand.html 格式错误!");
     }
+	// save and replace verbatim code with an index
+	vecStr32 str_verb;
+	verbatim(str_verb, str);
+
     // remove comments
     Intvs intvComm;
     find_comment(intvComm, str);
@@ -1323,22 +1327,23 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         U"\\end{gather}\n</div></div>", str);
     Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}",
         U"\\end{align}\n</div></div>", str);
-    // Matlab code
-    if (MatlabCode(str, path_in, false) < 0)
-        return -1;
-    if (MatlabCode(str, path_in, true) < 0)
-        return -1;
-    if (lstlisting(str) < 0)
-        return -1;
-    if (lstinline(str) < 0) {
-        throw Str32(U"lstinline 格式错误， 请使用 lstinline|...|");
-    }
-
-    Command2Tag(U"x", U"<code>", U"</code>", str);
+    
     // footnote
     footnote(str);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
+	// Matlab code
+	if (MatlabCode(str, path_in, false) < 0)
+		return -1;
+	if (MatlabCode(str, path_in, true) < 0)
+		return -1;
+	if (lstlisting(str) < 0)
+		return -1;
+	if (lstinline(str, str_verb) < 0) {
+		throw Str32(U"lstinline 格式错误， 请使用 lstinline|...|");
+	}
+
+	Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1) {
         throw Str32(U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!");
