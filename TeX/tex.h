@@ -7,18 +7,6 @@
 
 namespace slisc {
 
-// check if an index is inside "lstinline|...|"
-inline Bool is_in_lstinline(Str32_I str, Long_I ind)
-{
-    Long ind0 = str.rfind(U"|", ind);
-    if (ind0 < 2)
-        return false;
-    ind0 = ExpectKeyReverse(str, U"\\lstinline", ind0 - 1);
-    if (ind0 < -1)
-        return false;
-    return true;
-}
-
 // find text command '\name', return the index of '\'
 // output the index of "name.back()"
 inline Long find_command(Str32_I str, Str32_I name, Long_I start)
@@ -28,10 +16,6 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
         ind0 = str.find(U"\\" + name, ind0);
         if (ind0 < 0)
             return -1;
-        // check if is in \lstinline|...|
-        if (is_in_lstinline(str, ind0)) {
-            ++ind0; continue;
-        }
 
         // check right
         if (!is_letter(str[ind0 + name.size() + 1]))
@@ -543,7 +527,7 @@ inline Long lstinline(Str32_IO str, vecStr32_I str_verb)
             break;
 		ind1 = expect(str, U"|", ind0 + 10); --ind1;
         if (ind1 < 0)
-			throw Str32(U"内部错误： expect `|` after `lstinline`");
+			throw Str32(U"内部错误： expect `|index|` after `lstinline`");
         ind2 = str.find(U"|", ind1 + 1);
 		ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
 		tmp = U"<code>" + str_verb[str2int(ind_str)] + U"</code>";

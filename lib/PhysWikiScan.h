@@ -1339,9 +1339,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 		return -1;
 	if (lstlisting(str) < 0)
 		return -1;
-	if (lstinline(str, str_verb) < 0) {
-		throw Str32(U"lstinline 格式错误， 请使用 lstinline|...|");
-	}
+	lstinline(str, str_verb);
 
 	Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
