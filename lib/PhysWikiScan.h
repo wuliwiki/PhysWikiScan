@@ -942,7 +942,9 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         // get Chinese title
         ind = search(entryName, entries);
         if (ind < 0) {
-            throw Str32(U"内部错误： changed.txt 中词条文件未找到： " + entryName);
+            changed.erase(changed.begin() + i);
+            authors.erase(authors.begin() + i);
+            continue;
         }
         // insert entry into html table of contents
         ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
@@ -950,6 +952,8 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     }
     toc.insert(ind0, U"</p>\n</div>");
     write_file(toc, path_out + "changed.html");
+    write_vec_str(changed, path_data + U"changed.txt");
+    write_vec_str(authors, path_data + U"authors.txt");
     return N;
 }
 
