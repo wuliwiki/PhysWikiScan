@@ -812,11 +812,11 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
     Str32 newcomm;
     Str32 str, toc;
 
-    read_file(newcomm, "lib/newcommand.html");
+    read_file(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     read_file(str, path_in + "main.tex");
     CRLF_to_LF(str);
-    read_file(toc, "lib/index_template.html"); // read html template
+    read_file(toc, path_out + "templates/index_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -903,7 +903,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     Str32 toc;
     vecStr32 changed, authors;
 
-    read_file(newcomm, "lib/newcommand.html");
+    read_file(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     if (!file_exist(path_data + U"changed.txt")) {
         write_vec_str(vecStr32(), path_data + U"changed.txt");
@@ -918,7 +918,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
     }
 
-    read_file(toc, "lib/changed_template.html"); // read html template
+    read_file(toc, path_out + "templates/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiCommand");
@@ -1209,10 +1209,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Str32 title;
     // read html template and \newcommand{}
     Str32 html;
-    read_file(html, "lib/entry_template.html");
+    read_file(html, path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
     Str32 newcomm;
-    read_file(newcomm, "lib/newcommand.html");
+    read_file(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     // read title from first comment
     if (get_title(title, str) < 0)
