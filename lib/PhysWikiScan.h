@@ -1338,9 +1338,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 		return -1;
 	if (MatlabCode(str, path_in, true) < 0)
 		return -1;
+	lstinline(str, str_verb);
 	if (lstlisting(str, str_verb) < 0)
 		return -1;
-	lstinline(str, str_verb);
 
 	Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
