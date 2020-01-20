@@ -527,6 +527,9 @@ inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
+		if (index_in_env(ind0, U"lstlisting", str)) {
+			++ind0; continue;
+		}
 		ind1 = expect(str, U"|", ind0 + 10); --ind1;
         if (ind1 < 0)
 			throw Str32(U"内部错误： expect `|index|` after `lstinline`");
