@@ -209,7 +209,7 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
     Intvs intv;
     for (Long i = 0; i < size(names); ++i) {
         if (find_env(intv, str, names[i]) < 0) {
-            throw Str32(U"environment " + names[i] + " not found!");
+			continue;
         }
         if (is_in(ind, intv)) {
             iname = i;
