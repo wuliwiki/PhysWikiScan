@@ -208,7 +208,7 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
     Intvs intv;
     for (Long i = 0; i < size(names); ++i) {
         if (find_env(intv, str, names[i]) < 0) {
-			continue;
+            continue;
         }
         if (is_in(ind, intv)) {
             iname = i;
@@ -221,8 +221,8 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
 
 inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)
 {
-	Long iname;
-	return index_in_env(iname, ind, { name.c_str() }, str);
+    Long iname;
+    return index_in_env(iname, ind, { name.c_str() }, str);
 }
 
 // find interval of all "\lstinline *...*"
@@ -230,16 +230,16 @@ inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)
 inline Long lstinline_intv(Intvs_O intv, Str32_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
-	Char32 dlm;
+    Char32 dlm;
     intv.clear();
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
-		ind1 = str.find_first_not_of(U' ', ind0 + 10);
+        ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
             return -1;
-		dlm = str[ind1];
+        dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
             return -1;
@@ -339,13 +339,13 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
     Intvs intv, intv1;
-	if (lstinline_intv(intv, str) < 0)
-		return -1;
-	find_env(intv1, str, U"lstlisting", 'o');
-	if (combine(intv, intv1) < 0) return -1;
+    if (lstinline_intv(intv, str) < 0)
+        return -1;
+    find_env(intv1, str, U"lstlisting", 'o');
+    if (combine(intv, intv1) < 0) return -1;
     // comments
     find_comments(intv1, str, U"%");
-	if (combine(intv, intv1) < 0) return -1;
+    if (combine(intv, intv1) < 0) return -1;
     // inline equation environments
     find_inline_eq(intv1, str, 'o');
     if (combine(intv, intv1) < 0) return -1;
@@ -465,80 +465,83 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 // will ignore \lstinline in lstlisting environment
 inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
-	Long ind0 = 0, ind1, ind2;
-	Char32 dlm;
-	// lstinline
-	while (true) {
-		ind0 = find_command(str, U"lstinline", ind0);
-		if (ind0 < 0)
-			break;
-		if (index_in_env(ind0, U"lstlisting", str)) {
-			++ind0; continue;
-		}
-		ind1 = str.find_first_not_of(U' ', ind0 + 10);
-		if (ind1 < 0)
-			throw Str32(U"\\lstinline 没有开始！");
-		dlm = str[ind1];
-        if (dlm == U'{')
-            throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
-		ind2 = str.find(dlm, ind1 + 1);
-		if (ind2 < 0)
-			throw Str32(U"\\lstinline 没有闭合！");
-		if (ind2 - ind1 == 1)
-			throw Str32(U"\\lstinline 不能为空");
-
-		str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
-		str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
-		++ind0;
-	}
-	
-	// process lstlisting
-	ind0 = 0;
-	Intvs intvIn, intvOut;
-	Str32 code;
-	find_env(intvIn, str, U"lstlisting", 'i');
-	Long N = find_env(intvOut, str, U"lstlisting", 'o');
-	Str32 lang = U""; // language
-	for (Long i = N - 1; i >= 0; --i) {
-		// get language
-		ind0 = expect(str, U"[", intvIn.L(i));
-		if (ind0 > 0) {
-			ind0 = pair_brace(str, ind0, U'[') + 1;
-		}
-		else {
-			ind0 = intvIn.L(i);
-		}
-		str_verb.push_back(str.substr(ind0, intvIn.R(i) + 1 - ind0));
-		trim(str_verb.back(), U"\n ");
-		str.replace(ind0, intvIn.R(i) - ind0 + 1, U"\n" + num2str32(size(str_verb)-1) + U"\n");
-	}
-
-	return str_verb.size();
-}
-
-// replace `\lstinline{ind}` with `<code>str_verb[ind]</code>`
-// return the number replaced
-inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
-{
-    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
-    Str32 ind_str, tmp;
+    Long ind0 = 0, ind1, ind2;
+    Char32 dlm;
+    // lstinline
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
-		if (index_in_env(ind0, U"lstlisting", str)) {
-			++ind0; continue;
-		}
-		ind1 = expect(str, U"|", ind0 + 10); --ind1;
+        if (index_in_env(ind0, U"lstlisting", str)) {
+            ++ind0; continue;
+        }
+        ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
-			throw Str32(U"内部错误： expect `|index|` after `lstinline`");
+            throw Str32(U"\\lstinline 没有开始！");
+        dlm = str[ind1];
+        if (dlm == U'{')
+            throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
+        ind2 = str.find(dlm, ind1 + 1);
+        if (ind2 < 0)
+            throw Str32(U"\\lstinline 没有闭合！");
+        if (ind2 - ind1 == 1)
+            throw Str32(U"\\lstinline 不能为空");
+
+        str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
+        str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
+        ++ind0;
+    }
+    
+    // process lstlisting
+    ind0 = 0;
+    Intvs intvIn, intvOut;
+    Str32 code;
+    find_env(intvIn, str, U"lstlisting", 'i');
+    Long N = find_env(intvOut, str, U"lstlisting", 'o');
+    Str32 lang = U""; // language
+    for (Long i = N - 1; i >= 0; --i) {
+        // get language
+        ind0 = expect(str, U"[", intvIn.L(i));
+        if (ind0 > 0) {
+            ind0 = pair_brace(str, ind0, U'[') + 1;
+        }
+        else {
+            ind0 = intvIn.L(i);
+        }
+        str_verb.push_back(str.substr(ind0, intvIn.R(i) + 1 - ind0));
+        trim(str_verb.back(), U"\n ");
+        str.replace(ind0, intvIn.R(i) - ind0 + 1, U"\n" + num2str32(size(str_verb)-1) + U"\n");
+    }
+
+    return str_verb.size();
+}
+
+// replace `\lstinline{ind}` with `<code>str_verb[ind]</code>`
+// return the number replaced
+// output the interval of replaced code
+inline Long lstinline(Intvs_O intv, Str32_IO str, vecStr32_IO str_verb)
+{
+    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
+    Str32 ind_str, tmp;
+    intv.clear();
+    while (true) {
+        ind0 = find_command(str, U"lstinline", ind0);
+        if (ind0 < 0)
+            break;
+        if (index_in_env(ind0, U"lstlisting", str)) {
+            ++ind0; continue;
+        }
+        ind1 = expect(str, U"|", ind0 + 10); --ind1;
+        if (ind1 < 0)
+            throw Str32(U"内部错误： expect `|index|` after `lstinline`");
         ind2 = str.find(U"|", ind1 + 1);
-		ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
-		Long ind = str2int(ind_str);
-		replace(str_verb[ind], U"<", U"&lt");
-		replace(str_verb[ind], U">", U"&gt");
-		tmp = U"<code>" + str_verb[ind] + U"</code>";
+        ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
+        Long ind = str2int(ind_str);
+        replace(str_verb[ind], U"<", U"&lt");
+        replace(str_verb[ind], U">", U"&gt");
+        tmp = U"<code>" + str_verb[ind] + U"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
+        intv.pushL(ind0); intv.pushR(ind0 + size(tmp) - 1);
         ind0 += tmp.size();
         ++N;
     }

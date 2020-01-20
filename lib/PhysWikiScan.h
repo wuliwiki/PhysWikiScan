@@ -1025,7 +1025,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 
 // process all lstlisting environments
 // return the number of \Command{} processed, return -1 if failed
-inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
+inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline)
 {
     Long ind0 = 0;
     Intvs intvIn, intvOut;
@@ -1035,6 +1035,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
     Str32 lang = U""; // language
     Str32 code_tab_str;
     for (Long i = N - 1; i >= 0; --i) {
+        if (is_in(intvIn.L(i), intv_lstinline))
+            continue;
         // get language
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
@@ -1055,10 +1057,10 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         }
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
         trim(ind_str, U"\n ");
-		code = str_verb[str2int(ind_str)];
-		if (line_size_lim(code, 78) >= 0) {
-			throw Str32(U"单行代码过长!");
-		}
+        code = str_verb[str2int(ind_str)];
+        if (line_size_lim(code, 78) >= 0) {
+            throw Str32(U"单行代码过长!");
+        }
         
         // highlight
         if (lang == U"MatlabCom")
@@ -1242,9 +1244,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
         throw Str32(U"newcommand.html 格式错误!");
     }
-	// save and replace verbatim code with an index
-	vecStr32 str_verb;
-	verbatim(str_verb, str);
+    // save and replace verbatim code with an index
+    vecStr32 str_verb;
+    verbatim(str_verb, str);
 
     // remove comments
     Intvs intvComm;
@@ -1333,16 +1335,17 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     footnote(str);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
-	// Matlab code
-	if (MatlabCode(str, path_in, false) < 0)
-		return -1;
-	if (MatlabCode(str, path_in, true) < 0)
-		return -1;
-	lstinline(str, str_verb);
-	if (lstlisting(str, str_verb) < 0)
-		return -1;
+    // Matlab code
+    if (MatlabCode(str, path_in, false) < 0)
+        return -1;
+    if (MatlabCode(str, path_in, true) < 0)
+        return -1;
+    Intvs intv_lstinline;
+    lstinline(intv_lstinline, str, str_verb);
+    if (lstlisting(str, str_verb, intv_lstinline) < 0)
+        return -1;
 
-	Command2Tag(U"x", U"<code>", U"</code>", str);
+    Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1) {
         throw Str32(U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!");
