@@ -457,16 +457,21 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 }
 
 // replace verbatim environments with index number `ind`, to escape normal processing
-// store original text in str_verb[ind] (replace `<` and `>` with `&lt` and `&gt`
+// will ignore \lstinline in lstlisting environment
 inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
 	Long ind0 = 0, ind1, ind2;
 	Char32 dlm;
+	Intvs intv;
+	find_env(intv, str, U"lstlisting");
 	// lstinline
 	while (true) {
 		ind0 = find_command(str, U"lstinline", ind0);
 		if (ind0 < 0)
 			break;
+		if (is_in(ind0, intv)) {
+			++ind0; continue;
+		}
 		ind1 = str.find_first_not_of(U' ', ind0 + 10);
 		if (ind1 < 0)
 			throw Str32(U"\\lstinline 没有开始！");
@@ -480,14 +485,11 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 			throw Str32(U"\\lstinline 不能为空");
 
 		str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
-		replace(str_verb.back(), U"<", U"&lt");
-		replace(str_verb.back(), U">", U"&gt");
 		str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
 		++ind0;
 	}
 	
 	// process lstlisting
-
 	ind0 = 0;
 	Intvs intvIn, intvOut;
 	Str32 code;
@@ -513,7 +515,7 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 
 // replace `\lstinline{ind}` with `<code>str_verb[ind]</code>`
 // return the number replaced
-inline Long lstinline(Str32_IO str, vecStr32_I str_verb)
+inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
 {
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
     Str32 ind_str, tmp;
@@ -526,7 +528,10 @@ inline Long lstinline(Str32_IO str, vecStr32_I str_verb)
 			throw Str32(U"内部错误： expect `|index|` after `lstinline`");
         ind2 = str.find(U"|", ind1 + 1);
 		ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
-		tmp = U"<code>" + str_verb[str2int(ind_str)] + U"</code>";
+		Long ind = str2int(ind_str);
+		replace(str_verb[ind], U"<", U"&lt");
+		replace(str_verb[ind], U">", U"&gt");
+		tmp = U"<code>" + str_verb[ind] + U"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
