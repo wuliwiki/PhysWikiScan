@@ -220,6 +220,12 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
     return false;
 }
 
+inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)
+{
+	Long iname;
+	return index_in_env(iname, ind, { name.c_str() }, str);
+}
+
 // find interval of all "\lstinline *...*"
 // return -1 if failed
 inline Long lstinline_intv(Intvs_O intv, Str32_I str)
@@ -462,14 +468,12 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
 	Long ind0 = 0, ind1, ind2;
 	Char32 dlm;
-	Intvs intv;
-	find_env(intv, str, U"lstlisting");
 	// lstinline
 	while (true) {
 		ind0 = find_command(str, U"lstinline", ind0);
 		if (ind0 < 0)
 			break;
-		if (is_in(ind0, intv)) {
+		if (index_in_env(ind0, U"lstlisting", str)) {
 			++ind0; continue;
 		}
 		ind1 = str.find_first_not_of(U' ', ind0 + 10);
