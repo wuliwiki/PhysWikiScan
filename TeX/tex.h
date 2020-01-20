@@ -151,13 +151,11 @@ inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 {
     Long ind0{}, ind1{}, ind2{}, ind3{};
-    Intvs intvComm; // result from FindComment
     Long N{}; // number of environments found
     if (option != 'i' && option != 'o')
         SLS_ERR("illegal option!");
     intv.clear();
-    // find comments including the ones in lstlisting (doesn't matter)
-    find_comments(intvComm, str, U"%");
+    // find comments
     while (true) {
         ind0 = find_command_spec(str, U"begin", env, ind0);
         if (ind0 < 0)
@@ -222,21 +220,6 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
     return false;
 }
 
-// find latex comments
-// similar to FindComment0
-// does not include the ones in lstlisting environment
-inline Long find_comment(Intvs_O intv, Str32_I str)
-{
-    find_comments(intv, str, U"%");
-    Intvs intvLst;
-    find_env(intvLst, str, U"lstlisting", 'o');
-    for (Long i = intv.size() - 1; i >= 0; --i) {
-        if (is_in(intv.L(i), intvLst))
-            intv.erase(i, 1);
-    }
-    return intv.size();
-}
-
 // find interval of all "\lstinline *...*"
 // return -1 if failed
 inline Long lstinline_intv(Intvs_O intv, Str32_I str)
@@ -270,20 +253,11 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
     intv.clear();
     Long N{}; // number of $$
     Long ind0{};
-    Intvs intvComm, intvLst; // result from FindComment
-    find_comment(intvComm, str);
-    find_env(intvLst, str, U"lstlisting", 'o');
     while (true) {
         ind0 = str.find(U"$", ind0);
         if (ind0 < 0)
             break;
-        if (is_in(ind0, intvLst)) {
-            ++ind0;  continue;
-        }
         if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
-            ++ind0; continue;
-        }
-        if (is_in(ind0, intvComm)) { // in comment
             ++ind0; continue;
         }
         intv.push_back(ind0);
@@ -365,7 +339,7 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 	find_env(intv1, str, U"lstlisting", 'o');
 	if (combine(intv, intv1) < 0) return -1;
     // comments
-    find_comment(intv1, str);
+    find_comments(intv1, str, U"%");
 	if (combine(intv, intv1) < 0) return -1;
     // inline equation environments
     find_inline_eq(intv1, str, 'o');
@@ -511,7 +485,29 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 		str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
 		++ind0;
 	}
-	// TODO: process lstlisting
+	
+	// process lstlisting
+
+	ind0 = 0;
+	Intvs intvIn, intvOut;
+	Str32 code;
+	find_env(intvIn, str, U"lstlisting", 'i');
+	Long N = find_env(intvOut, str, U"lstlisting", 'o');
+	Str32 lang = U""; // language
+	for (Long i = N - 1; i >= 0; --i) {
+		// get language
+		ind0 = expect(str, U"[", intvIn.L(i));
+		if (ind0 > 0) {
+			ind0 = pair_brace(str, ind0, U'[') + 1;
+		}
+		else {
+			ind0 = intvIn.L(i);
+		}
+		str_verb.push_back(str.substr(ind0, intvIn.R(i) + 1 - ind0));
+		trim(str_verb.back(), U"\n ");
+		str.replace(ind0, intvIn.R(i) - ind0 + 1, U"\n" + num2str32(size(str_verb)-1) + U"\n");
+	}
+
 	return str_verb.size();
 }
 

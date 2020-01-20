@@ -610,7 +610,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 
     // find comments
     Intvs intvComm;
-    find_comment(intvComm, str);
+    find_comments(intvComm, str, U"%");
 
     vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
         U"the", U"cor", U"ex", U"exe", U"tab" };
@@ -753,7 +753,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
 
     // remove comments
     Intvs intvComm;
-    find_comment(intvComm, str);
+    find_comments(intvComm, str, U"%");
     for (Long i = intvComm.size() - 1; i >= 0; --i)
         str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 
@@ -828,7 +828,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
 
     // remove comments
     Intvs intvComm;
-    find_comment(intvComm, str);
+    find_comments(intvComm, str, U"%");
     for (i = intvComm.size() - 1; i >= 0; --i)
         str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
 
@@ -1025,11 +1025,11 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 
 // process all lstlisting environments
 // return the number of \Command{} processed, return -1 if failed
-inline Long lstlisting(Str32_IO str)
+inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
 {
     Long ind0 = 0;
     Intvs intvIn, intvOut;
-    Str32 code;
+    Str32 code, ind_str;
     find_env(intvIn, str, U"lstlisting", 'i');
     Long N = find_env(intvOut, str, U"lstlisting", 'o');
     Str32 lang = U""; // language
@@ -1053,11 +1053,12 @@ inline Long lstlisting(Str32_IO str)
         else {
             ind0 = intvIn.L(i);
         }
-        code = str.substr(ind0, intvIn.R(i) + 1 - ind0);
-        trim(code, U"\n ");
-        if (line_size_lim(code, 78) >= 0) {
-            throw Str32(U"单行代码过长!");
-        }
+        ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
+        trim(ind_str, U"\n ");
+		code = str_verb[str2int(ind_str)];
+		if (line_size_lim(code, 78) >= 0) {
+			throw Str32(U"单行代码过长!");
+		}
         
         // highlight
         if (lang == U"MatlabCom")
@@ -1247,7 +1248,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
     // remove comments
     Intvs intvComm;
-    find_comment(intvComm, str);
+    find_comments(intvComm, str, U"%");
     for (Long i = intvComm.size() - 1; i >= 0; --i) {
         str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
     }
@@ -1337,7 +1338,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 		return -1;
 	if (MatlabCode(str, path_in, true) < 0)
 		return -1;
-	if (lstlisting(str) < 0)
+	if (lstlisting(str, str_verb) < 0)
 		return -1;
 	lstinline(str, str_verb);
 
