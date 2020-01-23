@@ -153,7 +153,7 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
     Long ind0{}, ind1{}, ind2{}, ind3{};
     Long N{}; // number of environments found
     if (option != 'i' && option != 'o')
-        SLS_ERR("illegal option!");
+        throw Str32(U"内部错误： illegal option in find_env()!");
     intv.clear();
     // find comments
     while (true) {
@@ -269,7 +269,7 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
         ++ind0; ++N;
     }
     if (N % 2 != 0) {
-        SLS_ERR("odd number of $ found!"); // breakpoint here
+        throw Str32(U"行内公式 $ 符号不匹配！");
         return -1;
     }
     N /= 2;
@@ -306,7 +306,7 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
             intv.pushR(ind0);
         ind0 = expect(str, U"{", ind0 + 1);
         if (ind0 < 0) {
-            SLS_ERR("expecting {}{}!"); return -1;  // break point here
+            throw Str32(U"内部错误： FindAllBegin(): expecting {}{}!");
         }
         ind0 = pair_brace(str, ind0 - 1);
         intv.pushR(ind0);

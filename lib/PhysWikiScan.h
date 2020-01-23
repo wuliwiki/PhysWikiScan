@@ -332,7 +332,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
         indName1 = str.find(U"figures/", ind0) + 8;
         indName2 = str.find(U"}", ind0) - 1;
         if (indName1 < 0 || indName2 < 0) {
-            throw Str32(U"读取图片名错误!"); // breakpoint here
+            throw Str32(U"读取图片名错误!");
         }
         figName = str.substr(indName1, indName2 - indName1 + 1);
         trim(figName);
