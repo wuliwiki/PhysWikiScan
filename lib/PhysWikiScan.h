@@ -182,6 +182,29 @@ inline Long paragraph_tag(Str32_IO str)
     }
 }
 
+inline Long limit_env(Str32_I str)
+{
+    Intvs intv; Long ind0 = 0;
+    
+    find_env(intv, str, U"document");
+    if (intv.size() > 0)
+        throw Str32(U"document 环境已经在 main.tex 中， 每个词条文件是一个 section， 请先阅读编辑器说明");
+    vecStr32 envs = { U"equation", U"gather", U"align", U"aligned", U"split", U"figure",
+        U"itemize", U"enumerate", U"lstlisting", U"example", U"exercise",
+        U"lemma", U"theorem", U"definition", U"corollary", U"matrix", U"pmatrix", U"vmatrix",
+        U"table", U"tabular", U"cases", U"array"};
+    Str32 env;
+    while (true) {
+        ind0 = find_command(str, U"begin", ind0);
+        if (ind0 < 0)
+            break;
+        command_arg(env, str, ind0);
+        if (search(env, envs) < 0)
+            throw Str32(U"暂不支持" + env + "环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
+        ++ind0;
+    }
+}
+
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
 // output html id and corresponding label for future reference
 // `gather` and `align` environments has id starting wth `ga` and `ali`
@@ -1247,6 +1270,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
+    limit_env(str);
 
     // remove comments
     Intvs intvComm;

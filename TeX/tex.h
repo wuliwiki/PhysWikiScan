@@ -463,6 +463,8 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 
 // replace verbatim environments with index number `ind`, to escape normal processing
 // will ignore \lstinline in lstlisting environment
+// doesn't matter if \lstinline is in latex comment
+// TODO: it does matter if \begin{lstlisting} is in comment!
 inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
     Long ind0 = 0, ind1, ind2;
