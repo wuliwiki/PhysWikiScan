@@ -182,7 +182,7 @@ inline Long paragraph_tag(Str32_IO str)
     }
 }
 
-inline Long limit_env(Str32_I str)
+inline void limit_env(Str32_I str)
 {
     Intvs intv; Long ind0 = 0;
     
