@@ -200,7 +200,7 @@ inline void limit_env(Str32_I str)
             break;
         command_arg(env, str, ind0);
         if (search(env, envs) < 0)
-            throw Str32(U"暂不支持" + env + "环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
+            throw Str32(U"暂不支持 " + env + " 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
         ++ind0;
     }
 }
