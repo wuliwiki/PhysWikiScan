@@ -33,7 +33,7 @@ inline Long get_title(Str32_O title, Str32_I str)
     return 0;
 }
 
-// trim “\n" and " " on both sides
+// trim "\n" and " " on both sides
 // remove unnecessary "\n"
 // replace “\n\n" with "\n</p>\n<p>　　\n"
 inline Long paragraph_tag1(Str32_IO str)
@@ -189,10 +189,14 @@ inline void limit_env(Str32_I str)
     find_env(intv, str, U"document");
     if (intv.size() > 0)
         throw Str32(U"document 环境已经在 main.tex 中， 每个词条文件是一个 section， 请先阅读编辑器说明");
-    vecStr32 envs = { U"equation", U"gather", U"align", U"aligned", U"split", U"figure",
-        U"itemize", U"enumerate", U"lstlisting", U"example", U"exercise",
-        U"lemma", U"theorem", U"definition", U"corollary", U"matrix", U"pmatrix", U"vmatrix",
-        U"table", U"tabular", U"cases", U"array"};
+
+    // supported environments
+    vecStr32 envs = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
+        U"alignat", U"alignat*", U"alignedat", U"aligned", U"split", U"figure", U"itemize",
+        U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
+        U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
+        U"case", U"Bmatrix", U"bmatrix", U"eqnarray", U"eqnarray*", U"multline", U"multline*",
+        U"smallmatrix", U"subarray", U"Vmatrix"};
     Str32 env;
     while (true) {
         ind0 = find_command(str, U"begin", ind0);
