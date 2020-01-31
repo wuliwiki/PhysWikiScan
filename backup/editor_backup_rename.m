@@ -1,4 +1,6 @@
 % process PhysWiki/backup/xxx.tex
+% rename entry_author_yyyymmddhhmm.tex to yyyymmddhhmm_author_entry.tex
+
 [fnames,path] = uigetfile('*.tex', 'multiselect', 'on');
 cd(path);
 Nf = numel(fnames);
@@ -7,7 +9,8 @@ time = uint64(zeros(1, Nf));
 author = cell(1, Nf);
 xiaoshi = char([23567   26102]); % '??'
 for i = 1 : Nf
-    ind = strfind(fnames{i}, '_20');
+    ind = strfind(fnames{i}, '_202');
+    if (isempty(ind)), continue; end
     entry{i} = fnames{i}(1:ind-1);
     time(i) = int64(str2double(fnames{i}(ind+1:ind+12)));
     author{i} = fnames{i}(ind+14:end-4);
