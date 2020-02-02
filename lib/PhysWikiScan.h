@@ -633,7 +633,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
         throw Str32(U"文件不存在： " + entry + ".tex");
     }
     Str32 str;
-    read_file(str, full_name);
+    read(str, full_name);
 
     // find comments
     Intvs intvComm;
@@ -659,7 +659,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 
         new_label_name(label, idName, entry, str);
         str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
-        write_file(str, full_name);
+        write(str, full_name);
         return 0;
     }
     else { // count equations
@@ -686,7 +686,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                 new_label_name(label, idName, entry, str);
                 ind0 = skip_command(str, ind0, 1);
                 str.insert(ind0, U"\\label{" + label + "}");
-                write_file(str, full_name);
+                write(str, full_name);
                 return 0;
             }
             if (ienv > 0) {// found gather or align
@@ -698,7 +698,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                             new_label_name(label, idName, entry, str);
                             ind0 = skip_command(str, ind0, 1);
                             str.insert(i + 2, U"\n\\label{" + label + "}");
-                            write_file(str, full_name);
+                            write(str, full_name);
                             return 0;
                         }
                     }        
@@ -774,7 +774,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
 
     Str32 title;
     Str32 entryName; // entry label
-    Str32 str; read_file(str, path_in + "main.tex");
+    Str32 str; read(str, path_in + "main.tex");
     CRLF_to_LF(str);
     titles.resize(entries.size());
 
@@ -809,7 +809,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
-            read_file(str, path_in + U"contents/" + entries[i] + ".tex");
+            read(str, path_in + U"contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
             get_title(title, str);
             titles[i] = title;
@@ -839,11 +839,11 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
     Str32 newcomm;
     Str32 str, toc;
 
-    read_file(newcomm, path_out + "templates/newcommand.html");
+    read(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
-    read_file(str, path_in + "main.tex");
+    read(str, path_in + "main.tex");
     CRLF_to_LF(str);
-    read_file(toc, path_out + "templates/index_template.html"); // read html template
+    read(toc, path_out + "templates/index_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -911,7 +911,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
          }
     }
     toc.insert(ind0, U"</p>\n</div>");
-    write_file(toc, path_out + "index.html");
+    write(toc, path_out + "index.html");
     return N;
 }
 
@@ -930,7 +930,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     Str32 toc;
     vecStr32 changed, authors;
 
-    read_file(newcomm, path_out + "templates/newcommand.html");
+    read(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     if (!file_exist(path_data + U"changed.txt")) {
         write_vec_str(vecStr32(), path_data + U"changed.txt");
@@ -945,7 +945,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
     }
 
-    read_file(toc, path_out + "templates/changed_template.html"); // read html template
+    read(toc, path_out + "templates/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiCommand");
@@ -978,7 +978,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
             + titles[ind] + U"（" + authors[i] + U"）" + U"</a><br>\n", ind0);
     }
     toc.insert(ind0, U"</p>\n</div>");
-    write_file(toc, path_out + "changed.html");
+    write(toc, path_out + "changed.html");
     write_vec_str(changed, path_data + U"changed.txt");
     write_vec_str(authors, path_data + U"authors.txt");
     return N;
@@ -1029,7 +1029,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
         if (!file_exist(path_in + "codes/" + utf32to8(name) + ".m")) {
             throw Str32(U"代码文件 \"" + utf32to8(name) + ".m\" 未找到!");
         }
-        read_file(code, path_in + "codes/" + utf32to8(name) + ".m");
+        read(code, path_in + "codes/" + utf32to8(name) + ".m");
         CRLF_to_LF(code);
         if (line_size_lim(code, 78) >= 0) {
             throw Str32(U"Matlab 单行代码过长！");
@@ -1117,7 +1117,7 @@ inline Long OneFile4(Str32_I path)
 {
     Long ind0{}, ind1{}, N{};
     Str32 str;
-    read_file(str, path); // read file
+    read(str, path); // read file
     CRLF_to_LF(str);
     while (true) {
         ind0 = str.find(U"\\bra", ind0);
@@ -1137,7 +1137,7 @@ inline Long OneFile4(Str32_I path)
             ++ind0;
     }
     if (N > 0)
-        write_file(str, path);
+        write(str, path);
     return N;
 }
 
@@ -1234,15 +1234,15 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     vecStr32_I titles, Long_I ind, Bool_I allow_label_repeat)
 {
     Str32 str;
-    read_file(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
+    read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
     CRLF_to_LF(str);
     Str32 title;
     // read html template and \newcommand{}
     Str32 html;
-    read_file(html, path_out + "templates/entry_template.html");
+    read(html, path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
     Str32 newcomm;
-    read_file(newcomm, path_out + "templates/newcommand.html");
+    read(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     // read title from first comment
     if (get_title(title, str) < 0)
@@ -1385,7 +1385,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         return -1;
     }
     // save html file
-    write_file(html, path_out + entries[ind] + ".html");
+    write(html, path_out + entries[ind] + ".html");
     return 0;
 }
 
@@ -1435,7 +1435,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
     }
     str.pop_back(); str.pop_back();
     str += U"\n  ]\n}\n";
-    write_file(str, path_out + U"../tree/data/dep.json");
+    write(str, path_out + U"../tree/data/dep.json");
     return 0;
 }
 
@@ -1488,10 +1488,10 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
-        read_file(html, path_out + entries[i] + ".html"); // read html file
+        read(html, path_out + entries[i] + ".html"); // read html file
         // process \autoref and \upref
         autoref(ids, labels, entries[i], html);
-        write_file(html, path_out + entries[i] + ".html"); // save html file
+        write(html, path_out + entries[i] + ".html"); // save html file
     }
     cout << endl;
 }
@@ -1568,12 +1568,12 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
 
-        read_file(html, path_out + entries[ind] + ".html"); // read html file
+        read(html, path_out + entries[ind] + ".html"); // read html file
         // process \autoref and \upref
         if (autoref(ids, labels, entries[ind], html) < 0) {
             return -1;
         }
-        write_file(html, path_out + entries[ind] + ".html"); // save html file
+        write(html, path_out + entries[ind] + ".html"); // save html file
     }
 
     cout << "\n\n" << endl;
@@ -1587,7 +1587,7 @@ inline void all_commands(vecStr32_O commands, Str32_I in_path)
     Str32 str, name;
     file_list_ext(fnames, in_path, U"tex");
     for (Long i = 0; i < size(fnames); ++i) {
-        read_file(str, in_path + fnames[i]);
+        read(str, in_path + fnames[i]);
         Long ind0 = 0;
         while (true) {
             ind0 = str.find(U"\\", ind0);

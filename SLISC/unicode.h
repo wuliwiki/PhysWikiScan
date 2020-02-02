@@ -34,14 +34,6 @@ struct set_windows_console_utf8 {
 set_windows_console_utf8 yes_set_windows_console_utf8;
 #endif
 
-// write Str to file
-inline void write_file(Str_I str, Str_I name)
-{
-    ofstream fout(name, std::ios::binary);
-    fout << str;
-    fout.close();
-}
-
 #ifdef SLS_USE_UTFCPP
 // convert from UTF-8 Str to UTF-32 Str32
 inline void utf8to32(Str32_O str32, Str_I str)
@@ -116,7 +108,7 @@ inline Bool file_exist(Str32_I fname) {
 // read a line from a string, from str[start] to 1 char before '\n'
 // return the start of the next line, return -1 if out of bound
 // if the file ends with `\n`, then the line.back() is not empty
-inline Long get_line(Str32_O line, Str32_I str, Long_I start)
+inline Long get_line(Str32_O line, Str32_I str, Long_I start = 0)
 {
     Long ind = str.find(U'\n', start);
     line = str.substr(start, ind - start);
@@ -128,7 +120,7 @@ inline Long get_line(Str32_O line, Str32_I str, Long_I start)
 // skip to the next line
 // return the index after `\n`
 // return -1 if `\n` not found
-inline Long skip_line(Str32_I &str, Long_I start)
+inline Long skip_line(Str32_I &str, Long_I start = 0)
 {
     Long ind = str.find(U'\n', start);
     if (ind < 0 || ind == size(str) - 1)
@@ -137,29 +129,29 @@ inline Long skip_line(Str32_I &str, Long_I start)
 }
 
 // read a UTF-8 file into UTF-32 Str32
-inline void read_file(Str32_O str32, Str_I fname)
+inline void read(Str32_O str32, Str_I fname)
 {
     Str str;
-    read_file(str, fname);
+    read(str, fname);
     utf8to32(str32, str);
 }
 
-inline void read_file(Str32_O str32, Str32_I fname)
+inline void read(Str32_O str32, Str32_I fname)
 {
-    read_file(str32, utf32to8(fname));
+    read(str32, utf32to8(fname));
 }
 
 // write UTF-32 Str32 into a UTF-8 file
-inline void write_file(Str32_I str32, Str_I fname)
+inline void write(Str32_I str32, Str_I fname)
 {
     Str str;
     utf32to8(str, str32);
-    write_file(str, fname);
+    write(str, fname);
 }
 
-inline void write_file(Str32_I str32, Str32_I fname)
+inline void write(Str32_I str32, Str32_I fname)
 {
-    write_file(str32, utf32to8(fname));
+    write(str32, utf32to8(fname));
 }
 
 // write a vector of strings to file
@@ -171,7 +163,7 @@ inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
     for (Long i = 0; i < size(vec_str); ++i) {
         str += vec_str[i] + U'\n';
     }
-    write_file(str, fname);
+    write(str, fname);
 }
 
 // read the file written by `write_vec_str()`
@@ -180,7 +172,7 @@ inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
 {
     Str32 str;
     vec_str.clear();
-    read_file(str, fname);
+    read(str, fname);
     CRLF_to_LF(str);
     Long ind0 = 0;
     for (Long i = 0; ; ++i) {
@@ -284,7 +276,7 @@ inline Long CRLF_to_LF(Str32_IO str)
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found
-inline Long find(Long_O ikey, Str32_I str, vecStr32_I keys, Long_I start)
+inline Long find(Long_O ikey, Str32_I str, vecStr32_I keys, Long_I start = 0)
 {
     Long i{}, ind0{}, Nkey{}, imin;
     Nkey = keys.size();
@@ -539,7 +531,7 @@ inline Long find_num(Str32_I str, Long start)
 // get non-negative integer from string
 // return the index after the last digit, return -1 if failed
 // str[start] must be a number
-inline Long str2int(Long_O num, Str32_I str, Long start = 0)
+inline Long str2int(Long_O num, Str32_I str, Long_I start = 0)
 {
     Long i{};
     Char32 c;
@@ -558,16 +550,10 @@ inline Long str2int(Long_O num, Str32_I str, Long start = 0)
     return i;
 }
 
-inline Long str2int(Str32_I str)
-{
-    Long num; str2int(num, str);
-    return num;
-}
-
 // get non-negative double from string
 // return the index after the last digit, return -1 if failed
 // str[start] must be a number
-inline Long str2double(Doub& num, Str32_I str, Long start)
+inline Long str2double(Doub& num, Str32_I str, Long_I start = 0)
 {
     Long ind0{}, num1{}, num2{};
     ind0 = str2int(num1, str, start);
@@ -581,6 +567,12 @@ inline Long str2double(Doub& num, Str32_I str, Long start)
         num /= 10;
     num += (Doub)num1;
     return ind0;
+}
+
+inline Long str2int(Str32_I str)
+{
+    Long num; str2int(num, str);
+    return num;
 }
 
 // delete any following ' ' or '\n' characters starting from "start" (including "start")

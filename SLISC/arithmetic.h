@@ -211,22 +211,22 @@ inline Doub max_v(const Doub *v, Long_I N, Long_I step)
 }
 
 
-inline const Int max(VecInt_I v)
+inline Int max(VecInt_I v)
 {
     return max_v(v.ptr(), v.size());
 }
 
-inline const Llong max(VecLlong_I v)
+inline Llong max(VecLlong_I v)
 {
     return max_v(v.ptr(), v.size());
 }
 
-inline const Doub max(VecDoub_I v)
+inline Doub max(VecDoub_I v)
 {
     return max_v(v.ptr(), v.size());
 }
 
-inline const Llong max(SvecLlong_I v)
+inline Llong max(SvecLlong_I v)
 {
     return max_v(v.ptr(), v.size());
 }
@@ -908,37 +908,37 @@ inline Comp sum_v(const Comp *v, Long_I N)
 }
 
 
-inline const Int sum(VecInt_I v)
+inline Int sum(VecInt_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Llong sum(VecLlong_I v)
+inline Llong sum(VecLlong_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Doub sum(VecDoub_I v)
+inline Doub sum(VecDoub_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Doub sum(SvecDoub_I v)
+inline Doub sum(SvecDoub_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Comp sum(MatComp_I v)
+inline Comp sum(MatComp_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Doub sum(CmatDoub_I v)
+inline Doub sum(CmatDoub_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
 
-inline const Comp sum(CmatComp_I v)
+inline Comp sum(CmatComp_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
@@ -2222,6 +2222,46 @@ inline void operator/=(CmatComp_IO v, Comp_I s)
     divide_equals_vs(v.ptr(), s, v.size());
 }
 
+inline void operator+=(ScmatComp_IO v, Doub_I s)
+{
+    plus_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator-=(ScmatComp_IO v, Doub_I s)
+{
+    minus_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator*=(ScmatComp_IO v, Doub_I s)
+{
+    times_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator/=(ScmatComp_IO v, Doub_I s)
+{
+    divide_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator+=(ScmatComp_IO v, Comp_I s)
+{
+    plus_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator-=(ScmatComp_IO v, Comp_I s)
+{
+    minus_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator*=(ScmatComp_IO v, Comp_I s)
+{
+    times_equals_vs(v.ptr(), s, v.size());
+}
+
+inline void operator/=(ScmatComp_IO v, Comp_I s)
+{
+    divide_equals_vs(v.ptr(), s, v.size());
+}
+
 inline void operator+=(SvecDoub_IO v, Doub_I s)
 {
     plus_equals_vs(v.ptr(), s, v.size());
@@ -2260,6 +2300,78 @@ inline void operator*=(DvecComp_IO v, Comp_I s)
 inline void operator/=(DvecComp_IO v, Comp_I s)
 {
     divide_equals_vs(v.ptr(), s, v.size(), v.step());
+}
+
+inline void operator+=(DcmatDoub_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        plus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator-=(DcmatDoub_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        minus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator*=(DcmatDoub_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        times_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator/=(DcmatDoub_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        divide_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator+=(DcmatComp_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        plus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator-=(DcmatComp_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        minus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator*=(DcmatComp_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        times_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator/=(DcmatComp_IO v, Doub_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        divide_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator+=(DcmatComp_IO v, Comp_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        plus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator-=(DcmatComp_IO v, Comp_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        minus_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator*=(DcmatComp_IO v, Comp_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        times_equals_vs(&v(0,j), s, v.n1());
+}
+
+inline void operator/=(DcmatComp_IO v, Comp_I s)
+{
+    for (Long j = 0; j < v.n2(); ++j)
+        divide_equals_vs(&v(0,j), s, v.n1());
 }
 
 inline void operator+=(Cmat3Doub_IO v, Doub_I s)
@@ -2946,6 +3058,50 @@ inline void operator/=(SvecComp_O &v, SvecComp_I v1)
         SLS_ERR("wrong shape!");
 #endif
     divide_equals_vv(v.ptr(), v1.ptr(), v1.size());
+}
+
+// v += v
+inline void operator+=(SvecComp_O &v, DvecComp_I v1)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v, v1))
+        SLS_ERR("wrong shape!");
+#endif
+    for (Long i = 0; i < v.size(); ++i)
+        v[i] += v1[i];
+}
+
+// v -= v
+inline void operator-=(SvecComp_O &v, DvecComp_I v1)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v, v1))
+        SLS_ERR("wrong shape!");
+#endif
+    for (Long i = 0; i < v.size(); ++i)
+        v[i] -= v1[i];
+}
+
+// v *= v
+inline void operator*=(SvecComp_O &v, DvecComp_I v1)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v, v1))
+        SLS_ERR("wrong shape!");
+#endif
+    for (Long i = 0; i < v.size(); ++i)
+        v[i] *= v1[i];
+}
+
+// v /= v
+inline void operator/=(SvecComp_O &v, DvecComp_I v1)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v, v1))
+        SLS_ERR("wrong shape!");
+#endif
+    for (Long i = 0; i < v.size(); ++i)
+        v[i] /= v1[i];
 }
 
 inline void operator+=(ScmatDoub_O &v, ScmatDoub_I v1)

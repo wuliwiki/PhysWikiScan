@@ -31,6 +31,7 @@ inline void inv_mat(ScmatDoub_IO A)
 
 
 // solution to linear system with general coefficient matrix A and multiple right-hand sides.
+// ####### Not Thread Safe ######
 inline void lin_eq(CmatDoub_IO x, CmatDoub_I a)
 {
 #ifdef SLS_CHECK_SHAPE
@@ -169,8 +170,162 @@ inline void lin_eq(VecComp_IO x, CmatComp_I a)
     }
 }
 
+inline void lin_eq(SvecComp_IO x, ScmatComp_I a)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+#endif
+    static CmatComp a1(a.n1(), a.n2());
+    static VecInt ipiv(a.n1());
+    if (!shape_cmp(a1, a))
+        a1.resize(a.n1(), a.n2());
+    copy(a1, a);
+    if (a.n1() > ipiv.size())
+        ipiv.resize(a.n1());
+    Int lda = a1.n1();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_zgesv(LAPACK_COL_MAJOR, a1.n1(), nrhs, (double _Complex*)a1.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+
+// solution to linear system with general coefficient matrix A and multiple right-hand sides.
+// A will be changed to LU matrix
+// ipiv: integer work space of size a.n1()
+inline void lin_eq(CmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.n1())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.n1(), nrhs = x.n2();
+
+    Int ret = LAPACKE_dgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, a.ptr(), lda, ipiv.ptr(), x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(ScmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.n1())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.n1(), nrhs = x.n2();
+
+    Int ret = LAPACKE_dgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, a.ptr(), lda, ipiv.ptr(), x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(ScmatDoub_IO x, ScmatDoub_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.n1())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.n1(), nrhs = x.n2();
+
+    Int ret = LAPACKE_dgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, a.ptr(), lda, ipiv.ptr(), x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(VecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_dgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, a.ptr(), lda, ipiv.ptr(), x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(SvecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_dgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, a.ptr(), lda, ipiv.ptr(), x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(VecComp_IO x, CmatComp_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_zgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, (double _Complex*)a.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(SvecComp_IO x, ScmatComp_IO a, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+    if (ipiv.size() != a.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a.n1();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_zgesv(LAPACK_COL_MAJOR, a.n1(), nrhs, (double _Complex*)a.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
 
 // solution to linear system with band coefficient matrix A and multiple right-hand sides.
+// ####### Not Thread Safe ######
 inline void lin_eq(VecDoub_IO x, CbandDoub_I a)
 {
 #ifdef SLS_CHECK_SHAPE
@@ -249,6 +404,36 @@ inline void lin_eq(VecComp_IO x, CbandComp_IO a1, VecInt_IO ipiv)
 #endif
     Int lda = a1.lda();
     Int ldx = x.size(), nrhs = 1;
+    Int ret = LAPACKE_zgbsv(LAPACK_COL_MAJOR, a1.n1(), a1.nlow() , a1.nup(), nrhs, (double _Complex*)a1.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(SvecComp_IO x, CbandComp_IO a1, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a1.n1() != a1.n2() || a1.n2() != x.size())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a1.lda();
+    Int ldx = x.size(), nrhs = 1;
+    Int ret = LAPACKE_zgbsv(LAPACK_COL_MAJOR, a1.n1(), a1.nlow() , a1.nup(), nrhs, (double _Complex*)a1.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(ScmatComp_IO x, CbandComp_IO a1, SvecInt_IO ipiv)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (a1.n1() != a1.n2() || a1.n2() != x.n1())
+        SLS_ERR("wrong shape!");
+#endif
+    Int lda = a1.lda();
+    Int ldx = x.n1(), nrhs = x.n2();
     Int ret = LAPACKE_zgbsv(LAPACK_COL_MAJOR, a1.n1(), a1.nlow() , a1.nup(), nrhs, (double _Complex*)a1.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
     if (ret != 0) {
         cout << "LAPACK returned " << ret << endl;

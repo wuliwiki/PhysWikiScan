@@ -47,7 +47,7 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_
     if (!file_exist("set_path.txt")) {
         throw Str32(U"内部错误： set_path.txt 不存在!");
     }
-    read_file(temp, "set_path.txt");
+    read(temp, "set_path.txt");
     CRLF_to_LF(temp);
 
     Long ind0 = 0;

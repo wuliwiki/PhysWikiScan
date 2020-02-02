@@ -11,6 +11,7 @@
 #include "Svec.h"
 #include "Dvec.h"
 #include "Scmat.h"
+#include "Scmat3.h"
 #include "Dcmat.h"
 #include "Jcmat3.h"
 
@@ -477,12 +478,32 @@ inline Bool shape_cmp(ScmatDoub_I v1, CmatDoub_I v2)
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
 
+inline Bool shape_cmp(ScmatDoub_I v1, CbandDoub_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
+inline Bool shape_cmp(ScmatDoub_I v1, CbandComp_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
 inline Bool shape_cmp(ScmatComp_I v1, CmatDoub_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
 
 inline Bool shape_cmp(ScmatComp_I v1, CmatComp_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
+inline Bool shape_cmp(ScmatComp_I v1, CbandDoub_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
+inline Bool shape_cmp(ScmatComp_I v1, CbandComp_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }

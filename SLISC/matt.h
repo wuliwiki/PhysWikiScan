@@ -1,5 +1,4 @@
-// save vectors and matrices defined in "nr3.h" to ".mat" or ".matt" files.
-// see README.txt for details
+// save vectors and matrices to ".matt" file
 
 #pragma once
 #include "file.h"
@@ -18,13 +17,12 @@ public:
     ofstream m_out; // write file
     Int m_n; // variable numbers
     Str fname; // name of the opened file
-    vecStr m_name; // variable names
-    vecInt m_type; // variable types
-    vector<vecLong> m_size; // variable dimensions
-    vecLong m_ind; // variable positions (line indices)
+    vector<Str> m_name; // variable names
+    vector<Int> m_type; // variable types
+    vector<vector<Long>> m_size; // variable dimensions
+    vector<Long> m_ind; // variable positions (line indices)
 
-    // open a file, return 0 if success
-    // return -2 if reading failed (e.g. file is not finished, wrong format)
+    // open a file
     void open(Str_I fname, Char_I *rw, Int_I precision = 17);
 
     Bool isopen();
@@ -36,7 +34,6 @@ public:
 
     // get var names and positions from the end of the file
     // after return, matt.m_ind[i] points to the first matrix element;
-    // return 0 if successful, return -1 if failed
     void get_profile();
 
     // search a variable by name, return index to m_name[i]
@@ -139,7 +136,7 @@ struct Matt_file_not_complete {};
 inline void Matt::get_profile()
 {
     Int i, j, n, temp;
-    vecLong size;
+    vector<Long> size;
     Str name;
     ifstream &fin = m_in;
 
