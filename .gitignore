@@ -2,6 +2,7 @@
 Debug/
 Release/
 x64/
+backup/
 PhysWikiScan
 *.vcxproj.user
 npm-debug.log
