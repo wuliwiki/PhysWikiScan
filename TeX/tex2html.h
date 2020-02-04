@@ -38,7 +38,6 @@ inline Bool is_in_tag(Str32_I str, Str32_I name, Long_I ind)
 
 // ensure space around '<' and '>' in equation env. and $$ env
 // return number of spaces added
-// return -1 if failed
 inline Long EqOmitTag(Str32_IO str)
 {
     Long i{}, N{}, Nrange{};
@@ -46,7 +45,6 @@ inline Long EqOmitTag(Str32_IO str)
     find_env(intv, str, U"equation");
     find_inline_eq(indInline, str);
     Nrange = combine(intv, indInline);
-    if (Nrange < 0) return -1;
     for (i = Nrange - 1; i >= 0; --i) {
         N += EnsureSpace(U"<", str, intv.L(i), intv.R(i));
         N += EnsureSpace(U">", str, intv.L(i), intv.R(i));
@@ -198,7 +196,6 @@ inline Long TextEscape(Str32_IO str)
 
 // deal with escape simbols in normal text, \x{} commands, Command environments
 // must be done before \command{} and environments are replaced with html tags
-// return -1 if failed
 inline Long NormalTextEscape(Str32_IO str)
 {
     Long i{}, N1{}, N{}, Nnorm{};
@@ -207,10 +204,8 @@ inline Long NormalTextEscape(Str32_IO str)
     FindNormalText(intv, str);
     find_scopes(intv1, U"\\x", str);
     Nnorm = combine(intv, intv1);
-    if (Nnorm < 0) return -1;
     find_env(intv1, str, U"Command");
     Nnorm = combine(intv, intv1);
-    if (Nnorm < 0) return -1;
     for (i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
         N1 = TextEscape(temp);
@@ -223,7 +218,7 @@ inline Long NormalTextEscape(Str32_IO str)
 }
 
 // process table
-// return number of tables processed, return -1 if failed
+// return number of tables processed
 // must be used after EnvLabel()
 inline Long Table(Str32_IO str)
 {
@@ -239,9 +234,8 @@ inline Long Table(Str32_IO str)
     for (Long i = N - 1; i >= 0; --i) {
         indLine.clear();
         ind0 = find_command(str, U"caption", intv.L(i));
-        if (ind0 < 0 || ind0 > intv.R(i)) {
-            cout << "table no caption!" << endl; return -1;  // break point here
-        }
+        if (ind0 < 0 || ind0 > intv.R(i))
+            throw Str32(U"table no caption!");
         ind0 += 8; ind0 = expect(str, U"{", ind0);
         ind1 = pair_brace(str, ind0 - 1);
         caption = str.substr(ind0, ind1 - ind0);

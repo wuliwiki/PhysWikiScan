@@ -10,8 +10,7 @@ using namespace slisc;
 
 // get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
-// return -1 if error, 0 if successful
-inline Long get_title(Str32_O title, Str32_I str)
+inline void get_title(Str32_O title, Str32_I str)
 {
     if (str.at(0) != U'%') {
         throw Str32(U"请在第一行注释标题!"); // break point here
@@ -30,7 +29,6 @@ inline Long get_title(Str32_O title, Str32_I str)
     if (ind0 >= 0) {
         throw Str32(U"注释的标题不能含有 “\\” !"); // break point here
     }
-    return 0;
 }
 
 // trim "\n" and " " on both sides
@@ -216,7 +214,7 @@ inline void limit_env(Str32_I str)
 // no comment allowed
 // return number of labels processed, or -1 if failed
 inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
-    Str32_I entryName, Str32_IO str, Bool_I allow_label_repeat)
+    Str32_I entryName, Str32_IO str)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
         Ngather{}, Nalign{}, i{}, j{};
@@ -225,6 +223,13 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     Str32 idNum{}; // id = idName + idNum
     Long idN{}; // convert to idNum
     Str32 label, id;
+    // clean existing labels of this entry
+    for (Long i = labels.size() - 1; i >= 0; --i) {
+        if (labels[i].substr(0, entryName.size() + 1) == entryName + U'_') {
+            labels.erase(labels.begin()+i);
+            ids.erase(labels.begin() + i);
+        }
+    }
     while (true) {
         ind5 = find_command(str, U"label", ind0);
         if (ind5 < 0) return N;
@@ -285,7 +290,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         Long ind = search(label, labels);
         if (ind < 0)
             labels.push_back(label);
-        else if (!allow_label_repeat) {
+        else {
             throw Str32(U"标签多次定义： " + labels[ind]);
         }
         
@@ -338,7 +343,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 
 // replace figure environment with html image
 // convert vector graph to SVG, font must set to "convert to outline"
-// if svg image doesn't exist, use png, if doesn't exist, return -1
+// if svg image doesn't exist, use png
 // path must end with '\\'
 inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
 {
@@ -473,7 +478,7 @@ inline Long RemoveNoEntry(vecStr32_IO names)
 }
 
 // these environments are already not in a paragraph
-// return number of environments processed, return -1 if failed
+// return number of environments processed
 inline Long theorem_like_env(Str32_IO str)
 {
     Long N, N_tot = 0, ind0, ind1{};
@@ -608,7 +613,6 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // ind is not the label number, but the displayed number
 // if exist, return 1, output label
 // if doesn't exist, return 0
-// if failed, return -1
 Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     vecStr32_I labels, vecStr32_I ids, Str32_I path_in)
 {
@@ -760,8 +764,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
 
 // update entries.txt and titles.txt
 // return the number of entries in main.tex
-// return -1 if failed
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_in)
+inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_in)
 {
     entries.clear(); titles.clear();
     file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
@@ -770,7 +773,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
         throw Str32(U"未找到任何词条");
     }
 
-    Long N = 0, ind0 = 0;
+    Long ind0 = 0;
 
     Str32 title;
     Str32 entryName; // entry label
@@ -789,7 +792,6 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
         if (ind0 < 0)
             break;
         // get chinese title and entry label
-        ++N;
         command_arg(title, str, ind0);
         replace(title, U"\\ ", U" ");
         if (title.empty()) {
@@ -818,15 +820,14 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
         }
     }
     cout << endl;
-    return N;
 }
 
 // create table of content from main.tex
 // path must end with '\\'
-// return the number of entries, return -1 if failed
+// return the number of entries
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
+inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_out)
 {
     Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
@@ -876,8 +877,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
             ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title
-            Long ind = search(entryName, entries);
-            if (ind < 0) {
+            if (search(entryName, entries) < 0) {
                 throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到!");
             }
             ++ind1;
@@ -917,7 +917,7 @@ inline Long table_of_contents(vecStr32_I titles, vecStr32_I entries, Str32_I pat
 
 // create table of content from main.tex
 // path must end with '\\'
-// return the number of entries, return -1 if failed
+// return the number of entries
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
 inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out, Str32_I path_data)
@@ -1051,7 +1051,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 }
 
 // process all lstlisting environments
-// return the number of \Command{} processed, return -1 if failed
+// return the number of \Command{} processed
 inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline)
 {
     Long ind0 = 0;
@@ -1094,11 +1094,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline
             Matlab_highlight(code);
         else if (lang == U"MyMatlab")
             Matlab_highlight(code);
-        else if (lang == U"cpp") {
-            if (cpp_highlight(code) < 0) {
-                return -1;
-            }
-        }
+        else if (lang == U"cpp")
+            cpp_highlight(code);
         else {
             // language not supported, no highlight
             if (!lang.empty())
@@ -1226,12 +1223,11 @@ inline Long inline_eq_space(Str32_IO str)
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
-// return 0 if successful, -1 if failed
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     Str32_I path_in, Str32_I path_out, vecStr32_I entries,
-    vecStr32_I titles, Long_I ind, Bool_I allow_label_repeat)
+    vecStr32_I titles, Long_I ind)
 {
     Str32 str;
     read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1245,8 +1241,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     read(newcomm, path_out + "templates/newcommand.html");
     CRLF_to_LF(newcomm);
     // read title from first comment
-    if (get_title(title, str) < 0)
-        return -1;
+    get_title(title, str);
+
     // add keyword meta to html
     vecStr32 keywords;
     if (get_keywords(keywords, str) > 0) {
@@ -1283,43 +1279,29 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
     }
     // add spaces betwen chinese char and alphanumeric char
-    if (chinese_alpha_num_space(str) < 0)
-        return -1;
+    chinese_alpha_num_space(str);
     // add spaces around inline equation
-    if (inline_eq_space(str) < 0)
-        return -1;
+    inline_eq_space(str);
     // escape characters
-    if (NormalTextEscape(str) < 0)
-        return -1;
+    NormalTextEscape(str);
     // add paragraph tags
-    if (paragraph_tag(str) < 0)
-        return -1;
+    paragraph_tag(str);
     // itemize and enumerate
-    if (Itemize(str) < 0)
-        return -1;
-    if (Enumerate(str) < 0)
-        return -1;
+    Itemize(str); Enumerate(str);
     // add html id for links
-    if (EnvLabel(ids, labels, entries[ind], str, allow_label_repeat) < 0)
-        return -1;
+    EnvLabel(ids, labels, entries[ind], str);
     // process table environments
-    if (Table(str) < 0)
-        return -1;
+    Table(str);
     // ensure '<' and '>' has spaces around them
-    if (EqOmitTag(str) < 0)
-        return -1;
+    EqOmitTag(str);
     // process example and exercise environments
-    if (theorem_like_env(str) < 0)
-        return -1;
+    theorem_like_env(str);
     // process figure environments
-    if (FigureEnvironment(str, path_out, path_in) < 0)
-        return -1;
+    FigureEnvironment(str, path_out, path_in);
     // get dependent entries from \pentry{}
-    if (depend_entry(links, str, entries, ind) < 0)
-        return -1;
+    depend_entry(links, str, entries, ind);
     // process \pentry{}
-    if (pentry(str) < 0)
-        return -1;
+    pentry(str);
     // Replace \nameStar commands
     StarCommand(U"comm", str);   StarCommand(U"pb", str);
     StarCommand(U"dv", str);     StarCommand(U"pdv", str);
@@ -1347,10 +1329,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     // replace \upref{} with link icon
-    if (upref(str, path_in) < 0)
-        return -1;
-    if (href(str) < 0)
-        return -1;
+    upref(str, path_in);
+    href(str);
     // replace environments with html tags
     Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
                         U"\\end{equation}\n</div></div>", str);
@@ -1364,25 +1344,20 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
     // Matlab code
-    if (MatlabCode(str, path_in, false) < 0)
-        return -1;
-    if (MatlabCode(str, path_in, true) < 0)
-        return -1;
+    MatlabCode(str, path_in, false);
+    MatlabCode(str, path_in, true);
     Intvs intv_lstinline;
     lstinline(intv_lstinline, str, str_verb);
-    if (lstlisting(str, str_verb, intv_lstinline) < 0)
-        return -1;
+    lstlisting(str, str_verb, intv_lstinline);
 
     Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1) {
         throw Str32(U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!");
-        return -1;
     }
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1) {
         throw Str32(U"\"PhysWikiHTMLbody\" 在 entry_template.html 中未找到!");
-        return -1;
     }
     // save html file
     write(html, path_out + entries[ind] + ".html");
@@ -1450,7 +1425,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(titles, entries, path_in, path_out);
+    table_of_contents(entries, path_in, path_out);
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
     vecLong links;
@@ -1467,8 +1442,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links,
-            path_in, path_out, entries, titles, i, false);
+        PhysWikiOnline1(ids, labels, links, path_in, path_out, entries, titles, i);
     }
 
     // save id and label data
@@ -1547,10 +1521,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
 
-        if (PhysWikiOnline1(ids, labels, links,
-            path_in, path_out, entries, titles, ind, true) < 0) {
-            return -1;
-        }
+        PhysWikiOnline1(ids, labels, links, path_in, path_out, entries, titles, ind);
     }
     
     write_vec_str(labels, path_data + U"labels.txt");
@@ -1570,9 +1541,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
 
         read(html, path_out + entries[ind] + ".html"); // read html file
         // process \autoref and \upref
-        if (autoref(ids, labels, entries[ind], html) < 0) {
-            return -1;
-        }
+        autoref(ids, labels, entries[ind], html);
         write(html, path_out + entries[ind] + ".html"); // save html file
     }
 
