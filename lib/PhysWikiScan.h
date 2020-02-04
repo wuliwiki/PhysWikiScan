@@ -227,7 +227,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     for (Long i = labels.size() - 1; i >= 0; --i) {
         if (labels[i].substr(0, entryName.size() + 1) == entryName + U'_') {
             labels.erase(labels.begin()+i);
-            ids.erase(labels.begin() + i);
+            ids.erase(ids.begin() + i);
         }
     }
     while (true) {
