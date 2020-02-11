@@ -106,69 +106,215 @@ inline Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
     return N;
 }
 
-// detect \name() commands and replace with \nameRound{}
-// also replace \name[]() with \nameRound[]{}
-// must remove comments first
-inline Long RoundSquareCommand(Str32_I name, Str32_IO str)
+// replace e.g. `\sin(...)` with `\sin\left(...\right)`
+// replace e.g. `\sin[n](...)` with `\sin^n\left(...\right)`
+// \exp and \qty are special, also support `\exp[]`, `\exp{}`, `\qty[]`, `qty{}` auto resize
+// see physics package for detail
+inline Long fun_auto_size(Str32_IO str)
 {
-    Long N{}, ind0{}, ind1{}, ind2{}, ind3;
-    while (true) {
-        ind0 = find_command(str, name, ind0);
-        if (ind0 < 0)
-            break;
-        ind0 += name.size() + 1;
-        ind2 = expect(str, U"(", ind0);
-        if (ind2 > 0) {
-            --ind2;
-            ind3 = pair_brace(str, ind2, U')');
-            str.erase(ind3, 1); str.insert(ind3, U"}");
-            str.erase(ind2, 1); str.insert(ind2, U"{");
-            str.insert(ind0, U"Round");
-            ++N;
-        }
-        else {
-            ind2 = expect(str, U"[", ind0);
-            if (ind2 < 0)
-                continue;
-            --ind2;
-            ind3 = pair_brace(str, ind2, U']');
-            str.replace(ind3, 1, U"}");
-            str.replace(ind2, 1, U"{");
-            str.insert(ind0, U"Square");
-            ++N;
-        }
-    }
-    return N;
+    // supports \cmd(), \cmd[]()
+    vecStr32 keys = {U"sin", U"cos", U"tan", U"csc", U"sec", U"cot", U"sinh", U"cosh",
+        U"tanh", U"arcsin", U"arccos", U"arctan", U"log", U"ln"};
+    // supports \cmd(), \cmd[], \cmd{}
+    vecStr32 keys1 = { U"exp", U"qty" };
+
+    // TODO
 }
 
-// detect \name() commands and replace with \nameRound{}
-// also replace \name[]() with \nameRound[]{}
-// must remove comments first
-inline Long MathFunction(Str32_I name, Str32_IO str)
+// ==== directly implement \newcommand{}{} by replacing ====
+// does not support multiple layer!
+
+inline Long newcommand(Str32_IO str)
 {
-    Long N{}, ind0{}, ind1{}, ind2{}, ind3;
-    while (true) {
-        ind0 = str.find(U"\\" + name, ind0);
-        if (ind0 < 0) break;
-        ind0 += name.size() + 1;
-        ind1 = expect(str, U"[", ind0);
-        if (ind1 > 0) {
-            --ind1;
-            ind1 = pair_brace(str, ind1, ']');
-            ind2 = ind1 + 1;
-        }
-        else
-            ind2 = ind0;
-        ind2 = expect(str, U"(", ind2);
-        if (ind2 < 0) continue;
-        --ind2;
-        ind3 = pair_brace(str, ind2, ')');
-        str.erase(ind3, 1); str.insert(ind3, U"}");
-        str.erase(ind2, 1); str.insert(ind2, U"{");
-        str.insert(ind0, U"Round");
-        ++N;
-    }
-    return N;
+    // `\cmd`
+    vecStr32 cmd_0 = {
+        U"I", U"\\mathrm{i}",
+        U"E", U"\\mathrm{e}",
+        U"Nabla", U"\\boldsymbol{\\nabla}",
+        U"Tr", U"^{\\mathrm{T}}",
+        U"Cj", U"^*",
+        U"Her", U"^\\dagger",
+        U"sinc", U"\\operatorname{sinc}",
+        U"Arctan", U"\\operatorname{Arctan}",
+        U"erfi", U"\\operatorname{erfi}",
+        U"vdot", U"\\boldsymbol\\cdot",
+        U"cross", U"\\boldsymbol\\times",
+        U"grad", U"\\boldsymbol\\nabla",
+        U"div", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}"
+        U"curl", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}"
+        U"laplacian", U"\\boldsymbol{\\nabla}^2"
+        U"Re", U"\\mathrm{Re}",
+        U"Im", U"\\mathrm{Im}",
+        U"opn", U"\\operatorname"
+    };
+
+    // `\cmd{}`
+    vecStr32 cmd_1 = {
+        U"qty", U"\\left\\{{#1}\\right\\}",
+        U"bvec", U"\\boldsymbol{\\mathbf{#1}}",
+        U"mat", U"\\boldsymbol{\\mathbf{#1}}",
+        U"ten", U"\\boldsymbol{\\mathbf{#1}}",
+        U"uvec", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+        U"pmat", U"\\begin{pmatrix}#1\\end{pmatrix}",
+        U"ali", U"\\begin{aligned}#1\\end{aligned}",
+        U"leftgroup", U"\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+        U"vmat", U"\\begin{vmatrix}#1\\end{vmatrix}",
+        U"Q", U"\\hat{#1}",
+        U"Qv", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+        U"Si", U"\\,\\mathrm{#1}",
+        U"abs", U"\\left\\lvert{#1}\\right\\rvert",
+        U"eval", U"\\left.{#1}\\right\\rvert",
+        U"dd", U"\\,\\mathrm{d}^{#1}",
+        U"bra", U"\\left\\langle{#1}\\right\\rvert",
+        U"ket", U"\\left\\lvert{#1}\\right\\rangle",
+        U"braket", U"\\left\\langle{#1}\\middle|{#1}\\right\\rangle",
+        U"ev", U"\\left\\langle{#1}\\right\\rangle",
+        U"order", U"\\mathcal{O}\\left(#1\\right)",
+        U"bmat", U"\\begin{bmatrix}#1\\end{bmatrix}",
+        U"Bmat", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
+        U"sumint", U"\\int\\kern-1.4em\\sum", 
+        U"Q", U"\\hat{#1}",
+        U"norm", U"\\left\\lVert{#1}\\right\\rVert",
+        U"pdv", U"\\frac{\\partial}{\\partial{#1}}",
+        U"dd", U"\\,\\mathrm{d}{#1}",
+        U"dv", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
+    };
+
+    // `\cmd[]{}`
+    vecStr32 cmd_sq_1 = {
+        U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+        U"dd", U"\\,\\mathrm{d}^{#1}{#2}",
+        U"dv", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
+    };
+
+    // `\cmd*{}`
+    vecStr32 cmd_st_1 = {
+        U"ev", U"\\langle{#1}\\rangle",
+        U"braket", U"\\langle{#1}|{#1}\\rangle",
+        U"ket", U"\\lvert{#1}\\rangle",
+        U"bra", U"\\langle{#1}\\rvert",
+        U"dv", U"\\mathrm{d}/\\mathrm{d}{#1}",
+    };
+
+    // `\cmd*[]{}`
+    vecStr32 cmd_st_sq_1 = {
+        U"dv", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
+    };
+
+    // non-standard: `\cmd()`
+    vecStr32 cmd_ro = {
+        U"qty", U"\\left({#1}\\right)",
+        U"sin", U"\\sin\\left(#1\\right)",
+        U"cos", U"\\cos\\left(#1\\right)",
+        U"tan", U"\\tan\\left(#1\\right)",
+        U"csc", U"\\csc\\left(#1\\right)",
+        U"sec", U"\\sec\\left(#1\\right)",
+        U"cot", U"\\cot\\left(#1\\right)",
+        U"sinh", U"\\sinh\\left(#1\\right)",
+        U"cosh", U"\\cosh\\left(#1\\right)",
+        U"tanh", U"\\tanh\\left(#1\\right)",
+        U"arcsin", U"\\arcsin\\left(#1\\right)",
+        U"arccos", U"\\arccos\\left(#1\\right)",
+        U"arctan", U"\\arctan\\left(#1\\right)",
+        U"exp", U"\\exp\\left(#1\\right)",
+        U"log", U"\\log\\left(#1\\right)"
+        U"ln", U"\\ln\\left(#1\\right)"
+    };
+
+    // non-standard: `\cmd[]`
+    vecStr32 cmd_sq = {
+        U"qty", U"\\left[{#1}\\right]"
+    };
+
+    // non-standard: `\cmd[]()`
+    vecStr32 cmd_sq_ro = {
+        U"sin", U"\\sin^{#1}\\left(#2\\right)",
+        U"cos", U"\\cos^{#1}\\left(#2\\right)",
+        U"tan", U"\\tan^{#1}\\left(#2\\right)",
+        U"csc", U"\\csc^{#1}\\left(#2\\right)",
+        U"sec", U"\\sec^{#1}\\left(#2\\right)",
+        U"cot", U"\\cot^{#1}\\left(#2\\right)",
+        U"sinh", U"\\sinh^{#1}\\left(#2\\right)",
+        U"cosh", U"\\cosh^{#1}\\left(#2\\right)",
+        U"tanh", U"\\tanh^{#1}\\left(#2\\right)",
+        U"arcsin", U"\\arcsin^{#1}\\left(#2\\right)",
+        U"arccos", U"\\arccos^{#1}\\left(#2\\right)",
+        U"arctan", U"\\arctan^{#1}\\left(#2\\right)",
+        U"log", U"\\log^{#1}\\left(#2\\right)"
+        U"ln", U"\\ln^{#1}\\left(#2\\right)"
+    };
+
+    // `\cmd{}{}`
+    vecStr32 cmd_2 = {
+        U"comm", U"\\left[{#1},{#2}\\right]",
+        U"pb", U"\\left\\{{#1},{#2}\\right\\}",
+        U"braket", U"\\left\\langle{#1}\\middle|{#2}\\right\\rangle",
+        U"ev", U"\\left\\langle{#2}\\middle|{#1}\\middle|{#2}\\right\\rangle",
+        U"dv", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
+        U"pdv", U"\\frac{\\partial {#1}}{\\partial {#2}}",
+    };
+
+    // `\cmd*{}{}`
+    vecStr32 cmd_st_2 = {
+        U"braket", U"\\langle{#1}|{#2}\\rangle",
+        U"ev", U"\\langle{#2}|{#1}|{#2}\\rangle",
+        U"comm", U"[{#1},{#2}]",
+        U"pb", U"\\{{#1},{#2}\\}",
+        U"dv", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
+        U"pdv", U"\\partial^{#1}/\\partial{#2}^{#1}",
+    };
+
+    // `\cmd[]{}{}`
+    vecStr32 cmd_sq_2 = {
+        U"dv", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
+        U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+    };
+
+    // `\cmd*[]{}{}`
+    vecStr32 cmd_st_sq_2 = {
+        U"dv", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
+        U"pdv", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}"
+    };
+
+    // `\cmd{}{}{}`
+    vecStr32 cmd_3 = {
+        U"pdv", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
+        U"mel", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
+    };
+
+    // `\cmd[]{}{}{}`
+    vecStr32 cmd_sq_3 = {
+    };
+
+    // `\cmd*{}{}{}`
+    vecStr32 cmd_st_3 = {
+        U"pdv", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
+        U"mel", U"\\langle{#1}|{#2}|{#3}\\rangle"
+    };
+
+    // `\cmd*[]{}{}{}`
+
+
+    // all commands to find
+    vecStr32 keys;
+    keys.insert(keys.end(), cmd_0.begin(), cmd_0.end());
+    keys.insert(keys.end(), cmd_1.begin(), cmd_1.end());
+    keys.insert(keys.end(), cmd_sq_1.begin(), cmd_sq_1.end());
+    keys.insert(keys.end(), cmd_st_1.begin(), cmd_st_1.end());
+    keys.insert(keys.end(), cmd_st_sq_1.begin(), cmd_st_sq_1.end());
+    keys.insert(keys.end(), cmd_ro.begin(), cmd_ro.end());
+    keys.insert(keys.end(), cmd_sq.begin(), cmd_sq.end());
+    keys.insert(keys.end(), cmd_sq_ro.begin(), cmd_sq_ro.end());
+    keys.insert(keys.end(), cmd_2.begin(), cmd_2.end());
+    keys.insert(keys.end(), cmd_st_2.begin(), cmd_st_2.end());
+    keys.insert(keys.end(), cmd_sq_2.begin(), cmd_sq_2.end());
+    keys.insert(keys.end(), cmd_st_sq_2.begin(), cmd_st_sq_2.end());
+    keys.insert(keys.end(), cmd_3.begin(), cmd_3.end());
+    keys.insert(keys.end(), cmd_sq_3.begin(), cmd_sq_3.end());
+    keys.insert(keys.end(), cmd_st_3.begin(), cmd_st_3.end());
+
+    // delete repeating elements
+    uniq_elm(keys);
 }
 
 // deal with escape simbols in normal text

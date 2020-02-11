@@ -1313,17 +1313,6 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     VarCommand(U"dv", str, 2);    VarCommand(U"dvStar", str, 2);
     VarCommand(U"ev", str, 2);    VarCommand(U"evStar", str, 2);
     VarCommand(U"braket", str, 2); VarCommand(U"braketStar", str, 2);
-    // replace \name() and \name[] with \nameRound{} and \nameRound and \nameSquare
-    RoundSquareCommand(U"qty", str);
-    // replace \namd() and \name[]() with \nameRound{} and \nameRound[]{}
-    MathFunction(U"sin", str);    MathFunction(U"cos", str);
-    MathFunction(U"tan", str);    MathFunction(U"csc", str);
-    MathFunction(U"sec", str);    MathFunction(U"cot", str);
-    MathFunction(U"sinh", str);   MathFunction(U"cosh", str);
-    MathFunction(U"tanh", str);   MathFunction(U"arcsin", str);
-    MathFunction(U"arccos", str); MathFunction(U"arctan", str);
-    MathFunction(U"exp", str);    MathFunction(U"log", str);
-    MathFunction(U"ln", str);
     // replace \name{} with html tags
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
