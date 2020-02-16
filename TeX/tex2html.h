@@ -313,8 +313,28 @@ inline Long newcommand(Str32_IO str)
     keys.insert(keys.end(), cmd_sq_3.begin(), cmd_sq_3.end());
     keys.insert(keys.end(), cmd_st_3.begin(), cmd_st_3.end());
 
+    for (Long i = 2; i < size(keys); i+=2) {
+        
+    }
+
     // delete repeating elements
     uniq_elm(keys);
+    Long ind0 = 0, ikey;
+    Str32 key;
+    while (true) {
+        ind0 = find_command(ikey, str, keys, ind0);
+        if (ind0 < 0)
+            break;
+        key = keys[ikey];
+        if (search(key, cmd_0) >= 0) {
+            str.replace(ind0, key.size()+1, )
+        }
+        Long ind1 = expect(str, U'*', ind0 + key.size() + 1);
+        if (ind1 > 0) {
+            ind1 = expect(str, U'[', ind1);
+        }
+        if (search(key, keys))
+    }
 }
 
 // deal with escape simbols in normal text
