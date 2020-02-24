@@ -347,10 +347,10 @@ inline Long expect(Str32_I str, Str32_I key, Long_I start)
                  return ind + 1;
          }
          else if (c != U' ' && c != U'\n')
-             return -1;
+             throw Str32(U"expect() failed (1)!");
          ++ind;
          if (ind == L)
-             return -1;
+             throw Str32(U"expect() failed (2)!");
     }
 }
 
@@ -610,7 +610,7 @@ inline Long eatL(Str32& str, Long start, Str32_I chars)
 // Pair right brace to left one (default)
 // or () or [] or anying single character
 // ind is inddex of left brace
-// return index of right brace, -1 if failed
+// return index of right brace
 inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
 {
     Char32 left, right;
@@ -642,7 +642,7 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
         }
         c0 = c;
     }
-    return -1;
+    throw Str32(U"pair_brace() failed!");
 }
 
 // match braces

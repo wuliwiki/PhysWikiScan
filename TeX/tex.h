@@ -15,7 +15,7 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
     while (true) {
         ind0 = str.find(U"\\" + name, ind0);
         if (ind0 < 0)
-            return -1;
+            throw Str32(U"find_command() failed!");
 
         // check right
         if (!is_letter(str[ind0 + name.size() + 1]))
@@ -47,7 +47,6 @@ inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I star
 // return one index after command name if 'Narg = 0'
 // return one index after '}' if 'Narg > 0'
 // might return str.size()
-// return -1 if failed
 inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
 {
     Long i;
@@ -62,7 +61,7 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
         if (Narg == 0)
             return str.size();
         else
-            return -1;
+            throw Str32(U"skip_command failed!");
     }
     Long ind0 = i;
     if (Narg > 0)
@@ -84,13 +83,9 @@ inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Char
 {
     Long ind0 = ind, ind1;
     ind0 = skip_command(str, ind0);
-    if (ind0 < 0) return -1;
     ind0 = skip_scope(str, ind0, i);
-    if (ind0 < 0) return -1;
     ind0 = expect(str, U"{", ind0);
-    if (ind0 < 0) return -1;
     ind1 = pair_brace(str, ind0 - 1);
-    if (ind1 < 0) return -1;
     arg = str.substr(ind0, ind1 - ind0);
     if (option == 't')
         trim(arg);
@@ -127,7 +122,7 @@ inline Long skip_env(Str32_I str, Long_I ind)
 
 // find the intervals of all commands with 1 argument
 // intervals are from '\' to '}'
-// return the number of commands found, return -1 if failed
+// return the number of commands found
 inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 {
     Long ind0 = 0, N = 0;
@@ -138,14 +133,12 @@ inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
             return intv.size();
         intv.pushL(ind0);
         ind0 = skip_command(str, ind0, 1);
-        if (ind0 < 0)
-            return -1;
         intv.pushR(ind0-1);
     }
 }
 
 // find a scope in str for environment named env
-// return number of environments found. return -1 if failed
+// return number of environments found
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
 inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
@@ -170,7 +163,7 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 
         ind0 = find_command_spec(str, U"end", env, ind0);
         if (ind0 < 0)
-            return -1;
+            throw Str32(U"find_env() failed!");
         if (option == 'o')
             ind0 = skip_command(str, ind0, 1);
         if (ind0 < 0) {
@@ -185,19 +178,16 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 // get to the inside of the environment
 // return the first index inside environment
 // output first index of "\end"
-// return -1 if failed
 inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
 {
     if (expect(str, U"\\begin", ind) < 0)
-        return -1;
+        throw Str32(U"inside_env() failed (1)!");
     Str32 env;
     command_arg(env, str, ind, 0);
     Long left = skip_command(str, ind, Narg);
-    if (left < 0)
-        return -1;
     right = find_command_spec(str, U"end", env, left);
     if (right < 0)
-        return -1;
+        throw Str32(U"inside_env() failed (2)!");
     return left;
 }
 
@@ -226,7 +216,6 @@ inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)
 }
 
 // find interval of all "\lstinline *...*"
-// return -1 if failed
 inline Long lstinline_intv(Intvs_O intv, Str32_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
@@ -238,11 +227,11 @@ inline Long lstinline_intv(Intvs_O intv, Str32_I str)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
-            return -1;
+            throw Str32(U"lstinline_intv() failed (1)!");
         dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            return -1;
+            throw Str32(U"lstinline_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
         ind0 = ind2 + 1;
         ++N;
@@ -270,7 +259,6 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
     }
     if (N % 2 != 0) {
         throw Str32(U"行内公式 $ 符号不匹配！");
-        return -1;
     }
     N /= 2;
     if (option == 'i' && N > 0)
@@ -287,7 +275,7 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 // TODO: delete this
 // Find "\begin{env}" or "\begin{env}{}" (option = '2')
 // output interval from '\' to '}'
-// return number found, return -1 if failed
+// return number found
 // use FindAllBegin
 inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 {
@@ -316,7 +304,7 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 // TODO: delete this
 // Find "\end{env}"
 // output ranges to intv, from '\' to '}'
-// return number found, return -1 if failed
+// return number found
 inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
     intv.clear();
@@ -335,78 +323,76 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 }
 
 // Find normal text range
-// return -1 if failed
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
     Intvs intv, intv1;
-    if (lstinline_intv(intv, str) < 0)
-        return -1;
+    lstinline_intv(intv, str);
     find_env(intv1, str, U"lstlisting", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // comments
     find_comments(intv1, str, U"%");
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // inline equation environments
     find_inline_eq(intv1, str, 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // equation environments
     find_env(intv1, str, U"equation", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // command environments
     find_env(intv1, str, U"Command", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // gather environments
     find_env(intv1, str, U"gather", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // align environments (not "aligned")
     find_env(intv1, str, U"align", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // texttt command
     find_all_command_intv(intv1, U"texttt", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // input command
     find_all_command_intv(intv1, U"input", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // Figure environments
     find_env(intv1, str, U"figure", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // Table environments
     find_env(intv1, str, U"table", 'o');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // subsubsection command
     find_all_command_intv(intv1, U"subsubsection", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
 
     //  \begin{example}{} and \end{example}
     FindAllBegin(intv1, U"example", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"example", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     //  exer\begin{exercise}{} and \end{exercise}
     FindAllBegin(intv1, U"exercise", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"exercise", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     //  exer\begin{theorem}{} and \end{theorem}
     FindAllBegin(intv1, U"theorem", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"theorem", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     //  exer\begin{definition}{} and \end{definition}
     FindAllBegin(intv1, U"definition", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"definition", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     //  exer\begin{lemma}{} and \end{lemma}
     FindAllBegin(intv1, U"lemma", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"lemma", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     //  exer\begin{corollary}{} and \end{corollary}
     FindAllBegin(intv1, U"corollary", str, '2');
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     FindEnd(intv1, U"corollary", str);
-    if (combine(intv, intv1) < 0) return -1;
+    combine(intv, intv1);
     // invert range
     return invert(indNorm, intv, str.size());
 }

@@ -6,8 +6,7 @@
 
 namespace slisc {
 
-// skip N contiguous scope
-// skip one "{...}"
+// skip N contiguous "{...}"
 // return one index after '}', return -1 if failed
 // might return str.size()
 // type can only be '{' for now
@@ -17,7 +16,7 @@ inline Long skip_scope(Str32_I str, Long_I ind, Long_I N = 1, Char32_I type = U'
     for (Long i = 0; i < N; ++i) {
         ind0 = expect(str, U"{", ind0);
         if (ind0 < 0)
-            return -1;
+            throw Str32(U"skip_scope(): failed!");
         ind0 = pair_brace(str, ind0 - 1) + 1;
     }
     return ind0;
@@ -35,7 +34,8 @@ inline Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Cha
     while (true) {
         ind1 = str.find(/*U"\\" +*/ key, ind0);
         if (ind1 < 0) {
-            right = -1; return -1;
+            right = -1;
+            throw Str32(U"find_scope(): failed!");
         }
         ind0 = ind1 + key.size();
         ind0 = expect(str, U"{", ind0);
@@ -82,7 +82,7 @@ inline Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i
 // find comments
 // e.g. key = "%" for tex, "//" for c++
 // key is escaped and only escaped if preceded by backslash '\'
-// return number of comments found. return -1 if failed
+// return number of comments found.
 // interval is from key[0] to '\n' (including)
 inline Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
 {
@@ -99,7 +99,6 @@ inline Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
         else {
             ind0 = ind1 + 1;  continue;
         }
-            
 
         ind1 = str.find(U'\n', ind1 + 1);
         if (ind1 < 0) {// not found

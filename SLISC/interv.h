@@ -187,7 +187,7 @@ Long invert(Intvs_O ind, Intvs_I ind0, Long_I N)
 
 // combine ranges ind1 and ind2
 // a range can contain another range, but not partial overlap
-// return total range number, or -1 if failed.
+// return total range number
 Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
 {
     Long i, N1 = ind1.size(), N2 = ind2.size();

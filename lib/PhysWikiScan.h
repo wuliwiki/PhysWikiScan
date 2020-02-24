@@ -778,6 +778,7 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     Str32 title;
     Str32 entryName; // entry label
     Str32 str; read(str, path_in + "main.tex");
+    vecStr32 entryNames;
     CRLF_to_LF(str);
     titles.resize(entries.size());
 
@@ -804,6 +805,10 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
         if (ind < 0) {
             throw Str32(U"main.tex 中词条文件 " + entryName + U" 未找到!");
         }
+        if (search(entryName, entryNames) < 0)
+            entryNames.push_back(entryName);
+        else
+            throw Str32(U"目录中出现重复词条：" + entryName);
         titles[ind] = title;
         ++ind0;
     }

@@ -294,31 +294,21 @@ inline Long newcommand(Str32_IO str)
 
     // `\cmd*[]{}{}{}`
 
-
     // all commands to find
-    vecStr32 keys;
-    keys.insert(keys.end(), cmd_0.begin(), cmd_0.end());
-    keys.insert(keys.end(), cmd_1.begin(), cmd_1.end());
-    keys.insert(keys.end(), cmd_sq_1.begin(), cmd_sq_1.end());
-    keys.insert(keys.end(), cmd_st_1.begin(), cmd_st_1.end());
-    keys.insert(keys.end(), cmd_st_sq_1.begin(), cmd_st_sq_1.end());
-    keys.insert(keys.end(), cmd_ro.begin(), cmd_ro.end());
-    keys.insert(keys.end(), cmd_sq.begin(), cmd_sq.end());
-    keys.insert(keys.end(), cmd_sq_ro.begin(), cmd_sq_ro.end());
-    keys.insert(keys.end(), cmd_2.begin(), cmd_2.end());
-    keys.insert(keys.end(), cmd_st_2.begin(), cmd_st_2.end());
-    keys.insert(keys.end(), cmd_sq_2.begin(), cmd_sq_2.end());
-    keys.insert(keys.end(), cmd_st_sq_2.begin(), cmd_st_sq_2.end());
-    keys.insert(keys.end(), cmd_3.begin(), cmd_3.end());
-    keys.insert(keys.end(), cmd_sq_3.begin(), cmd_sq_3.end());
-    keys.insert(keys.end(), cmd_st_3.begin(), cmd_st_3.end());
-
-    for (Long i = 2; i < size(keys); i+=2) {
-        
+    vecStr32 rules, keys, formulas;
+    rules += cmd_0; rules += cmd_1; rules += cmd_sq_1;
+    rules += cmd_st_1; rules += cmd_st_sq_1;
+    rules += cmd_ro; rules += cmd_sq; rules += cmd_sq_ro;
+    rules += cmd_2; rules += cmd_st_2; rules += cmd_sq_2;
+    rules += cmd_st_sq_2; rules += cmd_3; rules += cmd_sq_3;
+    rules += cmd_sq_3; rules += cmd_st_3;
+    if (isodd(rules.size()))
+        throw Str32(U"内部错误： tmp 不成对！");
+    for (Long i = 0; i < size(rules); i+=2) {
+        keys.push_back(rules[i]);
+        formulas.push_back(rules[i+1]);
     }
 
-    // delete repeating elements
-    uniq_elm(keys);
     Long ind0 = 0, ikey;
     Str32 key;
     while (true) {
@@ -447,7 +437,7 @@ inline Long Table(Str32_IO str)
 }
 
 // process Itemize environments
-// return number processed, or -1 if failed
+// return number processed
 inline Long Itemize(Str32_IO str)
 {
     Long i{}, j{}, N{}, Nitem{}, ind0{};
