@@ -121,9 +121,20 @@ inline Long fun_auto_size(Str32_IO str)
     // TODO
 }
 
+// test if s is one of v[i] with even i
+inline Bool is_in_even(Str32_I s, vecStr32_I v)
+{
+    for (Long i = 0; i < v.size(); i += 2) {
+        if (s == v[i])
+            return true;
+    }
+    return false;
+}
+
 // ==== directly implement \newcommand{}{} by replacing ====
 // does not support multiple layer!
-
+// braces can not be omitted for now, e.g. frac12
+// matching order: from complicated to simple
 inline Long newcommand(Str32_IO str)
 {
     // `\cmd`
@@ -181,7 +192,7 @@ inline Long newcommand(Str32_IO str)
     };
 
     // `\cmd[]{}`
-    vecStr32 cmd_sq_1 = {
+    vecStr32 cmd_op_1 = {
         U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
         U"dd", U"\\,\\mathrm{d}^{#1}{#2}",
         U"dv", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
@@ -197,7 +208,7 @@ inline Long newcommand(Str32_IO str)
     };
 
     // `\cmd*[]{}`
-    vecStr32 cmd_st_sq_1 = {
+    vecStr32 cmd_st_op_1 = {
         U"dv", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
     };
 
@@ -222,12 +233,12 @@ inline Long newcommand(Str32_IO str)
     };
 
     // non-standard: `\cmd[]`
-    vecStr32 cmd_sq = {
+    vecStr32 cmd_op = {
         U"qty", U"\\left[{#1}\\right]"
     };
 
     // non-standard: `\cmd[]()`
-    vecStr32 cmd_sq_ro = {
+    vecStr32 cmd_op_ro = {
         U"sin", U"\\sin^{#1}\\left(#2\\right)",
         U"cos", U"\\cos^{#1}\\left(#2\\right)",
         U"tan", U"\\tan^{#1}\\left(#2\\right)",
@@ -265,13 +276,13 @@ inline Long newcommand(Str32_IO str)
     };
 
     // `\cmd[]{}{}`
-    vecStr32 cmd_sq_2 = {
+    vecStr32 cmd_op_2 = {
         U"dv", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
         U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
     };
 
     // `\cmd*[]{}{}`
-    vecStr32 cmd_st_sq_2 = {
+    vecStr32 cmd_st_op_2 = {
         U"dv", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
         U"pdv", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}"
     };
@@ -283,7 +294,7 @@ inline Long newcommand(Str32_IO str)
     };
 
     // `\cmd[]{}{}{}`
-    vecStr32 cmd_sq_3 = {
+    vecStr32 cmd_op_3 = {
     };
 
     // `\cmd*{}{}{}`
@@ -295,35 +306,90 @@ inline Long newcommand(Str32_IO str)
     // `\cmd*[]{}{}{}`
 
     // all commands to find
-    vecStr32 rules, keys, formulas;
-    rules += cmd_0; rules += cmd_1; rules += cmd_sq_1;
-    rules += cmd_st_1; rules += cmd_st_sq_1;
-    rules += cmd_ro; rules += cmd_sq; rules += cmd_sq_ro;
-    rules += cmd_2; rules += cmd_st_2; rules += cmd_sq_2;
-    rules += cmd_st_sq_2; rules += cmd_3; rules += cmd_sq_3;
-    rules += cmd_sq_3; rules += cmd_st_3;
+    vecStr32 rules, cmds, formulas;
+    rules += cmd_0; rules += cmd_1; rules += cmd_op_1;
+    rules += cmd_st_1; rules += cmd_st_op_1;
+    rules += cmd_ro; rules += cmd_op; rules += cmd_op_ro;
+    rules += cmd_2; rules += cmd_st_2; rules += cmd_op_2;
+    rules += cmd_st_op_2; rules += cmd_3; rules += cmd_op_3;
+    rules += cmd_op_3; rules += cmd_st_3;
     if (isodd(rules.size()))
         throw Str32(U"内部错误： tmp 不成对！");
     for (Long i = 0; i < size(rules); i+=2) {
-        keys.push_back(rules[i]);
+        cmds.push_back(rules[i]);
         formulas.push_back(rules[i+1]);
     }
 
     Long ind0 = 0, ikey;
-    Str32 key;
+    Str32 cmd;
+    vecStr32 args; // cmd arguments, including optional
     while (true) {
-        ind0 = find_command(ikey, str, keys, ind0);
+        ind0 = find_command(ikey, str, cmds, ind0);
         if (ind0 < 0)
             break;
-        key = keys[ikey];
-        if (search(key, cmd_0) >= 0) {
-            str.replace(ind0, key.size()+1, )
+        cmd = cmds[ikey];
+        Bool has_st = has_star(str, ind0);
+        Str32 opt = has_op(str, ind0);
+        Bool has_op = !opt.empty();
+        Long Narg = command_Narg(str, ind0);
+
+        // the order of the following branches will decide matching priority!
+        if (has_st && has_op) {
+            if (Narg >= 3) {
+                if (is_in_even(cmd, cmd_st_op_2)) {
+
+                }
+            }
+            if (Narg >= 2) {
+                if (is_in_even(cmd, cmd_st_op_1)) {
+
+                }
+            }
         }
-        Long ind1 = expect(str, U'*', ind0 + key.size() + 1);
-        if (ind1 > 0) {
-            ind1 = expect(str, U'[', ind1);
+        if (has_op) { // no star
+            if (Narg >= 4) {
+                if (is_in_even(cmd, cmd_op_3)) {
+
+                }
+            }
+            if (Narg >= 3) {
+                if (is_in_even(cmd, cmd_op_2)) {
+
+                }
+            }
+            if (Narg >= 2) {
+                if (is_in_even(cmd, cmd_op_1)) {
+
+                }
+            }
+            if (Narg >= 1) {
+                if (is_in_even(cmd, cmd_op)) {
+
+                }
+            }
+            if (Narg == -2) {
+                if (is_in_even(cmd, cmd_op_ro)) {
+
+                }
+            }
         }
-        if (search(key, keys))
+        if (has_st) { // no op
+            if (Narg >= 3) {
+                if (is_in_even(cmd, cmd_st_3)) {
+
+                }
+            }
+            if (Narg >= 2) {
+                if (is_in_even(cmd, cmd_st_2)) {
+
+                }
+            }
+            if (Narg >= 1) {
+                if (is_in_even(cmd, cmd_st_1)) {
+
+                }
+            }
+        }
     }
 }
 

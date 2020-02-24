@@ -47,43 +47,145 @@ inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I star
 // return one index after command name if 'Narg = 0'
 // return one index after '}' if 'Narg > 0'
 // might return str.size()
-inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0)
+// '*' after command will be omitted and skipped
+// 'omit_skip_opt' will omit and skip optional argument in [], else [] will be counted into 'Narg'
+// will not work in cases '{}' are omited, e.g. \frac12
+inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true)
 {
-    Long i;
+    Long i, Narg1 = Narg;
+    // skip the command name itself
     Bool found = false;
     for (i = ind + 1; i < size(str); ++i) {
         if (!is_letter(str[i])) {
             found = true; break;
         }
-            
     }
     if (!found) {
-        if (Narg == 0)
+        if (Narg1 == 0)
             return str.size();
         else
-            throw Str32(U"skip_command failed!");
+            throw Str32(U"skip_command() failed!");
     }
-    Long ind0 = i;
-    if (Narg > 0)
-        return skip_scope(str, ind0, Narg);
+    // skip *
+    Long ind0 = expect(str, U'*', i);
+    if (ind0 < 0)
+        ind0 = i;
+    // skip optional argument
+    Long ind1 = expect(str, U'[', ind0), ind2;
+    if (ind1 >= 0) {
+        ind2 = pair_brace(str, ind1, U'[');
+        if (omit_opt) {
+            ind0 = ind2 + 1;
+        }
+        else if (Narg1 > 0) {
+            ind0 = ind2 + 1;
+            Narg1 -= 1;
+        }
+    }
+    // skip arguments in {}
+    if (Narg1 > 0)
+        ind0 = skip_scope(str, ind0, Narg1);
     return ind0;
 }
 
 // get the name of the command starting at str[ind]
+// does not include '\\'
 inline void command_name(Str32_O name, Str32_I str, Long_I ind)
 {
-    Long ind1 = skip_command(str, ind);
-    name = str.substr(ind, ind1 - ind);
+    if (str[ind] != U'\\')
+        throw Str32(U"not a command!");
+    // skip the command name
+    Bool i, found = false;
+    for (i = ind + 1; i < size(str); ++i) {
+        if (!is_letter(str[i])) {
+            found = true; break;
+        }
+    }
+    if (!found)
+        i = str.size();
+    name = str.substr(ind+1, i - (ind+1));
 }
 
-// get the i-th command argument
+// determin if a command has a following star
+inline Bool command_star(Str32_I str, Long_I ind)
+{
+    if (str[ind] != U'\\')
+        throw Str32(U"has_star(): not a command!");
+    Long ind0 = skip_command(str, ind, 0, false);
+    if (str[ind0 - 1] == U'*')
+        return true;
+    return false;
+}
+
+// check if command has optional argument in []
+inline Bool command_has_opt(Str32_I str, Long_I ind, Bool_I trim = true)
+{
+    Str32 arg;
+    if (str[ind] != U'\\')
+        throw Str32(U"has_opt(): not a command!");
+    Long ind0 = skip_command(str, ind, 0, false);
+    ind0 = expect(str, U'[', ind0)
+    if (ind0 < 0)
+        return false;
+    return true;
+}
+
+// get optional argument of command in [], trim result by default
+// return empty string if not found
+inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
+{
+    Str32 arg;
+    if (str[ind] != U'\\')
+        throw Str32(U"has_opt(): not a command!");
+    Long ind0 = skip_command(str, ind, 0, false);
+    ind0 = expect(str, U'[', ind0)
+    if (ind0 < 0)
+        return arg;
+    Long ind1 = pair_brace(str, ind0);
+    arg = str.substr(ind0+1, ind1-ind0-1);
+    if (trim)
+        trim(arg);
+    return arg;
+}
+
+// get number of command arguments
+// return # of [] or {}
+// or return -1: \cmd() or \cmd*()
+// or return -2: \cmd[]() or \cmd*[]()
+inline Long command_Narg(Str32_I str, Long_I ind)
+{
+    if (str[ind] != U'\\')
+        throw Str32(U"not a command!");
+    Long Narg = 0; ind0 = skip_command(str, ind, 0, false);
+    // skip optional argument
+    Long ind1 = expect(str, U'[', ind0) - 1;
+    if (ind1 > 0) {
+        ind0 = pair_brace(str, ind1, U'[') + 1;
+        ++Narg;
+    }
+    if (expect(str, U"(", ind0) > 0) {
+        Narg = -Narg - 1;
+    }
+    else {
+        while (true) {
+            ind0 = expect(str, U"{", ind0) - 1;
+            if (ind0 > 0) {
+                ind0 = pair_brace(str, ind0) + 1;
+                ++Narg;
+            }
+            else
+                break;
+        }
+    }
+}
+
+// get the i-th command argument in {}
 // return the next index of the i-th '}'
 // when "option" is 't', trim white spaces on both sides of "arg"
 inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Char_I option = 't')
 {
     Long ind0 = ind, ind1;
-    ind0 = skip_command(str, ind0);
-    ind0 = skip_scope(str, ind0, i);
+    ind0 = skip_command(str, ind0, i);
     ind0 = expect(str, U"{", ind0);
     ind1 = pair_brace(str, ind0 - 1);
     arg = str.substr(ind0, ind1 - ind0);
