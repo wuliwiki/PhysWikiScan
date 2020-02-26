@@ -121,273 +121,276 @@ inline Long fun_auto_size(Str32_IO str)
     // TODO
 }
 
-// test if s is one of v[i] with even i
-inline Bool is_in_even(Str32_I s, vecStr32_I v)
+// match a command to a rule and replace to new command
+inline Str32 new_cmd newcommand0(Str32_I cmd, Str32_I format, Long_I Narg, vecStr32_I rules, Long_I start)
 {
-    for (Long i = 0; i < v.size(); i += 2) {
-        if (s == v[i])
-            return true;
-    }
-    return false;
+    Long ind0 = 0;
+    ind0 = search(cmd, rules, ind0);
+    if (ind < 0 || isodd(ind))
+        return -1;
+    return ind;
 }
 
 // ==== directly implement \newcommand{}{} by replacing ====
 // does not support multiple layer!
 // braces can not be omitted for now, e.g. frac12
 // matching order: from complicated to simple
+// does not support more than 9 arguments (including optional arg)
 inline Long newcommand(Str32_IO str)
 {
-    // `\cmd`
-    vecStr32 cmd_0 = {
-        U"I", U"\\mathrm{i}",
-        U"E", U"\\mathrm{e}",
-        U"Nabla", U"\\boldsymbol{\\nabla}",
-        U"Tr", U"^{\\mathrm{T}}",
-        U"Cj", U"^*",
-        U"Her", U"^\\dagger",
-        U"sinc", U"\\operatorname{sinc}",
-        U"Arctan", U"\\operatorname{Arctan}",
-        U"erfi", U"\\operatorname{erfi}",
-        U"vdot", U"\\boldsymbol\\cdot",
-        U"cross", U"\\boldsymbol\\times",
-        U"grad", U"\\boldsymbol\\nabla",
-        U"div", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}"
-        U"curl", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}"
-        U"laplacian", U"\\boldsymbol{\\nabla}^2"
-        U"Re", U"\\mathrm{Re}",
-        U"Im", U"\\mathrm{Im}",
-        U"opn", U"\\operatorname"
+    // rules (order does not matter)
+    vecStr32 rules = {
+        // `\cmd`
+        U"I", U"", U"0", U"\\mathrm{i}",
+        U"E", U"", U"0", U"\\mathrm{e}",
+        U"Nabla", U"", U"0", U"\\boldsymbol{\\nabla}",
+        U"Tr", U"", U"0", U"^{\\mathrm{T}}",
+        U"Cj", U"", U"0", U"^*",
+        U"Her", U"", U"0", U"^\\dagger",
+        U"sinc", U"", U"0", U"\\operatorname{sinc}",
+        U"Arctan", U"", U"0", U"\\operatorname{Arctan}",
+        U"erfi", U"", U"0", U"\\operatorname{erfi}",
+        U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
+        U"cross", U"", U"0", U"\\boldsymbol\\times",
+        U"grad", U"", U"0", U"\\boldsymbol\\nabla",
+        U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}"
+        U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}"
+        U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2"
+        U"Re", U"", U"0", U"\\mathrm{Re}",
+        U"Im", U"", U"0", U"\\mathrm{Im}",
+        U"opn", U"", U"0", U"\\operatorname"
+        // `\cmd{}`
+        U"qty", U"", U"1", U"\\left\\{{#1}\\right\\}",
+        U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+        U"mat", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+        U"ten", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+        U"uvec", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+        U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
+        U"ali", U"", U"1", U"\\begin{aligned}#1\\end{aligned}",
+        U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+        U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
+        U"Q", U"", U"1", U"\\hat{#1}",
+        U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+        U"Si", U"", U"1", U"\\,\\mathrm{#1}",
+        U"abs", U"", U"1", U"\\left\\lvert{#1}\\right\\rvert",
+        U"eval", U"", U"1", U"\\left.{#1}\\right\\rvert",
+        U"dd", U"", U"1", U"\\,\\mathrm{d}^{#1}",
+        U"bra", U"", U"1", U"\\left\\langle{#1}\\right\\rvert",
+        U"ket", U"", U"1", U"\\left\\lvert{#1}\\right\\rangle",
+        U"braket", U"", U"1", U"\\left\\langle{#1}\\middle|{#1}\\right\\rangle",
+        U"ev", U"", U"1", U"\\left\\langle{#1}\\right\\rangle",
+        U"order", U"", U"1", U"\\mathcal{O}\\left(#1\\right)",
+        U"bmat", U"", U"1", U"\\begin{bmatrix}#1\\end{bmatrix}",
+        U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
+        U"sumint", U"", U"1", U"\\int\\kern-1.4em\\sum",
+        U"Q", U"", U"1", U"\\hat{#1}",
+        U"norm", U"", U"1", U"\\left\\lVert{#1}\\right\\rVert",
+        U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
+        U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
+        U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
+        // `\cmd[]{}`
+        U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+        U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
+        U"dv", U"[]", U"2", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
+        // `\cmd*{}`
+        U"ev", U"*", U"1", U"\\langle{#1}\\rangle",
+        U"braket", U"*", U"1", U"\\langle{#1}|{#1}\\rangle",
+        U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
+        U"bra", U"*", U"1", U"\\langle{#1}\\rvert",
+        U"dv", U"*", U"1", U"\\mathrm{d}/\\mathrm{d}{#1}",
+        // `\cmd*[]{}`
+        U"dv", U"*[]", U"2", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
+        // non-standard: `\cmd()`
+        U"qty", U"()", U"1", U"\\left({#1}\\right)",
+        U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
+        U"cos", U"()", U"1", U"\\cos\\left(#1\\right)",
+        U"tan", U"()", U"1", U"\\tan\\left(#1\\right)",
+        U"csc", U"()", U"1", U"\\csc\\left(#1\\right)",
+        U"sec", U"()", U"1", U"\\sec\\left(#1\\right)",
+        U"cot", U"()", U"1", U"\\cot\\left(#1\\right)",
+        U"sinh", U"()", U"1", U"\\sinh\\left(#1\\right)",
+        U"cosh", U"()", U"1", U"\\cosh\\left(#1\\right)",
+        U"tanh", U"()", U"1", U"\\tanh\\left(#1\\right)",
+        U"arcsin", U"()", U"1", U"\\arcsin\\left(#1\\right)",
+        U"arccos", U"()", U"1", U"\\arccos\\left(#1\\right)",
+        U"arctan", U"()", U"1", U"\\arctan\\left(#1\\right)",
+        U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
+        U"log", U"()", U"1", U"\\log\\left(#1\\right)"
+        U"ln", U"()", U"1", U"\\ln\\left(#1\\right)"
+        // non-standard: `\cmd[]`
+        U"qty", U"[]", U"1", U"\\left[{#1}\\right]"
+        // non-standard: `\cmd[]()`
+        U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
+        U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
+        U"tan", U"[]()", U"2", U"\\tan^{#1}\\left(#2\\right)",
+        U"csc", U"[]()", U"2", U"\\csc^{#1}\\left(#2\\right)",
+        U"sec", U"[]()", U"2", U"\\sec^{#1}\\left(#2\\right)",
+        U"cot", U"[]()", U"2", U"\\cot^{#1}\\left(#2\\right)",
+        U"sinh", U"[]()", U"2", U"\\sinh^{#1}\\left(#2\\right)",
+        U"cosh", U"[]()", U"2", U"\\cosh^{#1}\\left(#2\\right)",
+        U"tanh", U"[]()", U"2", U"\\tanh^{#1}\\left(#2\\right)",
+        U"arcsin", U"[]()", U"2", U"\\arcsin^{#1}\\left(#2\\right)",
+        U"arccos", U"[]()", U"2", U"\\arccos^{#1}\\left(#2\\right)",
+        U"arctan", U"[]()", U"2", U"\\arctan^{#1}\\left(#2\\right)",
+        U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)"
+        U"ln", U"[]()", U"2", U"\\ln^{#1}\\left(#2\\right)"
+        // `\cmd{}{}`
+        U"comm", U"", U"2", U"\\left[{#1},{#2}\\right]",
+        U"pb", U"", U"2", U"\\left\\{{#1},{#2}\\right\\}",
+        U"braket", U"", U"2", U"\\left\\langle{#1}\\middle|{#2}\\right\\rangle",
+        U"ev", U"", U"2", U"\\left\\langle{#2}\\middle|{#1}\\middle|{#2}\\right\\rangle",
+        U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
+        U"pdv", U"", U"2", U"\\frac{\\partial {#1}}{\\partial {#2}}",
+        // `\cmd*{}{}`
+        U"braket", U"*", U"2", U"\\langle{#1}|{#2}\\rangle",
+        U"ev", U"*", U"2", U"\\langle{#2}|{#1}|{#2}\\rangle",
+        U"comm", U"*", U"2", U"[{#1},{#2}]",
+        U"pb", U"*", U"2", U"\\{{#1},{#2}\\}",
+        U"dv", U"*", U"2", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
+        U"pdv", U"*", U"2", U"\\partial^{#1}/\\partial{#2}^{#1}",
+        // `\cmd[]{}{}`
+        U"dv", U"[]", U"3", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
+        U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+        // `\cmd*[]{}{}`
+        U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
+        U"pdv", U"*[]", U"3", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}"
+        // `\cmd{}{}{}`
+        U"pdv", U"3", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
+        U"mel", U"3", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
+        // `\cmd*{}{}{}`
+        U"pdv", U"*3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
+        U"mel", U"*3", U"\\langle{#1}|{#2}|{#3}\\rangle"
     };
-
-    // `\cmd{}`
-    vecStr32 cmd_1 = {
-        U"qty", U"\\left\\{{#1}\\right\\}",
-        U"bvec", U"\\boldsymbol{\\mathbf{#1}}",
-        U"mat", U"\\boldsymbol{\\mathbf{#1}}",
-        U"ten", U"\\boldsymbol{\\mathbf{#1}}",
-        U"uvec", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-        U"pmat", U"\\begin{pmatrix}#1\\end{pmatrix}",
-        U"ali", U"\\begin{aligned}#1\\end{aligned}",
-        U"leftgroup", U"\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
-        U"vmat", U"\\begin{vmatrix}#1\\end{vmatrix}",
-        U"Q", U"\\hat{#1}",
-        U"Qv", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-        U"Si", U"\\,\\mathrm{#1}",
-        U"abs", U"\\left\\lvert{#1}\\right\\rvert",
-        U"eval", U"\\left.{#1}\\right\\rvert",
-        U"dd", U"\\,\\mathrm{d}^{#1}",
-        U"bra", U"\\left\\langle{#1}\\right\\rvert",
-        U"ket", U"\\left\\lvert{#1}\\right\\rangle",
-        U"braket", U"\\left\\langle{#1}\\middle|{#1}\\right\\rangle",
-        U"ev", U"\\left\\langle{#1}\\right\\rangle",
-        U"order", U"\\mathcal{O}\\left(#1\\right)",
-        U"bmat", U"\\begin{bmatrix}#1\\end{bmatrix}",
-        U"Bmat", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
-        U"sumint", U"\\int\\kern-1.4em\\sum", 
-        U"Q", U"\\hat{#1}",
-        U"norm", U"\\left\\lVert{#1}\\right\\rVert",
-        U"pdv", U"\\frac{\\partial}{\\partial{#1}}",
-        U"dd", U"\\,\\mathrm{d}{#1}",
-        U"dv", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
-    };
-
-    // `\cmd[]{}`
-    vecStr32 cmd_op_1 = {
-        U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
-        U"dd", U"\\,\\mathrm{d}^{#1}{#2}",
-        U"dv", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
-    };
-
-    // `\cmd*{}`
-    vecStr32 cmd_st_1 = {
-        U"ev", U"\\langle{#1}\\rangle",
-        U"braket", U"\\langle{#1}|{#1}\\rangle",
-        U"ket", U"\\lvert{#1}\\rangle",
-        U"bra", U"\\langle{#1}\\rvert",
-        U"dv", U"\\mathrm{d}/\\mathrm{d}{#1}",
-    };
-
-    // `\cmd*[]{}`
-    vecStr32 cmd_st_op_1 = {
-        U"dv", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
-    };
-
-    // non-standard: `\cmd()`
-    vecStr32 cmd_ro = {
-        U"qty", U"\\left({#1}\\right)",
-        U"sin", U"\\sin\\left(#1\\right)",
-        U"cos", U"\\cos\\left(#1\\right)",
-        U"tan", U"\\tan\\left(#1\\right)",
-        U"csc", U"\\csc\\left(#1\\right)",
-        U"sec", U"\\sec\\left(#1\\right)",
-        U"cot", U"\\cot\\left(#1\\right)",
-        U"sinh", U"\\sinh\\left(#1\\right)",
-        U"cosh", U"\\cosh\\left(#1\\right)",
-        U"tanh", U"\\tanh\\left(#1\\right)",
-        U"arcsin", U"\\arcsin\\left(#1\\right)",
-        U"arccos", U"\\arccos\\left(#1\\right)",
-        U"arctan", U"\\arctan\\left(#1\\right)",
-        U"exp", U"\\exp\\left(#1\\right)",
-        U"log", U"\\log\\left(#1\\right)"
-        U"ln", U"\\ln\\left(#1\\right)"
-    };
-
-    // non-standard: `\cmd[]`
-    vecStr32 cmd_op = {
-        U"qty", U"\\left[{#1}\\right]"
-    };
-
-    // non-standard: `\cmd[]()`
-    vecStr32 cmd_op_ro = {
-        U"sin", U"\\sin^{#1}\\left(#2\\right)",
-        U"cos", U"\\cos^{#1}\\left(#2\\right)",
-        U"tan", U"\\tan^{#1}\\left(#2\\right)",
-        U"csc", U"\\csc^{#1}\\left(#2\\right)",
-        U"sec", U"\\sec^{#1}\\left(#2\\right)",
-        U"cot", U"\\cot^{#1}\\left(#2\\right)",
-        U"sinh", U"\\sinh^{#1}\\left(#2\\right)",
-        U"cosh", U"\\cosh^{#1}\\left(#2\\right)",
-        U"tanh", U"\\tanh^{#1}\\left(#2\\right)",
-        U"arcsin", U"\\arcsin^{#1}\\left(#2\\right)",
-        U"arccos", U"\\arccos^{#1}\\left(#2\\right)",
-        U"arctan", U"\\arctan^{#1}\\left(#2\\right)",
-        U"log", U"\\log^{#1}\\left(#2\\right)"
-        U"ln", U"\\ln^{#1}\\left(#2\\right)"
-    };
-
-    // `\cmd{}{}`
-    vecStr32 cmd_2 = {
-        U"comm", U"\\left[{#1},{#2}\\right]",
-        U"pb", U"\\left\\{{#1},{#2}\\right\\}",
-        U"braket", U"\\left\\langle{#1}\\middle|{#2}\\right\\rangle",
-        U"ev", U"\\left\\langle{#2}\\middle|{#1}\\middle|{#2}\\right\\rangle",
-        U"dv", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
-        U"pdv", U"\\frac{\\partial {#1}}{\\partial {#2}}",
-    };
-
-    // `\cmd*{}{}`
-    vecStr32 cmd_st_2 = {
-        U"braket", U"\\langle{#1}|{#2}\\rangle",
-        U"ev", U"\\langle{#2}|{#1}|{#2}\\rangle",
-        U"comm", U"[{#1},{#2}]",
-        U"pb", U"\\{{#1},{#2}\\}",
-        U"dv", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
-        U"pdv", U"\\partial^{#1}/\\partial{#2}^{#1}",
-    };
-
-    // `\cmd[]{}{}`
-    vecStr32 cmd_op_2 = {
-        U"dv", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
-        U"pdv", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
-    };
-
-    // `\cmd*[]{}{}`
-    vecStr32 cmd_st_op_2 = {
-        U"dv", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
-        U"pdv", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}"
-    };
-
-    // `\cmd{}{}{}`
-    vecStr32 cmd_3 = {
-        U"pdv", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
-        U"mel", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
-    };
-
-    // `\cmd[]{}{}{}`
-    vecStr32 cmd_op_3 = {
-    };
-
-    // `\cmd*{}{}{}`
-    vecStr32 cmd_st_3 = {
-        U"pdv", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
-        U"mel", U"\\langle{#1}|{#2}|{#3}\\rangle"
-    };
-
-    // `\cmd*[]{}{}{}`
 
     // all commands to find
-    vecStr32 rules, cmds, formulas;
-    rules += cmd_0; rules += cmd_1; rules += cmd_op_1;
-    rules += cmd_st_1; rules += cmd_st_op_1;
-    rules += cmd_ro; rules += cmd_op; rules += cmd_op_ro;
-    rules += cmd_2; rules += cmd_st_2; rules += cmd_op_2;
-    rules += cmd_st_op_2; rules += cmd_3; rules += cmd_op_3;
-    rules += cmd_op_3; rules += cmd_st_3;
-    if (isodd(rules.size()))
-        throw Str32(U"内部错误： tmp 不成对！");
-    for (Long i = 0; i < size(rules); i+=2) {
+    if (rules.size() % 3 != 0)
+        throw Str32(U"rules.size() illegal!");
+    vecStr32 cmds;
+    for (Long i = 0; i < size(rules); i+=3)
         cmds.push_back(rules[i]);
-        formulas.push_back(rules[i+1]);
-    }
 
     Long ind0 = 0, ikey;
-    Str32 cmd;
+    Str32 cmd, new_cmd, format;
     vecStr32 args; // cmd arguments, including optional
     while (true) {
         ind0 = find_command(ikey, str, cmds, ind0);
         if (ind0 < 0)
             break;
         cmd = cmds[ikey];
-        Bool has_st = has_star(str, ind0);
-        Str32 opt = has_op(str, ind0);
-        Bool has_op = !opt.empty();
+        Bool has_st = command_star(str, ind0);
+        Bool has_op = command_has_opt(str, ind0);
         Long Narg = command_Narg(str, ind0);
+        format.clear;
+        if (has_st)
+            format += U"*";
+        if (Narg == -1)
+            format += U"()";
+        else if (Narg == -2)
+            format += U"[]()";
+        else if (has_op)
+            format += U"[]";
+        
+
+        args.clear();
+        for (Long i = 0; i < Narg; ++i)
+            command_arg(args[i], str, ind0, i);
+        Long ind1 = skip_command(str, ind0, Narg, false);
 
         // the order of the following branches will decide matching priority!
         if (has_st && has_op) {
             if (Narg >= 3) {
-                if (is_in_even(cmd, cmd_st_op_2)) {
-
+                Long ind = search_even(cmd, cmd_st_op_2);
+                if (ind >= 0) {
+                    new_cmd = formula[ikey];
+                    replace(new_cmd, U"#1", args[0]);
+                    replace(new_cmd, U"#2", args[1]);
+                    replace(new_cmd, U"#3", args[2]);
                 }
             }
             if (Narg >= 2) {
-                if (is_in_even(cmd, cmd_st_op_1)) {
-
+                Long ind = search_even(cmd, cmd_st_op_1);
+                if (ind >= 0) {
+                    
                 }
             }
         }
         if (has_op) { // no star
             if (Narg >= 4) {
-                if (is_in_even(cmd, cmd_op_3)) {
+                Long ind = search_even(cmd, cmd_op_3);
+                if (ind >= 0) {
 
                 }
             }
             if (Narg >= 3) {
-                if (is_in_even(cmd, cmd_op_2)) {
-
+                Long ind = search_even(cmd, cmd_op_2);
+                if (ind >= 0) {
+                    
                 }
             }
             if (Narg >= 2) {
-                if (is_in_even(cmd, cmd_op_1)) {
+                Long ind = search_even(cmd, cmd_op_1);
+                if (ind >= 0) {
 
                 }
             }
             if (Narg >= 1) {
-                if (is_in_even(cmd, cmd_op)) {
-
+                Long ind = search_even(cmd, cmd_op);
+                if (ind >= 0) {
+                    
                 }
             }
             if (Narg == -2) {
-                if (is_in_even(cmd, cmd_op_ro)) {
+                Long ind = search_even(cmd, cmd_op_ro);
+                if (ind >= 0) {
 
                 }
             }
         }
         if (has_st) { // no op
             if (Narg >= 3) {
-                if (is_in_even(cmd, cmd_st_3)) {
-
+                Long ind = search_even(cmd, cmd_st_3);
+                if (ind >= 0) {
+                    
                 }
             }
             if (Narg >= 2) {
-                if (is_in_even(cmd, cmd_st_2)) {
+                Long ind = search_even(cmd, cmd_st_2);
+                if (ind >= 0) {
 
                 }
             }
             if (Narg >= 1) {
-                if (is_in_even(cmd, cmd_st_1)) {
-
+                Long ind = search_even(cmd, cmd_st_1);
+                if (ind >= 0) {
+                    
                 }
+            }
+        }
+        // no op, no st
+        if (Narg >= 3) {
+            Long ind = search_even(cmd, cmd_3);
+            if (ind >= 0) {
+
+            }
+        }
+        if (Narg >= 2) {
+            if (is_in_even(cmd, cmd_2)) {
+
+            }
+        }
+        if (Narg >= 1) {
+            if (is_in_even(cmd, cmd_1)) {
+
+            }
+        }
+        if (Narg >= 0) {
+            if (is_in_even(cmd, cmd_0)) {
+
+            }
+        }
+        if (Narg == -1) {
+            if (is_in_even(cmd, cmd_ro)) {
+
             }
         }
     }

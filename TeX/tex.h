@@ -67,14 +67,14 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
             throw Str32(U"skip_command() failed!");
     }
     // skip *
-    Long ind0 = expect(str, U'*', i);
+    Long ind0 = expect(str, U"*", i);
     if (ind0 < 0)
         ind0 = i;
     // skip optional argument
-    Long ind1 = expect(str, U'[', ind0), ind2;
+    Long ind1 = expect(str, U"[", ind0), ind2;
     if (ind1 >= 0) {
         ind2 = pair_brace(str, ind1, U'[');
-        if (omit_opt) {
+        if (omit_skip_opt) {
             ind0 = ind2 + 1;
         }
         else if (Narg1 > 0) {
@@ -95,7 +95,8 @@ inline void command_name(Str32_O name, Str32_I str, Long_I ind)
     if (str[ind] != U'\\')
         throw Str32(U"not a command!");
     // skip the command name
-    Bool i, found = false;
+    Bool found = false;
+    Long i;
     for (i = ind + 1; i < size(str); ++i) {
         if (!is_letter(str[i])) {
             found = true; break;
@@ -110,7 +111,7 @@ inline void command_name(Str32_O name, Str32_I str, Long_I ind)
 inline Bool command_star(Str32_I str, Long_I ind)
 {
     if (str[ind] != U'\\')
-        throw Str32(U"has_star(): not a command!");
+        throw Str32(U"command_star(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
     if (str[ind0 - 1] == U'*')
         return true;
@@ -124,7 +125,7 @@ inline Bool command_has_opt(Str32_I str, Long_I ind, Bool_I trim = true)
     if (str[ind] != U'\\')
         throw Str32(U"has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, U'[', ind0)
+    ind0 = expect(str, U"[", ind0);
     if (ind0 < 0)
         return false;
     return true;
@@ -138,13 +139,13 @@ inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
     if (str[ind] != U'\\')
         throw Str32(U"has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, U'[', ind0)
+    ind0 = expect(str, U"[", ind0);
     if (ind0 < 0)
         return arg;
     Long ind1 = pair_brace(str, ind0);
     arg = str.substr(ind0+1, ind1-ind0-1);
     if (trim)
-        trim(arg);
+        ::trim(arg);
     return arg;
 }
 
@@ -156,9 +157,9 @@ inline Long command_Narg(Str32_I str, Long_I ind)
 {
     if (str[ind] != U'\\')
         throw Str32(U"not a command!");
-    Long Narg = 0; ind0 = skip_command(str, ind, 0, false);
+    Long Narg = 0, ind0 = skip_command(str, ind, 0, false);
     // skip optional argument
-    Long ind1 = expect(str, U'[', ind0) - 1;
+    Long ind1 = expect(str, U"[", ind0) - 1;
     if (ind1 > 0) {
         ind0 = pair_brace(str, ind1, U'[') + 1;
         ++Narg;
@@ -180,18 +181,29 @@ inline Long command_Narg(Str32_I str, Long_I ind)
 }
 
 // get the i-th command argument in {}
-// return the next index of the i-th '}'
-// when "option" is 't', trim white spaces on both sides of "arg"
-inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Char_I option = 't')
+// when "trim" is 't', trim white spaces on both sides of "arg"
+// 
+inline void command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false)
 {
-    Long ind0 = ind, ind1;
-    ind0 = skip_command(str, ind0, i);
+    Long ind0 = ind, ind1, i1 = i;
+    if (ignore_opt)
+        ind0 = skip_command(str, ind0, i);
+    else if (i == 0) {
+        arg = command_opt(str, ind, trim);
+        return;
+    }
+    else if (i > 0) {
+        ind0 = skip_command(str, ind0, i, false);
+    }
+    else {
+        throw Str32(U"command_arg(): i < 0 not allowed!");
+    }
+    
     ind0 = expect(str, U"{", ind0);
     ind1 = pair_brace(str, ind0 - 1);
     arg = str.substr(ind0, ind1 - ind0);
-    if (option == 't')
-        trim(arg);
-    return ind1;
+    if (trim)
+        ::trim(arg);
 }
 
 // find command with a specific 1st arguments
