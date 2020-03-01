@@ -121,16 +121,6 @@ inline Long fun_auto_size(Str32_IO str)
     // TODO
 }
 
-// match a command to a rule and replace to new command
-inline Str32 new_cmd newcommand0(Str32_I cmd, Str32_I format, Long_I Narg, vecStr32_I rules, Long_I start)
-{
-    Long ind0 = 0;
-    ind0 = search(cmd, rules, ind0);
-    if (ind < 0 || isodd(ind))
-        return -1;
-    return ind;
-}
-
 // ==== directly implement \newcommand{}{} by replacing ====
 // does not support multiple layer!
 // braces can not be omitted for now, e.g. frac12
@@ -138,7 +128,8 @@ inline Str32 new_cmd newcommand0(Str32_I cmd, Str32_I format, Long_I Narg, vecSt
 // does not support more than 9 arguments (including optional arg)
 inline Long newcommand(Str32_IO str)
 {
-    // rules (order does not matter)
+    // rules (order matters for the same command name and format, match backward)
+    // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
     vecStr32 rules = {
         // `\cmd`
         U"I", U"", U"0", U"\\mathrm{i}",
@@ -263,10 +254,18 @@ inline Long newcommand(Str32_IO str)
     };
 
     // all commands to find
-    if (rules.size() % 3 != 0)
+    if (rules.size() % 4 != 0)
         throw Str32(U"rules.size() illegal!");
+    // reverse order
+    for (Long i = 0; i < size(rules)/2; i += 4) {
+        swap(rules[i], rules[rules.size()-i-4]);
+        swap(rules[i+1], rules[rules.size()-i-3]);
+        swap(rules[i+2], rules[rules.size()-i-2]);
+        swap(rules[i+3], rules[rules.size()-i-1]);
+    }
+    // all commands to replace
     vecStr32 cmds;
-    for (Long i = 0; i < size(rules); i+=3)
+    for (Long i = 0; i < size(rules); i+=4)
         cmds.push_back(rules[i]);
 
     Long ind0 = 0, ikey;
@@ -296,103 +295,20 @@ inline Long newcommand(Str32_IO str)
             command_arg(args[i], str, ind0, i);
         Long ind1 = skip_command(str, ind0, Narg, false);
 
-        // the order of the following branches will decide matching priority!
-        if (has_st && has_op) {
-            if (Narg >= 3) {
-                Long ind = search_even(cmd, cmd_st_op_2);
-                if (ind >= 0) {
-                    new_cmd = formula[ikey];
-                    replace(new_cmd, U"#1", args[0]);
-                    replace(new_cmd, U"#2", args[1]);
-                    replace(new_cmd, U"#3", args[2]);
-                }
-            }
-            if (Narg >= 2) {
-                Long ind = search_even(cmd, cmd_st_op_1);
-                if (ind >= 0) {
-                    
-                }
-            }
+        Long ind = -1;
+        while (1) {
+            ind = search(cmd, rules, ind + 1);
+            if (ind < 0)
+                throw Str32(U"无法替换命令：" + cmd + U" （格式：" + format + U"）");
+            if (ind % 4 != 0 || rules[ind+1] != format || Int(rules[ind+2] - U"0") > Narg)
+                continue;
+            new_cmd = rules[ind+3];
+            for (Long i = 0; i < size(args); ++i)
+                replace(new_cmd, U"#" + num2str32(i+1), args[i]);
+            break;
         }
-        if (has_op) { // no star
-            if (Narg >= 4) {
-                Long ind = search_even(cmd, cmd_op_3);
-                if (ind >= 0) {
-
-                }
-            }
-            if (Narg >= 3) {
-                Long ind = search_even(cmd, cmd_op_2);
-                if (ind >= 0) {
-                    
-                }
-            }
-            if (Narg >= 2) {
-                Long ind = search_even(cmd, cmd_op_1);
-                if (ind >= 0) {
-
-                }
-            }
-            if (Narg >= 1) {
-                Long ind = search_even(cmd, cmd_op);
-                if (ind >= 0) {
-                    
-                }
-            }
-            if (Narg == -2) {
-                Long ind = search_even(cmd, cmd_op_ro);
-                if (ind >= 0) {
-
-                }
-            }
-        }
-        if (has_st) { // no op
-            if (Narg >= 3) {
-                Long ind = search_even(cmd, cmd_st_3);
-                if (ind >= 0) {
-                    
-                }
-            }
-            if (Narg >= 2) {
-                Long ind = search_even(cmd, cmd_st_2);
-                if (ind >= 0) {
-
-                }
-            }
-            if (Narg >= 1) {
-                Long ind = search_even(cmd, cmd_st_1);
-                if (ind >= 0) {
-                    
-                }
-            }
-        }
-        // no op, no st
-        if (Narg >= 3) {
-            Long ind = search_even(cmd, cmd_3);
-            if (ind >= 0) {
-
-            }
-        }
-        if (Narg >= 2) {
-            if (is_in_even(cmd, cmd_2)) {
-
-            }
-        }
-        if (Narg >= 1) {
-            if (is_in_even(cmd, cmd_1)) {
-
-            }
-        }
-        if (Narg >= 0) {
-            if (is_in_even(cmd, cmd_0)) {
-
-            }
-        }
-        if (Narg == -1) {
-            if (is_in_even(cmd, cmd_ro)) {
-
-            }
-        }
+        
+        
     }
 }
 
