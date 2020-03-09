@@ -611,9 +611,9 @@ inline Long eatL(Str32& str, Long start, Str32_I chars)
 // or () or [] or anying single character
 // ind is inddex of left brace
 // return index of right brace
-inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
+inline Long pair_brace(Str32_I str, Long ind)
 {
-    Char32 left, right;
+    Char32 left, right, type = str[ind];
     if (type == U'{' || type == U'}') {
         left = U'{'; right = U'}';
     }
@@ -623,15 +623,15 @@ inline Long pair_brace(Str32_I str, Long ind, Char32_I type = U'{')
     else if (type == U'[' || type == U']') {
         left = U'['; right = U']';
     }
-    else {// anything else
-        left = type; right = type;
+    else {
+        throw Str32(U"pair_brace: illegal brace");
     }
 
     Char32 c, c0 = ' ';
     Long Nleft = 1;
-    for (Long i = ind + 1; i < size(str); i++)
-    {
-        c = str.at(i);
+    Long N = str.size();
+    for (Long i = ind + 1; i < N; i++) {
+        c = str[i];
         if (c == left && c0 != '\\')
             ++Nleft;
         else if (c == right && c0 != '\\')

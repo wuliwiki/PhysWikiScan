@@ -396,15 +396,13 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
         if (ind0 < 0) {
             throw Str32(U"图片标题未找到!");
         }
-        ind0 = expect(str, U"{", ind0 + 8);
-        ind1 = pair_brace(str, ind0);
-        caption = str.substr(ind0, ind1 - ind0);
-        str.erase(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1); // delete environment
+        command_arg(caption, str, ind0);
 
         // insert html code
         num2str(widthPt, (Long)(33.4 * width));
         num2str(figNo, i + 1);
-        str.insert(intvFig.L(i), U"<div class = \"w3-content\" style = \"max-width:" + widthPt
+        str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
+            U"<div class = \"w3-content\" style = \"max-width:" + widthPt
             + U"pt;\">\n" + U"<img src = \"" + figName + U"." + format
             + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
             + U"：" + caption + U"</div>");
@@ -1072,7 +1070,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline
         // get language
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
-            Long ind1 = pair_brace(str, ind0, U'[');
+            Long ind1 = pair_brace(str, ind0-1);
             ind0 = expect(str, U"language", ind0);
             if (ind0 < 0) {
                 throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
@@ -1305,7 +1303,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     depend_entry(links, str, entries, ind);
     // process \pentry{}
     pentry(str);
-    newcommand(str);
+    // replace user defined commands
+    while (newcommand(str) > 0);
     // replace \name{} with html tags
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);

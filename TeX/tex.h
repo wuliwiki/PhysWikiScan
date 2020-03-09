@@ -49,8 +49,8 @@ inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I star
 // might return str.size()
 // '*' after command will be omitted and skipped
 // 'omit_skip_opt' will omit and skip optional argument in [], else [] will be counted into 'Narg'
-// will not work in cases '{}' are omited, e.g. \frac12
-inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true)
+// use `arg_no_brace` to skip args without `{}`, e.g. `b` in `\frac{a} b` (only a single char)
+inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true, Bool_I arg_no_brace = false)
 {
     Long i, Narg1 = Narg;
     // skip the command name itself
@@ -73,7 +73,7 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
     // skip optional argument
     Long ind1 = expect(str, U"[", ind0), ind2;
     if (ind1 >= 0) {
-        ind2 = pair_brace(str, ind1, U'[');
+        ind2 = pair_brace(str, ind1-1);
         if (omit_skip_opt) {
             ind0 = ind2 + 1;
         }
@@ -82,9 +82,20 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
             Narg1 -= 1;
         }
     }
-    // skip arguments in {}
-    if (Narg1 > 0)
-        ind0 = skip_scope(str, ind0, Narg1);
+    // skip arguments
+    for (Long i = 0; i < Narg1; ++i) {
+        ind0 = expect(str, U"{", ind0);
+        if (ind0 > 0) {
+            ind0 = pair_brace(str, ind0-1) + 1;
+            continue;
+        }
+        if (!arg_no_brace)
+            throw Str32(U"skip_command(): '{' not found!");
+        ind0 = str.find_first_not_of(U' ', ind0);
+        if (ind0 < 0)
+            throw Str32(U"skip_command(): end of file!");
+        ++ind0;
+    }
     return ind0;
 }
 
@@ -142,8 +153,8 @@ inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
     ind0 = expect(str, U"[", ind0);
     if (ind0 < 0)
         return arg;
-    Long ind1 = pair_brace(str, ind0);
-    arg = str.substr(ind0+1, ind1-ind0-1);
+    Long ind1 = pair_brace(str, ind0-1);
+    arg = str.substr(ind0, ind1-ind0);
     if (trim)
         slisc::trim(arg);
     return arg;
@@ -161,7 +172,7 @@ inline Long command_Narg(Str32_I str, Long_I ind)
     // skip optional argument
     Long ind1 = expect(str, U"[", ind0) - 1;
     if (ind1 > 0) {
-        ind0 = pair_brace(str, ind1, U'[') + 1;
+        ind0 = pair_brace(str, ind1) + 1;
         ++Narg;
     }
     if (expect(str, U"(", ind0) > 0) {
@@ -183,32 +194,50 @@ inline Long command_Narg(Str32_I str, Long_I ind)
 
 // get the i-th command argument in {}
 // when "trim" is 't', trim white spaces on both sides of "arg"
-// return 0 if successful, -1 if requested argument does not exist
-inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false)
+// return the index after '}' of the argument if successful
+// return -1 if requested argument does not exist
+// use `arg_no_brace` to get args without `{}`, e.g. `b` in `\frac{a} b` (single char/command), will return one index after arg
+inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false, Bool_I arg_no_brace = false)
 {
     Long ind0 = ind, ind1, i1 = i;
     if (ignore_opt)
-        ind0 = skip_command(str, ind0, i);
+        ind0 = skip_command(str, ind0, i, true, arg_no_brace);
     else if (i == 0) {
         arg = command_opt(str, ind, trim);
         if (!arg.empty())
-            return 0;
+            return skip_command(str, ind0);
         ind0 = skip_command(str, ind0, 0);
     }
     else if (i > 0) {
-        ind0 = skip_command(str, ind0, i, false);
+        ind0 = skip_command(str, ind0, i, false, arg_no_brace);
     }
     else {
         throw Str32(U"command_arg(): i < 0 not allowed!");
     }
     
-    ind0 = expect(str, U"{", ind0);
-    if (ind0 < 0)
-        return -1;
+    ind1 = expect(str, U"{", ind0);
+    if (ind1 < 0) {
+        if (!arg_no_brace)
+            return -1;
+        ind0 = str.find_first_not_of(U' ', ind0);
+        if (ind0 < 0)
+            throw Str32(U"command_arg(): end of file!");
+        if (str[ind0] == U'\\') {
+            command_name(arg, str, ind0);
+            arg = U'\\' + arg;
+            ind0 += arg.size();
+        }
+        else {
+            arg = str[ind0]; ++ind0;
+        }
+        return ind0;
+    }
+    ind0 = ind1;
     ind1 = pair_brace(str, ind0 - 1);
     arg = str.substr(ind0, ind1 - ind0);
     if (trim)
         slisc::trim(arg);
+    return ind1 + 1;
 }
 
 // find command with a specific 1st arguments
@@ -612,7 +641,7 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
         // get language
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
-            ind0 = pair_brace(str, ind0, U'[') + 1;
+            ind0 = pair_brace(str, ind0-1) + 1;
         }
         else {
             ind0 = intvIn.L(i);

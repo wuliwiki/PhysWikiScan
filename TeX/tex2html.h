@@ -57,11 +57,13 @@ inline Long EqOmitTag(Str32_IO str)
 // braces can not be omitted for now, e.g. frac12
 // matching order: from complicated to simple
 // does not support more than 9 arguments (including optional arg)
+// return the number of commands replaced
 inline Long newcommand(Str32_IO str)
 {
     // rules (order matters for the same command name and format, match backward)
     // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
     vecStr32 rules;
+    Long N = 0;
     
     rules += {
         // `\cmd`
@@ -82,40 +84,58 @@ inline Long newcommand(Str32_IO str)
         U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
         U"Re", U"", U"0", U"\\mathrm{Re}",
         U"Im", U"", U"0", U"\\mathrm{Im}",
-        U"opn", U"", U"0", U"\\operatorname"
+        U"opn", U"", U"0", U"\\operatorname",
+        U"sin", U"", U"0", U"\\sin",
+        U"cos", U"", U"0", U"\\cos",
+        U"tan", U"", U"0", U"\\tan",
+        U"csc", U"", U"0", U"\\csc",
+        U"sec", U"", U"0", U"\\sec",
+        U"cot", U"", U"0", U"\\cot",
+        U"sinh", U"", U"0", U"\\sinh",
+        U"cosh", U"", U"0", U"\\cosh",
+        U"tanh", U"", U"0", U"\\tanh",
+        U"arcsin", U"", U"0", U"\\arcsin",
+        U"arccos", U"", U"0", U"\\arccos",
+        U"arctan", U"", U"0", U"\\arctan",
+        U"log", U"", U"0", U"\\log",
+        U"ln", U"", U"0", U"\\ln",
+        U"exp", U"", U"0", U"\\exp"
     };
     rules += {
         // `\cmd{}`
-        U"qty", U"", U"1", U"\\left\\{{#1}\\right\\}",
+        U"qty", U"", U"1", U"\\left\\{ #1 \\right\\}",
         U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
         U"mat", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
         U"ten", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
         U"uvec", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
         U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
         U"ali", U"", U"1", U"\\begin{aligned}#1\\end{aligned}",
-        U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned}#1\\end{aligned}\\right.",
+        U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned} #1 \\end{aligned}\\right.",
         U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
         U"Q", U"", U"1", U"\\hat{#1}",
         U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
         U"Si", U"", U"1", U"\\,\\mathrm{#1}",
-        U"abs", U"", U"1", U"\\left\\lvert{#1}\\right\\rvert",
-        U"eval", U"", U"1", U"\\left.{#1}\\right\\rvert",
+        U"abs", U"", U"1", U"\\left\\lvert #1 \\right\\rvert",
+        U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
         U"dd", U"", U"1", U"\\,\\mathrm{d}^{#1}",
-        U"bra", U"", U"1", U"\\left\\langle{#1}\\right\\rvert",
-        U"ket", U"", U"1", U"\\left\\lvert{#1}\\right\\rangle",
-        U"braket", U"", U"1", U"\\left\\langle{#1}\\middle|{#1}\\right\\rangle",
-        U"ev", U"", U"1", U"\\left\\langle{#1}\\right\\rangle",
-        U"order", U"", U"1", U"\\mathcal{O}\\left(#1\\right)",
+        U"bra", U"", U"1", U"\\left\\langle #1 \\right\\rvert",
+        U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
+        U"braket", U"", U"1", U"\\left\\langle{#1}\\middle| #1 \\right\\rangle",
+        U"ev", U"", U"1", U"\\left\\langle #1 \\right\\rangle",
+        U"order", U"", U"1", U"\\mathcal{O}\\left(#1 \\right)",
         U"bmat", U"", U"1", U"\\begin{bmatrix}#1\\end{bmatrix}",
         U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
         U"sumint", U"", U"1", U"\\int\\kern-1.4em\\sum",
         U"Q", U"", U"1", U"\\hat{#1}",
-        U"norm", U"", U"1", U"\\left\\lVert{#1}\\right\\rVert",
+        U"norm", U"", U"1", U"\\left\\lVert #1 \\right\\rVert",
         U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
         U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
         U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
     };
     rules += {
+        // `\cmd[]`
+        U"qty", U"[]", U"1", U"\\left[#1 \\right]",
+        U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
         // `\cmd[]{}`
         U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
         U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
@@ -128,8 +148,10 @@ inline Long newcommand(Str32_IO str)
         U"dv", U"*", U"1", U"\\mathrm{d}/\\mathrm{d}{#1}",
         // `\cmd*[]{}`
         U"dv", U"*[]", U"2", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
+        U"pdv", U"*[]", U"2", U"\\partial^{#1}/\\partial {#2}^{#1}",
         // non-standard: `\cmd()`
-        U"qty", U"()", U"1", U"\\left({#1}\\right)",
+        U"dd", U"()", U"1", U"\\,\\mathrm{d}\\left(#1 \\right)",
+        U"qty", U"()", U"1", U"\\left(#1 \\right)",
         U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
         U"cos", U"()", U"1", U"\\cos\\left(#1\\right)",
         U"tan", U"()", U"1", U"\\tan\\left(#1\\right)",
@@ -147,8 +169,6 @@ inline Long newcommand(Str32_IO str)
         U"ln", U"()", U"1", U"\\ln\\left(#1\\right)"
     };
     rules += {
-        // non-standard: `\cmd[]`
-        U"qty", U"[]", U"1", U"\\left[{#1}\\right]",
         // non-standard: `\cmd[]()`
         U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
         U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
@@ -167,10 +187,10 @@ inline Long newcommand(Str32_IO str)
     };
     rules += {
         // `\cmd{}{}`
-        U"comm", U"", U"2", U"\\left[{#1},{#2}\\right]",
-        U"pb", U"", U"2", U"\\left\\{{#1},{#2}\\right\\}",
-        U"braket", U"", U"2", U"\\left\\langle{#1}\\middle|{#2}\\right\\rangle",
-        U"ev", U"", U"2", U"\\left\\langle{#2}\\middle|{#1}\\middle|{#2}\\right\\rangle",
+        U"comm", U"", U"2", U"\\left[#1, #2\\right]",
+        U"pb", U"", U"2", U"\\left\\{#1 #2\\right\\}",
+        U"braket", U"", U"2", U"\\left\\langle #1 \\middle| #2 \\right\\rangle",
+        U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
         U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
         U"pdv", U"", U"2", U"\\frac{\\partial {#1}}{\\partial {#2}}",
         // `\cmd*{}{}`
@@ -182,16 +202,16 @@ inline Long newcommand(Str32_IO str)
         U"pdv", U"*", U"2", U"\\partial^{#1}/\\partial{#2}^{#1}",
         // `\cmd[]{}{}`
         U"dv", U"[]", U"3", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
-        U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+        U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}{#2}}{\\partial{#3}^{#1}}",
         // `\cmd*[]{}{}`
         U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
         U"pdv", U"*[]", U"3", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}",
         // `\cmd{}{}{}`
         U"pdv", U"", U"3", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
-        U"mel", U"", U"3", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
+        U"mel", U"", U"3", U"\\left\\langle #1 \\middle| #2 \\middle| #3 \\right\\rangle",
         // `\cmd*{}{}{}`
-        U"pdv", U"", U"*3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
-        U"mel", U"", U"*3", U"\\langle{#1}|{#2}|{#3}\\rangle"
+        U"pdv", U"*", U"3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
+        U"mel", U"*", U"3", U"\\langle{#1}|{#2}|{#3}\\rangle"
     };
 
     // all commands to find
@@ -220,39 +240,70 @@ inline Long newcommand(Str32_IO str)
         ind0 = find_command(ikey, str, cmds, ind0);
         if (ind0 < 0)
             break;
-        cmd = cmds[ikey];
+        cmd = cmds[ikey]; ++N;
         Bool has_st = command_star(str, ind0);
         Bool has_op = command_has_opt(str, ind0);
         Long Narg = command_Narg(str, ind0);
         format.clear();
+        Long end;
         if (has_st)
             format += U"*";
-        if (Narg == -1)
+        if (Narg == -1) {
+            Narg = 1;
             format += U"()";
-        else if (Narg == -2)
+            Long indL = str.find(U'(', ind0);
+            Long indR = pair_brace(str, indL);
+            args.resize(1);
+            args[0] = str.substr(indL + 1, indR - indL - 1);
+            trim(args[0]);
+            end = indR + 1;
+        }
+        else if (Narg == -2) {
+            Narg = 2;
             format += U"[]()";
-        else if (has_op)
-            format += U"[]";
-        
+            args.resize(2);
+            args[0] = command_opt(str, ind0);
+            Long indL = str.find(U'(', ind0);
+            Long indR = pair_brace(str, indL);
+            args[1] = str.substr(indL + 1, indR - indL - 1);
+            trim(args[1]);
+            end = indR + 1;
+        }
+        else {
+            if (has_op)
+                format += U"[]";
+            args.resize(Narg);
+            for (Long i = 0; i < Narg; ++i)
+                command_arg(args[i], str, ind0, i);
+            end = skip_command(str, ind0, Narg, false);
+        }
 
-        args.clear();
-        for (Long i = 0; i < Narg; ++i)
-            command_arg(args[i], str, ind0, i);
-        Long ind1 = skip_command(str, ind0, Narg, false);
-
-        Long ind = -1;
+        // match rule
+        Long ind = -1, Narg_rule = Narg;
         while (1) {
-            ind = search(cmd, rules, ind + 1);
-            if (ind < 0)
-                throw Str32(U"无法替换命令：" + cmd + U" （格式：" + format + U"）");
-            if (ind % 4 != 0 || rules[ind+1] != format || Long(rules[ind+2][0] - Char32(U'0')) > Narg)
+            Long ind1 = search(cmd, rules, ind + 1);
+            if (ind1 < 0) {
+                if (Narg_rule == Narg)
+                    throw Str32(U"内部错误：无法命令替换规则：" + cmd + U" （格式：" + format + U"）");
+                args.resize(Narg_rule);
+                for (Long i = Narg; i < Narg_rule; ++i)
+                    end = command_arg(args[i], str, ind0, i, true, false, true);
+                break;
+            }
+            else
+                ind = ind1;
+            Narg_rule = Long(rules[ind + 2][0]) - Long(U'0');
+            if (ind % 4 != 0 || rules[ind + 1] != format || Narg_rule > Narg)
                 continue;
-            new_cmd = rules[ind+3];
-            for (Long i = 0; i < size(args); ++i)
-                replace(new_cmd, U"#" + num2str32(i+1), args[i]);
             break;
         }
+        new_cmd = rules[ind + 3];
+        for (Long i = 0; i < Narg_rule; ++i)
+            replace(new_cmd, U"#" + num2str32(i + 1), args[i]);
+        str.replace(ind0, end - ind0, new_cmd);
+        ind0 += new_cmd.size();
     }
+    return N;
 }
 
 // deal with escape simbols in normal text
