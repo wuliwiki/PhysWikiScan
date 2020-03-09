@@ -1242,9 +1242,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Str32 html;
     read(html, path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
-    Str32 newcomm;
-    read(newcomm, path_out + "templates/newcommand.html");
-    CRLF_to_LF(newcomm);
+
     // read title from first comment
     get_title(title, str);
 
@@ -1265,12 +1263,12 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         throw Str32(U"中文标题不符: " + title + " | " + titles[ind]);
     }
     // insert \newcommand{}
-    if (replace(html, U"PhysWikiCommand", newcomm) != 1) {
-        throw Str32(U"newcommand.html 格式错误!");
+    if (replace(html, U"PhysWikiCommand", U"") != 1) {
+        throw Str32(U"entry_template.html 格式错误!");
     }
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
-        throw Str32(U"newcommand.html 格式错误!");
+        throw Str32(U"entry_template.html 格式错误!");
     }
     // save and replace verbatim code with an index
     vecStr32 str_verb;
@@ -1307,17 +1305,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     depend_entry(links, str, entries, ind);
     // process \pentry{}
     pentry(str);
-    // Replace \nameStar commands
-    StarCommand(U"comm", str);   StarCommand(U"pb", str);
-    StarCommand(U"dv", str);     StarCommand(U"pdv", str);
-    StarCommand(U"bra", str);    StarCommand(U"ket", str);
-    StarCommand(U"braket", str); StarCommand(U"ev", str);
-    StarCommand(U"mel", str);
-    // Replace \nameTwo and \nameThree commands
-    VarCommand(U"pdv", str, 3);   VarCommand(U"pdvStar", str, 3);
-    VarCommand(U"dv", str, 2);    VarCommand(U"dvStar", str, 2);
-    VarCommand(U"ev", str, 2);    VarCommand(U"evStar", str, 2);
-    VarCommand(U"braket", str, 2); VarCommand(U"braketStar", str, 2);
+    newcommand(str);
     // replace \name{} with html tags
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);

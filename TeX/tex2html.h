@@ -52,75 +52,6 @@ inline Long EqOmitTag(Str32_IO str)
     return N;
 }
 
-// detect "\name*" command and replace with "\nameStar"
-// return number of commmands replaced
-// must remove comments first
-inline Long StarCommand(Str32_I name, Str32_IO str)
-{
-    Long N{}, ind0{}, ind1{};
-    while (true) {
-        ind0 = find_command(str, name, ind0);
-        if (ind0 < 0)
-            break;
-        ind0 += name.size() + 1;
-        ind1 = expect(str, U"*", ind0);
-        if (ind1 < 0)
-            continue;
-        str.replace(ind0, ind1 - ind0, U"Star"); // delete * and spaces
-        ++N;
-    }
-    return N;
-}
-
-// detect "\name" with variable parameters
-// replace "\name{}{}" with "\nameTwo{}{}" and "\name{}{}{}" with "\nameThree{}{}{}"
-// replace "\name[]{}{}" with "\nameTwo[]{}{}" and "\name[]{}{}{}" with "\nameThree[]{}{}{}"
-// return number of commmands replaced
-// maxVars  = 2 or 3
-inline Long VarCommand(Str32_I name, Str32_IO str, Int_I maxVars)
-{
-    Long i{}, N{}, Nvar{}, ind0{}, ind1{};
-
-    while (true) {
-        ind0 = str.find(U"\\" + name, ind0 + 1);
-        if (ind0 < 0) break;
-        ind0 += name.size() + 1;
-        ind1 = expect(str, U"[", ind0);
-        if (ind1 > 0)
-            ind1 = pair_brace(str, ind1 - 1, U']') + 1;
-        else
-            ind1 = ind0;
-        ind1 = expect(str, U"{", ind1);
-        if (ind1 < 0) continue;
-        ind1 = pair_brace(str, ind1 - 1);
-        ind1 = expect(str, U"{", ind1 + 1);
-        if (ind1 < 0) continue;
-        ind1 = pair_brace(str, ind1 - 1);
-        if (maxVars == 2) { str.insert(ind0, U"Two"); ++N; continue; }
-        ind1 = expect(str, U"{", ind1 + 1);
-        if (ind1 < 0) {
-            str.insert(ind0, U"Two"); ++N; continue;
-        }
-        str.insert(ind0, U"Three"); ++N; continue;
-    }
-    return N;
-}
-
-// replace e.g. `\sin(...)` with `\sin\left(...\right)`
-// replace e.g. `\sin[n](...)` with `\sin^n\left(...\right)`
-// \exp and \qty are special, also support `\exp[]`, `\exp{}`, `\qty[]`, `qty{}` auto resize
-// see physics package for detail
-inline Long fun_auto_size(Str32_IO str)
-{
-    // supports \cmd(), \cmd[]()
-    vecStr32 keys = {U"sin", U"cos", U"tan", U"csc", U"sec", U"cot", U"sinh", U"cosh",
-        U"tanh", U"arcsin", U"arccos", U"arctan", U"log", U"ln"};
-    // supports \cmd(), \cmd[], \cmd{}
-    vecStr32 keys1 = { U"exp", U"qty" };
-
-    // TODO
-}
-
 // ==== directly implement \newcommand{}{} by replacing ====
 // does not support multiple layer!
 // braces can not be omitted for now, e.g. frac12
@@ -130,7 +61,9 @@ inline Long newcommand(Str32_IO str)
 {
     // rules (order matters for the same command name and format, match backward)
     // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
-    vecStr32 rules = {
+    vecStr32 rules;
+    
+    rules += {
         // `\cmd`
         U"I", U"", U"0", U"\\mathrm{i}",
         U"E", U"", U"0", U"\\mathrm{e}",
@@ -144,12 +77,14 @@ inline Long newcommand(Str32_IO str)
         U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
         U"cross", U"", U"0", U"\\boldsymbol\\times",
         U"grad", U"", U"0", U"\\boldsymbol\\nabla",
-        U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}"
-        U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}"
-        U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2"
+        U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}",
+        U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}",
+        U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
         U"Re", U"", U"0", U"\\mathrm{Re}",
         U"Im", U"", U"0", U"\\mathrm{Im}",
         U"opn", U"", U"0", U"\\operatorname"
+    };
+    rules += {
         // `\cmd{}`
         U"qty", U"", U"1", U"\\left\\{{#1}\\right\\}",
         U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
@@ -179,6 +114,8 @@ inline Long newcommand(Str32_IO str)
         U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
         U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
         U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
+    };
+    rules += {
         // `\cmd[]{}`
         U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
         U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
@@ -206,10 +143,12 @@ inline Long newcommand(Str32_IO str)
         U"arccos", U"()", U"1", U"\\arccos\\left(#1\\right)",
         U"arctan", U"()", U"1", U"\\arctan\\left(#1\\right)",
         U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
-        U"log", U"()", U"1", U"\\log\\left(#1\\right)"
+        U"log", U"()", U"1", U"\\log\\left(#1\\right)",
         U"ln", U"()", U"1", U"\\ln\\left(#1\\right)"
+    };
+    rules += {
         // non-standard: `\cmd[]`
-        U"qty", U"[]", U"1", U"\\left[{#1}\\right]"
+        U"qty", U"[]", U"1", U"\\left[{#1}\\right]",
         // non-standard: `\cmd[]()`
         U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
         U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
@@ -223,8 +162,10 @@ inline Long newcommand(Str32_IO str)
         U"arcsin", U"[]()", U"2", U"\\arcsin^{#1}\\left(#2\\right)",
         U"arccos", U"[]()", U"2", U"\\arccos^{#1}\\left(#2\\right)",
         U"arctan", U"[]()", U"2", U"\\arctan^{#1}\\left(#2\\right)",
-        U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)"
+        U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)",
         U"ln", U"[]()", U"2", U"\\ln^{#1}\\left(#2\\right)"
+    };
+    rules += {
         // `\cmd{}{}`
         U"comm", U"", U"2", U"\\left[{#1},{#2}\\right]",
         U"pb", U"", U"2", U"\\left\\{{#1},{#2}\\right\\}",
@@ -244,19 +185,23 @@ inline Long newcommand(Str32_IO str)
         U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
         // `\cmd*[]{}{}`
         U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
-        U"pdv", U"*[]", U"3", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}"
+        U"pdv", U"*[]", U"3", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}",
         // `\cmd{}{}{}`
-        U"pdv", U"3", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
-        U"mel", U"3", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
+        U"pdv", U"", U"3", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
+        U"mel", U"", U"3", U"\\left\\langle{#1}\\middle|{#2}\\middle|{#3}\\right\\rangle",
         // `\cmd*{}{}{}`
-        U"pdv", U"*3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
-        U"mel", U"*3", U"\\langle{#1}|{#2}|{#3}\\rangle"
+        U"pdv", U"", U"*3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
+        U"mel", U"", U"*3", U"\\langle{#1}|{#2}|{#3}\\rangle"
     };
 
     // all commands to find
     if (rules.size() % 4 != 0)
         throw Str32(U"rules.size() illegal!");
     // reverse order
+    // == print newcommands ===
+    // for (Long i = 0; i < size(rules); i += 4) {
+    //     cout << rules[i] << " || " << rules[i+1] << " || " << rules[i+2] << " || " << rules[i+3] << endl;
+    // }
     for (Long i = 0; i < size(rules)/2; i += 4) {
         swap(rules[i], rules[rules.size()-i-4]);
         swap(rules[i+1], rules[rules.size()-i-3]);
@@ -279,7 +224,7 @@ inline Long newcommand(Str32_IO str)
         Bool has_st = command_star(str, ind0);
         Bool has_op = command_has_opt(str, ind0);
         Long Narg = command_Narg(str, ind0);
-        format.clear;
+        format.clear();
         if (has_st)
             format += U"*";
         if (Narg == -1)
@@ -300,15 +245,13 @@ inline Long newcommand(Str32_IO str)
             ind = search(cmd, rules, ind + 1);
             if (ind < 0)
                 throw Str32(U"无法替换命令：" + cmd + U" （格式：" + format + U"）");
-            if (ind % 4 != 0 || rules[ind+1] != format || Int(rules[ind+2] - U"0") > Narg)
+            if (ind % 4 != 0 || rules[ind+1] != format || Long(rules[ind+2][0] - Char32(U'0')) > Narg)
                 continue;
             new_cmd = rules[ind+3];
             for (Long i = 0; i < size(args); ++i)
                 replace(new_cmd, U"#" + num2str32(i+1), args[i]);
             break;
         }
-        
-        
     }
 }
 

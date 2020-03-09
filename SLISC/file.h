@@ -2,6 +2,7 @@
 #include "time.h"
 #include "arithmetic.h"
 #include "linux.h"
+#include "search.h"
 #include <sstream>
 #include <fstream>
 #include <codecvt>

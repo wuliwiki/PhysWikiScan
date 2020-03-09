@@ -347,10 +347,10 @@ inline Long expect(Str32_I str, Str32_I key, Long_I start)
                  return ind + 1;
          }
          else if (c != U' ' && c != U'\n')
-             throw Str32(U"expect() failed (1)!");
+             return -1;
          ++ind;
          if (ind == L)
-             throw Str32(U"expect() failed (2)!");
+             return -1;
     }
 }
 

@@ -35,7 +35,7 @@ inline Long find_scope(Long_O right, Str32_I key, Str32_I str, Long_I start, Cha
         ind1 = str.find(/*U"\\" +*/ key, ind0);
         if (ind1 < 0) {
             right = -1;
-            throw Str32(U"find_scope(): failed!");
+            return -1;
         }
         ind0 = ind1 + key.size();
         ind0 = expect(str, U"{", ind0);

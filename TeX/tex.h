@@ -8,14 +8,14 @@
 namespace slisc {
 
 // find text command '\name', return the index of '\'
-// output the index of "name.back()"
+// return the index of "name.back()", return -1 if not found
 inline Long find_command(Str32_I str, Str32_I name, Long_I start)
 {
     Long ind0 = start;
     while (true) {
         ind0 = str.find(U"\\" + name, ind0);
         if (ind0 < 0)
-            throw Str32(U"find_command() failed!");
+            return -1;
 
         // check right
         if (!is_letter(str[ind0 + name.size() + 1]))
@@ -145,7 +145,7 @@ inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
     Long ind1 = pair_brace(str, ind0);
     arg = str.substr(ind0+1, ind1-ind0-1);
     if (trim)
-        ::trim(arg);
+        slisc::trim(arg);
     return arg;
 }
 
@@ -178,19 +178,22 @@ inline Long command_Narg(Str32_I str, Long_I ind)
                 break;
         }
     }
+    return Narg;
 }
 
 // get the i-th command argument in {}
 // when "trim" is 't', trim white spaces on both sides of "arg"
-// 
-inline void command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false)
+// return 0 if successful, -1 if requested argument does not exist
+inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false)
 {
     Long ind0 = ind, ind1, i1 = i;
     if (ignore_opt)
         ind0 = skip_command(str, ind0, i);
     else if (i == 0) {
         arg = command_opt(str, ind, trim);
-        return;
+        if (!arg.empty())
+            return 0;
+        ind0 = skip_command(str, ind0, 0);
     }
     else if (i > 0) {
         ind0 = skip_command(str, ind0, i, false);
@@ -200,10 +203,12 @@ inline void command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool
     }
     
     ind0 = expect(str, U"{", ind0);
+    if (ind0 < 0)
+        return -1;
     ind1 = pair_brace(str, ind0 - 1);
     arg = str.substr(ind0, ind1 - ind0);
     if (trim)
-        ::trim(arg);
+        slisc::trim(arg);
 }
 
 // find command with a specific 1st arguments
@@ -217,7 +222,9 @@ inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I st
         ind0 = find_command(str, name, ind0);
         if (ind0 < 0)
             return -1;
-        command_arg(arg1_, str, ind0, 0);
+        if (command_arg(arg1_, str, ind0, 0) == -1) {
+            ++ind0; continue;
+        }
         if (arg1_ == arg1)
             return ind0;
         ++ind0;
