@@ -50,7 +50,7 @@ inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I star
 // '*' after command will be omitted and skipped
 // 'omit_skip_opt' will omit and skip optional argument in [], else [] will be counted into 'Narg'
 // use `arg_no_brace` to skip args without `{}`, e.g. `b` in `\frac{a} b` (only a single char)
-inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true, Bool_I arg_no_brace = false)
+inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true, Bool_I arg_no_brace = false, Bool_I skip_star = true)
 {
     Long i, Narg1 = Narg;
     // skip the command name itself
@@ -67,7 +67,9 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
             throw Str32(U"skip_command() failed!");
     }
     // skip *
-    Long ind0 = expect(str, U"*", i);
+    Long ind0 = -1;
+    if (skip_star)
+        ind0 = expect(str, U"*", i);
     if (ind0 < 0)
         ind0 = i;
     // skip optional argument

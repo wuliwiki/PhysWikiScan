@@ -53,10 +53,11 @@ inline Long EqOmitTag(Str32_IO str)
 }
 
 // ==== directly implement \newcommand{}{} by replacing ====
-// does not support multiple layer!
-// braces can not be omitted for now, e.g. frac12
+// does not support multiple layer! (call multiple times for that)
+// braces can be omitted e.g. \cmd12 (will match in the end)
 // matching order: from complicated to simple
 // does not support more than 9 arguments (including optional arg)
+// command will be ignored if there is no match
 // return the number of commands replaced
 inline Long newcommand(Str32_IO str)
 {
@@ -85,21 +86,6 @@ inline Long newcommand(Str32_IO str)
         U"Re", U"", U"0", U"\\mathrm{Re}",
         U"Im", U"", U"0", U"\\mathrm{Im}",
         U"opn", U"", U"0", U"\\operatorname",
-        U"sin", U"", U"0", U"\\sin",
-        U"cos", U"", U"0", U"\\cos",
-        U"tan", U"", U"0", U"\\tan",
-        U"csc", U"", U"0", U"\\csc",
-        U"sec", U"", U"0", U"\\sec",
-        U"cot", U"", U"0", U"\\cot",
-        U"sinh", U"", U"0", U"\\sinh",
-        U"cosh", U"", U"0", U"\\cosh",
-        U"tanh", U"", U"0", U"\\tanh",
-        U"arcsin", U"", U"0", U"\\arcsin",
-        U"arccos", U"", U"0", U"\\arccos",
-        U"arctan", U"", U"0", U"\\arctan",
-        U"log", U"", U"0", U"\\log",
-        U"ln", U"", U"0", U"\\ln",
-        U"exp", U"", U"0", U"\\exp"
     };
     rules += {
         // `\cmd{}`
@@ -240,27 +226,62 @@ inline Long newcommand(Str32_IO str)
         ind0 = find_command(ikey, str, cmds, ind0);
         if (ind0 < 0)
             break;
-        cmd = cmds[ikey]; ++N;
+        cmd = cmds[ikey];
         Bool has_st = command_star(str, ind0);
         Bool has_op = command_has_opt(str, ind0);
-        Long Narg = command_Narg(str, ind0);
+        Long Narg = command_Narg(str, ind0); // actual args used in [] or {}
         format.clear();
-        Long end;
         if (has_st)
             format += U"*";
         if (Narg == -1) {
             Narg = 1;
             format += U"()";
-            Long indL = str.find(U'(', ind0);
-            Long indR = pair_brace(str, indL);
-            args.resize(1);
-            args[0] = str.substr(indL + 1, indR - indL - 1);
-            trim(args[0]);
-            end = indR + 1;
         }
         else if (Narg == -2) {
             Narg = 2;
             format += U"[]()";
+        }
+        else {
+            if (has_op)
+                format += U"[]";
+        }
+
+        // decide which rule to use (result: rules[ind])
+        Long ind = -1, Narg_rule = -1;
+        Long candi = -1; // `rules[candi]` is the last compatible rule with omitted `{}`
+        Str32 rule_format;
+        while (1) {
+            Long ind1 = search(cmd, rules, ind + 1);
+            if (ind1 < 0) {
+                if (candi < 0) {
+                    ind = -1; break;
+                    // throw Str32(U"内部错误：命令替换规则不存在：" + cmd + U" （格式：" + format + U"）");
+                }
+                ind = candi;
+                break;
+            }
+            else
+                ind = ind1;
+            
+            if (ind % 4 != 0)
+                continue;
+            rule_format = rules[ind + 1];
+            // match format
+            if (format.substr(0, rule_format.size()) == rule_format) {
+                Narg_rule = Long(rules[ind + 2][0]) - Long(U'0');
+                if (Narg_rule > Narg) { // has omitted `{}`
+                    candi = ind;
+                    continue;
+                }
+                break;
+            }
+        }
+        if (ind < 0) {
+            ++ind0; continue;
+        }
+        // get arguments
+        Long end; // replace str[ind0] to str[end-1]
+        if (rule_format == U"[]()" || rule_format == U"*[]()") {
             args.resize(2);
             args[0] = command_opt(str, ind0);
             Long indL = str.find(U'(', ind0);
@@ -269,38 +290,30 @@ inline Long newcommand(Str32_IO str)
             trim(args[1]);
             end = indR + 1;
         }
+        else if (rule_format == U"()" || rule_format == U"*()") {
+            Long indL = str.find(U'(', ind0);
+            Long indR = pair_brace(str, indL);
+            args.resize(1);
+            args[0] = str.substr(indL + 1, indR - indL - 1);
+            trim(args[0]);
+            end = indR + 1;
+        }
         else {
-            if (has_op)
-                format += U"[]";
-            args.resize(Narg);
-            for (Long i = 0; i < Narg; ++i)
-                command_arg(args[i], str, ind0, i);
-            end = skip_command(str, ind0, Narg, false);
-        }
-
-        // match rule
-        Long ind = -1, Narg_rule = Narg;
-        while (1) {
-            Long ind1 = search(cmd, rules, ind + 1);
-            if (ind1 < 0) {
-                if (Narg_rule == Narg)
-                    throw Str32(U"内部错误：无法命令替换规则：" + cmd + U" （格式：" + format + U"）");
-                args.resize(Narg_rule);
-                for (Long i = Narg; i < Narg_rule; ++i)
-                    end = command_arg(args[i], str, ind0, i, true, false, true);
-                break;
+            args.resize(Narg_rule);
+            for (Long i = 0; i < Narg_rule; ++i)
+                end = command_arg(args[i], str, ind0, i, true, false, true);
+            if (Narg_rule == 0) {
+                if (rule_format[0] == U'*')
+                    end = skip_command(str, ind0, 0, false, false, true);
+                else
+                    end = skip_command(str, ind0, 0, false, false, false);
             }
-            else
-                ind = ind1;
-            Narg_rule = Long(rules[ind + 2][0]) - Long(U'0');
-            if (ind % 4 != 0 || rules[ind + 1] != format || Narg_rule > Narg)
-                continue;
-            break;
         }
+        // apply rule
         new_cmd = rules[ind + 3];
         for (Long i = 0; i < Narg_rule; ++i)
             replace(new_cmd, U"#" + num2str32(i + 1), args[i]);
-        str.replace(ind0, end - ind0, new_cmd);
+        str.replace(ind0, end - ind0, new_cmd); ++N;
         ind0 += new_cmd.size();
     }
     return N;
