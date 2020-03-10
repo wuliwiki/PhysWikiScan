@@ -136,16 +136,15 @@ inline Long newcommand(Str32_IO str)
             U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
     };
     rules += {
-        U"ev", U"*", U"1", U"\\langle{#1}\\rangle",
+        U"ev", U"*", U"2", U"\\langle #2 | #1 | #2 \\rangle",
+            U"ev", U"*", U"1", U"\\langle #1 \\rangle",
+            U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
             U"ev", U"", U"1", U"\\left\\langle #1 \\right\\rangle",
             
             U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
             U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
 
             U"erfi", U"", U"0", U"\\operatorname{erfi}",
-
-            U"ev", U"*", U"2", U"\\langle{#2}|{#1}|{#2}\\rangle",
-            U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
 
             U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
 
@@ -155,7 +154,7 @@ inline Long newcommand(Str32_IO str)
 
             U"Her", U"", U"0", U"^\\dagger",
 
-            U"Im", U"", U"0", U"\\mathrm{Im}",
+            U"Im", U"", U"0", U"\\operatorname{Im}",
 
             U"I", U"", U"0", U"\\mathrm{i}",
 
@@ -189,17 +188,18 @@ inline Long newcommand(Str32_IO str)
     rules += {
         U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
 
+            U"pb", U"*", U"2", U"\\{#1, #2\\}",
             U"pb", U"", U"2", U"\\left\\{#1, #2\\right\\}",
-            U"pb", U"*", U"2", U"\\{#1, #2}\\}",
-
-            U"pdv", U"*[]", U"3", U"\\partial^{#1}{#2}/\\partial{#3}^{#1}",
+            
+            U"pdv", U"*[]", U"3", U"\\partial^{#1} #2/\\partial {#3}^{#1}",
             U"pdv", U"*[]", U"2", U"\\partial^{#1}/\\partial {#2}^{#1}",
-            U"pdv", U"*", U"3", U"\\partial^2{#1}/\\partial{#2}\\partial{#3}",
-            U"pdv", U"*", U"2", U"\\partial^{#1}/\\partial{#2}^{#1}",
+            U"pdv", U"*", U"3", U"\\partial^2 #1/\\partial #2 \\partial #3",
+            U"pdv", U"*", U"2", U"\\partial #1/\\partial #2",
+            U"pdv", U"*", U"1", U"\\partial/\\partial #1",
             U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}{#2}}{\\partial{#3}^{#1}}",
             U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
-            U"pdv", U"", U"3", U"\\frac{\\partial^2{#1}}{\\partial{#2}\\partial{#3}}",
-            U"pdv", U"", U"2", U"\\frac{\\partial {#1}}{\\partial {#2}}",
+            U"pdv", U"", U"3", U"\\frac{\\partial^2 #1}{\\partial #2 \\partial #3}",
+            U"pdv", U"", U"2", U"\\frac{\\partial #1}{\\partial #2}",
             U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
 
             U"qty", U"()", U"1", U"\\left(#1 \\right)",
@@ -211,7 +211,7 @@ inline Long newcommand(Str32_IO str)
             U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
     };
     rules += {
-        U"Re", U"", U"0", U"\\mathrm{Re}",
+        U"Re", U"", U"0", U"\\operatorname{Re}",
 
             U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
             U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
@@ -222,7 +222,7 @@ inline Long newcommand(Str32_IO str)
             U"sinh", U"[]()", U"2", U"\\sinh^{#1}\\left(#2\\right)",
             U"sinh", U"()", U"1", U"\\sinh\\left(#1\\right)",
 
-            U"sumint", U"", U"1", U"\\int\\kern-1.4em\\sum",
+            U"sumint", U"", U"0", U"\\int\\kern-1.4em\\sum",
 
             U"sinc", U"", U"0", U"\\operatorname{sinc}",
 
@@ -588,3 +588,4 @@ inline Long footnote(Str32_IO str)
     return N;
 }
 } // namespace slisc
+
