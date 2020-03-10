@@ -840,11 +840,8 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
     
     Str32 title; // chinese entry name, chapter name, or part name
     Str32 entryName; // entry label
-    Str32 newcomm;
     Str32 str, toc;
 
-    read(newcomm, path_out + "templates/newcommand.html");
-    CRLF_to_LF(newcomm);
     read(str, path_in + "main.tex");
     CRLF_to_LF(str);
     read(toc, path_out + "templates/index_template.html"); // read html template
@@ -852,8 +849,7 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
 
     ind0 = toc.find(U"PhysWikiHTMLtitle");
     toc.replace(ind0, 17, U"小时物理");
-    ind0 = toc.find(U"PhysWikiCommand", ind0);
-    toc.erase(ind0, 15); toc.insert(ind0, newcomm);
+
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     toc.erase(ind0, 16);
 
@@ -929,12 +925,9 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
     Str32 entryName; // entry label
-    Str32 newcomm;
     Str32 toc;
     vecStr32 changed, authors;
 
-    read(newcomm, path_out + "templates/newcommand.html");
-    CRLF_to_LF(newcomm);
     if (!file_exist(path_data + U"changed.txt")) {
         write_vec_str(vecStr32(), path_data + U"changed.txt");
     }
@@ -951,8 +944,6 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     read(toc, path_out + "templates/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
-    ind0 = toc.find(U"PhysWikiCommand");
-    toc.erase(ind0, 15); toc.insert(ind0, newcomm);
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"<p>\n", ind0);
@@ -1257,10 +1248,6 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
     if (!titles[ind].empty() && title != titles[ind]) {
         throw Str32(U"中文标题不符: " + title + " | " + titles[ind]);
-    }
-    // insert \newcommand{}
-    if (replace(html, U"PhysWikiCommand", U"") != 1) {
-        throw Str32(U"entry_template.html 格式错误!");
     }
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
