@@ -1055,7 +1055,7 @@ inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
 
 // process all lstlisting environments
 // return the number of \Command{} processed
-inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline)
+inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
 {
     Long ind0 = 0;
     Intvs intvIn, intvOut;
@@ -1065,8 +1065,6 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline
     Str32 lang = U""; // language
     Str32 code_tab_str;
     for (Long i = N - 1; i >= 0; --i) {
-        if (is_in(intvIn.L(i), intv_lstinline))
-            continue;
         // get language
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
@@ -1093,9 +1091,9 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb, Intvs_I intv_lstinline
         }
         
         // highlight
-        if (lang == U"MatlabCom")
+        if (lang == U"matlabC")
             Matlab_highlight(code);
-        else if (lang == U"MyMatlab")
+        else if (lang == U"matlab")
             Matlab_highlight(code);
         else if (lang == U"cpp")
             cpp_highlight(code);
@@ -1327,9 +1325,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // Matlab code
     MatlabCode(str, path_in, false);
     MatlabCode(str, path_in, true);
-    Intvs intv_lstinline;
-    lstinline(intv_lstinline, str, str_verb);
-    lstlisting(str, str_verb, intv_lstinline);
+    // verbatim recover (in inverse order of `verbatim()`)
+    lstlisting(str, str_verb);
+    lstinline(str, str_verb);
+    verb(str, str_verb);
 
     Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title

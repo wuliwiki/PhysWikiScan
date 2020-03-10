@@ -391,6 +391,30 @@ inline Long lstinline_intv(Intvs_O intv, Str32_I str)
     return N;
 }
 
+// find interval of all "\verb *...*"
+inline Long verb_intv(Intvs_O intv, Str32_I str)
+{
+    Long N{}, ind0{}, ind1{}, ind2{};
+    Char32 dlm;
+    intv.clear();
+    while (true) {
+        ind0 = find_command(str, U"verb", ind0);
+        if (ind0 < 0)
+            break;
+        ind1 = str.find_first_not_of(U' ', ind0 + 5);
+        if (ind1 < 0)
+            throw Str32(U"verb_intv() failed (1)!");
+        dlm = str[ind1];
+        ind2 = str.find(dlm, ind1 + 1);
+        if (ind2 < 0)
+            throw Str32(U"verb_intv() failed (2)!");
+        intv.pushL(ind0); intv.pushR(ind2);
+        ind0 = ind2 + 1;
+        ++N;
+    }
+    return N;
+}
+
 // find the range of inline equations using $$
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $$ environments found.
@@ -478,7 +502,10 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
     Intvs intv, intv1;
+    // verbatim
     lstinline_intv(intv, str);
+    verb_intv(intv1, str);
+    combine(intv, intv1);
     find_env(intv1, str, U"lstlisting", 'o');
     combine(intv, intv1);
     // comments
@@ -599,22 +626,42 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
     return N;
 }
 
-// replace verbatim environments with index number `ind`, to escape normal processing
-// will ignore \lstinline in lstlisting environment
+// replace verbatim environments (\verb, \lstinline, lstlisting) with index number `ind`, to escape normal processing
+// will ignore \lstinline and \verb in lstlisting environment
 // doesn't matter if \lstinline is in latex comment
 // TODO: it does matter if \begin{lstlisting} is in comment!
 inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
     Long ind0 = 0, ind1, ind2;
     Char32 dlm;
+    // verb
+    while (true) {
+        ind0 = find_command(str, U"verb", ind0);
+        if (ind0 < 0)
+            break;
+        ind1 = str.find_first_not_of(U' ', ind0 + 5);
+        if (ind1 < 0)
+            throw Str32(U"\\verb 没有开始！");
+        dlm = str[ind1];
+        if (dlm == U'{')
+            throw Str32(U"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
+        ind2 = str.find(dlm, ind1 + 1);
+        if (ind2 < 0)
+            throw Str32(U"\\verb 没有闭合！");
+        if (ind2 - ind1 == 1)
+            throw Str32(U"\\verb 不能为空");
+
+        str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
+        str.replace(ind0 + 5, ind2 - (ind0 + 5) + 1, U"|" + num2str32(size(str_verb) - 1) + U"|");
+        ++ind0;
+    }
+    
     // lstinline
+    ind0 = 0;
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;
-        if (index_in_env(ind0, U"lstlisting", str)) {
-            ++ind0; continue;
-        }
         ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
             throw Str32(U"\\lstinline 没有开始！");
@@ -632,7 +679,7 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
         ++ind0;
     }
     
-    // process lstlisting
+    // lstlisting
     ind0 = 0;
     Intvs intvIn, intvOut;
     Str32 code;
@@ -656,14 +703,12 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
     return str_verb.size();
 }
 
-// replace `\lstinline{ind}` with `<code>str_verb[ind]</code>`
+// replace `\lstinline|ind|` with `<code>str_verb[ind]</code>`
 // return the number replaced
-// output the interval of replaced code
-inline Long lstinline(Intvs_O intv, Str32_IO str, vecStr32_IO str_verb)
+inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
 {
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
     Str32 ind_str, tmp;
-    intv.clear();
     while (true) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
@@ -681,7 +726,35 @@ inline Long lstinline(Intvs_O intv, Str32_IO str, vecStr32_IO str_verb)
         replace(str_verb[ind], U">", U"&gt");
         tmp = U"<code>" + str_verb[ind] + U"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
-        intv.pushL(ind0); intv.pushR(ind0 + size(tmp) - 1);
+        ind0 += tmp.size();
+        ++N;
+    }
+    return N;
+}
+
+// replace `\verb|ind|` with `<code>str_verb[ind]</code>`
+// return the number replaced
+inline Long verb(Str32_IO str, vecStr32_IO str_verb)
+{
+    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
+    Str32 ind_str, tmp;
+    while (true) {
+        ind0 = find_command(str, U"verb", ind0);
+        if (ind0 < 0)
+            break;
+        if (index_in_env(ind0, U"lstlisting", str)) {
+            ++ind0; continue;
+        }
+        ind1 = expect(str, U"|", ind0 + 5); --ind1;
+        if (ind1 < 0)
+            throw Str32(U"内部错误： expect `|index|` after `verb`");
+        ind2 = str.find(U"|", ind1 + 1);
+        ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
+        Long ind = str2int(ind_str);
+        replace(str_verb[ind], U"<", U"&lt");
+        replace(str_verb[ind], U">", U"&gt");
+        tmp = U"<code>" + str_verb[ind] + U"</code>";
+        str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
     }
