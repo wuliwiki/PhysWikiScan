@@ -345,7 +345,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png
 // path must end with '\\'
-inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
+inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in, Str32_I url)
 {
     Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
     double width{}; // figure width in cm
@@ -403,7 +403,7 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in)
         num2str(figNo, i + 1);
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-            + U"pt;\">\n" + U"<img src = \"" + figName + U"." + format
+            + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format
             + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
             + U"：" + caption + U"</div>");
         ++N;
@@ -1282,7 +1282,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(str, path_out, path_in);
+    FigureEnvironment(str, path_out, path_in, url);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
     // process \pentry{}
