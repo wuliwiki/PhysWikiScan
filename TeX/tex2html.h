@@ -563,7 +563,7 @@ inline Long Enumerate(Str32_IO str)
 }
 
 // process \footnote{}, return number of \footnote{} found
-inline Long footnote(Str32_IO str)
+inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
 {
     Long ind0 = 0, N = 0;
     Str32 temp, idNo;
@@ -578,7 +578,7 @@ inline Long footnote(Str32_IO str)
         str += U"<span id = \"footnote" + idNo + U"\"></span>" + idNo + U". " + temp + U"<br>\n";
         ind0 -= eatL(str, ind0 - 1, U" \n");
         str.replace(ind0, skip_command(str, ind0, 1) - ind0,
-            U"<sup><a href = \"#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
+            U"<sup><a href = \"" + url + entry + U".html#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
         ++ind0;
         ind0 = find_command(str, U"footnote", ind0);
         if (ind0 < 0)

@@ -1,12 +1,16 @@
-输入路径 0 (默认)
+【输入路径 0 (默认)】
 ../PhysWiki/
-输出路径 0
+【输出路径 0】
 ../littleshi.cn/root/online/
-data 路径 0
+【data 路径 0】
 data/
-输入路径 1
+【url 0】
+http://wuli.wiki/online/
+【输入路径 1】
 ../PhysWiki/
-输出路径 1
+【输出路径 1】
 ../littleshi.cn/root/changed/
-data 路径 1
+【data 路径 1】
 data/
+【url 1】
+http://wuli.wiki/changed/

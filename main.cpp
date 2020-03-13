@@ -41,7 +41,7 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
 
 // read set_path.txt
 // return paths_in.size()
-Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_data)
+Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_data, vecStr32_O urls)
 {
     Str32 temp, line;
     if (!file_exist("set_path.txt")) {
@@ -54,73 +54,87 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_
     for (Long i = 0; i < 100; ++i) {
         // paths_in
         ind0 = skip_line(temp, ind0);
-        if (ind0 < 0) {
-            throw Str32(U"内部错误： path.txt 格式 (a)");
-        }
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (1)");
         ind0 = get_line(line, temp, ind0);
-        if (ind0 < 0) {
-            throw Str32(U"内部错误： path.txt 格式 (b)");
-        }
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (2)");
         paths_in.push_back(line); trim(paths_in.back());
 
         // paths_out
         ind0 = skip_line(temp, ind0);
-        if (ind0 < 0) {
-            throw Str32(U"内部错误： path.txt 格式 (c)");
-        }
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (3)");
         ind0 = get_line(line, temp, ind0);
-        if (ind0 < 0) {
-            throw Str32(U"内部错误： path.txt 格式 (b)");
-        }
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (4)");
         paths_out.push_back(line); trim(paths_out.back());
 
         // paths_data
         ind0 = skip_line(temp, ind0);
-        if (ind0 < 0) {
-            throw Str32(U"内部错误： path.txt 格式 (c)");
-        }
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (5)");
         ind0 = get_line(line, temp, ind0);
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (6)");
         paths_data.push_back(line); trim(paths_out.back());
-        if (ind0 < 0) {
+
+        // urls
+        ind0 = skip_line(temp, ind0);
+        if (ind0 < 0)
+            throw Str32(U"内部错误： path.txt 格式 (7)");
+        ind0 = get_line(line, temp, ind0);
+        urls.push_back(line); trim(paths_out.back());
+
+        if (ind0 < 0)
             break;
-        }
     }
     return paths_in.size();
 }
 
 // get path and remove --path options from args
-// return 0 if successful, return -1 if failed
-Long get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, vecStr32_IO args)
+void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url, vecStr32_IO args)
 {
     Long N = args.size();
 
-    // directly specify path
+    // directly specify path (depricated)
     if (args.size() > 3 && args[N - 4] == U"--path-in-out-data") {
         path_in = args[N - 3];
         path_out = args[N - 2];
         path_data = args[N - 1];
+        url = U"";
         args.erase(args.begin() + N - 4, args.end());
-        return 0;
+        return;
+    }
+
+    // directly specify paths
+    if (N > 3 && args[N - 5] == U"--path-in-out-data-url") {
+        path_in = args[N - 4];
+        path_out = args[N - 3];
+        path_data = args[N - 2];
+        url = args[N - 1];
+        args.erase(args.begin() + N - 5, args.end());
+        return;
     }
 
     // use path number in set_path.txt
-    vecStr32 paths_in, paths_out, paths_data;
-    if (read_path_file(paths_in, paths_out, paths_data) < 0)
-        return -1;
+    vecStr32 paths_in, paths_out, paths_data, urls;
+    read_path_file(paths_in, paths_out, paths_data, urls);
+
     if (args.size() > 1 && args[N - 2] == U"--path") {
         size_t i = str2int(args[N - 1]);
         path_in = paths_in[i];
         path_out = paths_out[i];
         path_data = paths_data[i];
+        url = urls[i];
         args.pop_back(); args.pop_back();
     }
     else { // default path
         path_in = paths_in[0];
         path_out = paths_out[0];
         path_data = paths_data[0];
+        url = urls[0];
     }
-
-    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -143,7 +157,9 @@ int main(int argc, char *argv[]) {
     Str32 path_out;
     // data folder
     Str32 path_data;
-    try {get_path(path_in, path_out, path_data, args);}
+    // absolute url for entries (e.g. "http://wuli.wiki/online")
+    Str32 url;
+    try {get_path(path_in, path_out, path_data, url, args);}
     catch (Str32_I msg) {
         cerr << msg << endl;
         return 0;
@@ -153,7 +169,7 @@ int main(int argc, char *argv[]) {
 
     if (args[0] == U"." && args.size() == 1) {
         // interactive full run (ask to try again in error)
-        try {PhysWikiOnline(path_in, path_out, path_data);}
+        try {PhysWikiOnline(path_in, path_out, path_data, url);}
         catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
@@ -258,7 +274,7 @@ int main(int argc, char *argv[]) {
                 break;
             entryN.push_back(temp);
         }
-        try {PhysWikiOnlineN(entryN, path_in, path_out, path_data);}
+        try {PhysWikiOnlineN(entryN, path_in, path_out, path_data, url);}
         catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;

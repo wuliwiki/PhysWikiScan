@@ -520,7 +520,7 @@ inline Long theorem_like_env(Str32_IO str)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str)
+inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str, Str32_I url)
 {
     unsigned i{};
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
@@ -574,10 +574,9 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         ind4 = find_num(ids[i], 0);
         idNum = ids[i].substr(ind4);     
         entry = str.substr(ind1, ind2 - ind1);
-        if (entry != entryName) {// reference the same entry
+        file = url + entry + U".html";
+        if (entry != entryName) // reference another entry
             newtab = U"target = \"_blank\"";
-            file = entry + U".html";
-        }
         if (!inEq)
             str.insert(ind3 + 1, U" </a>");
         str.insert(ind3 + 1, kind + U' ' + idNum);
@@ -737,7 +736,7 @@ inline Long href(Str32_IO str)
 
 // process upref
 // path must end with '\\'
-inline Long upref(Str32_IO str, Str32_I path_in)
+inline Long upref(Str32_IO str, Str32_I path_in, Str32_I url)
 {
     Long ind0 = 0, right, N = 0;
     Str32 entryName;
@@ -753,7 +752,7 @@ inline Long upref(Str32_IO str, Str32_I path_in)
         right = skip_command(str, ind0, 1);
         str.replace(ind0, right - ind0,
             U"<span class = \"icon\"><a href = \""
-            + entryName +
+            + url + entryName +
             U".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
         ++N;
     }
@@ -1218,8 +1217,8 @@ inline Long inline_eq_space(Str32_IO str)
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
-    Str32_I path_in, Str32_I path_out, vecStr32_I entries,
-    vecStr32_I titles, Long_I ind)
+    vecStr32_I entries, vecStr32_I titles, Long_I ind,
+    Str32_I path_in, Str32_I path_out, Str32_I url)
 {
     Str32 str;
     read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1295,7 +1294,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     // replace \upref{} with link icon
-    upref(str, path_in);
+    upref(str, path_in, url);
     href(str);
     // replace environments with html tags
     Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
@@ -1306,7 +1305,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         U"\\end{align}\n</div></div>", str);
     
     // footnote
-    footnote(str);
+    footnote(str, entries[ind], url);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
     // Matlab code
@@ -1382,7 +1381,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
-inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
+inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
     vecStr32 titles; // Chinese titles in \entry{}
@@ -1409,7 +1408,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, path_in, path_out, entries, titles, i);
+        PhysWikiOnline1(ids, labels, links, entries, titles, i, path_in, path_out, url);
     }
 
     // save id and label data
@@ -1431,7 +1430,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
                 << std::setw(20) << std::left << titles[i] << endl;
         read(html, path_out + entries[i] + ".html"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[i], html);
+        autoref(ids, labels, entries[i], html, url);
         write(html, path_out + entries[i] + ".html"); // save html file
     }
     cout << endl;
@@ -1439,7 +1438,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data)
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out, Str32_I path_data)
+inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
@@ -1488,7 +1487,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
 
-        PhysWikiOnline1(ids, labels, links, path_in, path_out, entries, titles, ind);
+        PhysWikiOnline1(ids, labels, links, entries, titles, ind, path_in, path_out, url);
     }
     
     write_vec_str(labels, path_data + U"labels.txt");
@@ -1508,7 +1507,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
 
         read(html, path_out + entries[ind] + ".html"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[ind], html);
+        autoref(ids, labels, entries[ind], html, url);
         write(html, path_out + entries[ind] + ".html"); // save html file
     }
 
