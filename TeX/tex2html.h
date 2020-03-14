@@ -411,20 +411,19 @@ inline Long Table(Str32_IO str)
     Long N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
     Intvs intv;
     vecLong indLine; // stores the position of "\hline"
-    Str32 caption;
+    vecStr32 captions;
     Str32 str_beg = U"<div class = \"eq\" align = \"center\">"
         U"<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
     Str32 str_end = U"</td></tr></table>\n</div></div>";
     N = find_env(intv, str, U"table", 'o');
     if (N == 0) return 0;
+    captions.resize(N);
     for (Long i = N - 1; i >= 0; --i) {
         indLine.clear();
         ind0 = find_command(str, U"caption", intv.L(i));
         if (ind0 < 0 || ind0 > intv.R(i))
             throw Str32(U"table no caption!");
-        ind0 += 8; ind0 = expect(str, U"{", ind0);
-        ind1 = pair_brace(str, ind0 - 1);
-        caption = str.substr(ind0, ind1 - ind0);
+        command_arg(captions[i], str, ind0);
         // recognize \hline and replace with tags, also deletes '\\'
         while (true) {
             ind0 = str.find(U"\\hline", ind0);
@@ -461,7 +460,7 @@ inline Long Table(Str32_IO str)
         ind0 = str.find(str_beg, intv.L(i)) - 1;
         str.replace(intv.L(i), ind0 - intv.L(i) + 1,
             U"<div align = \"center\"> 表" + num2str(i + 1) + U"：" +
-            caption + U"</div>");
+            captions[i] + U"</div>");
     }
     return N;
 }
