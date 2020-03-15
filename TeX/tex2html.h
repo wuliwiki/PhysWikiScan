@@ -52,6 +52,193 @@ inline Long EqOmitTag(Str32_IO str)
     return N;
 }
 
+inline Long define_newcommands(vecStr32_O rules)
+{
+    // rules (order matters for the same command name)
+    // suggested order: from complex to simple
+    // an extra space will be inserted at both ends of each rule
+    // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
+    rules.clear();
+    rules += {
+        U"ali", U"", U"1", U"\\begin{aligned}#1\\end{aligned}",
+
+            U"abs", U"", U"1", U"\\left\\lvert #1 \\right\\rvert",
+
+            U"arcsin", U"[]()", U"2", U"\\arcsin^{#1}\\left(#2\\right)",
+            U"arcsin", U"()", U"1", U"\\arcsin\\left(#1\\right)",
+
+            U"arccos", U"[]()", U"2", U"\\arccos^{#1}\\left(#2\\right)",
+            U"arccos", U"()", U"1", U"\\arccos\\left(#1\\right)",
+
+            U"arctan", U"[]()", U"2", U"\\arctan^{#1}\\left(#2\\right)",
+            U"arctan", U"()", U"1", U"\\arctan\\left(#1\\right)",
+
+            U"Arctan", U"", U"0", U"\\operatorname{Arctan}",
+
+            U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+
+            U"bmat", U"", U"1", U"\\begin{bmatrix}#1\\end{bmatrix}",
+
+            U"braket", U"*", U"2", U"\\langle{#1}|{#2}\\rangle",
+            U"braket", U"*", U"1", U"\\langle{#1}|{#1}\\rangle",
+            U"braket", U"", U"2", U"\\left\\langle #1 \\middle| #2 \\right\\rangle",
+            U"braket", U"", U"1", U"\\left\\langle{#1}\\middle| #1 \\right\\rangle",
+
+            U"bra", U"*", U"1", U"\\langle{#1}\\rvert",
+            U"bra", U"", U"1", U"\\left\\langle #1 \\right\\rvert",
+
+            U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
+    };
+    rules += {
+        U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
+            U"cos", U"()", U"1", U"\\cos\\left(#1\\right)",
+
+            U"cot", U"[]()", U"2", U"\\cot^{#1}\\left(#2\\right)",
+            U"cot", U"()", U"1", U"\\cot\\left(#1\\right)",
+
+            U"cosh", U"[]()", U"2", U"\\cosh^{#1}\\left(#2\\right)",
+            U"cosh", U"()", U"1", U"\\cosh\\left(#1\\right)",
+
+            U"csc", U"[]()", U"2", U"\\csc^{#1}\\left(#2\\right)",
+            U"csc", U"()", U"1", U"\\csc\\left(#1\\right)",
+
+            U"cross", U"", U"0", U"\\boldsymbol\\times",
+
+            U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}",
+
+            U"comm", U"*", U"2", U"[{#1},{#2}]",
+            U"comm", U"", U"2", U"\\left[#1, #2\\right]",
+
+            U"Cj", U"", U"0", U"^*",
+    };
+    rules += {
+        U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
+            U"dv", U"*[]", U"2", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
+            U"dv", U"*", U"2", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
+            U"dv", U"*", U"1", U"\\mathrm{d}/\\mathrm{d}{#1}",
+            U"dv", U"[]", U"3", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
+            U"dv", U"[]", U"2", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
+            U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
+            U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
+
+            U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}",
+
+            U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
+            U"dd", U"()", U"1", U"\\,\\mathrm{d}\\left(#1 \\right)",
+            U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
+    };
+    rules += {
+        U"ev", U"*", U"2", U"\\langle #2 | #1 | #2 \\rangle",
+            U"ev", U"*", U"1", U"\\langle #1 \\rangle",
+            U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
+            U"ev", U"", U"1", U"\\left\\langle #1 \\right\\rangle",
+
+            U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
+            U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
+
+            U"erfi", U"", U"0", U"\\operatorname{erfi}",
+
+            U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
+
+            U"E", U"", U"0", U"\\mathrm{e}",
+
+            U"grad", U"", U"0", U"\\boldsymbol\\nabla",
+
+            U"Her", U"", U"0", U"^\\dagger",
+
+            U"Im", U"", U"0", U"\\operatorname{Im}",
+
+            U"I", U"", U"0", U"\\mathrm{i}",
+
+            U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
+            U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
+    };
+    rules += {
+        U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
+
+            U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned} #1 \\end{aligned}\\right.",
+
+            U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)",
+            U"log", U"()", U"1", U"\\log\\left(#1\\right)",
+
+            U"ln", U"[]()", U"2", U"\\ln^{#1}\\left(#2\\right)",
+            U"ln", U"()", U"1", U"\\ln\\left(#1\\right)",
+
+            U"mat", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+
+            U"mel", U"*", U"3", U"\\langle{#1}|{#2}|{#3}\\rangle",
+            U"mel", U"", U"3", U"\\left\\langle #1 \\middle| #2 \\middle| #3 \\right\\rangle",
+
+            U"norm", U"", U"1", U"\\left\\lVert #1 \\right\\rVert",
+
+            U"Nabla", U"", U"0", U"\\boldsymbol{\\nabla}",
+
+            U"order", U"", U"1", U"\\mathcal{O}\\left(#1 \\right)",
+
+            U"opn", U"", U"0", U"\\operatorname",
+    };
+    rules += {
+        U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
+
+            U"pb", U"*", U"2", U"\\{#1, #2\\}",
+            U"pb", U"", U"2", U"\\left\\{#1, #2\\right\\}",
+
+            U"pdv", U"*[]", U"3", U"\\partial^{#1} #2/\\partial {#3}^{#1}",
+            U"pdv", U"*[]", U"2", U"\\partial^{#1}/\\partial {#2}^{#1}",
+            U"pdv", U"*", U"3", U"\\partial^2 #1/\\partial #2 \\partial #3",
+            U"pdv", U"*", U"2", U"\\partial #1/\\partial #2",
+            U"pdv", U"*", U"1", U"\\partial/\\partial #1",
+            U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}{#2}}{\\partial{#3}^{#1}}",
+            U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
+            U"pdv", U"", U"3", U"\\frac{\\partial^2 #1}{\\partial #2 \\partial #3}",
+            U"pdv", U"", U"2", U"\\frac{\\partial #1}{\\partial #2}",
+            U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
+
+            U"qty", U"()", U"1", U"\\left(#1 \\right)",
+            U"qty", U"[]", U"1", U"\\left[#1 \\right]",
+            U"qty", U"", U"1", U"\\left\\{#1 \\right\\}",
+
+            U"Q", U"", U"1", U"\\hat{#1}",
+
+            U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+    };
+    rules += {
+        U"Re", U"", U"0", U"\\operatorname{Re}",
+
+            U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
+            U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
+
+            U"sec", U"[]()", U"2", U"\\sec^{#1}\\left(#2\\right)",
+            U"sec", U"()", U"1", U"\\sec\\left(#1\\right)",
+
+            U"sinh", U"[]()", U"2", U"\\sinh^{#1}\\left(#2\\right)",
+            U"sinh", U"()", U"1", U"\\sinh\\left(#1\\right)",
+
+            U"sumint", U"", U"0", U"\\int\\kern-1.4em\\sum",
+
+            U"sinc", U"", U"0", U"\\operatorname{sinc}",
+
+            U"Si", U"", U"1", U"\\,\\mathrm{#1}",
+
+            U"ten", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
+
+            U"tan", U"[]()", U"2", U"\\tan^{#1}\\left(#2\\right)",
+            U"tan", U"()", U"1", U"\\tan\\left(#1\\right)",
+
+            U"tanh", U"[]()", U"2", U"\\tanh^{#1}\\left(#2\\right)",
+            U"tanh", U"()", U"1", U"\\tanh\\left(#1\\right)",
+
+            U"Tr", U"", U"0", U"^{\\mathrm{T}}",
+
+            U"uvec", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
+
+            U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
+
+            U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
+    };
+    return rules.size();
+}
+
 // ==== directly implement \newcommand{}{} by replacing ====
 // does not support multiple layer! (call multiple times for that)
 // braces can be omitted e.g. \cmd12 (will match in the end)
@@ -59,193 +246,9 @@ inline Long EqOmitTag(Str32_IO str)
 // does not support more than 9 arguments (including optional arg)
 // command will be ignored if there is no match
 // return the number of commands replaced
-inline Long newcommand(Str32_IO str)
+inline Long newcommand(Str32_IO str, vecStr32_I rules)
 {
     Long N = 0;
-    // rules (order matters for the same command name)
-    // suggested order: from complex to simple
-    // an extra space will be inserted at both ends of each rule
-    // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
-    static vecStr32 rules;
-    if (rules.size() == 0) {
-        rules += {
-            U"ali", U"", U"1", U"\\begin{aligned}#1\\end{aligned}",
-
-                U"abs", U"", U"1", U"\\left\\lvert #1 \\right\\rvert",
-
-                U"arcsin", U"[]()", U"2", U"\\arcsin^{#1}\\left(#2\\right)",
-                U"arcsin", U"()", U"1", U"\\arcsin\\left(#1\\right)",
-
-                U"arccos", U"[]()", U"2", U"\\arccos^{#1}\\left(#2\\right)",
-                U"arccos", U"()", U"1", U"\\arccos\\left(#1\\right)",
-
-                U"arctan", U"[]()", U"2", U"\\arctan^{#1}\\left(#2\\right)",
-                U"arctan", U"()", U"1", U"\\arctan\\left(#1\\right)",
-
-                U"Arctan", U"", U"0", U"\\operatorname{Arctan}",
-
-                U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-
-                U"bmat", U"", U"1", U"\\begin{bmatrix}#1\\end{bmatrix}",
-
-                U"braket", U"*", U"2", U"\\langle{#1}|{#2}\\rangle",
-                U"braket", U"*", U"1", U"\\langle{#1}|{#1}\\rangle",
-                U"braket", U"", U"2", U"\\left\\langle #1 \\middle| #2 \\right\\rangle",
-                U"braket", U"", U"1", U"\\left\\langle{#1}\\middle| #1 \\right\\rangle",
-
-                U"bra", U"*", U"1", U"\\langle{#1}\\rvert",
-                U"bra", U"", U"1", U"\\left\\langle #1 \\right\\rvert",
-
-                U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
-        };
-        rules += {
-            U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
-                U"cos", U"()", U"1", U"\\cos\\left(#1\\right)",
-
-                U"cot", U"[]()", U"2", U"\\cot^{#1}\\left(#2\\right)",
-                U"cot", U"()", U"1", U"\\cot\\left(#1\\right)",
-
-                U"cosh", U"[]()", U"2", U"\\cosh^{#1}\\left(#2\\right)",
-                U"cosh", U"()", U"1", U"\\cosh\\left(#1\\right)",
-
-                U"csc", U"[]()", U"2", U"\\csc^{#1}\\left(#2\\right)",
-                U"csc", U"()", U"1", U"\\csc\\left(#1\\right)",
-
-                U"cross", U"", U"0", U"\\boldsymbol\\times",
-
-                U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}",
-
-                U"comm", U"*", U"2", U"[{#1},{#2}]",
-                U"comm", U"", U"2", U"\\left[#1, #2\\right]",
-
-                U"Cj", U"", U"0", U"^*",
-        };
-        rules += {
-            U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
-                U"dv", U"*[]", U"2", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
-                U"dv", U"*", U"2", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
-                U"dv", U"*", U"1", U"\\mathrm{d}/\\mathrm{d}{#1}",
-                U"dv", U"[]", U"3", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
-                U"dv", U"[]", U"2", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
-                U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
-                U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
-
-                U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}",
-
-                U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
-                U"dd", U"()", U"1", U"\\,\\mathrm{d}\\left(#1 \\right)",
-                U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
-        };
-        rules += {
-            U"ev", U"*", U"2", U"\\langle #2 | #1 | #2 \\rangle",
-                U"ev", U"*", U"1", U"\\langle #1 \\rangle",
-                U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
-                U"ev", U"", U"1", U"\\left\\langle #1 \\right\\rangle",
-
-                U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
-                U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
-
-                U"erfi", U"", U"0", U"\\operatorname{erfi}",
-
-                U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
-
-                U"E", U"", U"0", U"\\mathrm{e}",
-
-                U"grad", U"", U"0", U"\\boldsymbol\\nabla",
-
-                U"Her", U"", U"0", U"^\\dagger",
-
-                U"Im", U"", U"0", U"\\operatorname{Im}",
-
-                U"I", U"", U"0", U"\\mathrm{i}",
-
-                U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
-                U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
-        };
-        rules += {
-            U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
-
-                U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned} #1 \\end{aligned}\\right.",
-
-                U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)",
-                U"log", U"()", U"1", U"\\log\\left(#1\\right)",
-
-                U"ln", U"[]()", U"2", U"\\ln^{#1}\\left(#2\\right)",
-                U"ln", U"()", U"1", U"\\ln\\left(#1\\right)",
-
-                U"mat", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-
-                U"mel", U"*", U"3", U"\\langle{#1}|{#2}|{#3}\\rangle",
-                U"mel", U"", U"3", U"\\left\\langle #1 \\middle| #2 \\middle| #3 \\right\\rangle",
-
-                U"norm", U"", U"1", U"\\left\\lVert #1 \\right\\rVert",
-
-                U"Nabla", U"", U"0", U"\\boldsymbol{\\nabla}",
-
-                U"order", U"", U"1", U"\\mathcal{O}\\left(#1 \\right)",
-
-                U"opn", U"", U"0", U"\\operatorname",
-        };
-        rules += {
-            U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
-
-                U"pb", U"*", U"2", U"\\{#1, #2\\}",
-                U"pb", U"", U"2", U"\\left\\{#1, #2\\right\\}",
-
-                U"pdv", U"*[]", U"3", U"\\partial^{#1} #2/\\partial {#3}^{#1}",
-                U"pdv", U"*[]", U"2", U"\\partial^{#1}/\\partial {#2}^{#1}",
-                U"pdv", U"*", U"3", U"\\partial^2 #1/\\partial #2 \\partial #3",
-                U"pdv", U"*", U"2", U"\\partial #1/\\partial #2",
-                U"pdv", U"*", U"1", U"\\partial/\\partial #1",
-                U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}{#2}}{\\partial{#3}^{#1}}",
-                U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
-                U"pdv", U"", U"3", U"\\frac{\\partial^2 #1}{\\partial #2 \\partial #3}",
-                U"pdv", U"", U"2", U"\\frac{\\partial #1}{\\partial #2}",
-                U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
-
-                U"qty", U"()", U"1", U"\\left(#1 \\right)",
-                U"qty", U"[]", U"1", U"\\left[#1 \\right]",
-                U"qty", U"", U"1", U"\\left\\{#1 \\right\\}",
-
-                U"Q", U"", U"1", U"\\hat{#1}",
-
-                U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-        };
-        rules += {
-            U"Re", U"", U"0", U"\\operatorname{Re}",
-
-                U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
-                U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
-
-                U"sec", U"[]()", U"2", U"\\sec^{#1}\\left(#2\\right)",
-                U"sec", U"()", U"1", U"\\sec\\left(#1\\right)",
-
-                U"sinh", U"[]()", U"2", U"\\sinh^{#1}\\left(#2\\right)",
-                U"sinh", U"()", U"1", U"\\sinh\\left(#1\\right)",
-
-                U"sumint", U"", U"0", U"\\int\\kern-1.4em\\sum",
-
-                U"sinc", U"", U"0", U"\\operatorname{sinc}",
-
-                U"Si", U"", U"1", U"\\,\\mathrm{#1}",
-
-                U"ten", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-
-                U"tan", U"[]()", U"2", U"\\tan^{#1}\\left(#2\\right)",
-                U"tan", U"()", U"1", U"\\tan\\left(#1\\right)",
-
-                U"tanh", U"[]()", U"2", U"\\tanh^{#1}\\left(#2\\right)",
-                U"tanh", U"()", U"1", U"\\tanh\\left(#1\\right)",
-
-                U"Tr", U"", U"0", U"^{\\mathrm{T}}",
-
-                U"uvec", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-
-                U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
-
-                U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
-        };
-    };
 
     // all commands to find
     if (rules.size() % 4 != 0)

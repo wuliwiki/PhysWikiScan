@@ -1217,7 +1217,7 @@ inline Long inline_eq_space(Str32_IO str)
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
-    vecStr32_I entries, vecStr32_I titles, Long_I ind,
+    vecStr32_I entries, vecStr32_I titles, Long_I ind, vecStr32_I rules,
     Str32_I path_in, Str32_I path_out, Str32_I url)
 {
     Str32 str;
@@ -1288,7 +1288,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process \pentry{}
     pentry(str);
     // replace user defined commands
-    while (newcommand(str) > 0);
+    while (newcommand(str, rules) > 0);
     // replace \name{} with html tags
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
@@ -1385,9 +1385,11 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
     vecStr32 titles; // Chinese titles in \entry{}
+    vecStr32 rules;  // for newcommand()
     entries_titles(titles, entries, path_in);
     write_vec_str(titles, path_data + U"titles.txt");
     write_vec_str(entries, path_data + U"entries.txt");
+    define_newcommands(rules);
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
@@ -1408,7 +1410,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, entries, titles, i, path_in, path_out, url);
+        PhysWikiOnline1(ids, labels, links, entries, titles, i, rules, path_in, path_out, url);
     }
 
     // save id and label data
@@ -1470,6 +1472,9 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
         throw Str32(U"内部错误： entries.txt 与 titles.txt 长度不符");
     }
 
+    vecStr32 rules;  // for newcommand()
+    define_newcommands(rules);
+
     // 1st loop through tex files
     // files are processed independently
     // `IdList` and `LabelList` are recorded for 2nd loop
@@ -1487,7 +1492,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
 
-        PhysWikiOnline1(ids, labels, links, entries, titles, ind, path_in, path_out, url);
+        PhysWikiOnline1(ids, labels, links, entries, titles, ind, rules, path_in, path_out, url);
     }
     
     write_vec_str(labels, path_data + U"labels.txt");
