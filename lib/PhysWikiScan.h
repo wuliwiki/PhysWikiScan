@@ -960,7 +960,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         if (changed[i].substr(ind + 1) != U"tex")
             continue;
         entryName = changed[i].substr(0, ind);
-        if (entryName == U"PhysWiki") // ignore PhysWiki
+        if (entryName == U"main") // ignore PhysWiki
             continue;
         // get chinese title and entry label
         ++N;
