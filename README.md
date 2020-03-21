@@ -17,9 +17,8 @@
 
 ## PhysWikiScan 所有控制行命令
 * 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
-* `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`， 运行 `--tree`
+* `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
 * `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
-* `PhysWikiScan --tree`: 运行 `--title` 并生成 `tree/data/dep.json` （更新树状图）
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`
 * `PhysWikiScan --toc-changed`：生成目录 `changed.html`， 只含有 `changed.txt` 中列出的词条
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
