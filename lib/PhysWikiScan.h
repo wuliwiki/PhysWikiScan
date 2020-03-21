@@ -1379,7 +1379,8 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
         str += U"\"target\": \"" + titles[links[2*i+1]] + U"\", ";
         str += U"\"value\": 1},\n";
     }
-    str.pop_back(); str.pop_back();
+    if (links.size() > 0)
+        str.pop_back(); str.pop_back();
     str += U"\n  ]\n}\n";
     write(str, path_out + U"../tree/data/dep.json");
     return 0;
