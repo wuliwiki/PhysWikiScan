@@ -17,8 +17,9 @@
 
 ## PhysWikiScan 所有控制行命令
 * 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
-* `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
+* `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`， 运行 `--tree`
 * `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
+* `PhysWikiScan --tree`: 运行 `--title` 并生成 `tree/data/dep.json` （更新树状图）
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`
 * `PhysWikiScan --toc-changed`：生成目录 `changed.html`， 只含有 `changed.txt` 中列出的词条
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
@@ -29,7 +30,6 @@
 * 每次 commit 以前编译一个 release 版本， 将 x64/Release/PhysWikiScan.exe 拷贝到 PhysWikiScan 目录下， 测试并写上日期。
 
 ## BUG
-* `.` 模式下运行， 如果重试， `dep.json` 就会生成重复的 link。 解决方法： 不要在 `PhysWikiOnline1()` 里面读取 `pentry()`， 而是专门搞一个 `loop` 来专门读取每个文件中的 `pentry()`。 这样又可以加一个单独的选项 `PhysWiki --tree`。 `PhysWiki .` 需要包含 `PhysWiki --tree` 功能
 * 文献引用还没有处理
 * 处理 bug 的截图
 * Matlab 小括号里面的 end 不高亮

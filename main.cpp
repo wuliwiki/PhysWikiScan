@@ -222,6 +222,13 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+    else if (args[0] == U"--tree" && args.size() == 1) {
+        try { tree_only(path_in, path_out, path_data, url); }
+        catch (Str32_I msg) {
+            cerr << msg << endl;
+            return 0;
+        }
+    }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         vecStr32 labels, ids;

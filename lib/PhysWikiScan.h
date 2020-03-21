@@ -1385,6 +1385,22 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
     return 0;
 }
 
+inline void tree_only(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
+{
+    vecStr32 entries; // name in \entry{}, also .tex file name
+    vecStr32 titles; // Chinese titles in \entry{}
+    entries_titles(titles, entries, path_in);
+    write_vec_str(titles, path_data + U"titles.txt");
+    write_vec_str(entries, path_data + U"entries.txt");
+
+    // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
+    vecLong links;
+
+    // generate dep.json
+    if (file_exist(path_out + U"../tree/data/dep.json"))
+        dep_json(entries, titles, links, path_out);
+}
+
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
@@ -1423,7 +1439,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     write_vec_str(ids, path_data + U"ids.txt");
 
     // generate dep.json
-    if (path_out == U"../littleshi.cn/root/online/" || path_out == U"../littleshi.cn/root/changed/")
+    if (file_exist(path_out + U"../tree/data/dep.json"))
         dep_json(entries, titles, links, path_out);
 
     // 2nd loop through tex files
