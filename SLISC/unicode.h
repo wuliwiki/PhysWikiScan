@@ -170,17 +170,19 @@ inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 // file must be ended by a return
 inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
 {
-    Str32 str, line;
+    Str32 str;
     vec_str.clear();
     read(str, fname);
     CRLF_to_LF(str);
     Long ind0 = 0;
     for (Long i = 0; ; ++i) {
-        ind0 = get_line(line, str, ind0);
+        vec_str.emplace_back();
+        ind0 = get_line(vec_str[i], str, ind0);
         if (ind0 < 0)
-            return;
-        vec_str.push_back(line);
+            break;
     }
+    if (vec_str.back().empty())
+        vec_str.pop_back();
 }
 
 inline void num2str(Str32_O str, Char_I num)
