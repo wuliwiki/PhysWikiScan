@@ -929,21 +929,26 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
 
     if (!file_exist(path_data + U"changed.txt")) {
         write_vec_str(vecStr32(), path_data + U"changed.txt");
+        write_vec_str(vecStr32(), path_data + U"authors.txt");
     }
-    else
+    else {
         read_vec_str(changed, path_data + U"changed.txt");
-    if (!file_exist(path_data + U"authors.txt")) {
-        throw Str32(U"内部错误：" + path_data + U"authors.txt 不存在!");
-    }
-    read_vec_str(authors, path_data + U"authors.txt");
-    if (changed.size() != authors.size()) {
-        throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
+        read_vec_str(authors, path_data + U"authors.txt");
+        if (changed.size() != authors.size()) {
+            throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
+        }
     }
 
     read(toc, path_out + "templates/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
+    if (changed.size() == 0) {
+        replace(toc, U"PhysWikiHTMLbody", U"</div>");
+        write(toc, path_out + "changed.html");
+        return 0;
+    }
+
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"<p>\n", ind0);
 
