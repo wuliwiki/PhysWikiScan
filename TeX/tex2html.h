@@ -364,16 +364,20 @@ inline Long newcommand(Str32_IO str, vecStr32_I rules)
 
 // deal with escape simbols in normal text
 // str must be normal text
-inline Long TextEscape(Str32_IO str)
+inline Long TextEscape(Str32_IO str, Str32_I path_out)
 {
     Long N{};
+    N += replace(str, U"<", U"&lt");
+    N += replace(str, U">", U"&gt");
+    Long tmp = replace(str, U"\\\\", U"<br>");
+    if (tmp > 0)
+        cout << "警告： 正文中发现 '\\\\' 强制换行！" << endl;
+    N += tmp;
     N += replace(str, U"\\ ", U" ");
     N += replace(str, U"{}", U"");
     N += replace(str, U"\\^", U"^");
     N += replace(str, U"\\%", U"%");
     N += replace(str, U"\\&", U"&amp");
-    N += replace(str, U"<", U"&lt");
-    N += replace(str, U">", U"&gt");
     N += replace(str, U"\\{", U"{");
     N += replace(str, U"\\}", U"}");
     N += replace(str, U"\\#", U"#");
@@ -389,15 +393,11 @@ inline Long TextEscape(Str32_IO str)
 // must be done before \command{} and environments are replaced with html tags
 inline Long NormalTextEscape(Str32_IO str)
 {
-    Long i{}, N1{}, N{}, Nnorm{};
+    Long N1{}, N{}, Nnorm{};
     Str32 temp;
-    Intvs intv, intv1;
-    FindNormalText(intv, str);
-    find_scopes(intv1, U"\\x", str);
-    Nnorm = combine(intv, intv1);
-    find_env(intv1, str, U"Command");
-    Nnorm = combine(intv, intv1);
-    for (i = Nnorm - 1; i >= 0; --i) {
+    Intvs intv;
+    Nnorm = FindNormalText(intv, str);
+    for (Long i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
         N1 = TextEscape(temp);
         if (N1 < 0)
@@ -592,21 +592,4 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
     return N;
 }
 
-// replace '\\' in normal text to '<br>'
-// return the number replaced
-inline Long linebreak(Str32_IO str)
-{
-    Long N = 0, ind0 = -1;
-    Intvs intvs;
-    FindNormalText(intvs, str);
-    while (1) {
-        ind0 = str.find(U"\\\\", ind0 + 1);
-        if (ind0 < 0)
-            return N;
-        if (is_in(ind0, intvs)) {
-            str.replace(ind0, 2, U"<br>");
-            ++N;
-        }
-    }
-}
 } // namespace slisc
