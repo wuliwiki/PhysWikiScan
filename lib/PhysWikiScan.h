@@ -194,7 +194,8 @@ inline void limit_env(Str32_I str)
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
         U"case", U"Bmatrix", U"bmatrix", U"eqnarray", U"eqnarray*", U"multline", U"multline*",
-        U"smallmatrix", U"subarray", U"Vmatrix"};
+        U"smallmatrix", U"subarray", U"Vmatrix", U"test"/*for shuxue.love*/};
+
     Str32 env;
     while (true) {
         ind0 = find_command(str, U"begin", ind0);
@@ -1276,6 +1277,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     NormalTextEscape(str, path_out);
     // add paragraph tags
     paragraph_tag(str);
+    test_env(str); // for shuxue-love
     // itemize and enumerate
     Itemize(str); Enumerate(str);
     // add html id for links

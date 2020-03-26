@@ -592,4 +592,19 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
     return N;
 }
 
+// for shuxue.love
+inline Long test_env(Str32_IO str)
+{
+    Intvs intv_i, intv_o;
+    find_env(intv_i, str, U"test");
+    find_env(intv_o, str, U"test", 'o');
+    Long N = intv_i.size();
+    for (Long i = intv_o.size() - 1; i >= 0; --i) {
+        str.replace(intv_i.R(i)+1, intv_o.R(i)-intv_i.R(i), U"</p>");
+        str.replace(intv_o.L(i), intv_i.L(i) - intv_o.L(i), U"<p>" + num2str32(N) + U". ");
+        --N;
+    }
+    return intv_i.size();
+}
+
 } // namespace slisc
