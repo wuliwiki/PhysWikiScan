@@ -391,7 +391,7 @@ inline Long TextEscape(Str32_IO str, Str32_I path_out)
 
 // deal with escape simbols in normal text, \x{} commands, Command environments
 // must be done before \command{} and environments are replaced with html tags
-inline Long NormalTextEscape(Str32_IO str)
+inline Long NormalTextEscape(Str32_IO str, Str32_I path_out)
 {
     Long N1{}, N{}, Nnorm{};
     Str32 temp;
@@ -399,7 +399,7 @@ inline Long NormalTextEscape(Str32_IO str)
     Nnorm = FindNormalText(intv, str);
     for (Long i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-        N1 = TextEscape(temp);
+        N1 = TextEscape(temp, path_out);
         if (N1 < 0)
             continue;
         N += N1;

@@ -1273,7 +1273,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // add spaces around inline equation
     inline_eq_space(str);
     // escape characters
-    NormalTextEscape(str);
+    NormalTextEscape(str, path_out);
     // add paragraph tags
     paragraph_tag(str);
     // itemize and enumerate
