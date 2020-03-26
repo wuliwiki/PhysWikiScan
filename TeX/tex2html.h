@@ -591,5 +591,22 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
     str += U"</p>";
     return N;
 }
-} // namespace slisc
 
+// replace '\\' in normal text to '<br>'
+// return the number replaced
+inline Long linebreak(Str32_IO str)
+{
+    Long N = 0, ind0 = -1;
+    Intvs intvs;
+    FindNormalText(intvs, str);
+    while (1) {
+        ind0 = str.find(U"\\\\", ind0 + 1);
+        if (ind0 < 0)
+            return N;
+        if (is_in(ind0, intvs)) {
+            str.replace(ind0, 2, U"<br>");
+            ++N;
+        }
+    }
+}
+} // namespace slisc

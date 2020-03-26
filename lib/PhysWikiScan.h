@@ -1294,6 +1294,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     pentry(str);
     // replace user defined commands
     while (newcommand(str, rules) > 0);
+    linebreak(str); // line breaks '\\'
     // replace \name{} with html tags
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
