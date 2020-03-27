@@ -59,7 +59,7 @@ inline Long paragraph_tag(Str32_IO str)
 
     // "begin", and commands that cannot be in a paragraph
     vecStr32 commands = {U"begin",
-        U"subsection", U"subsubsection", U"pentry", U"code", U"Code"};
+        U"subsection", U"subsubsection", U"pentry", /* for shuxue.love*/ U"test"};
 
     // environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
     vecStr32 envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};

@@ -642,16 +642,25 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
 // for shuxue.love
 inline Long test_env(Str32_IO str)
 {
-    Intvs intv_i, intv_o;
-    find_env(intv_i, str, U"test");
-    find_env(intv_o, str, U"test", 'o');
-    Long N = intv_i.size();
-    for (Long i = intv_o.size() - 1; i >= 0; --i) {
-        str.replace(intv_i.R(i)+1, intv_o.R(i)-intv_i.R(i), U"</p>");
-        str.replace(intv_o.L(i), intv_i.L(i) - intv_o.L(i), U"<p>" + num2str32(N) + U". ");
-        --N;
+    Long N = 0;
+    Long ind0 = 0, num = 1, ind1;
+    while (1) {
+        ind0 = find_command_spec(str, U"begin", U"test", ind0);
+        if (ind0 < 0)
+            return N;
+        ind1 = skip_command(str, ind0, 1);
+        Long ind2 = expect(str, U"\\restart", ind1);
+        if (ind2 > 0) {
+            num = 1; str.erase(ind1, 8);
+        }
+        str.replace(ind0, ind1 - ind0, U"<p>" + num2str32(num) + U". ");
+
+        ind0 = find_command_spec(str, U"end", U"test", ind0);
+        ind1 = skip_command(str, ind0, 1);
+        str.replace(ind0, ind1 - ind0, U"</p>");
+        ++N; ++num;
     }
-    return intv_i.size();
+    return N;
 }
 
 } // namespace slisc
