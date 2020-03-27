@@ -566,6 +566,53 @@ inline Long Enumerate(Str32_IO str)
     return N;
 }
 
+// for shuxue.love, like Enumerate()
+inline Long subques(Str32_IO str)
+{
+    Long i{}, j{}, N{}, Nitem{}, ind0{};
+    Intvs intvIn, intvOut;
+    vecLong indItem; // positions of each "\item"
+    N = find_env(intvIn, str, U"subques");
+    find_env(intvOut, str, U"subques", 'o');
+    for (i = N - 1; i >= 0; --i) {
+        // delete paragraph tags
+        ind0 = intvIn.L(i);
+        while (true) {
+            ind0 = str.find(U"<p>　　", ind0);
+            if (ind0 < 0 || ind0 > intvIn.R(i))
+                break;
+            str.erase(ind0, 5); intvIn.R(i) -= 5; intvOut.R(i) -= 5;
+        }
+        ind0 = intvIn.L(i);
+        while (true) {
+            ind0 = str.find(U"</p>", ind0);
+            if (ind0 < 0 || ind0 > intvIn.R(i))
+                break;
+            str.erase(ind0, 4); intvIn.R(i) -= 4; intvOut.R(i) -= 4;
+        }
+        // replace tags
+        indItem.resize(0);
+        str.erase(intvIn.R(i) + 1, intvOut.R(i) - intvIn.R(i));
+        str.insert(intvIn.R(i) + 1, U"</li></ol>");
+        ind0 = intvIn.L(i);
+        while (true) {
+            ind0 = str.find(U"\\item", ind0);
+            if (ind0 < 0 || ind0 > intvIn.R(i)) break;
+            indItem.push_back(ind0); ind0 += 5;
+        }
+        Nitem = indItem.size();
+
+        for (j = Nitem - 1; j > 0; --j) {
+            str.erase(indItem[j], 5);
+            str.insert(indItem[j], U"</li><li>");
+        }
+        str.erase(indItem[0], 5);
+        str.insert(indItem[0], U"<ol class=\"shuxue-love\"><li>");
+        str.erase(intvOut.L(i), indItem[0] - intvOut.L(i));
+    }
+    return N;
+}
+
 // process \footnote{}, return number of \footnote{} found
 inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
 {
