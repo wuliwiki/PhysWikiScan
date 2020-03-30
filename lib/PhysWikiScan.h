@@ -903,7 +903,7 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
             
              ind0 = insert(toc,
                 U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
-                U"<h2 align = \"center\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
+                U"<h2 align = \"center\" style=\"padding-top: 0px;\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
                 U"</div>\n\n<div class = \"w3-container\">\n"
                 , ind0);
             ++ind1;
