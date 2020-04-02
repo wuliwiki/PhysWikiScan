@@ -84,6 +84,7 @@ inline Long find_scopes(Intvs_O intv, Str32_I key, Str32_I str, Char option = 'i
 // key is escaped and only escaped if preceded by backslash '\'
 // return number of comments found.
 // interval is from key[0] to '\n' (including)
+// if the comment is at the end of file, right bound is one after the laster char
 inline Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
 {
     Long ind0{}, ind1{};
@@ -102,7 +103,7 @@ inline Long find_comments(Intvs_O intv, Str32_I str, Str32_I key)
 
         ind1 = str.find(U'\n', ind1 + 1);
         if (ind1 < 0) {// not found
-            intv.pushR(str.size() - 1);
+            intv.pushR(str.size());
             return N;
         }
         else

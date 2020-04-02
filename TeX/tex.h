@@ -24,6 +24,27 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start)
     }
 }
 
+// remove comments
+// if a comment is preceeded by '\n' and spaces, then they are deleted too
+// will not remove '\n' after the comment
+inline Long rm_comments(Str32_IO str)
+{
+    Intvs intvComm;
+    find_comments(intvComm, str, U"%");
+    for (Long i = intvComm.size() - 1; i >= 0; --i) {
+        Long ind = ExpectKeyReverse(str, U"\n", intvComm.L(i) - 1) + 1;
+        if (ind < 0) {
+            if (intvComm.R(i) < str.size() && str[intvComm.R(i)] == U'\n' &&
+                str[intvComm.R(i) + 1] != U'\n')
+                str.erase(intvComm.R(i), 1);
+            str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i));
+        }
+        else
+            str.erase(ind, intvComm.R(i) - ind);
+    }
+    return intvComm.size();
+}
+
 // find one of multiple commands
 // return -1 if not found
 inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I start)

@@ -780,11 +780,8 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     CRLF_to_LF(str);
     titles.resize(entries.size());
 
-    // remove comments
-    Intvs intvComm;
-    find_comments(intvComm, str, U"%");
-    for (Long i = intvComm.size() - 1; i >= 0; --i)
-        str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
+    rm_comments(str); // remove comments
+    if (str.empty()) str = U" ";
 
     while (true) {
         ind0 = str.find(U"\\entry", ind0);
@@ -853,11 +850,8 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     toc.erase(ind0, 16);
 
-    // remove comments
-    Intvs intvComm;
-    find_comments(intvComm, str, U"%");
-    for (i = intvComm.size() - 1; i >= 0; --i)
-        str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
+    rm_comments(str); // remove comments
+    if (str.empty()) str = U" ";
 
     while (true) {
         ind1 = find(ikey, str, keys, ind1);
@@ -1262,13 +1256,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     vecStr32 str_verb;
     verbatim(str_verb, str);
     limit_env(str);
-
-    // remove comments
-    Intvs intvComm;
-    find_comments(intvComm, str, U"%");
-    for (Long i = intvComm.size() - 1; i >= 0; --i) {
-        str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i) + 1);
-    }
+    rm_comments(str); // remove comments
+    if (str.empty()) str = U" ";
     // add spaces betwen chinese char and alphanumeric char
     chinese_alpha_num_space(str);
     // add spaces around inline equation
