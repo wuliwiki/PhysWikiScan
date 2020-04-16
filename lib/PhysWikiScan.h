@@ -1002,47 +1002,6 @@ inline void code_table(Str32_O table_str, Str32_I code)
         U"</td></tr></table>";
 }
 
-// process Matlab code (\code command)
-inline Long MatlabCode(Str32_IO str, Str32_I path_in, Bool_I show_title)
-{
-    Long N = 0, ind0 = 0;
-    Str32 name; // code file name without extension
-    Str32 code;
-    Intvs intvIn, intvOut;
-    // \code commands
-    while (true) {
-        if (show_title)
-            ind0 = find_command(str, U"Code", ind0);
-        else
-            ind0 = find_command(str, U"code", ind0);
-        if (ind0 < 0)
-            return N;
-        command_arg(name, str, ind0);
-        // read file
-        if (!file_exist(path_in + "codes/" + utf32to8(name) + ".m")) {
-            throw Str32(U"代码文件 \"" + utf32to8(name) + ".m\" 未找到!");
-        }
-        read(code, path_in + "codes/" + utf32to8(name) + ".m");
-        CRLF_to_LF(code);
-        if (line_size_lim(code, 78) >= 0) {
-            throw Str32(U"Matlab 单行代码过长！");
-        }
-        trim(code, U"\n ");
-        Matlab_highlight(code);
-
-        // insert code
-        // for download button, use
-        // U"<span class = \"icon\"><a href = \"" + name + U".m\" download> <i class = \"fa fa-caret-square-o-down\"></i></a></span>"
-        Str32 title, code_tab_str;
-        code_table(code_tab_str, code);
-
-        if (show_title)
-            title = U"<p><b>　　" + name + U".m</b></p>\n";
-        str.replace(ind0, skip_command(str, ind0, 1) - ind0, title + code_tab_str);
-        ++N;
-    }
-}
-
 // process all lstlisting environments
 // return the number of \Command{} processed
 inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
@@ -1304,9 +1263,6 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     footnote(str, entries[ind], url);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
-    // Matlab code
-    MatlabCode(str, path_in, false);
-    MatlabCode(str, path_in, true);
     // verbatim recover (in inverse order of `verbatim()`)
     lstlisting(str, str_verb);
     lstinline(str, str_verb);
