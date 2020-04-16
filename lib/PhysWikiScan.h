@@ -1151,6 +1151,47 @@ inline Long chinese_alpha_num_space(Str32_IO str)
     return N;
 }
 
+// ensure spaces outside of chinese double quotes, if it's next to a chinese character
+// return the number of spaces added
+inline Long chinese_double_quote_space(Str32_IO str)
+{
+    Long N;
+    Str32 quotes = { Char32(8220) , Char32(8221) }; // chinese left and right quotes
+    Intvs intNorm;
+    FindNormalText(intNorm, str);
+    vecLong inds; // locations to insert space
+    Long ind = -1;
+    while (true) {
+        ind = str.find_first_of(quotes, ind + 1);
+        if (ind < 0)
+            break;
+        if (is_in(ind, intNorm)) {
+            if (str[ind] == quotes[0]) { // left quote
+                if (ind > 0) {
+                    Char32 c = str[ind - 1];
+                    /*if (search(c, U" \n，。．！？…：()（）：【】") >= 0)
+                        continue;*/
+                    if (is_chinese(c) || is_alphanum(c))
+                        inds.push_back(ind);
+                }
+            }
+            else { // right quote
+                if (ind < str.size() - 1) {
+                    Char32 c = str[ind + 1];
+                    /*if (search(c, U" \n，。．！？…：()（）：【】") >= 0)
+                        continue;*/
+                    if (is_chinese(c) || is_alphanum(c))
+                        inds.push_back(ind + 1);
+                }
+                    
+            }
+        }
+    }
+    for (Long i = inds.size() - 1; i >= 0; --i) 
+        str.insert(str.begin() + inds[i], U' ');
+    return inds.size();
+}
+
 inline Long inline_eq_space(Str32_IO str)
 {
     Long N = 0;
@@ -1217,8 +1258,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     limit_env(str);
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
-    // add spaces betwen chinese char and alphanumeric char
+    // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
+    // ensure spaces outside of chinese double quotes
+    chinese_double_quote_space(str);
     // add spaces around inline equation
     inline_eq_space(str);
     // escape characters
