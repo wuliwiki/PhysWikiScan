@@ -141,9 +141,9 @@ int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
     SLS_WARN("gnu source-highlight is disabled in Visual Studio! Use VS for debug only!");
     cout << endl;
-    cout << "=======================================" << endl;
-    cout << "= Visual Studio 测试模式， 不含代码高亮 =" << endl;
-    cout << "=======================================\n" << endl;
+    cout << u8"=========================================" << endl;
+    cout << u8"= Visual Studio 测试模式， 不含代码高亮 =" << endl;
+    cout << u8"=========================================\n" << endl;
 #endif
     using namespace slisc;
 
