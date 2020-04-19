@@ -346,7 +346,9 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // convert vector graph to SVG, font must set to "convert to outline"
 // if svg image doesn't exist, use png
 // path must end with '\\'
-inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in, Str32_I url)
+// `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
+// if `imgs` is empty, `imgs` and `mark` will be ignored
+inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I imgs, Str32_I path_out, Str32_I path_in, Str32_I url)
 {
     Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
     double width{}; // figure width in cm
@@ -388,6 +390,16 @@ inline Long FigureEnvironment(Str32_IO str, Str32_I path_out, Str32_I path_in, S
         fname_out = path_out + figName + U"." + format;
         if (!file_exist(fname_in)) {
             throw Str32(U"图片 \"" + fname_in + U"\" 未找到!");
+        }
+
+        if (imgs.size() > 0) {
+            Long n = search(figName + U"." + format, imgs);
+            if (n < 0)
+                throw Str32(U"内部错误： FigureEnvironment()!");
+            if (imgs_mark[n] == 0)
+                imgs_mark[n] = 1;
+            else
+                throw Str32(U"图片 \"" + fname_in + U"\" 被重复使用!");
         }
 
         file_copy(fname_out, fname_in, true);
@@ -1223,7 +1235,7 @@ inline Long inline_eq_space(Str32_IO str)
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, vecStr32_I titles, Long_I ind, vecStr32_I rules,
-    Str32_I path_in, Str32_I path_out, Str32_I url)
+    VecChar_IO imgs_mark, vecStr32_I imgs, Str32_I path_in, Str32_I path_out, Str32_I url)
 {
     Str32 str;
     read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1285,7 +1297,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(str, path_out, path_in, url);
+    FigureEnvironment(imgs_mark, str, imgs, path_out, path_in, url);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
     // process \pentry{}
@@ -1387,6 +1399,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     vecStr32 entries; // name in \entry{}, also .tex file name
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
+    vecStr32 imgs; // all images in figures/ except .pdf
+    
     entries_titles(titles, entries, path_in);
     write_vec_str(titles, path_data + U"titles.txt");
     write_vec_str(entries, path_data + U"entries.txt");
@@ -1395,6 +1409,9 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
     table_of_contents(entries, path_in, path_out);
+    file_list_ext(imgs, path_in + U"figures/", U"png", true, true);
+    file_list_ext(imgs, path_in + U"figures/", U"svg", true, true);
+    VecChar imgs_mark(imgs.size()); copy(imgs_mark, 0); // check if image has been used
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
     vecLong links;
@@ -1411,7 +1428,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, entries, titles, i, rules, path_in, path_out, url);
+        PhysWikiOnline1(ids, labels, links, entries, titles, i, rules, imgs_mark, imgs, path_in, path_out, url);
     }
 
     // save id and label data
@@ -1437,6 +1454,20 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
         write(html, path_out + entries[i] + ".html"); // save html file
     }
     cout << endl;
+    
+    Bool warn = false;
+    for (Long i = 0; i < imgs_mark.size(); ++i) {
+        if (imgs_mark[i] == 0) {
+            if (warn == false) {
+                cout << "===== 警告： 以下图片没有被使用 ====" << endl;
+                warn = true;
+            }
+            cout << imgs[i];
+            if (imgs[i].substr(imgs[i].size() - 3, 3) == U"svg")
+                cout << " & pdf";
+            cout << endl;
+        }
+    }
 }
 
 // like PhysWikiOnline, but convert only specified files
@@ -1492,8 +1523,8 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
         cout << std::setw(5) << std::left << ind
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
-
-        PhysWikiOnline1(ids, labels, links, entries, titles, ind, rules, path_in, path_out, url);
+        VecChar not_used1(0); vecStr32 not_used2;
+        PhysWikiOnline1(ids, labels, links, entries, titles, ind, rules, not_used1, not_used2, path_in, path_out, url);
     }
     
     write_vec_str(labels, path_data + U"labels.txt");

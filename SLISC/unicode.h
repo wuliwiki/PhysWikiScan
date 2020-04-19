@@ -690,12 +690,24 @@ inline Long MatchBraces(vecLong_O ind_left, vecLong_O ind_right,
     return Nleft;
 }
 
-// list all files in current directory, with a given extension
-inline void file_list_ext(vecStr32_O fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true)
+// UTF-32 version of file_list() in file.h
+inline void file_list(vecStr32_O fnames, Str32_I path, Bool_I append = false)
 {
     vecStr fnames8;
-    fnames.resize(0);
-    file_list_ext(fnames8, utf32to8(path), utf32to8(ext), keep_ext);
+    if (!append)
+        fnames.resize(0);
+    file_list(fnames8, utf32to8(path), append);
+    for (Long i = 0; i < size(fnames8); ++i)
+        fnames.push_back(utf8to32(fnames8[i]));
+}
+
+// list all files in current directory, with a given extension
+inline void file_list_ext(vecStr32_O fnames, Str32_I path, Str32_I ext, Bool_I keep_ext = true, Bool_I append = false)
+{
+    vecStr fnames8;
+    if (!append)
+        fnames.resize(0);
+    file_list_ext(fnames8, utf32to8(path), utf32to8(ext), keep_ext, append);
     for (Long i = 0; i < size(fnames8); ++i)
         fnames.push_back(utf8to32(fnames8[i]));
 }

@@ -863,13 +863,24 @@ inline Bool sum_v(const Bool *v, Long_I N)
     return s;
 }
 
+inline Llong sum_v(const Char *v, Long_I N)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (N <= 0) SLS_ERR("illegal length!");
+#endif
+    Llong s = v[0];
+    for (Long i = 1; i < N; ++i)
+        s += v[i];
+    return s;
+}
+
 inline Llong sum_v(const Int *v, Long_I N)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (N <= 0) SLS_ERR("illegal length!");
 #endif
     Llong s = v[0];
-    for (Llong i = 1; i < N; ++i)
+    for (Long i = 1; i < N; ++i)
         s += v[i];
     return s;
 }
@@ -880,7 +891,7 @@ inline Llong sum_v(const Llong *v, Long_I N)
     if (N <= 0) SLS_ERR("illegal length!");
 #endif
     Llong s = v[0];
-    for (Llong i = 1; i < N; ++i)
+    for (Long i = 1; i < N; ++i)
         s += v[i];
     return s;
 }
@@ -908,7 +919,12 @@ inline Comp sum_v(const Comp *v, Long_I N)
 }
 
 
-inline Int sum(VecInt_I v)
+inline Llong sum(VecChar_I v)
+{
+    return sum_v(v.ptr(), v.size());
+}
+
+inline Llong sum(VecInt_I v)
 {
     return sum_v(v.ptr(), v.size());
 }
@@ -5898,6 +5914,18 @@ inline Comp dot(SvecDoub_I v1, SvecComp_I v2)
     return dot_vv(v1.ptr(), v2.ptr(), v2.size());
 }
 
+inline Comp dot(DvecComp_I v1, SvecDoub_I v2)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v1, v2))
+        SLS_ERR("wrong shape!");
+#endif
+    Comp sum = 0;
+    for (Long i = 0; i < v1.size(); ++i)
+        sum += conj(v1[i]) * v2[i];
+    return sum;
+}
+
 inline Comp dot(Cmat3Comp_I v1, Cmat3Comp_I v2)
 {
 #ifdef SLS_CHECK_SHAPE
@@ -5905,6 +5933,20 @@ inline Comp dot(Cmat3Comp_I v1, Cmat3Comp_I v2)
         SLS_ERR("wrong shape!");
 #endif
     return dot_vv(v1.ptr(), v2.ptr(), v2.size());
+}
+
+inline Comp dot(Cmat3Comp_I v1, Jcmat3Comp_I v2)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v1, v2))
+        SLS_ERR("wrong shape!");
+#endif
+    Comp sum = 0;
+    for (Long i = 0; i < v1.n1(); ++i)
+        for (Long j = 0; j < v1.n2(); ++j)
+            for (Long k = 0; k < v1.n3(); ++k)
+                sum += conj(v1(i,j,k)) * v2(i,j,k);
+    return sum;
 }
 
 
