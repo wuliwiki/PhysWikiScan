@@ -838,6 +838,7 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
     Str32 title; // chinese entry name, chapter name, or part name
     Str32 entryName; // entry label
     Str32 str, toc;
+    VecChar mark(entries.size()); copy(mark, 0); // check repeat
 
     read(str, path_in + "main.tex");
     CRLF_to_LF(str);
@@ -870,9 +871,13 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
             ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title
-            if (search(entryName, entries) < 0) {
-                throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到!");
-            }
+            Long n = search(entryName, entries);
+            if (n < 0)
+                throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到！");
+            if (mark[n] == 0)
+                mark[n] = 1;
+            else
+                throw Str32(U"main.tex 中词条文件 " + entryName + " 重复！");
             ++ind1;
         }
         else if (ikey == 1) { // found "\chapter"

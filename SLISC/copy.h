@@ -502,6 +502,11 @@ inline void matcpy_diff_major(Comp *a2, const Comp *a1, Long_I N2, Long_I lda2, 
 // must use pointer version
 
 // scalar to container
+inline void copy(VecChar_O v, Char_I s)
+{
+    vecset(v.ptr(), s, v.size());
+}
+
 inline void copy(VecInt_O v, Int_I s)
 {
     vecset(v.ptr(), s, v.size());
@@ -699,6 +704,17 @@ inline void copy(VecLlong_O v, VecLlong_I v1)
 }
 
 inline void copy(VecDoub_O v, VecDoub_I v1)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (!shape_cmp(v, v1))
+        SLS_ERR("wrong shape!");
+#endif
+    if (v.size() == 0)
+        return;
+    veccpy(v.ptr(), v1.ptr(), v.size());
+}
+
+inline void copy(VecDoub_O v, SvecDoub_I v1)
 {
 #ifdef SLS_CHECK_SHAPE
     if (!shape_cmp(v, v1))
