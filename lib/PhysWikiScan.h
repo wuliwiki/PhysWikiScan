@@ -1460,7 +1460,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     for (Long i = 0; i < imgs_mark.size(); ++i) {
         if (imgs_mark[i] == 0) {
             if (warn_fig == false) {
-                cout << "===== 警告： 以下图片没有被使用 ====" << endl;
+                cout << "========== 警告： 以下图片没有被使用 =========" << endl;
                 warn_fig = true;
             }
             cout << imgs[i];
@@ -1469,6 +1469,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
             cout << endl;
         }
     }
+    if (warn_fig)
+        cout << "============================================" << endl;
 }
 
 // like PhysWikiOnline, but convert only specified files
