@@ -1435,10 +1435,6 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     write_vec_str(labels, path_data + U"labels.txt");
     write_vec_str(ids, path_data + U"ids.txt");
 
-    // generate dep.json
-    if (file_exist(path_out + U"../tree/data/dep.json"))
-        dep_json(entries, titles, links, path_out);
-
     // 2nd loop through tex files
     // deal with autoref
     // need `IdList` and `LabelList` from 1st loop
@@ -1455,12 +1451,17 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     }
     cout << endl;
     
-    Bool warn = false;
+    // generate dep.json
+    if (file_exist(path_out + U"../tree/data/dep.json"))
+        dep_json(entries, titles, links, path_out);
+
+    // warn unused figures
+    Bool warn_fig = false;
     for (Long i = 0; i < imgs_mark.size(); ++i) {
         if (imgs_mark[i] == 0) {
-            if (warn == false) {
+            if (warn_fig == false) {
                 cout << "===== 警告： 以下图片没有被使用 ====" << endl;
-                warn = true;
+                warn_fig = true;
             }
             cout << imgs[i];
             if (imgs[i].substr(imgs[i].size() - 3, 3) == U"svg")
