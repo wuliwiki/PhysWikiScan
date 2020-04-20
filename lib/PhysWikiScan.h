@@ -1129,17 +1129,15 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
             break;
         word = line.substr(ind0, ind1 - ind0);
         trim(word);
-        if (word.empty()) {
+        if (word.empty())
             throw Str32(U"第二行关键词格式错误！ 正确格式为 “% 关键词1|关键词2|关键词3”");
-        }
         keywords.push_back(word);
         ind0 = ind1 + 1;
     }
     word = line.substr(ind0);
     trim(word);
-    if (word.empty()) {
-        throw Str32(U"关键词不能为空！");
-    }
+    if (word.empty())
+        throw Str32(U"第二行关键词格式错误！ 正确格式为 “% 关键词1|关键词2|关键词3”");
     keywords.push_back(word);
     return keywords.size();
 }
