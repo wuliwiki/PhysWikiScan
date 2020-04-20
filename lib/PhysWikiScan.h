@@ -12,7 +12,7 @@ using namespace slisc;
 // limited to 20 characters
 inline void get_title(Str32_O title, Str32_I str)
 {
-    if (str.at(0) != U'%') {
+    if (str.size() == 0 || str.at(0) != U'%') {
         throw Str32(U"请在第一行注释标题!"); // break point here
     }
     Str32 c;
@@ -1113,11 +1113,9 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
     keywords.clear();
     Str32 word;
     Long ind0 = str.find(U"\n", 0);
-    if (ind0 < 0) {
-        throw Str32(U"没有注释标题!");
-    }
-    ind0++;
-    ind0 = expect(str, U"%", ind0);
+    if (ind0 < 0 || ind0 == str.size()-1)
+        return 0;
+    ind0 = expect(str, U"%", ind0+1);
     if (ind0 < 0) {
         SLS_WARN("请在第二行注释关键词： 例如 \"%关键词1|关键词2|关键词3\"，至少两个！");
         return 0;
@@ -1262,9 +1260,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         replace(html, U"PhysWikiHTMLKeywords", U"高中物理, 物理竞赛, 大学物理, 高等数学");
     }
 
-    if (!titles[ind].empty() && title != titles[ind]) {
-        throw Str32(U"中文标题不符: " + title + " | " + titles[ind]);
-    }
+    if (!titles[ind].empty() && title != titles[ind])
+        throw Str32(U"请使用重命名按钮修改标题（" + titles[ind] + U" ⇒ " + title + U"）");
+
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
         throw Str32(U"entry_template.html 格式错误!");
