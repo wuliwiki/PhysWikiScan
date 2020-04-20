@@ -1112,13 +1112,13 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
         return 0;
     ind0 = expect(str, U"%", ind0+1);
     if (ind0 < 0) {
-        SLS_WARN("请在第二行注释关键词： 例如 \"%关键词1|关键词2|关键词3\"，至少两个！");
+        SLS_WARN("请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
     Str32 line; get_line(line, str, ind0);
     Long tmp = line.find(U"|", 0);
     if (tmp < 0) {
-        SLS_WARN("请在第二行注释关键词： 例如 \"%关键词1|关键词2|关键词3\"，至少两个！");
+        SLS_WARN("请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
 
@@ -1130,7 +1130,7 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
         word = line.substr(ind0, ind1 - ind0);
         trim(word);
         if (word.empty()) {
-            throw Str32(U"关键词不能为空！");
+            throw Str32(U"第二行关键词格式错误！ 正确格式为 “% 关键词1|关键词2|关键词3”");
         }
         keywords.push_back(word);
         ind0 = ind1 + 1;
