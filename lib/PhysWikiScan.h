@@ -12,23 +12,18 @@ using namespace slisc;
 // limited to 20 characters
 inline void get_title(Str32_O title, Str32_I str)
 {
-    if (str.size() == 0 || str.at(0) != U'%') {
-        throw Str32(U"请在第一行注释标题!"); // break point here
-    }
-    Str32 c;
-    Long ind0 = NextNoSpace(c, str, 1);
-    if (ind0 < 0) {
-        throw Str32(U"标题不能为空!"); // break point here
-    }
-    Long ind1 = str.find(U'\n', ind0);
-    if (ind1 < 0) {
-        throw Str32(U"正文不能为空!"); // break point here
-    }
-    title = str.substr(ind0, ind1 - ind0);
-    ind0 = title.find(U"\\");
-    if (ind0 >= 0) {
-        throw Str32(U"注释的标题不能含有 “\\” !"); // break point here
-    }
+    if (str.size() == 0 || str.at(0) != U'%')
+        throw Str32(U"请在第一行注释标题！");
+    Long ind1 = str.find(U'\n');
+    if (ind1 < 0)
+        ind1 = str.size() - 1;
+    title = str.substr(1, ind1 - 1);
+    trim(title);
+    if (title.empty())
+        throw Str32(U"请在第一行注释标题（不能为空）！"); 
+    Long ind0 = title.find(U"\\");
+    if (ind0 >= 0)
+        throw Str32(U"第一行注释的标题不能含有 “\\” !");
 }
 
 // trim "\n" and " " on both sides
@@ -238,7 +233,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
         if (ind2 >= ind4) {
-            throw Str32(U"label 不在环境内!"); // break point here
+            throw Str32(U"label 不在环境内!");
         }
         // detect environment kind
         ind1 = expect(str, U"{", ind4 + 6);
@@ -1261,7 +1256,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     }
 
     if (!titles[ind].empty() && title != titles[ind])
-        throw Str32(U"请使用重命名按钮修改标题（" + titles[ind] + U" ⇒ " + title + U"）");
+        throw Str32(U"检测到标题改变（" + titles[ind] + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
 
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1) {
