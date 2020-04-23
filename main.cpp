@@ -222,6 +222,11 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+    else if (args[0] == U"--clean" && args.size() == 1) {
+        // clear changed record
+        write(U"", path_data + U"changed.txt");
+        write(U"", path_data + U"authors.txt");
+    }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         vecStr32 labels, ids;
