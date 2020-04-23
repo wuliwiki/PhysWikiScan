@@ -834,18 +834,24 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
 // return the number of entries
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_out)
+// `parts[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
+// if parts.size() == 0, it will be ignored
+inline Long table_of_contents(vecLong_O parts, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
 {
     Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
     vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
-                            U"十", U"十一", U"十二", U"十三", U"十四", U"十五"};
+                U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
+                U"十七", U"十八", U"十九", U"二十", U"二十一", U"二十二", U"二十三", U"二十四"};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
     Str32 title; // chinese entry name, chapter name, or part name
     Str32 entryName; // entry label
     Str32 str, toc;
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
+    if (parts.size() > 0) {
+        parts.clear(); parts.resize(entries.size(), 0);
+    }
 
     read(str, path_in + "main.tex");
     CRLF_to_LF(str);
@@ -885,6 +891,9 @@ inline Long table_of_contents(vecStr32_I entries, Str32_I path_in, Str32_I path_
                 mark[n] = 1;
             else
                 throw Str32(U"main.tex 中词条文件 " + entryName + " 重复！");
+            // record part number
+            if (parts.size() > 0)
+                parts[n] = partNo + 1;
             ++ind1;
         }
         else if (ikey == 1) { // found "\chapter"
@@ -1336,7 +1345,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str32_I path_out)
+inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I parts, vecLong_I links, Str32_I path_out)
 {
     Str32 str;
     // write entries
@@ -1344,7 +1353,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": 1, \"url\": \"../online/" +
+        str += U"    {\"id\": \"" + titles[i] + U"\", \"group\": " + num2str32(parts[i]) + ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
     str.pop_back(); str.pop_back();
@@ -1389,6 +1398,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I links, Str
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
+    vecLong parts; // toc part number of each entries[i]
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
     vecStr32 imgs; // all images in figures/ except .pdf
@@ -1396,11 +1406,12 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     entries_titles(titles, entries, path_in);
     write_vec_str(titles, path_data + U"titles.txt");
     write_vec_str(entries, path_data + U"entries.txt");
+    parts.resize(entries.size());
     define_newcommands(rules);
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(entries, path_in, path_out);
+    table_of_contents(parts, entries, path_in, path_out);
     file_list_ext(imgs, path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); copy(imgs_mark, 0); // check if image has been used
@@ -1418,7 +1429,8 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
-                << std::setw(20) << std::left << titles[i] << endl;
+                << std::setw(20) << std::left << titles[i]
+                << std::setw(20) << std::left << parts[i] << endl;
         // main process
         PhysWikiOnline1(ids, labels, links, entries, titles, i, rules, imgs_mark, imgs, path_in, path_out, url);
     }
@@ -1445,7 +1457,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     
     // generate dep.json
     if (file_exist(path_out + U"../tree/data/dep.json"))
-        dep_json(entries, titles, links, path_out);
+        dep_json(entries, titles, parts, links, path_out);
 
     // warn unused figures
     Bool warn_fig = false;

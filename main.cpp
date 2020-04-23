@@ -198,7 +198,8 @@ int main(int argc, char *argv[]) {
             cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        try {table_of_contents(entries, path_in, path_out);}
+        vecLong not_used;
+        try {table_of_contents(not_used, entries, path_in, path_out);}
         catch (Str32_I msg) {
             cerr << msg << endl;
             return 0;
