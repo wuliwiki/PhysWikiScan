@@ -942,7 +942,8 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         read_vec_str(changed, path_data + U"changed.txt");
         read_vec_str(authors, path_data + U"authors.txt");
         if (changed.size() != authors.size()) {
-            throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同!");
+            SLS_WARN(U"内部错误： changed.txt 和 authors.txt 行数不同!");
+            authors.resize(changed.size());
         }
     }
 
