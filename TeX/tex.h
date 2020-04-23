@@ -655,6 +655,8 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 {
     Long ind0 = 0, ind1, ind2;
     Char32 dlm;
+    Str32 tmp;
+
     // verb
     while (true) {
         ind0 = find_command(str, U"verb", ind0);
@@ -673,10 +675,17 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
             throw Str32(U"\\verb 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
-        str.replace(ind0 + 5, ind2 - (ind0 + 5) + 1, U"|" + num2str32(size(str_verb) - 1) + U"|");
-        ++ind0;
+        if (is_chinese(str[ind0 - 1]))
+            tmp = U' ';
+        else
+            tmp.clear();
+        tmp += U"\\verb|" + num2str32(size(str_verb) - 1) + U"|";
+        if (is_chinese(str[ind2 + 1]))
+            tmp += U' ';
+        str.replace(ind0, ind2 + 1 - ind0, tmp);
+        ind0 += 3;
     }
-    
+
     // lstinline
     ind0 = 0;
     while (true) {
@@ -696,8 +705,16 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
             throw Str32(U"\\lstinline 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
-        str.replace(ind0 + 10, ind2 - (ind0+10) + 1, U"|" + num2str32(size(str_verb)-1) + U"|");
-        ++ind0;
+
+        if (is_chinese(str[ind0 - 1]))
+            tmp = U' ';
+        else
+            tmp.clear();
+        tmp += U"\\lstinline|" + num2str32(size(str_verb) - 1) + U"|";
+        if (is_chinese(str[ind2 + 1]))
+            tmp += U' ';
+        str.replace(ind0, ind2 + 1 - ind0, tmp);
+        ind0 += 3;
     }
     
     // lstlisting
