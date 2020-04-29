@@ -9,6 +9,8 @@
 #ifdef SLS_HAS_FILESYSTEM
 #include <filesystem>
 #endif
+#include <sys/types.h> // for time_stamp
+#include <sys/stat.h> // for time_stamp
 
 namespace slisc {
 
@@ -222,7 +224,7 @@ inline void read(Str_O str, Str_I fname)
     read(&str[0], str.size(), fname);
 }
 
-// read and write from/to ifstrea/ofstream
+// read and write binary data from/to ifstrea/ofstream
 
 //===================================
 // `ofstream::write(p_char, Nbytes)`
@@ -310,4 +312,67 @@ inline void read(ifstream &fin, Str32_O str)
         str.resize(count);
 }
 
+// read a table from file
+// two numbers should be separated by space
+// skipt specific number of lines at the beginning
+// matrix will auto-resize
+// 0 to multiple spaces & new line at the end of file are allowed
+inline void read(CmatDoub_O mat, Str_I file, Long_I skip_lines = 0)
+{
+    ifstream input(file);
+    if (!input.good())
+        SLS_ERR(file + " does not exist!");
+    for (Long i = 0; i < skip_lines; ++i)
+        input.ignore(100000, '\n');
+    // detect the number of columns
+    Str line;
+    getline(input, line);
+    std::istringstream iss(line);
+    vector<Doub> v;
+    Doub num;
+    while (iss >> num)
+        v.push_back(num);
+    Long N2 = v.size();
+    while (true) {
+        num = NaN;
+        input >> num;
+        if (std::isnan(num))
+            break;
+        v.push_back(num);
+        if (input.eof())
+            break;
+    }
+    if (v.size() % N2 != 0)
+        SLS_ERR(file + ": each row might not have equal number of columns!");
+    Long N1 = v.size() / N2;
+    mat.resize(N1, N2);
+    for (Long i = 0; i < N1; ++i) {
+        for (Long j = 0; j < N2; ++j) {
+            mat(i, j) = v[N2*i + j];
+        }
+    }
+}
+
+// get time-stamp of a file
+#ifndef _MSC_VER
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdio.h>
+inline void last_modified(Str_O yyyymmddhhmmss, Str_I fname) {
+    struct tm *time;
+    struct stat attrib;
+    stat(fname.c_str(), &attrib);
+    time = localtime(&(attrib.st_mtime));
+    yyyymmddhhmmss.clear();
+    yyyymmddhhmmss += num2str(time->tm_year + 1900) +
+        num2str(time->tm_mon + 1, 2) + num2str(time->tm_mday, 2) +
+        num2str(time->tm_hour, 2) + num2str(time->tm_min, 2) +
+        num2str(time->tm_sec, 2);
+}
+#else
+inline void last_modified(Str_O yymmddhhmmss, Str_I fname) {
+    SLS_ERR("not implemented for windows!");
+}
+#endif
 } // namespace slisc

@@ -30,6 +30,7 @@
 * 每次 commit 以前编译一个 release 版本， 将 x64/Release/PhysWikiScan.exe 拷贝到 PhysWikiScan 目录下， 测试并写上日期。
 
 ## BUG
+* \begin{example}{} 或类似环境下面如果多空一行， html 也会空间过大
 * findNormalText 函数不应该包含subtitle，subsubtitle 等
 * 处理 bug 的截图
 * Matlab 小括号里面的 end 不高亮
