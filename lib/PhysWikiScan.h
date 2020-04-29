@@ -1431,8 +1431,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
-                << std::setw(20) << std::left << titles[i]
-                << std::setw(20) << std::left << parts[i] << endl;
+                << std::setw(20) << std::left << titles[i] << endl;
         // main process
         PhysWikiOnline1(ids, labels, links, entries, titles, i, rules, imgs_mark, imgs, path_in, path_out, url);
     }
