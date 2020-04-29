@@ -398,8 +398,11 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         }
 
         file_copy(fname_out, fname_in, true);
+        version.clear();
+#ifndef _MSC_VER
         last_modified(version, fname_in);
         version = U"?v=" + version;
+#endif
 
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
@@ -953,7 +956,7 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
         read_vec_str(changed, path_data + U"changed.txt");
         read_vec_str(authors, path_data + U"authors.txt");
         if (changed.size() != authors.size()) {
-            SLS_WARN(U"内部错误： changed.txt 和 authors.txt 行数不同!");
+            SLS_WARN(u8"内部错误： changed.txt 和 authors.txt 行数不同!");
             authors.resize(changed.size());
         }
     }
@@ -1073,7 +1076,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         else {
             // language not supported, no highlight
             if (!lang.empty())
-                SLS_WARN("lstlisting 环境不支持 " + utf32to8(lang) + " 语言， 未添加高亮！");
+                SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 未添加高亮！");
         }
 
         code_table(code_tab_str, code);
@@ -1124,13 +1127,13 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
         return 0;
     ind0 = expect(str, U"%", ind0+1);
     if (ind0 < 0) {
-        SLS_WARN("请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
+        SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
     Str32 line; get_line(line, str, ind0);
     Long tmp = line.find(U"|", 0);
     if (tmp < 0) {
-        SLS_WARN("请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
+        SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
 
@@ -1370,14 +1373,14 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecLong_I parts, vec
         throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
     }
     if (size(links1) > 0) {
-        cout << "\n" << endl;
-        cout << "==============  多余的预备知识  ==============" << endl;
+        cout << u8"\n" << endl;
+        cout << u8"==============  多余的预备知识  ==============" << endl;
         for (Long i = 0; i < size(links1); i += 2) {
             Long ind1 = links1[i], ind2 = links1[i + 1];
             cout << titles[ind1] << " (" << entries[ind1] << ") -> "
                 << titles[ind2] << " (" << entries[ind2] << ")" << endl;
         }
-        cout << "=============================================\n" << endl;
+        cout << u8"=============================================\n" << endl;
     }
 
     // write links
@@ -1465,7 +1468,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     for (Long i = 0; i < imgs_mark.size(); ++i) {
         if (imgs_mark[i] == 0) {
             if (warn_fig == false) {
-                cout << "========== 警告： 以下图片没有被使用 =========" << endl;
+                cout << u8"========== 警告： 以下图片没有被使用 =========" << endl;
                 warn_fig = true;
             }
             cout << imgs[i];
@@ -1475,7 +1478,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
         }
     }
     if (warn_fig)
-        cout << "============================================" << endl;
+        cout << u8"============================================" << endl;
 }
 
 // like PhysWikiOnline, but convert only specified files

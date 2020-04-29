@@ -141,9 +141,9 @@ int main(int argc, char *argv[]) {
 #ifdef _MSC_VER
     SLS_WARN("gnu source-highlight is disabled in Visual Studio! Use VS for debug only!");
     cout << endl;
-    cout << u8"=========================================" << endl;
-    cout << u8"= Visual Studio 测试模式， 不含代码高亮 =" << endl;
-    cout << u8"=========================================\n" << endl;
+    cout << u8"===================================================" << endl;
+    cout << u8"= Visual Studio 测试模式， 不含代码高亮和图片版本 =" << endl;
+    cout << u8"===================================================\n" << endl;
 #endif
     using namespace slisc;
 
@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     Str32 url;
     try {get_path(path_in, path_out, path_data, url, args);}
     catch (Str32_I msg) {
-        cerr << msg << endl;
+        cerr << utf32to8(msg) << endl;
         return 0;
     }
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline(path_in, path_out, path_data, url);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
     }
@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
         vecStr32 titles, entries;
         try {entries_titles(titles, entries, path_in);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
         write_vec_str(titles, path_data + U"titles.txt");
@@ -195,13 +195,13 @@ int main(int argc, char *argv[]) {
         if (file_exist(path_data + U"entries.txt"))
             read_vec_str(entries, path_data + U"entries.txt");
         if (titles.size() != entries.size()) {
-            cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
+            cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
         vecLong not_used;
         try {table_of_contents(not_used, entries, path_in, path_out);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
     }
@@ -214,12 +214,12 @@ int main(int argc, char *argv[]) {
         if (file_exist(path_data + U"entries.txt"))
             read_vec_str(entries, path_data + U"entries.txt");
         if (titles.size() != entries.size()) {
-            cerr << U"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
+            cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
         try {table_of_changed(titles, entries, path_in, path_out, path_data);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
     }
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
             read_vec_str(labels, path_data + U"labels.txt");
             Long ind = find_repeat(labels);
             if (ind >= 0) {
-                cerr << U"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
+                cerr << u8"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
                 return 0;
             }
         }
@@ -246,7 +246,7 @@ int main(int argc, char *argv[]) {
         try {ret = check_add_label(label, args[1], args[2],
             atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
         vecStr32 output;
@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
         }
         try {PhysWikiOnlineN(entryN, path_in, path_out, path_data, url);}
         catch (Str32_I msg) {
-            cerr << msg << endl;
+            cerr << utf32to8(msg) << endl;
             return 0;
         }
     }
@@ -292,7 +292,7 @@ int main(int argc, char *argv[]) {
         write_vec_str(commands, path_data + U"commands.txt");
     }
     else {
-        cerr << U"内部错误： 命令不合法" << endl;
+        cerr << u8"内部错误： 命令不合法" << endl;
         return 0;
     }
     
