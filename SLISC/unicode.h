@@ -731,4 +731,10 @@ inline Bool is_chinese(Char32_I c)
     return false;
 }
 
+inline void last_modified(Str32_O yyyymmddhhmmss, Str32_I fname) {
+    Str str;
+    last_modified(str, utf32to8(fname));
+    yyyymmddhhmmss = utf8to32(str);
+}
+
 } // namespace slisc

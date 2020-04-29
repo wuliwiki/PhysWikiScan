@@ -349,7 +349,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
     double width{}; // figure width in cm
     Intvs intvFig;
     Str32 figName, fname_in, fname_out;
-    Str32 format, caption, widthPt, figNo;
+    Str32 format, caption, widthPt, figNo, version;
     Nfig = find_env(intvFig, str, U"figure", 'o');
     for (i = Nfig - 1; i >= 0; --i) {
         // get width of figure
@@ -398,6 +398,8 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         }
 
         file_copy(fname_out, fname_in, true);
+        last_modified(version, fname_in);
+        version = U"?v=" + version;
 
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
@@ -411,7 +413,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         num2str(figNo, i + 1);
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-            + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format
+            + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
             + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
             + U"：" + caption + U"</div>");
         ++N;
