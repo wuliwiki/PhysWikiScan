@@ -570,7 +570,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         else if (idName == U"the") kind = U"定理";
         else if (idName == U"cor") kind = U"推论";
         else if (idName == U"ex") kind = U"例";
-        else if (idName == U"exe") kind = U"练习";
+        else if (idName == U"exe") kind = U"习题";
         else if (idName == U"tab") kind = U"表";
         else {
             throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!");
