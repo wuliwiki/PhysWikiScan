@@ -503,7 +503,7 @@ inline Long Itemize(Str32_IO str)
         while (true) {
             ind0 = str.find(U"\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
-            if (str[ind0 + 5] != U' ' || str[ind0 + 5] != U'\n')
+            if (str[ind0 + 5] != U' ' && str[ind0 + 5] != U'\n')
                 throw Str32(U"\\item 命令后面必须有空格或回车！");
             indItem.push_back(ind0); ind0 += 5;
         }
@@ -553,7 +553,7 @@ inline Long Enumerate(Str32_IO str)
         while (true) {
             ind0 = str.find(U"\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
-            if (str[ind0 + 5] != U' ' || str[ind0 + 5] != U'\n')
+            if (str[ind0 + 5] != U' ' && str[ind0 + 5] != U'\n')
                 throw Str32(U"\\item 命令后面必须有空格或回车！");
             indItem.push_back(ind0); ind0 += 5;
         }
@@ -602,7 +602,7 @@ inline Long subques(Str32_IO str)
         while (true) {
             ind0 = str.find(U"\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
-            if (str[ind0 + 5] != U' ' || str[ind0 + 5] != U'\n')
+            if (str[ind0 + 5] != U' ' && str[ind0 + 5] != U'\n')
                 throw Str32(U"\\item 命令后面必须有空格或回车！");
             indItem.push_back(ind0); ind0 += 5;
         }
