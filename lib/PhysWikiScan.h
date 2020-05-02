@@ -417,7 +417,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt
             + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
-            + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图" + figNo
+            + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图 " + figNo
             + U"：" + caption + U"</div>");
         ++N;
     }
