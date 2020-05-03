@@ -845,7 +845,7 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
 inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
     vecLong_O part_ind, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
 {
-    Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, partNo{ -1 };
+    Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
     vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
                 U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
@@ -904,7 +904,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             // record part number
             if (part_ind.size() > 0) {
                 part_ind[n] = partNo + 1;
-                chap_ind[n] = chapNo + 1;
+                chap_ind[n] = chapNo_tot + 1;
             }
             ++ind1;
         }
@@ -913,7 +913,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             command_arg(title, str, ind1);
              replace(title, U"\\ ", U" ");
              // insert chapter into html table of contents
-             ++chapNo;
+             ++chapNo; ++chapNo_tot;
              if (chapNo > 0)
                  ind0 = insert(toc, U"</p>", ind0);
              if (part_ind.size() > 0)
