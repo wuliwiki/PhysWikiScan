@@ -53,8 +53,7 @@ inline Long paragraph_tag(Str32_IO str)
     Str32 temp, env, end, begin = U"<p>　　\n";
 
     // "begin", and commands that cannot be in a paragraph
-    vecStr32 commands = {U"begin",
-        U"subsection", U"subsubsection", U"pentry", /* for shuxue.love*/ U"test"};
+    vecStr32 commands = {U"begin", U"subsection", U"subsubsection", U"pentry"};
 
     // environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
     vecStr32 envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
@@ -189,7 +188,7 @@ inline void limit_env(Str32_I str)
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
         U"case", U"Bmatrix", U"bmatrix", U"eqnarray", U"eqnarray*", U"multline", U"multline*",
-        U"smallmatrix", U"subarray", U"Vmatrix", /*for shuxue.love begin:*/U"test", U"subques" /*for shuxue.love end*/};
+        U"smallmatrix", U"subarray", U"Vmatrix"};
 
     Str32 env;
     while (true) {
@@ -1302,9 +1301,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     NormalTextEscape(str, path_out);
     // add paragraph tags
     paragraph_tag(str);
-    test_env(str); // for shuxue-love
     // itemize and enumerate
-    Itemize(str); Enumerate(str); subques(str);
+    Itemize(str); Enumerate(str);
     // add html id for links
     EnvLabel(ids, labels, entries[ind], str);
     // process table environments
