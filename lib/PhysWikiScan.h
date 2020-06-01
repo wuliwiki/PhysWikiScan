@@ -1094,7 +1094,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             if (!lang.empty())
                 SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 未添加高亮！");
             // replace "<" and ">"
-            replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
+            replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
         }
 
         code_table(code_tab_str, code);

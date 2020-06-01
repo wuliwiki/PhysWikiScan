@@ -760,8 +760,8 @@ inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
         ind2 = str.find(U"|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], U"<", U"&lt");
-        replace(str_verb[ind], U">", U"&gt");
+        replace(str_verb[ind], U"<", U"&lt;");
+        replace(str_verb[ind], U">", U"&gt;");
         tmp = U"<code>" + str_verb[ind] + U"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
@@ -789,8 +789,8 @@ inline Long verb(Str32_IO str, vecStr32_IO str_verb)
         ind2 = str.find(U"|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], U"<", U"&lt");
-        replace(str_verb[ind], U">", U"&gt");
+        replace(str_verb[ind], U"<", U"&lt;");
+        replace(str_verb[ind], U">", U"&gt;");
         tmp = U"<code>" + str_verb[ind] + U"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();

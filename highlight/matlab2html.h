@@ -164,7 +164,7 @@ inline Long Matlab_highlight(Str32_IO code)
 
     Long N = 0;
     // replace "<" and ">"
-    replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
+    replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
     // highlight keywords
     N += Matlab_keywords(code, keywords, keyword_class);
     // highlight comments

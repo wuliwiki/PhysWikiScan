@@ -367,8 +367,8 @@ inline Long newcommand(Str32_IO str, vecStr32_I rules)
 inline Long TextEscape(Str32_IO str, Str32_I path_out)
 {
     Long N{};
-    N += replace(str, U"<", U"&lt");
-    N += replace(str, U">", U"&gt");
+    N += replace(str, U"<", U"&lt;");
+    N += replace(str, U">", U"&gt;");
     Long tmp = replace(str, U"\\\\", U"<br>");
     if (tmp > 0)
         cout << "警告： 正文中发现 '\\\\' 强制换行！" << endl;
