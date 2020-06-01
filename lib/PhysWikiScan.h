@@ -174,7 +174,7 @@ inline Long paragraph_tag(Str32_IO str)
     }
 }
 
-inline void limit_env(Str32_I str)
+inline void limit_env_cmd(Str32_I str)
 {
     Intvs intv; Long ind0 = 0;
     
@@ -200,6 +200,13 @@ inline void limit_env(Str32_I str)
             throw Str32(U"暂不支持 " + env + " 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
         ++ind0;
     }
+
+    // not supported command
+    vecStr32 ban_cmd = {U"\\usepackage", U"\\newcommand", U"\\renewcommand"};
+    Long ikey;
+    ind0 = find(ikey, str, ban_cmd, 0);
+    if (ind0 >= 0)
+        throw Str32(U"每个词条文件是一个 section 环境， 不支持 \"\\" + ban_cmd[ikey] + U"\"命令");
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
@@ -1072,9 +1079,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
         trim(ind_str, U"\n ");
         code = str_verb[str2int(ind_str)];
-        if (line_size_lim(code, 78) >= 0) {
+        if (line_size_lim(code, 78) >= 0)
             throw Str32(U"单行代码过长!");
-        }
         
         // highlight
         if (lang == U"matlabC")
@@ -1087,6 +1093,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             // language not supported, no highlight
             if (!lang.empty())
                 SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 未添加高亮！");
+            // replace "<" and ">"
+            replace(code, U"<", U"&lt"); replace(code, U">", U"&gt");
         }
 
         code_table(code_tab_str, code);
@@ -1288,7 +1296,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
-    limit_env(str);
+    limit_env_cmd(str);
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
