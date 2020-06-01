@@ -165,8 +165,9 @@ inline Long Matlab_highlight(Str32_IO code)
     Long N = 0;
     // replace "<" and ">"
     replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
-    if (code.find(U"\n\t") >= 0)
-        throw Str32(U"Matlab 代码中统一使用四个空格作为缩进");
+    Long ind = code.find(U"\n\t");
+    if (ind >= 0)
+        throw Str32(U"Matlab 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + U"...");
     // highlight keywords
     N += Matlab_keywords(code, keywords, keyword_class);
     // highlight comments

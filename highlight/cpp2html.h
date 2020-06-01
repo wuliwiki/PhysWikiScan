@@ -10,8 +10,9 @@ namespace slisc {
 #ifdef _MSC_VER
         return 0;
 #endif
-        if (code.find(U"\n\t") >= 0)
-            throw Str32(U"cpp 代码中统一使用四个空格作为缩进");
+        Long ind = code.find(U"\n\t");
+        if (ind >= 0)
+            throw Str32(U"cpp 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + U"...");
         write(code, U"tmp.cpp");
         remove("tmp.cpp.html");
         int ret = system("source-highlight --src-lang cpp --out-format html "
