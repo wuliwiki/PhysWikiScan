@@ -204,9 +204,15 @@ inline void limit_env_cmd(Str32_I str)
     // not supported command
     vecStr32 ban_cmd = {U"\\usepackage", U"\\newcommand", U"\\renewcommand"};
     Long ikey;
-    ind0 = find(ikey, str, ban_cmd, 0);
+    ind0 = find_command(str, U"newcommand", 0);
     if (ind0 >= 0)
-        throw Str32(U"每个词条文件是一个 section 环境， 不支持 \"\\" + ban_cmd[ikey] + U"\"命令");
+        throw Str32(U"不支持 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请");
+    ind0 = find_command(str, U"renewcommand", 0);
+    if (ind0 >= 0)
+        throw Str32(U"不支持 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请");
+    ind0 = find_command(str, U"usepackage", 0);
+    if (ind0 >= 0)
+        throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section 环境");
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
