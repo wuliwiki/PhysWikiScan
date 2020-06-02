@@ -1125,25 +1125,22 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         // highlight
         Str32 prism_lang, prism_line_num;
         if (lang == U"matlabC") {
-            prism_lang = U"matlab";
+            prism_lang = U" class=\"language-matlab\"";
         }
-        else if (lang == U"matlab") {
-            prism_lang = U"matlab";
-            prism_line_num = U"class=\"line-numbers\"";
-        }
-        else if (lang == U"cpp" || lang == U"python" || lang == U"bash" || lang == U"makefile" || lang == U"julia" || lang == U"latex") {
-            prism_lang = lang;
+        else if (lang == U"matlab" || lang == U"cpp" || lang == U"python" || lang == U"bash" || lang == U"makefile" || lang == U"julia" || lang == U"latex") {
+            prism_lang = U" class=\"language-" + lang + U"\"";
             prism_line_num = U"class=\"line-numbers\"";
         }
         else {
-            prism_lang = lang;
             prism_line_num = U"class=\"line-numbers\"";
-            if (!lang.empty())
+            if (!lang.empty()) {
+                prism_lang = U" class=\"language-" + lang + U"\"";
                 SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 可能未添加高亮！");
+            }
         }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
         str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1,
-            U"<pre " + prism_line_num + U"><code class=\"language-" + prism_lang + U"\">" + code + U"\n</code></pre>\n");
+            U"<pre " + prism_line_num + U"><code" + prism_lang + U">" + code + U"\n</code></pre>\n");
     }
     return N;
 }
