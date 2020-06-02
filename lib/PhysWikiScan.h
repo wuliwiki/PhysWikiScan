@@ -846,6 +846,40 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     cout << endl;
 }
 
+// warn english punctuations , . " ? ( ) in normal text
+inline void check_normal_text_punc(Str32_I str)
+{
+    vecStr32 keys = {U",", U".", U"?", U"(", U":"};
+    Intvs intvNorm;
+    FindNormalText(intvNorm, str);
+    Long ind0 = -1, ikey;
+    while (true) {
+        ind0 = find(ikey, str, keys, ind0 + 1);
+        if (ind0 < 0)
+            break;
+
+        if (is_in(ind0, intvNorm)) {
+            Long ind1 = str.find_last_not_of(U" ", ind0-1);
+            if (ind1 >= 0 && is_chinese(str[ind1])) {
+                Long ind2 = str.find_first_not_of(U" ", ind0+1);
+                if (ikey == 1 && is_alphanum(str[ind0 + 1]))
+                    continue;
+                else if (ikey == 3) {
+                    if (is_alphanum(str[ind0+1])) {
+                        if (is_alphanum(str[ind0+2])) {
+                            if (str[ind0+3] == U')')
+                                continue;
+                        }
+                        else if (str[ind0+2] == U')')
+                            continue;
+                    }
+                }
+                cout << u8"\n警告：正文中使用英文符号： " << str.substr(ind0, 40) << endl;
+            }
+        }
+    }
+}
+
 // create table of content from main.tex
 // path must end with '\\'
 // return the number of entries
@@ -1313,6 +1347,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     inline_eq_space(str);
     // escape characters
     NormalTextEscape(str, path_out);
+    // check english puctuation in normal text
+    check_normal_text_punc(str);
     // add paragraph tags
     paragraph_tag(str);
     // itemize and enumerate
