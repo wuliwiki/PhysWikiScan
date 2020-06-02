@@ -138,13 +138,6 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
 }
 
 int main(int argc, char *argv[]) {
-#ifdef _MSC_VER
-    SLS_WARN("gnu source-highlight is disabled in Visual Studio! Use VS for debug only!");
-    cout << endl;
-    cout << u8"===================================================" << endl;
-    cout << u8"= Visual Studio 测试模式， 不含代码高亮和图片版本 =" << endl;
-    cout << u8"===================================================\n" << endl;
-#endif
     using namespace slisc;
 
     vecStr32 args;

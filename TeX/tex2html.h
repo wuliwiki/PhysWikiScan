@@ -371,7 +371,7 @@ inline Long TextEscape(Str32_IO str, Str32_I path_out)
     N += replace(str, U">", U"&gt;");
     Long tmp = replace(str, U"\\\\", U"<br>");
     if (tmp > 0)
-        cout << u8"警告： 正文中发现 '\\\\' 强制换行！" << endl;
+        SLS_WARN(U"正文中发现 '\\\\' 强制换行！");
     N += tmp;
     N += replace(str, U"\\ ", U" ");
     N += replace(str, U"{}", U"");

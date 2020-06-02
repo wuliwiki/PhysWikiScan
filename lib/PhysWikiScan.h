@@ -874,7 +874,7 @@ inline void check_normal_text_punc(Str32_I str)
                             continue;
                     }
                 }
-                cout << u8"\n警告：正文中使用英文符号： " << str.substr(ind0, 40) << endl;
+                SLS_WARN(U"正文中使用英文符号： " + str.substr(ind0, 40) + U"\n");
             }
         }
     }
@@ -1123,23 +1123,27 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             throw Str32(U"单行代码过长!");
         
         // highlight
-        if (lang == U"matlabC")
-            Matlab_highlight(code);
-        else if (lang == U"matlab")
-            Matlab_highlight(code);
-        else if (lang == U"cpp")
-            cpp_highlight(code);
-        else {
-            // language not supported, no highlight
-            if (!lang.empty())
-                SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 未添加高亮！");
-            // replace "<" and ">"
-            replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
+        Str32 prism_lang, prism_line_num;
+        if (lang == U"matlabC") {
+            prism_lang = U"matlab";
         }
-
-        code_table(code_tab_str, code);
-
-        str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, code_tab_str);
+        else if (lang == U"matlab") {
+            prism_lang = U"matlab";
+            prism_line_num = U"class=\"line-numbers\"";
+        }
+        else if (lang == U"cpp" || lang == U"python" || lang == U"bash" || lang == U"makefile" || lang == U"julia" || lang == U"latex") {
+            prism_lang = lang;
+            prism_line_num = U"class=\"line-numbers\"";
+        }
+        else {
+            prism_lang = lang;
+            prism_line_num = U"class=\"line-numbers\"";
+            if (!lang.empty())
+                SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 可能未添加高亮！");
+        }
+        replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
+        str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1,
+            U"<pre " + prism_line_num + U"><code class=\"language-" + prism_lang + U"\">" + code + U"\n</code></pre>\n");
     }
     return N;
 }
