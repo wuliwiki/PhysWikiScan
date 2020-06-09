@@ -5,6 +5,7 @@
 #include "../TeX/tex2html.h"
 #include "../highlight/matlab2html.h"
 #include "../highlight/cpp2html.h"
+#include "../SLISC/sha1sum.h"
 
 using namespace slisc;
 
@@ -411,10 +412,10 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
 
         file_copy(fname_out, fname_in, true);
         version.clear();
-#ifndef _MSC_VER
-        last_modified(version, fname_in);
+        // last_modified(version, fname_in);
+        Str tmp; read(tmp, utf32to8(fname_in)); CRLF_to_LF(tmp);
+        version = utf8to32(sha1sum(tmp).substr(0, 14));
         version = U"?v=" + version;
-#endif
 
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
