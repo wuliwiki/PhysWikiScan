@@ -6,6 +6,8 @@
 #include "../highlight/matlab2html.h"
 #include "../highlight/cpp2html.h"
 #include "../SLISC/sha1sum.h"
+#include "../SLISC/string.h"
+#include "../SLISC/sort.h"
 
 using namespace slisc;
 
@@ -792,9 +794,9 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     entries.clear(); titles.clear();
     file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
     RemoveNoEntry(entries);
-    if (entries.size() == 0) {
+    if (entries.size() == 0)
         throw Str32(U"未找到任何词条");
-    }
+    std::sort(entries.begin(), entries.end());
 
     Long ind0 = 0;
 
