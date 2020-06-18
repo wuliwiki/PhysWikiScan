@@ -796,7 +796,11 @@ inline void entries_titles(vecStr32_O titles, vecStr32_O entries, Str32_I path_i
     RemoveNoEntry(entries);
     if (entries.size() == 0)
         throw Str32(U"未找到任何词条");
-    std::sort(entries.begin(), entries.end());
+    sort_case_insens(entries);
+    vecStr32 entries_low; to_lower(entries_low, entries);
+    Long ind = find_repeat(entries_low);
+    if (ind >= 0)
+        throw Str32(U"存在同名词条（不区分大小写）：" + entries[ind]);
 
     Long ind0 = 0;
 
