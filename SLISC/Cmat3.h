@@ -5,7 +5,7 @@
 namespace slisc {
 class Cmat3Char : public VbaseChar
 {
-private:
+protected:
     typedef VbaseChar Base;
     using Base::m_p;
     using Base::m_N;
@@ -16,8 +16,9 @@ public:
     typedef Char value_type;
     using Base::operator();
     using Base::ptr;
+    Cmat3Char(): m_N1(0), m_N2(0), m_N3(0) {};
     Cmat3Char(Long_I N1, Long_I N2, Long_I N3);
-    Cmat3Char(const Cmat3Char &rhs) = delete;
+    Cmat3Char(const Cmat3Char &rhs); // copy constructor
     Cmat3Char & operator=(const Cmat3Char &rhs) = delete;
     void operator<<(Cmat3Char &rhs); // move data and rhs.resize(0, 0, 0)
     void resize(Long_I N1, Long_I N2, Long_I N3);
@@ -37,6 +38,14 @@ inline void Cmat3Char::operator<<(Cmat3Char &rhs)
     Base::operator<<(rhs);
 }
 
+// copy constructor
+inline Cmat3Char::Cmat3Char(const Cmat3Char &rhs): Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2), m_N3(rhs.m_N3)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+}
+
 inline void Cmat3Char::resize(Long_I N1, Long_I N2, Long_I N3)
 {
     if (N1 != m_N1 || N2 != m_N2 || N3 != m_N3) {
@@ -49,7 +58,8 @@ inline Char & Cmat3Char::operator()(Long_I i, Long_I j, Long_I k)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Char index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -58,7 +68,8 @@ inline const Char & Cmat3Char::operator()(Long_I i, Long_I j, Long_I k) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Char index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -80,7 +91,7 @@ typedef Cmat3Char & Cmat3Char_O, & Cmat3Char_IO;
 
 class Cmat3Int : public VbaseInt
 {
-private:
+protected:
     typedef VbaseInt Base;
     using Base::m_p;
     using Base::m_N;
@@ -91,8 +102,9 @@ public:
     typedef Int value_type;
     using Base::operator();
     using Base::ptr;
+    Cmat3Int(): m_N1(0), m_N2(0), m_N3(0) {};
     Cmat3Int(Long_I N1, Long_I N2, Long_I N3);
-    Cmat3Int(const Cmat3Int &rhs) = delete;
+    Cmat3Int(const Cmat3Int &rhs); // copy constructor
     Cmat3Int & operator=(const Cmat3Int &rhs) = delete;
     void operator<<(Cmat3Int &rhs); // move data and rhs.resize(0, 0, 0)
     void resize(Long_I N1, Long_I N2, Long_I N3);
@@ -112,6 +124,14 @@ inline void Cmat3Int::operator<<(Cmat3Int &rhs)
     Base::operator<<(rhs);
 }
 
+// copy constructor
+inline Cmat3Int::Cmat3Int(const Cmat3Int &rhs): Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2), m_N3(rhs.m_N3)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+}
+
 inline void Cmat3Int::resize(Long_I N1, Long_I N2, Long_I N3)
 {
     if (N1 != m_N1 || N2 != m_N2 || N3 != m_N3) {
@@ -124,7 +144,8 @@ inline Int & Cmat3Int::operator()(Long_I i, Long_I j, Long_I k)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Int index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -133,7 +154,8 @@ inline const Int & Cmat3Int::operator()(Long_I i, Long_I j, Long_I k) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Int index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -155,7 +177,7 @@ typedef Cmat3Int & Cmat3Int_O, & Cmat3Int_IO;
 
 class Cmat3Llong : public VbaseLlong
 {
-private:
+protected:
     typedef VbaseLlong Base;
     using Base::m_p;
     using Base::m_N;
@@ -166,8 +188,9 @@ public:
     typedef Llong value_type;
     using Base::operator();
     using Base::ptr;
+    Cmat3Llong(): m_N1(0), m_N2(0), m_N3(0) {};
     Cmat3Llong(Long_I N1, Long_I N2, Long_I N3);
-    Cmat3Llong(const Cmat3Llong &rhs) = delete;
+    Cmat3Llong(const Cmat3Llong &rhs); // copy constructor
     Cmat3Llong & operator=(const Cmat3Llong &rhs) = delete;
     void operator<<(Cmat3Llong &rhs); // move data and rhs.resize(0, 0, 0)
     void resize(Long_I N1, Long_I N2, Long_I N3);
@@ -187,6 +210,14 @@ inline void Cmat3Llong::operator<<(Cmat3Llong &rhs)
     Base::operator<<(rhs);
 }
 
+// copy constructor
+inline Cmat3Llong::Cmat3Llong(const Cmat3Llong &rhs): Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2), m_N3(rhs.m_N3)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+}
+
 inline void Cmat3Llong::resize(Long_I N1, Long_I N2, Long_I N3)
 {
     if (N1 != m_N1 || N2 != m_N2 || N3 != m_N3) {
@@ -199,7 +230,8 @@ inline Llong & Cmat3Llong::operator()(Long_I i, Long_I j, Long_I k)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Llong index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -208,7 +240,8 @@ inline const Llong & Cmat3Llong::operator()(Long_I i, Long_I j, Long_I k) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Llong index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -230,7 +263,7 @@ typedef Cmat3Llong & Cmat3Llong_O, & Cmat3Llong_IO;
 
 class Cmat3Doub : public VbaseDoub
 {
-private:
+protected:
     typedef VbaseDoub Base;
     using Base::m_p;
     using Base::m_N;
@@ -241,8 +274,9 @@ public:
     typedef Doub value_type;
     using Base::operator();
     using Base::ptr;
+    Cmat3Doub(): m_N1(0), m_N2(0), m_N3(0) {};
     Cmat3Doub(Long_I N1, Long_I N2, Long_I N3);
-    Cmat3Doub(const Cmat3Doub &rhs) = delete;
+    Cmat3Doub(const Cmat3Doub &rhs); // copy constructor
     Cmat3Doub & operator=(const Cmat3Doub &rhs) = delete;
     void operator<<(Cmat3Doub &rhs); // move data and rhs.resize(0, 0, 0)
     void resize(Long_I N1, Long_I N2, Long_I N3);
@@ -262,6 +296,14 @@ inline void Cmat3Doub::operator<<(Cmat3Doub &rhs)
     Base::operator<<(rhs);
 }
 
+// copy constructor
+inline Cmat3Doub::Cmat3Doub(const Cmat3Doub &rhs): Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2), m_N3(rhs.m_N3)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+}
+
 inline void Cmat3Doub::resize(Long_I N1, Long_I N2, Long_I N3)
 {
     if (N1 != m_N1 || N2 != m_N2 || N3 != m_N3) {
@@ -274,7 +316,8 @@ inline Doub & Cmat3Doub::operator()(Long_I i, Long_I j, Long_I k)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Doub index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -283,7 +326,8 @@ inline const Doub & Cmat3Doub::operator()(Long_I i, Long_I j, Long_I k) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Doub index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -305,7 +349,7 @@ typedef Cmat3Doub & Cmat3Doub_O, & Cmat3Doub_IO;
 
 class Cmat3Comp : public VbaseComp
 {
-private:
+protected:
     typedef VbaseComp Base;
     using Base::m_p;
     using Base::m_N;
@@ -316,8 +360,9 @@ public:
     typedef Comp value_type;
     using Base::operator();
     using Base::ptr;
+    Cmat3Comp(): m_N1(0), m_N2(0), m_N3(0) {};
     Cmat3Comp(Long_I N1, Long_I N2, Long_I N3);
-    Cmat3Comp(const Cmat3Comp &rhs) = delete;
+    Cmat3Comp(const Cmat3Comp &rhs); // copy constructor
     Cmat3Comp & operator=(const Cmat3Comp &rhs) = delete;
     void operator<<(Cmat3Comp &rhs); // move data and rhs.resize(0, 0, 0)
     void resize(Long_I N1, Long_I N2, Long_I N3);
@@ -337,6 +382,14 @@ inline void Cmat3Comp::operator<<(Cmat3Comp &rhs)
     Base::operator<<(rhs);
 }
 
+// copy constructor
+inline Cmat3Comp::Cmat3Comp(const Cmat3Comp &rhs): Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2), m_N3(rhs.m_N3)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+}
+
 inline void Cmat3Comp::resize(Long_I N1, Long_I N2, Long_I N3)
 {
     if (N1 != m_N1 || N2 != m_N2 || N3 != m_N3) {
@@ -349,7 +402,8 @@ inline Comp & Cmat3Comp::operator()(Long_I i, Long_I j, Long_I k)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Comp index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }
@@ -358,7 +412,8 @@ inline const Comp & Cmat3Comp::operator()(Long_I i, Long_I j, Long_I k) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2 || k < 0 || k >= m_N3)
-        SLS_ERR("Matrix subscript out of bounds");
+        SLS_ERR("Cmat3Comp index ("+num2str(i)+", "+num2str(j)+", "+num2str(k)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+", "+num2str(m_N3)+")");
 #endif
     return m_p[i + m_N1*j + m_N1*m_N2*k];
 }

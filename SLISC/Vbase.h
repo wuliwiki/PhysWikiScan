@@ -2,6 +2,7 @@
 #pragma once
 #include "global.h"
 #include "Imag.h"
+#include "string.h"
 
 namespace slisc {
 class VbaseChar
@@ -12,6 +13,7 @@ protected:
 public:
     typedef Char value_type;
     // constructors
+    VbaseChar();
     explicit VbaseChar(Long_I N);
     VbaseChar(const VbaseChar &rhs); // copy constructor
 
@@ -32,16 +34,30 @@ public:
     ~VbaseChar();
 };
 
-inline VbaseChar::VbaseChar(Long_I N) : m_p(new Char[N]), m_N(N) {}
+inline VbaseChar::VbaseChar() : m_N(0) {}
 
+inline VbaseChar::VbaseChar(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Char[N];
+}
+
+// copy constructor
 inline VbaseChar::VbaseChar(const VbaseChar &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Char[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Char[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Char * VbaseChar::ptr()
@@ -99,7 +115,7 @@ inline Char & VbaseChar::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseChar subscript out of bounds");
+    SLS_ERR("VbaseChar index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -108,7 +124,7 @@ inline const Char & VbaseChar::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseChar subscript out of bounds");
+        SLS_ERR("VbaseChar index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -141,7 +157,7 @@ inline Char & VbaseChar::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -150,7 +166,7 @@ inline const Char & VbaseChar::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -169,6 +185,7 @@ protected:
 public:
     typedef Int value_type;
     // constructors
+    VbaseInt();
     explicit VbaseInt(Long_I N);
     VbaseInt(const VbaseInt &rhs); // copy constructor
 
@@ -189,16 +206,30 @@ public:
     ~VbaseInt();
 };
 
-inline VbaseInt::VbaseInt(Long_I N) : m_p(new Int[N]), m_N(N) {}
+inline VbaseInt::VbaseInt() : m_N(0) {}
 
+inline VbaseInt::VbaseInt(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Int[N];
+}
+
+// copy constructor
 inline VbaseInt::VbaseInt(const VbaseInt &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Int[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Int[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Int * VbaseInt::ptr()
@@ -256,7 +287,7 @@ inline Int & VbaseInt::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseInt subscript out of bounds");
+    SLS_ERR("VbaseInt index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -265,7 +296,7 @@ inline const Int & VbaseInt::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseInt subscript out of bounds");
+        SLS_ERR("VbaseInt index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -298,7 +329,7 @@ inline Int & VbaseInt::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -307,7 +338,7 @@ inline const Int & VbaseInt::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -326,6 +357,7 @@ protected:
 public:
     typedef Llong value_type;
     // constructors
+    VbaseLlong();
     explicit VbaseLlong(Long_I N);
     VbaseLlong(const VbaseLlong &rhs); // copy constructor
 
@@ -346,16 +378,30 @@ public:
     ~VbaseLlong();
 };
 
-inline VbaseLlong::VbaseLlong(Long_I N) : m_p(new Llong[N]), m_N(N) {}
+inline VbaseLlong::VbaseLlong() : m_N(0) {}
 
+inline VbaseLlong::VbaseLlong(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Llong[N];
+}
+
+// copy constructor
 inline VbaseLlong::VbaseLlong(const VbaseLlong &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Llong[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Llong[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Llong * VbaseLlong::ptr()
@@ -413,7 +459,7 @@ inline Llong & VbaseLlong::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseLlong subscript out of bounds");
+    SLS_ERR("VbaseLlong index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -422,7 +468,7 @@ inline const Llong & VbaseLlong::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseLlong subscript out of bounds");
+        SLS_ERR("VbaseLlong index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -455,7 +501,7 @@ inline Llong & VbaseLlong::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -464,7 +510,7 @@ inline const Llong & VbaseLlong::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -489,6 +535,7 @@ protected:
 public:
     typedef Float value_type;
     // constructors
+    VbaseFloat();
     explicit VbaseFloat(Long_I N);
     VbaseFloat(const VbaseFloat &rhs); // copy constructor
 
@@ -509,16 +556,30 @@ public:
     ~VbaseFloat();
 };
 
-inline VbaseFloat::VbaseFloat(Long_I N) : m_p(new Float[N]), m_N(N) {}
+inline VbaseFloat::VbaseFloat() : m_N(0) {}
 
+inline VbaseFloat::VbaseFloat(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Float[N];
+}
+
+// copy constructor
 inline VbaseFloat::VbaseFloat(const VbaseFloat &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Float[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Float[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Float * VbaseFloat::ptr()
@@ -576,7 +637,7 @@ inline Float & VbaseFloat::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseFloat subscript out of bounds");
+    SLS_ERR("VbaseFloat index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -585,7 +646,7 @@ inline const Float & VbaseFloat::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseFloat subscript out of bounds");
+        SLS_ERR("VbaseFloat index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -618,7 +679,7 @@ inline Float & VbaseFloat::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -627,7 +688,7 @@ inline const Float & VbaseFloat::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -646,6 +707,7 @@ protected:
 public:
     typedef Doub value_type;
     // constructors
+    VbaseDoub();
     explicit VbaseDoub(Long_I N);
     VbaseDoub(const VbaseDoub &rhs); // copy constructor
 
@@ -666,16 +728,30 @@ public:
     ~VbaseDoub();
 };
 
-inline VbaseDoub::VbaseDoub(Long_I N) : m_p(new Doub[N]), m_N(N) {}
+inline VbaseDoub::VbaseDoub() : m_N(0) {}
 
+inline VbaseDoub::VbaseDoub(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Doub[N];
+}
+
+// copy constructor
 inline VbaseDoub::VbaseDoub(const VbaseDoub &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Doub[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Doub[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Doub * VbaseDoub::ptr()
@@ -733,7 +809,7 @@ inline Doub & VbaseDoub::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseDoub subscript out of bounds");
+    SLS_ERR("VbaseDoub index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -742,7 +818,7 @@ inline const Doub & VbaseDoub::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseDoub subscript out of bounds");
+        SLS_ERR("VbaseDoub index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -775,7 +851,7 @@ inline Doub & VbaseDoub::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -784,7 +860,7 @@ inline const Doub & VbaseDoub::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -803,6 +879,7 @@ protected:
 public:
     typedef Comp value_type;
     // constructors
+    VbaseComp();
     explicit VbaseComp(Long_I N);
     VbaseComp(const VbaseComp &rhs); // copy constructor
 
@@ -823,16 +900,30 @@ public:
     ~VbaseComp();
 };
 
-inline VbaseComp::VbaseComp(Long_I N) : m_p(new Comp[N]), m_N(N) {}
+inline VbaseComp::VbaseComp() : m_N(0) {}
 
+inline VbaseComp::VbaseComp(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Comp[N];
+}
+
+// copy constructor
 inline VbaseComp::VbaseComp(const VbaseComp &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Comp[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Comp[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Comp * VbaseComp::ptr()
@@ -890,7 +981,7 @@ inline Comp & VbaseComp::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseComp subscript out of bounds");
+    SLS_ERR("VbaseComp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -899,7 +990,7 @@ inline const Comp & VbaseComp::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseComp subscript out of bounds");
+        SLS_ERR("VbaseComp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -932,7 +1023,7 @@ inline Comp & VbaseComp::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -941,7 +1032,7 @@ inline const Comp & VbaseComp::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -960,6 +1051,7 @@ protected:
 public:
     typedef Imag value_type;
     // constructors
+    VbaseImag();
     explicit VbaseImag(Long_I N);
     VbaseImag(const VbaseImag &rhs); // copy constructor
 
@@ -980,16 +1072,30 @@ public:
     ~VbaseImag();
 };
 
-inline VbaseImag::VbaseImag(Long_I N) : m_p(new Imag[N]), m_N(N) {}
+inline VbaseImag::VbaseImag() : m_N(0) {}
 
+inline VbaseImag::VbaseImag(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Imag[N];
+}
+
+// copy constructor
 inline VbaseImag::VbaseImag(const VbaseImag &rhs)
 {
-#ifndef SLS_ALLOW_COPY_CONSTRUCTOR
+#ifdef SLS_NO_CPY_CONSTRUCTOR
     SLS_ERR("Copy constructor or move constructor is forbidden!");
 #endif
-    // m_N = rhs.m_N;
-    // m_p = new Imag[rhs.m_N];
-    // veccpy(m_p, rhs.ptr(), m_N);
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Imag[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
 }
 
 inline Imag * VbaseImag::ptr()
@@ -1047,7 +1153,7 @@ inline Imag & VbaseImag::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
-    SLS_ERR("VbaseImag subscript out of bounds");
+    SLS_ERR("VbaseImag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -1056,7 +1162,7 @@ inline const Imag & VbaseImag::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
-        SLS_ERR("VbaseImag subscript out of bounds");
+        SLS_ERR("VbaseImag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
 #endif
     return m_p[i];
 }
@@ -1089,7 +1195,7 @@ inline Imag & VbaseImag::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -1098,7 +1204,7 @@ inline const Imag & VbaseImag::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
-        SLS_ERR("index out of bound");
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
 #endif
     return m_p[m_N - i];
 }
@@ -1109,4 +1215,123 @@ inline VbaseImag::~VbaseImag()
         delete[] m_p;
 }
 
+
+class VbaseBool
+{
+protected:
+    std::vector<bool> m_v;
+public:
+    typedef std::vector<bool>::reference ref;
+    // constructors
+    VbaseBool() = default;
+    explicit VbaseBool(Long_I N);
+    VbaseBool(const VbaseBool &rhs); // copy constructor
+
+    // get properties
+    Long size() const;
+    void resize(Long_I N);
+    VbaseBool::ref operator[](Long_I i);
+    Bool operator[](Long_I i) const;
+    VbaseBool::ref operator()(Long_I i);
+    Bool operator()(Long_I i) const;
+    VbaseBool::ref end();
+    Bool end() const;
+    VbaseBool::ref end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    Bool end(Long_I i) const;
+    void operator<<(VbaseBool &rhs); // move data
+};
+
+inline VbaseBool::VbaseBool(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPE
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    if (N > 0)
+        m_v.resize(N);
+}
+
+inline VbaseBool::VbaseBool(const VbaseBool &rhs): m_v(rhs.m_v)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+}
+
+inline Long VbaseBool::size() const
+{
+    return m_v.size();
+}
+
+inline void VbaseBool::resize(Long_I N)
+{
+    m_v.resize(N);
+}
+
+inline void VbaseBool::operator<<(VbaseBool &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    m_v.swap(rhs.m_v);
+}
+
+inline VbaseBool::ref VbaseBool::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=size())
+        SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(size()));
+#endif
+    return m_v[i];
+}
+
+inline Bool VbaseBool::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=size())
+        SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(size()));
+#endif
+    return m_v[i];
+}
+
+inline VbaseBool::ref VbaseBool::operator()(Long_I i)
+{ return m_v[i]; }
+
+inline Bool VbaseBool::operator()(Long_I i) const
+{ return m_v[i]; }
+
+inline VbaseBool::ref VbaseBool::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_v.empty())
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_v.back();
+}
+
+inline Bool VbaseBool::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_v.empty())
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_v.back();
+}
+
+inline VbaseBool::ref VbaseBool::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > size())
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(size()));
+#endif
+    return m_v[size() - i];
+}
+
+inline Bool VbaseBool::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > size())
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(size()));
+#endif
+    return m_v[size() - i];
+}
 } // namespace slisc

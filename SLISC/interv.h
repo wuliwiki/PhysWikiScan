@@ -212,7 +212,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
         start.push_back(ind2.L(i));
     for (i = 0; i < N2; ++i)
         end.push_back(ind2.R(i));
-    sort2(start, end);
+    sort(start, end);
 
     // load ind
     ind.clear();

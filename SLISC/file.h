@@ -2,10 +2,8 @@
 #include "time.h"
 #include "arithmetic.h"
 #include "linux.h"
-#include "search.h"
 #include <sstream>
 #include <fstream>
-#include <codecvt>
 #ifdef SLS_HAS_FILESYSTEM
 #include <filesystem>
 #endif
@@ -17,6 +15,8 @@ namespace slisc {
 using std::stringstream;
 
 inline void file_list(vecStr_O names, Str_I path, Bool_I append = false);
+inline void read(ifstream &fin, Str_O str);
+inline void write(ofstream &fout, Str_I str);
 
 #ifdef SLS_HAS_FILESYSTEM
 // check if a file exist on Windws (case sensitive)
@@ -54,6 +54,57 @@ inline Bool file_exist(Str_I fname, Bool_I case_sens = true) {
         return f.good();
     }
 #endif
+}
+
+// remove a file with error handling
+inline void file_remove(Str_I fname)
+{
+    if (remove(fname.c_str()))
+        SLS_ERR("failed to remove, file being used? (" + fname + ")");
+}
+
+// check if directory exist
+// `path` must end with '/'
+inline Bool dir_exist(Str_I path)
+{
+    ofstream file;
+    file.open(path + "/sls_test_if_dir_exist");
+    if (file.good()) {
+        file.close();
+        file_remove(path + "/sls_test_if_dir_exist");
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+// make multiple level of directory
+inline void mkdir(Str_I path)
+{
+    Long ind = path.find("\"");
+    if (ind >= 0)
+        SLS_ERR("folder name should not contain double quote: " + path);
+    Int ret = system(("mkdir -p \"" + path + "\"").c_str()); ret++;
+    if (!dir_exist(path))
+        SLS_ERR("mkdir failed: " + path);
+}
+
+// remove an empty directory
+inline void rmdir(Str_I path)
+{
+    Int ret = system(("rmdir " + path).c_str()); ret++;
+}
+
+// make sure the directory (or directory of a file name) exist
+// directory must end with '/'
+// if not, create the directory
+inline void ensure_dir(Str_I dir_or_file)
+{
+    Long ind = dir_or_file.rfind('/');
+    if (dir_exist(dir_or_file.substr(0, ind)))
+        return;
+    mkdir(dir_or_file.substr(0, ind));
 }
 
 // remove a file
@@ -142,6 +193,7 @@ inline void file_list_ext(vecStr_O fnames, Str_I path, Str_I ext, Bool_I keep_ex
 }
 
 // copy a file (read then write)
+// use default fstream buffer, not sure about performance
 inline void file_copy(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
 {
     if (!file_exist(fname_in))
@@ -160,9 +212,59 @@ inline void file_copy(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
     }
     ifstream fin(fname_in, std::ios::binary);
     ofstream fout(fname_out, std::ios::binary);
+    if (!fout.good())
+        SLS_ERR("failed to open file, directory not exist? (" + fname_out + ")");
     fout << fin.rdbuf();
     fin.close();
     fout.close();
+}
+
+// file copy with user buffer (larger buffer is faster)
+// buffer size used is `buffer.capacity()`, not `buffer.size()`
+// `buffer` resized to 0 after return
+inline void file_copy(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I replace = false)
+{
+    // checking
+    if (!file_exist(fname_in))
+        SLS_ERR("file not found!");
+    if (file_exist(fname_out) && !replace) {
+        while (true) {
+            if (file_exist(fname_out)) {
+                SLS_WARN("\n\nfile [" + fname_out + "] already exist! delete file to continue...\n"
+                    "  (set argument `replace = false` to replace file by default)\n\n");
+            }
+            else {
+                break;
+            }
+            pause(10);
+        }
+    }
+    
+    // copy using buffer
+    ifstream fin(fname_in, std::ios::binary);
+    ofstream fout(fname_out, std::ios::binary);
+    if (!fout.good())
+        SLS_ERR("failed to open file, directory not exist? (" + fname_out + ")");
+    Long buf_size = buffer.capacity();
+    buffer.resize(buf_size);
+    while (buffer.size() > 0) {
+        read(fin, buffer);
+        write(fout, buffer);
+    }
+}
+
+// move a file (copy and delete)
+inline void file_move(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
+{
+    file_copy(fname_out, fname_in, replace);
+    file_remove(fname_in);
+}
+
+// file_move() with user buffer
+inline void file_move(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I replace = false)
+{
+    file_move(fname_out, fname_in, buffer, replace);
+    file_remove(fname_in);
 }
 
 // get number of bytes in file
@@ -375,4 +477,35 @@ inline void last_modified(Str_O yymmddhhmmss, Str_I fname) {
     SLS_ERR("not implemented for windows!");
 }
 #endif
+
+// set write buffer
+// can speed up if there are a lot of staggered short reading and writing in the same drive
+inline void set_buff(ofstream &fout, Str_IO buffer)
+{
+    fout.rdbuf()->pubsetbuf(&buffer[0], buffer.size());
+}
+
+// test if system use little endian (less significant byte has smaller memory address)
+// for example, shot int(1) will be 00000001 0000000 in little endian
+// there is no concept of "bit endian" since they are not addressable
+// Intel x86 and x64 architechture use little endian
+inline Bool little_endian()
+{
+    short int num = 1;
+    Char *b = (Char *)&num;
+    return b[0];
+}
+
+// convert endianness
+inline void change_endian(Char *data, Long_I elm_size, Long_I Nelm)
+{
+    Long half = elm_size/2;
+    for (Long i = 0; i < Nelm; ++i) {
+        for (Long j = 0; j < half; ++j) {
+            swap(data[j], data[elm_size-j]);
+        }
+        data += elm_size;
+    }
+}
+
 } // namespace slisc

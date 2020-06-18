@@ -1,5 +1,6 @@
 #pragma once
 #include "arithmetic.h"
+#include "unicode.h"
 
 namespace slisc {
 const Int def_disp_prec = 8;
@@ -19,6 +20,36 @@ inline void disp(vecInt_I v, Int_I precision = def_disp_prec)
 }
 
 inline void disp(vecLlong_I v, Int_I precision = def_disp_prec)
+{
+    auto oldPrecision = cout.precision();
+    cout.precision(precision);
+    Long N = v.size();
+    if (N == 0)
+        cout << "empty";
+    else
+        for (Long i = 0; i < N; ++i) {
+            cout << to_num(v[i]) << "   ";
+        }
+    cout << endl << endl;
+    cout.precision(oldPrecision);
+}
+
+inline void disp(vecDoub_I v, Int_I precision = def_disp_prec)
+{
+    auto oldPrecision = cout.precision();
+    cout.precision(precision);
+    Long N = v.size();
+    if (N == 0)
+        cout << "empty";
+    else
+        for (Long i = 0; i < N; ++i) {
+            cout << to_num(v[i]) << "   ";
+        }
+    cout << endl << endl;
+    cout.precision(oldPrecision);
+}
+
+inline void disp(vecComp_I v, Int_I precision = def_disp_prec)
 {
     auto oldPrecision = cout.precision();
     cout.precision(precision);
@@ -452,4 +483,19 @@ inline void disp(CbandComp_I a, Int_I precision = def_disp_prec)
     cout.precision(oldPrecision);
 }
 
+
+// for vector of string
+inline void disp(vecStr_I v)
+{
+    Long N = v.size();
+    for (Long i = 0; i < N; ++i)
+        cout << v[i] << endl;
+}
+
+inline void disp(vecStr32_I v)
+{
+    Long N = v.size();
+    for (Long i = 0; i < N; ++i)
+        cout << utf32to8(v[i]) << endl;
+}
 } // namespace slisc

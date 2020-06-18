@@ -49,6 +49,14 @@ inline Bool equals_to_vs(const Comp *v, Comp_I s, Long_I N)
 }
 
 
+inline Bool equals_to_vv(const Char *v1, const Char *v2, Long_I N)
+{
+    for (Long i = 0; i < N; ++i)
+        if (v1[i] != v2[i])
+            return false;
+    return true;
+}
+
 inline Bool equals_to_vv(const Int *v1, const Int *v2, Long_I N)
 {
     for (Long i = 0; i < N; ++i)
@@ -105,6 +113,11 @@ inline Bool equals_to_vv(const Comp *v1, const Comp *v2, Long_I N)
     return true;
 }
 
+
+inline Bool shape_cmp(VecBool_I v1, VecBool_I v2)
+{
+    return v1.size() == v2.size();
+}
 
 inline Bool shape_cmp(VecChar_I v1, VecChar_I v2)
 {
@@ -241,12 +254,40 @@ inline Bool shape_cmp(MatDoub_I v1, MatDoub_I v2)
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
 
+inline Bool shape_cmp(MatDoub_I v1, CmatDoub_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
 inline Bool shape_cmp(MatComp_I v1, MatComp_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
 
+inline Bool shape_cmp(MatComp_I v1, CmatComp_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
+}
+
 inline Bool shape_cmp(Mat3Doub_I v1, Mat3Comp_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2()
+            && v1.n3() == v2.n3();
+}
+
+inline Bool shape_cmp(Mat3Doub_I v1, Mat3Doub_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2()
+            && v1.n3() == v2.n3();
+}
+
+inline Bool shape_cmp(Mat3Comp_I v1, Mat3Doub_I v2)
+{
+    return v1.n1() == v2.n1() && v1.n2() == v2.n2()
+            && v1.n3() == v2.n3();
+}
+
+inline Bool shape_cmp(Mat3Comp_I v1, Mat3Comp_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2()
             && v1.n3() == v2.n3();
@@ -302,17 +343,7 @@ inline Bool shape_cmp(CmatComp_I v1, DcmatComp_I v2)
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
 
-inline Bool shape_cmp(MatDoub_I v1, CmatDoub_I v2)
-{
-    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
-}
-
 inline Bool shape_cmp(CmatDoub_I v1, MatDoub_I v2)
-{
-    return v1.n1() == v2.n1() && v1.n2() == v2.n2();
-}
-
-inline Bool shape_cmp(MatComp_I v1, CmatComp_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2();
 }
@@ -398,12 +429,6 @@ inline Bool shape_cmp(Cmat3Comp_I v1, Cmat3Comp_I v2)
 }
 
 inline Bool shape_cmp(Cmat3Comp_I v1, Jcmat3Comp_I v2)
-{
-    return v1.n1() == v2.n1() && v1.n2() == v2.n2()
-            && v1.n3() == v2.n3();
-}
-
-inline Bool shape_cmp(Mat3Doub_I v1, Mat3Doub_I v2)
 {
     return v1.n1() == v2.n1() && v1.n2() == v2.n2()
             && v1.n3() == v2.n3();
@@ -593,6 +618,17 @@ inline Bool shape_cmp(CmatComp_I v1, CbandComp_I v2)
 }
 
 
+inline Bool operator==(VecChar_I v1, VecChar_I v2)
+{
+    return shape_cmp(v1, v2) &&
+        equals_to_vv(v1.ptr(), v2.ptr(), v2.size());
+}
+
+inline Bool operator!=(VecChar_I v1, VecChar_I v2)
+{
+    return !(v1 == v2);
+}
+
 inline Bool operator==(VecInt_I v1, VecInt_I v2)
 {
     return shape_cmp(v1, v2) &&
@@ -636,6 +672,17 @@ inline Bool operator!=(VecLlong_I v1, DvecLlong_I v2)
     return !(v1 == v2);
 }
 
+inline Bool operator==(VecLlong_I v1, VecLlong_I v2)
+{
+    return shape_cmp(v1, v2) &&
+        equals_to_vv(v1.ptr(), v2.ptr(), v2.size());
+}
+
+inline Bool operator!=(VecLlong_I v1, VecLlong_I v2)
+{
+    return !(v1 == v2);
+}
+
 inline Bool operator==(VecDoub_I v1, DvecDoub_I v2)
 {
     if (!shape_cmp(v1, v2))
@@ -648,17 +695,6 @@ inline Bool operator==(VecDoub_I v1, DvecDoub_I v2)
 }
 
 inline Bool operator!=(VecDoub_I v1, DvecDoub_I v2)
-{
-    return !(v1 == v2);
-}
-
-inline Bool operator==(VecLlong_I v1, VecLlong_I v2)
-{
-    return shape_cmp(v1, v2) &&
-        equals_to_vv(v1.ptr(), v2.ptr(), v2.size());
-}
-
-inline Bool operator!=(VecLlong_I v1, VecLlong_I v2)
 {
     return !(v1 == v2);
 }
@@ -924,6 +960,19 @@ inline Bool operator!=(Jcmat3Doub_I v1, Cmat3Doub_I v2)
     return !(v1 == v2);
 }
 
+
+inline Bool operator==(VecBool_I v1, VecBool_I v2)
+{
+    for (Long i = 0; i < v1.size(); ++i)
+        if (v1[i] != v2[i])
+            return false;
+    return true;
+}
+
+inline Bool operator!=(VecBool_I v1, VecBool_I v2)
+{
+    return !(v1 == v2);
+}
 
 inline Bool operator==(VecInt_I v, Int_I s)
 {

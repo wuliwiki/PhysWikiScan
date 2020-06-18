@@ -14,19 +14,34 @@ inline Str hhmmss()
 {
     auto p = std::chrono::system_clock::now();
     std::time_t t = std::chrono::system_clock::to_time_t(p);
-#ifdef _MSC_VER
-    Str str; str.resize(50);
-    ctime_s(&str[0], str.size(), &t);
-#else
     Str str = std::ctime(&t);
-#endif
     return str.substr(str.find(':')-2, 8);
 }
 
 // convert seconds to "hh:mm:ss" format
-inline Str hhmmss(Int sec)
+inline Str hhmmss(Long sec)
 {
     sec %= 86400;
+    Str hh = num2str(sec / 3600);
+    sec %= 3600;
+    Str mm = num2str(sec / 60);
+    Str ss = num2str(sec % 60);
+    Str ret;
+    if (hh.size() == 1)
+        ret += "0";
+    ret += hh + ":";
+    if (mm.size() == 1)
+        ret += "0";
+    ret += mm + ":";
+    if (ss.size() == 1)
+        ret += "0";
+    ret += ss;
+    return ret;
+}
+
+// convert seconds to "....h:mm:ss" format
+inline Str hhhmmss(Long sec)
+{
     Str hh = num2str(sec / 3600);
     sec %= 3600;
     Str mm = num2str(sec / 60);

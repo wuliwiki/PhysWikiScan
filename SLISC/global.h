@@ -137,6 +137,14 @@ typedef std::u32string Str32;
 typedef const Str32 &Str32_I;
 typedef Str32 &Str32_O, &Str32_IO;
 
+typedef vector<Bool> vecBool;
+typedef const vecBool &vecBool_I;
+typedef vecBool &vecBool_O, &vecBool_IO;
+
+typedef vector<Char> vecChar;
+typedef const vecChar &vecChar_I;
+typedef vecChar &vecChar_O, &vecChar_IO;
+
 typedef vector<Int> vecInt;
 typedef const vecInt &vecInt_I;
 typedef vecInt &vecInt_O, &vecInt_IO;
@@ -152,6 +160,14 @@ typedef vecLlong vecLong;
 #endif
 typedef const vecLong &vecLong_I;
 typedef vecLong &vecLong_O, &vecLong_IO;
+
+typedef vector<Doub> vecDoub;
+typedef const vecDoub &vecDoub_I;
+typedef vecDoub &vecDoub_O, &vecDoub_IO;
+
+typedef vector<Comp> vecComp;
+typedef const vecComp &vecComp_I;
+typedef vecComp &vecComp_O, &vecComp_IO;
 
 typedef vector<Str> vecStr;
 typedef const vecStr &vecStr_I;
