@@ -227,7 +227,7 @@ inline void limit_env_cmd(Str32_I str)
 inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     Str32_I entryName, Str32_IO str)
 {
-    Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
+    Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
         Ngather{}, Nalign{}, i{}, j{};
     Str32 idName; // "eq" or "fig" or "ex"...
     Str32 envName; // "equation" or "figure" or "example"...
@@ -244,50 +244,55 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     while (true) {
         ind5 = find_command(str, U"label", ind0);
         if (ind5 < 0) return N;
-        // make sure label is inside an environment
+        // detect environment kind
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
-        if (ind2 >= ind4) {
-            throw Str32(U"label 不在环境内!");
-        }
-        // detect environment kind
-        ind1 = expect(str, U"{", ind4 + 6);
-        if (expect(str, U"equation", ind1) > 0) {
-            idName = U"eq"; envName = U"equation";
-        }
-        else if (expect(str, U"figure", ind1) > 0) {
-            idName = U"fig"; envName = U"figure";
-        }
-        else if (expect(str, U"definition", ind1) > 0) {
-            idName = U"def"; envName = U"definition";
-        }
-        else if (expect(str, U"lemma", ind1) > 0) {
-            idName = U"lem"; envName = U"lemma";
-        }
-        else if (expect(str, U"theorem", ind1) > 0) {
-            idName = U"the"; envName = U"theorem";
-        }
-        else if (expect(str, U"corollary", ind1) > 0) {
-            idName = U"cor"; envName = U"corollary";
-        }
-        else if (expect(str, U"example", ind1) > 0) {
-            idName = U"ex"; envName = U"example";
-        }
-        else if (expect(str, U"exercise", ind1) > 0) {
-            idName = U"exe"; envName = U"exercise";
-        }
-        else if (expect(str, U"table", ind1) > 0) {
-            idName = U"tab"; envName = U"table";
-        }
-        else if (expect(str, U"gather", ind1) > 0) {
-            idName = U"eq"; envName = U"gather";
-        }
-        else if (expect(str, U"align", ind1) > 0) {
-            idName = U"eq"; envName = U"align";
+        if (ind2 > 0 && ind4 > 0 && ind2 > ind4) {
+            idName = U"sub"; envName = U"subsection";
+            SLS_WARN("subsection label not processed!");
+            ++ind0;
+            continue;
         }
         else {
-            throw Str32(U"该环境不支持 label!");
+            Long ind1 = expect(str, U"{", ind4 + 6);
+            if (expect(str, U"equation", ind1) > 0) {
+                idName = U"eq"; envName = U"equation";
+            }
+            else if (expect(str, U"figure", ind1) > 0) {
+                idName = U"fig"; envName = U"figure";
+            }
+            else if (expect(str, U"definition", ind1) > 0) {
+                idName = U"def"; envName = U"definition";
+            }
+            else if (expect(str, U"lemma", ind1) > 0) {
+                idName = U"lem"; envName = U"lemma";
+            }
+            else if (expect(str, U"theorem", ind1) > 0) {
+                idName = U"the"; envName = U"theorem";
+            }
+            else if (expect(str, U"corollary", ind1) > 0) {
+                idName = U"cor"; envName = U"corollary";
+            }
+            else if (expect(str, U"example", ind1) > 0) {
+                idName = U"ex"; envName = U"example";
+            }
+            else if (expect(str, U"exercise", ind1) > 0) {
+                idName = U"exe"; envName = U"exercise";
+            }
+            else if (expect(str, U"table", ind1) > 0) {
+                idName = U"tab"; envName = U"table";
+            }
+            else if (expect(str, U"gather", ind1) > 0) {
+                idName = U"eq"; envName = U"gather";
+            }
+            else if (expect(str, U"align", ind1) > 0) {
+                idName = U"eq"; envName = U"align";
+            }
+            else {
+                throw Str32(U"该环境不支持 label!");
+            }
         }
+        
         // check label format and save label
         ind0 = expect(str, U"{", ind5 + 6);
         ind3 = expect(str, entryName + U'_' + idName, ind0);
@@ -587,8 +592,18 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         else if (idName == U"ex") kind = U"例";
         else if (idName == U"exe") kind = U"习题";
         else if (idName == U"tab") kind = U"表";
+        else if (idName == U"sub") {
+            kind = U"节";
+            SLS_WARN("autoref subsection 功能未完成！");
+            ++ind0; continue;
+        }
+        else if (idName == U"lst") {
+            kind = U"代码";
+            SLS_WARN("autoref lstlisting 功能未完成！");
+            ++ind0; continue;
+        }
         else {
-            throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一!");
+            throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一!");
         }
         ind3 = str.find('}', ind3);
         // find id of the label
@@ -607,7 +622,10 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             newtab = U"target = \"_blank\"";
         if (!inEq)
             str.insert(ind3 + 1, U" </a>");
-        str.insert(ind3 + 1, kind + U' ' + idNum);
+        if (idName == U"sub")
+            str.insert(ind3 + 1, U"第 " + idNum + " " + kind);
+        else
+            str.insert(ind3 + 1, kind + U' ' + idNum);
         if (!inEq)
             str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + ids[i] + U"\" " + newtab + U">");
         str.erase(ind0, ind3 - ind0 + 1);
@@ -1097,32 +1115,57 @@ inline void code_table(Str32_O table_str, Str32_I code)
 // return the number of \Command{} processed
 inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
 {
-    Long ind0 = 0;
+    Long ind0 = 0, ind1 = 0;
     Intvs intvIn, intvOut;
     Str32 code, ind_str;
     find_env(intvIn, str, U"lstlisting", 'i');
     Long N = find_env(intvOut, str, U"lstlisting", 'o');
-    Str32 lang = U""; // language
+    Str32 lang = U"", caption = U""; // language, caption
     Str32 code_tab_str;
     for (Long i = N - 1; i >= 0; --i) {
         // get language
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
-            Long ind1 = pair_brace(str, ind0-1);
+            ind1 = pair_brace(str, ind0-1);
             ind0 = expect(str, U"language", ind0);
-            if (ind0 < 0) {
+            if (ind0 < 0)
                 throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
-            }
             ind0 = expect(str, U"=", ind0);
-            if (ind0 < 0) {
+            if (ind0 < 0)
                 throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
+            Long ind2 = str.find(U',', ind0);
+            if (ind2 >= 0 && ind2 <= ind1)
+                lang = str.substr(ind0, ind2 - ind0);
+            else
+                lang = str.substr(ind0, ind1 - ind0);
+            trim(lang);
+        }
+
+        // get caption
+        ind0 = expect(str, U"[", intvIn.L(i));
+        if (ind0 > 0) {
+            ind1 = pair_brace(str, ind0 - 1);
+            ind0 = expect(str, U"caption", ind0);
+            if (ind0 >= 0 && ind0 < ind1) {
+                ind0 = expect(str, U"=", ind0);
+                if (ind0 < 0)
+                    throw Str32(U"lstlisting 方括号中标题格式错误（[caption=xxx]）!");
+                Long ind2 = str.find(U',', ind0);
+                if (ind2 >= 0 && ind2 <= ind1)
+                    caption = str.substr(ind0, ind2 - ind0);
+                else
+                    caption = str.substr(ind0, ind1 - ind0);
+                trim(caption);
+                SLS_WARN("lstlisting 标题和 label 暂时没有处理！");
             }
-            lang = str.substr(ind0, ind1 - ind0); trim(lang);
             ind0 = ind1 + 1;
         }
-        else {
+        else
             ind0 = intvIn.L(i);
-        }
+
+        // TODO: get [label=xxx]
+
+        // recover code from verbatim index
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
         trim(ind_str, U"\n ");
         code = str_verb[str2int(ind_str)];
