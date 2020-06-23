@@ -247,10 +247,10 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         // detect environment kind
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
-        if (ind2 > 0 && ind4 > 0 && ind2 > ind4) {
+        if (ind2 >= 0 && ind4 >= 0 && ind2 > ind4) {
             idName = U"sub"; envName = U"subsection";
             SLS_WARN("subsection label not processed!");
-            ++ind0;
+            ind0 = ind5 + 1;
             continue;
         }
         else {
@@ -594,12 +594,12 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         else if (idName == U"tab") kind = U"表";
         else if (idName == U"sub") {
             kind = U"节";
-            SLS_WARN("autoref subsection 功能未完成！");
+            SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
             ++ind0; continue;
         }
         else if (idName == U"lst") {
             kind = U"代码";
-            SLS_WARN("autoref lstlisting 功能未完成！");
+            SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
             ++ind0; continue;
         }
         else {
@@ -899,7 +899,7 @@ inline void check_normal_text_punc(Str32_I str)
                             continue;
                     }
                 }
-                SLS_WARN(U"正文中使用英文符号： " + str.substr(ind0, 40) + U"\n");
+                SLS_WARN(utf32to8(U"正文中使用英文符号： " + str.substr(ind0, 40)) + "\n");
             }
         }
     }
@@ -1120,34 +1120,48 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
     Str32 code, ind_str;
     find_env(intvIn, str, U"lstlisting", 'i');
     Long N = find_env(intvOut, str, U"lstlisting", 'o');
-    Str32 lang = U"", caption = U""; // language, caption
+    Str32 lang, caption, capption_str; // language, caption
     Str32 code_tab_str;
-    for (Long i = N - 1; i >= 0; --i) {
-        // get language
+    Long Ncaption = 0;
+    // get number of captions
+    for (Long i = 0; i < N; ++i) {
         ind0 = expect(str, U"[", intvIn.L(i));
         if (ind0 > 0) {
+            ind1 = pair_brace(str, ind0 - 1);
+            ind0 = str.find(U"caption", ind0);
+            if (ind0 > 0 && ind0 < ind1)
+                ++Ncaption;
+        }
+    }
+    // main loop
+    for (Long i = N-1; i >= 0; --i) {
+        // get language
+        ind0 = expect(str, U"[", intvIn.L(i));
+        ind1 = -1;
+        if (ind0 > 0) {
             ind1 = pair_brace(str, ind0-1);
-            ind0 = expect(str, U"language", ind0);
-            if (ind0 < 0)
-                throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
-            ind0 = expect(str, U"=", ind0);
-            if (ind0 < 0)
-                throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
-            Long ind2 = str.find(U',', ind0);
-            if (ind2 >= 0 && ind2 <= ind1)
-                lang = str.substr(ind0, ind2 - ind0);
-            else
-                lang = str.substr(ind0, ind1 - ind0);
-            trim(lang);
+            ind0 = str.find(U"language", ind0);
+            if (ind0 > 0 && ind0 < ind1) {
+                ind0 = expect(str, U"=", ind0 + 8);
+                if (ind0 < 0)
+                    throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）!");
+                Long ind2 = str.find(U',', ind0);
+                if (ind2 >= 0 && ind2 <= ind1)
+                    lang = str.substr(ind0, ind2 - ind0);
+                else
+                    lang = str.substr(ind0, ind1 - ind0);
+                trim(lang);
+            }
         }
 
         // get caption
         ind0 = expect(str, U"[", intvIn.L(i));
+        capption_str.clear();
         if (ind0 > 0) {
             ind1 = pair_brace(str, ind0 - 1);
-            ind0 = expect(str, U"caption", ind0);
-            if (ind0 >= 0 && ind0 < ind1) {
-                ind0 = expect(str, U"=", ind0);
+            ind0 = str.find(U"caption", ind0);
+            if (ind0 > 0 && ind0 < ind1) {
+                ind0 = expect(str, U"=", ind0 + 7);
                 if (ind0 < 0)
                     throw Str32(U"lstlisting 方括号中标题格式错误（[caption=xxx]）!");
                 Long ind2 = str.find(U',', ind0);
@@ -1156,14 +1170,18 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 else
                     caption = str.substr(ind0, ind1 - ind0);
                 trim(caption);
-                SLS_WARN("lstlisting 标题和 label 暂时没有处理！");
+                capption_str = U"<div align = \"center\">代码 " + num2str32(Ncaption) + U"：" + caption + U"</div>\n";
+                --Ncaption;
             }
-            ind0 = ind1 + 1;
         }
+        
+        if (ind1 > 0)
+            ind0 = ind1 + 1;
         else
             ind0 = intvIn.L(i);
 
         // TODO: get [label=xxx]
+        // SLS_WARN("lstlisting 的 label 暂时没有处理！");
 
         // recover code from verbatim index
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
@@ -1189,7 +1207,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             }
         }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
-        str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1,
+        str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
             U"<pre " + prism_line_num + U"><code" + prism_lang + U">" + code + U"\n</code></pre>\n");
     }
     return N;
