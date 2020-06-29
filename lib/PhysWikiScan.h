@@ -557,6 +557,41 @@ inline Long theorem_like_env(Str32_IO str)
     return N_tot;
 }
 
+// warn if no space after \autoref{}
+inline Long autoref_space(Str32_I str, Bool_I error)
+{
+    Long ind0 = 0, N = 0;
+    Str32 follow = U" ，、．）”";
+    vecStr32 follow2 = { U"\\begin", U"\\upref" };
+    Str32 msg;
+    while (true) {
+        ind0 = find_command(str, U"autoref", ind0);
+        Long start = ind0;
+        if (ind0 < 0)
+            return N;
+        try {ind0 = skip_command(str, ind0, 1);}
+        catch (...) {
+            throw Str32(U"\autoref 后面没有大括号: " + str.substr(ind0, 20));
+        }
+        Bool continue2 = false;
+        for (Long i = 0; i < follow2.size(); ++i) {
+            if (expect(str, follow2[i], ind0) >= 0) {
+                continue2 = true; break;
+            }
+        }
+        if (continue2)
+            continue;
+        if (Llong(follow.find(str[ind0])) >= 0)
+            continue;
+        msg = U"\\autoref{} 后面没有空格: " + str.substr(start, ind0 + 20 - start);
+        if (error)
+            throw Str32(msg);
+        else
+            SLS_WARN(utf32to8(msg));
+        ++N;
+    }
+}
+
 // replace autoref with html link
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
@@ -564,7 +599,7 @@ inline Long theorem_like_env(Str32_IO str)
 inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str, Str32_I url)
 {
     unsigned i{};
-    Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, Neq{}, ienv{};
+    Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, Neq{}, ienv{};
     Bool inEq;
     Str32 entry, label0, idName, idNum, kind, newtab, file;
     vecStr32 envNames{U"equation", U"align", U"gather"};
@@ -1415,6 +1450,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     verbatim(str_verb, str);
     limit_env_cmd(str);
     rm_comments(str); // remove comments
+    autoref_space(str, false); // set true to error instead of warning
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
