@@ -179,19 +179,26 @@ inline Long paragraph_tag(Str32_IO str)
 
 inline void limit_env_cmd(Str32_I str)
 {
-    Intvs intv; Long ind0 = 0;
-    
-    find_env(intv, str, U"document");
-    if (intv.size() > 0)
-        throw Str32(U"document 环境已经在 main.tex 中， 每个词条文件是一个 section， 请先阅读编辑器说明");
+    Intvs intv; Long ind0 = 0;    
 
-    // supported environments
-    vecStr32 envs = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
+    // commands not supported
+    ind0 = find_command(str, U"newcommand", 0);
+    if (ind0 >= 0)
+        throw Str32(U"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
+    ind0 = find_command(str, U"renewcommand", 0);
+    if (ind0 >= 0)
+        throw Str32(U"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
+    ind0 = find_command(str, U"usepackage", 0);
+    if (ind0 >= 0)
+        throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section 环境");
+
+    // allowed environments
+    vecStr32 envs_allow = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
         U"alignat", U"alignat*", U"alignedat", U"aligned", U"split", U"figure", U"itemize",
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
         U"case", U"Bmatrix", U"bmatrix", U"eqnarray", U"eqnarray*", U"multline", U"multline*",
-        U"smallmatrix", U"subarray", U"Vmatrix"};
+        U"smallmatrix", U"subarray", U"Vmatrix" };
 
     Str32 env;
     while (true) {
@@ -199,23 +206,15 @@ inline void limit_env_cmd(Str32_I str)
         if (ind0 < 0)
             break;
         command_arg(env, str, ind0);
-        if (search(env, envs) < 0)
-            throw Str32(U"暂不支持 " + env + " 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
+        if (search(env, envs_allow) < 0) {
+            if (env == U"document")
+                throw Str32(U"document 环境已经在 main.tex 中， 每个词条文件是一个 section， 请先阅读编辑器说明。");
+            else
+                throw Str32(U"暂不支持 " + env + U" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
+        }
+
         ++ind0;
     }
-
-    // not supported command
-    vecStr32 ban_cmd = {U"\\usepackage", U"\\newcommand", U"\\renewcommand"};
-    Long ikey;
-    ind0 = find_command(str, U"newcommand", 0);
-    if (ind0 >= 0)
-        throw Str32(U"不支持 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请");
-    ind0 = find_command(str, U"renewcommand", 0);
-    if (ind0 >= 0)
-        throw Str32(U"不支持 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请");
-    ind0 = find_command(str, U"usepackage", 0);
-    if (ind0 >= 0)
-        throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section 环境");
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
