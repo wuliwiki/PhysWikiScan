@@ -508,6 +508,8 @@ inline Long Itemize(Str32_IO str)
             indItem.push_back(ind0); ind0 += 5;
         }
         Nitem = indItem.size();
+        if (Nitem == 0)
+            continue;
 
         for (j = Nitem - 1; j > 0; --j) {
             str.erase(indItem[j], 5);
@@ -558,6 +560,8 @@ inline Long Enumerate(Str32_IO str)
             indItem.push_back(ind0); ind0 += 5;
         }
         Nitem = indItem.size();
+        if (Nitem == 0)
+            continue;
 
         for (j = Nitem - 1; j > 0; --j) {
             str.erase(indItem[j], 5);

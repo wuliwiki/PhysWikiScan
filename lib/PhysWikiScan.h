@@ -191,6 +191,9 @@ inline void limit_env_cmd(Str32_I str)
     ind0 = find_command(str, U"usepackage", 0);
     if (ind0 >= 0)
         throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section 环境");
+    ind0 = find_command(str, U"newpage", 0);
+    if (ind0 >= 0)
+        throw Str32(U"暂不支持 \"newpage\" 命令");
 
     // allowed environments
     vecStr32 envs_allow = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
@@ -252,8 +255,14 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
             ind0 = ind5 + 1;
             continue;
         }
+        else if (ind4 < 0) {
+            // TODO: label not in environment, might be a section label
+            ++ind0; continue;
+        }
         else {
             Long ind1 = expect(str, U"{", ind4 + 6);
+            if (ind1 < 0)
+                throw(Str32(U"\\begin 后面没有 {"));
             if (expect(str, U"equation", ind1) > 0) {
                 idName = U"eq"; envName = U"equation";
             }

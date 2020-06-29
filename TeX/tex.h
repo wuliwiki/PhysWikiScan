@@ -290,6 +290,8 @@ inline Long skip_env(Str32_I str, Long_I ind)
     Str32 name;
     command_arg(name, str, ind);
     Long ind0 = find_command_spec(str, U"end", name, ind);
+    if (ind0 < 0)
+        throw Str32(U"环境 " + name + U" 没有 end");
     return skip_command(str, ind0, 1);
 }
 
@@ -455,7 +457,7 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
         ++ind0; ++N;
     }
     if (N % 2 != 0) {
-        throw Str32(U"行内公式 $ 符号不匹配！");
+        throw Str32(U"行内公式 $ 符号不匹配");
     }
     N /= 2;
     if (option == 'i' && N > 0)
@@ -506,15 +508,17 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
     intv.clear();
     Long N{}, ind0{}, ind1{};
+    Str32 env1;
     while (true) {
-        ind1 = str.find(U"\\end", ind0);
-        if (ind1 < 0)
+        ind0 = find_command(str, U"end", ind0+1);
+        if (ind0 < 0)
             return N;
-        ind0 = expect(str, U"{", ind1 + 4);
-        if (expect(str, env, ind0) < 0)
+        command_arg(env1, str, ind0);
+        if (env != env1)
             continue;
-        ++N; intv.pushL(ind1);
-        ind0 = pair_brace(str, ind0 - 1);
+        ++N;
+        intv.pushL(ind0);
+        ind0 = skip_command(str, ind0, 1) - 1;
         intv.pushR(ind0);
     }
 }
@@ -664,13 +668,13 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str32(U"\\verb 没有开始！");
+            throw Str32(U"\\verb 没有开始");
         dlm = str[ind1];
         if (dlm == U'{')
             throw Str32(U"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\verb 没有闭合！");
+            throw Str32(U"\\verb 没有闭合");
         if (ind2 - ind1 == 1)
             throw Str32(U"\\verb 不能为空");
 
@@ -694,13 +698,13 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str32(U"\\lstinline 没有开始！");
+            throw Str32(U"\\lstinline 没有开始");
         dlm = str[ind1];
         if (dlm == U'{')
             throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\lstinline 没有闭合！");
+            throw Str32(U"\\lstinline 没有闭合");
         if (ind2 - ind1 == 1)
             throw Str32(U"\\lstinline 不能为空");
 
