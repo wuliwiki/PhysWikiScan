@@ -9,7 +9,7 @@ namespace slisc {
 
 // find text command '\name', return the index of '\'
 // return the index of "name.back()", return -1 if not found
-inline Long find_command(Str32_I str, Str32_I name, Long_I start)
+inline Long find_command(Str32_I str, Str32_I name, Long_I start = 0)
 {
     Long ind0 = start;
     while (true) {

@@ -179,21 +179,23 @@ inline Long paragraph_tag(Str32_IO str)
 
 inline void limit_env_cmd(Str32_I str)
 {
-    Intvs intv; Long ind0 = 0;    
-
     // commands not supported
-    ind0 = find_command(str, U"newcommand", 0);
-    if (ind0 >= 0)
+    if (find_command(str, U"documentclass") >= 0)
+        throw Str32(U"\"documentclass\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读编辑器说明");
+    if (find_command(str, U"newcommand") >= 0)
         throw Str32(U"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
-    ind0 = find_command(str, U"renewcommand", 0);
-    if (ind0 >= 0)
+    if (find_command(str, U"renewcommand") >= 0)
         throw Str32(U"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
-    ind0 = find_command(str, U"usepackage", 0);
-    if (ind0 >= 0)
+    if (find_command(str, U"usepackage") >= 0)
         throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section 环境");
-    ind0 = find_command(str, U"newpage", 0);
-    if (ind0 >= 0)
+    if (find_command(str, U"newpage") >= 0)
         throw Str32(U"暂不支持 \"newpage\" 命令");
+    if (find_command(str, U"title") >= 0)
+        throw Str32(U"\"title\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读编辑器说明");
+    if (find_command(str, U"author") >= 0)
+        throw Str32(U"不支持 \"author\" 命令， 每个词条文件是一个 section 环境");
+    if (find_command(str, U"maketitle") >= 0)
+        throw Str32(U"不支持 \"maketitle\" 命令， 每个词条文件是一个 section 环境");
 
     // allowed environments
     vecStr32 envs_allow = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
@@ -204,19 +206,18 @@ inline void limit_env_cmd(Str32_I str)
         U"smallmatrix", U"subarray", U"Vmatrix" };
 
     Str32 env;
+    Long ind0 = -1;
     while (true) {
-        ind0 = find_command(str, U"begin", ind0);
+        ind0 = find_command(str, U"begin", ind0+1);
         if (ind0 < 0)
             break;
         command_arg(env, str, ind0);
         if (search(env, envs_allow) < 0) {
             if (env == U"document")
-                throw Str32(U"document 环境已经在 main.tex 中， 每个词条文件是一个 section， 请先阅读编辑器说明。");
+                throw Str32(U"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读编辑器说明。");
             else
                 throw Str32(U"暂不支持 " + env + U" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
         }
-
-        ++ind0;
     }
 }
 
@@ -1448,8 +1449,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
-    limit_env_cmd(str);
     rm_comments(str); // remove comments
+    limit_env_cmd(str);
     autoref_space(str, false); // set true to error instead of warning
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
