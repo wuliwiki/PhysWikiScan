@@ -1510,7 +1510,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1) {
-        throw Str32(U"\"PhysWikiTitle\" 在 entry_template.html 中未找到!");
+        throw Str32(U"内部错误： \"PhysWikiTitle\" 在 entry_template.html 中未找到!");
+    }
+    if (replace(html, U"PhysWikiEntry", entries[ind]) != 1) {
+        throw Str32(U"内部错误： \"PhysWikiEntry\" 在 entry_template.html 中未找到!");
     }
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1) {
