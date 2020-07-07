@@ -1544,9 +1544,10 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        str += U"    {\"id\": \"" + titles[i] + U"\"" +
+        str += U"    {\"id\": \"" + entries[i] + U"\"" +
             ", \"part\": " + num2str32(part_ind[i]) +
             ", \"chap\": " + num2str32(chap_ind[i]) +
+            ", \"title\": \"" + titles[i] + U"\""
             ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
@@ -1575,10 +1576,10 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     // write links
     str += U"  \"links\": [\n";
     for (Long i = 0; i < size(links)/2; ++i) {
-        if (titles[links[2*i]].empty() || titles[links[2*i+1]].empty())
+        if (entries[links[2*i]].empty() || entries[links[2*i+1]].empty())
             continue;
-        str += U"    {\"source\": \"" + titles[links[2*i]] + "\", ";
-        str += U"\"target\": \"" + titles[links[2*i+1]] + U"\", ";
+        str += U"    {\"source\": \"" + entries[links[2*i]] + "\", ";
+        str += U"\"target\": \"" + entries[links[2*i+1]] + U"\", ";
         str += U"\"value\": 1},\n";
     }
     if (links.size() > 0)
