@@ -7,12 +7,8 @@ class CmatChar : public VbaseChar
 {
 protected:
     typedef VbaseChar Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatChar(): m_N1(0), m_N2(0) {};
     CmatChar(Long_I N1, Long_I N2);
     CmatChar(const CmatChar &rhs);        // Copy constructor
@@ -23,6 +19,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatChar::CmatChar(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -77,6 +74,16 @@ inline void CmatChar::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatChar::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatChar reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatChar & CmatChar_I;
 typedef CmatChar & CmatChar_O, & CmatChar_IO;
 
@@ -84,12 +91,8 @@ class CmatInt : public VbaseInt
 {
 protected:
     typedef VbaseInt Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatInt(): m_N1(0), m_N2(0) {};
     CmatInt(Long_I N1, Long_I N2);
     CmatInt(const CmatInt &rhs);        // Copy constructor
@@ -100,6 +103,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatInt::CmatInt(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -154,6 +158,16 @@ inline void CmatInt::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatInt::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatInt reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatInt & CmatInt_I;
 typedef CmatInt & CmatInt_O, & CmatInt_IO;
 
@@ -161,12 +175,8 @@ class CmatLlong : public VbaseLlong
 {
 protected:
     typedef VbaseLlong Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatLlong(): m_N1(0), m_N2(0) {};
     CmatLlong(Long_I N1, Long_I N2);
     CmatLlong(const CmatLlong &rhs);        // Copy constructor
@@ -177,6 +187,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatLlong::CmatLlong(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -231,6 +242,16 @@ inline void CmatLlong::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatLlong::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatLlong reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatLlong & CmatLlong_I;
 typedef CmatLlong & CmatLlong_O, & CmatLlong_IO;
 
@@ -247,12 +268,8 @@ class CmatFloat : public VbaseFloat
 {
 protected:
     typedef VbaseFloat Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatFloat(): m_N1(0), m_N2(0) {};
     CmatFloat(Long_I N1, Long_I N2);
     CmatFloat(const CmatFloat &rhs);        // Copy constructor
@@ -263,6 +280,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatFloat::CmatFloat(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -317,6 +335,16 @@ inline void CmatFloat::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatFloat::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatFloat reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatFloat & CmatFloat_I;
 typedef CmatFloat & CmatFloat_O, & CmatFloat_IO;
 
@@ -324,12 +352,8 @@ class CmatDoub : public VbaseDoub
 {
 protected:
     typedef VbaseDoub Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatDoub(): m_N1(0), m_N2(0) {};
     CmatDoub(Long_I N1, Long_I N2);
     CmatDoub(const CmatDoub &rhs);        // Copy constructor
@@ -340,6 +364,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatDoub::CmatDoub(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -394,19 +419,193 @@ inline void CmatDoub::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatDoub::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatDoub reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatDoub & CmatDoub_I;
 typedef CmatDoub & CmatDoub_O, & CmatDoub_IO;
+
+class CmatLdoub : public VbaseLdoub
+{
+protected:
+    typedef VbaseLdoub Base;
+    Long m_N1, m_N2;
+public:
+    CmatLdoub(): m_N1(0), m_N2(0) {};
+    CmatLdoub(Long_I N1, Long_I N2);
+    CmatLdoub(const CmatLdoub &rhs);        // Copy constructor
+    CmatLdoub & operator=(const CmatLdoub &rhs) = delete;
+    void operator<<(CmatLdoub &rhs); // move data and rhs.resize(0, 0)
+    Ldoub& operator()(Long_I i, Long_I j);    // double indexing
+    const Ldoub& operator()(Long_I i, Long_I j) const;
+    Long n1() const;
+    Long n2() const;
+    void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
+};
+
+inline CmatLdoub::CmatLdoub(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
+
+inline CmatLdoub::CmatLdoub(const CmatLdoub &rhs) : Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+    for (Long i = 0; i < m_N; ++i)
+        m_p[i] = rhs.m_p[i];
+}
+
+inline void CmatLdoub::operator<<(CmatLdoub &rhs)
+{
+    m_N1 = rhs.m_N1; m_N2 = rhs.m_N2;
+    rhs.m_N1 = rhs.m_N2 = 0;
+    Base::operator<<(rhs);
+}
+
+inline Ldoub & CmatLdoub::operator()(Long_I i, Long_I j)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLdoub index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline const Ldoub & CmatLdoub::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLdoub index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline Long CmatLdoub::n1() const
+{ return m_N1; }
+
+inline Long CmatLdoub::n2() const
+{ return m_N2; }
+
+inline void CmatLdoub::resize(Long_I N1, Long_I N2)
+{
+    if (N1 != m_N1 || N2 != m_N2) {
+        Base::resize(N1*N2);
+        m_N1 = N1; m_N2 = N2;
+    }
+}
+
+inline void CmatLdoub::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatLdoub reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
+typedef const CmatLdoub & CmatLdoub_I;
+typedef CmatLdoub & CmatLdoub_O, & CmatLdoub_IO;
+
+class CmatFcomp : public VbaseFcomp
+{
+protected:
+    typedef VbaseFcomp Base;
+    Long m_N1, m_N2;
+public:
+    CmatFcomp(): m_N1(0), m_N2(0) {};
+    CmatFcomp(Long_I N1, Long_I N2);
+    CmatFcomp(const CmatFcomp &rhs);        // Copy constructor
+    CmatFcomp & operator=(const CmatFcomp &rhs) = delete;
+    void operator<<(CmatFcomp &rhs); // move data and rhs.resize(0, 0)
+    Fcomp& operator()(Long_I i, Long_I j);    // double indexing
+    const Fcomp& operator()(Long_I i, Long_I j) const;
+    Long n1() const;
+    Long n2() const;
+    void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
+};
+
+inline CmatFcomp::CmatFcomp(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
+
+inline CmatFcomp::CmatFcomp(const CmatFcomp &rhs) : Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+    for (Long i = 0; i < m_N; ++i)
+        m_p[i] = rhs.m_p[i];
+}
+
+inline void CmatFcomp::operator<<(CmatFcomp &rhs)
+{
+    m_N1 = rhs.m_N1; m_N2 = rhs.m_N2;
+    rhs.m_N1 = rhs.m_N2 = 0;
+    Base::operator<<(rhs);
+}
+
+inline Fcomp & CmatFcomp::operator()(Long_I i, Long_I j)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatFcomp index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline const Fcomp & CmatFcomp::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatFcomp index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline Long CmatFcomp::n1() const
+{ return m_N1; }
+
+inline Long CmatFcomp::n2() const
+{ return m_N2; }
+
+inline void CmatFcomp::resize(Long_I N1, Long_I N2)
+{
+    if (N1 != m_N1 || N2 != m_N2) {
+        Base::resize(N1*N2);
+        m_N1 = N1; m_N2 = N2;
+    }
+}
+
+inline void CmatFcomp::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatFcomp reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
+typedef const CmatFcomp & CmatFcomp_I;
+typedef CmatFcomp & CmatFcomp_O, & CmatFcomp_IO;
 
 class CmatComp : public VbaseComp
 {
 protected:
     typedef VbaseComp Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatComp(): m_N1(0), m_N2(0) {};
     CmatComp(Long_I N1, Long_I N2);
     CmatComp(const CmatComp &rhs);        // Copy constructor
@@ -417,6 +616,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatComp::CmatComp(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -471,19 +671,193 @@ inline void CmatComp::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatComp::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatComp reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatComp & CmatComp_I;
 typedef CmatComp & CmatComp_O, & CmatComp_IO;
+
+class CmatLcomp : public VbaseLcomp
+{
+protected:
+    typedef VbaseLcomp Base;
+    Long m_N1, m_N2;
+public:
+    CmatLcomp(): m_N1(0), m_N2(0) {};
+    CmatLcomp(Long_I N1, Long_I N2);
+    CmatLcomp(const CmatLcomp &rhs);        // Copy constructor
+    CmatLcomp & operator=(const CmatLcomp &rhs) = delete;
+    void operator<<(CmatLcomp &rhs); // move data and rhs.resize(0, 0)
+    Lcomp& operator()(Long_I i, Long_I j);    // double indexing
+    const Lcomp& operator()(Long_I i, Long_I j) const;
+    Long n1() const;
+    Long n2() const;
+    void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
+};
+
+inline CmatLcomp::CmatLcomp(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
+
+inline CmatLcomp::CmatLcomp(const CmatLcomp &rhs) : Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+    for (Long i = 0; i < m_N; ++i)
+        m_p[i] = rhs.m_p[i];
+}
+
+inline void CmatLcomp::operator<<(CmatLcomp &rhs)
+{
+    m_N1 = rhs.m_N1; m_N2 = rhs.m_N2;
+    rhs.m_N1 = rhs.m_N2 = 0;
+    Base::operator<<(rhs);
+}
+
+inline Lcomp & CmatLcomp::operator()(Long_I i, Long_I j)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLcomp index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline const Lcomp & CmatLcomp::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLcomp index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline Long CmatLcomp::n1() const
+{ return m_N1; }
+
+inline Long CmatLcomp::n2() const
+{ return m_N2; }
+
+inline void CmatLcomp::resize(Long_I N1, Long_I N2)
+{
+    if (N1 != m_N1 || N2 != m_N2) {
+        Base::resize(N1*N2);
+        m_N1 = N1; m_N2 = N2;
+    }
+}
+
+inline void CmatLcomp::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatLcomp reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
+typedef const CmatLcomp & CmatLcomp_I;
+typedef CmatLcomp & CmatLcomp_O, & CmatLcomp_IO;
+
+class CmatFimag : public VbaseFimag
+{
+protected:
+    typedef VbaseFimag Base;
+    Long m_N1, m_N2;
+public:
+    CmatFimag(): m_N1(0), m_N2(0) {};
+    CmatFimag(Long_I N1, Long_I N2);
+    CmatFimag(const CmatFimag &rhs);        // Copy constructor
+    CmatFimag & operator=(const CmatFimag &rhs) = delete;
+    void operator<<(CmatFimag &rhs); // move data and rhs.resize(0, 0)
+    Fimag& operator()(Long_I i, Long_I j);    // double indexing
+    const Fimag& operator()(Long_I i, Long_I j) const;
+    Long n1() const;
+    Long n2() const;
+    void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
+};
+
+inline CmatFimag::CmatFimag(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
+
+inline CmatFimag::CmatFimag(const CmatFimag &rhs) : Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+    for (Long i = 0; i < m_N; ++i)
+        m_p[i] = rhs.m_p[i];
+}
+
+inline void CmatFimag::operator<<(CmatFimag &rhs)
+{
+    m_N1 = rhs.m_N1; m_N2 = rhs.m_N2;
+    rhs.m_N1 = rhs.m_N2 = 0;
+    Base::operator<<(rhs);
+}
+
+inline Fimag & CmatFimag::operator()(Long_I i, Long_I j)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatFimag index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline const Fimag & CmatFimag::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatFimag index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline Long CmatFimag::n1() const
+{ return m_N1; }
+
+inline Long CmatFimag::n2() const
+{ return m_N2; }
+
+inline void CmatFimag::resize(Long_I N1, Long_I N2)
+{
+    if (N1 != m_N1 || N2 != m_N2) {
+        Base::resize(N1*N2);
+        m_N1 = N1; m_N2 = N2;
+    }
+}
+
+inline void CmatFimag::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatFimag reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
+typedef const CmatFimag & CmatFimag_I;
+typedef CmatFimag & CmatFimag_O, & CmatFimag_IO;
 
 class CmatImag : public VbaseImag
 {
 protected:
     typedef VbaseImag Base;
-    using Base::m_p;
-    using Base::m_N;
     Long m_N1, m_N2;
 public:
-    using Base::ptr;
-    using Base::operator();
     CmatImag(): m_N1(0), m_N2(0) {};
     CmatImag(Long_I N1, Long_I N2);
     CmatImag(const CmatImag &rhs);        // Copy constructor
@@ -494,6 +868,7 @@ public:
     Long n1() const;
     Long n2() const;
     void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
 };
 
 inline CmatImag::CmatImag(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
@@ -548,18 +923,110 @@ inline void CmatImag::resize(Long_I N1, Long_I N2)
     }
 }
 
+inline void CmatImag::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatImag reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
 typedef const CmatImag & CmatImag_I;
 typedef CmatImag & CmatImag_O, & CmatImag_IO;
+
+class CmatLimag : public VbaseLimag
+{
+protected:
+    typedef VbaseLimag Base;
+    Long m_N1, m_N2;
+public:
+    CmatLimag(): m_N1(0), m_N2(0) {};
+    CmatLimag(Long_I N1, Long_I N2);
+    CmatLimag(const CmatLimag &rhs);        // Copy constructor
+    CmatLimag & operator=(const CmatLimag &rhs) = delete;
+    void operator<<(CmatLimag &rhs); // move data and rhs.resize(0, 0)
+    Limag& operator()(Long_I i, Long_I j);    // double indexing
+    const Limag& operator()(Long_I i, Long_I j) const;
+    Long n1() const;
+    Long n2() const;
+    void resize(Long_I N1, Long_I N2); // resize (contents not preserved)
+    void reshape(Long_I N1, Long_I N2); // reshape (total elm # must be the same)
+};
+
+inline CmatLimag::CmatLimag(Long_I N1, Long_I N2) : Base(N1*N2), m_N1(N1), m_N2(N2) {}
+
+inline CmatLimag::CmatLimag(const CmatLimag &rhs) : Base(rhs), m_N1(rhs.m_N1), m_N2(rhs.m_N2)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("copy constructor forbidden!");
+#endif
+    for (Long i = 0; i < m_N; ++i)
+        m_p[i] = rhs.m_p[i];
+}
+
+inline void CmatLimag::operator<<(CmatLimag &rhs)
+{
+    m_N1 = rhs.m_N1; m_N2 = rhs.m_N2;
+    rhs.m_N1 = rhs.m_N2 = 0;
+    Base::operator<<(rhs);
+}
+
+inline Limag & CmatLimag::operator()(Long_I i, Long_I j)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLimag index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline const Limag & CmatLimag::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+        SLS_ERR("CmatLimag index ("+num2str(i)+", "+num2str(j)
+            +") out of bounds: shape = ("+num2str(m_N1)+", "+num2str(m_N2)+")");
+#endif
+    return m_p[i+m_N1*j];
+}
+
+inline Long CmatLimag::n1() const
+{ return m_N1; }
+
+inline Long CmatLimag::n2() const
+{ return m_N2; }
+
+inline void CmatLimag::resize(Long_I N1, Long_I N2)
+{
+    if (N1 != m_N1 || N2 != m_N2) {
+        Base::resize(N1*N2);
+        m_N1 = N1; m_N2 = N2;
+    }
+}
+
+inline void CmatLimag::reshape(Long_I N1, Long_I N2)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N1 * N2 != m_N)
+        SLS_ERR("CmatLimag reshaping from ("+num2str(m_N1)+", "+num2str(m_N2)
+            +") to ("+num2str(N1)+", "+num2str(N2)+"), element number not the same!");
+#endif
+    m_N1 = N1; m_N2 = N2;
+}
+
+typedef const CmatLimag & CmatLimag_I;
+typedef CmatLimag & CmatLimag_O, & CmatLimag_IO;
 
 
 class CmatBool : public VbaseBool
 {
 protected:
     typedef VbaseBool Base;
-    using Base::ref;
     Long m_N1, m_N2;
 public:
-    using Base::operator();
     CmatBool(): m_N1(0), m_N2(0) {};
     CmatBool(Long_I N1, Long_I N2);
     CmatBool(const CmatBool &rhs);        // Copy constructor

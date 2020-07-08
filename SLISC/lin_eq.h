@@ -7,7 +7,7 @@ namespace slisc {
 //not the most accurate, see also ?gerfs
 inline void inv_mat(CmatDoub_IO A)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (A.n1() != A.n2())
         SLS_ERR("wrong shape!");
 #endif
@@ -19,7 +19,7 @@ inline void inv_mat(CmatDoub_IO A)
 
 inline void inv_mat(ScmatDoub_IO A)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (A.n1() != A.n2())
         SLS_ERR("wrong shape!");
 #endif
@@ -34,7 +34,7 @@ inline void inv_mat(ScmatDoub_IO A)
 // ####### Not Thread Safe ######
 inline void lin_eq(CmatDoub_IO x, CmatDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
 #endif
@@ -57,7 +57,7 @@ inline void lin_eq(CmatDoub_IO x, CmatDoub_I a)
 
 inline void lin_eq(ScmatDoub_IO x, CmatDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
 #endif
@@ -80,7 +80,7 @@ inline void lin_eq(ScmatDoub_IO x, CmatDoub_I a)
 
 inline void lin_eq(ScmatDoub_IO x, ScmatDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
 #endif
@@ -103,7 +103,7 @@ inline void lin_eq(ScmatDoub_IO x, ScmatDoub_I a)
 
 inline void lin_eq(VecDoub_IO x, CmatDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -126,7 +126,7 @@ inline void lin_eq(VecDoub_IO x, CmatDoub_I a)
 
 inline void lin_eq(SvecDoub_IO x, CmatDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -149,7 +149,7 @@ inline void lin_eq(SvecDoub_IO x, CmatDoub_I a)
 
 inline void lin_eq(VecComp_IO x, CmatComp_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -172,7 +172,7 @@ inline void lin_eq(VecComp_IO x, CmatComp_I a)
 
 inline void lin_eq(SvecComp_IO x, ScmatComp_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -199,7 +199,7 @@ inline void lin_eq(SvecComp_IO x, ScmatComp_I a)
 // ipiv: integer work space of size a.n1()
 inline void lin_eq(CmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -217,7 +217,7 @@ inline void lin_eq(CmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(ScmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -235,7 +235,7 @@ inline void lin_eq(ScmatDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(ScmatDoub_IO x, ScmatDoub_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.n1())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -253,7 +253,7 @@ inline void lin_eq(ScmatDoub_IO x, ScmatDoub_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(VecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -271,7 +271,7 @@ inline void lin_eq(VecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(SvecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -289,7 +289,7 @@ inline void lin_eq(SvecDoub_IO x, CmatDoub_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(VecComp_IO x, CmatComp_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -307,7 +307,7 @@ inline void lin_eq(VecComp_IO x, CmatComp_IO a, SvecInt_IO ipiv)
 
 inline void lin_eq(SvecComp_IO x, ScmatComp_IO a, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
     if (ipiv.size() != a.n1())
@@ -328,7 +328,7 @@ inline void lin_eq(SvecComp_IO x, ScmatComp_IO a, SvecInt_IO ipiv)
 // ####### Not Thread Safe ######
 inline void lin_eq(VecDoub_IO x, CbandDoub_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -352,7 +352,31 @@ inline void lin_eq(VecDoub_IO x, CbandDoub_I a)
 
 inline void lin_eq(VecComp_IO x, CbandComp_I a)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
+    if (a.n1() != a.n2() || a.n2() != x.size())
+        SLS_ERR("wrong shape!");
+#endif
+    static CbandComp a1(a.n1(), a.n2(), a.nup(), a.nlow(), a.nup() + 2*a.nlow() + 1, a.nlow() + a.nup());
+    static VecInt ipiv(a.n1());
+    if (a1.lda() < a.nup() + 2*a.nlow() + 1 || a1.n2() != a.n2())
+        a1.resize(a.nup() + 2*a.nlow() + 1, a.n2());
+    a1.shift(a.nlow() + a.nup()); copy(a1, a);
+    if (a.n1() > ipiv.size())
+        ipiv.resize(a.n1());
+
+    Int lda = a1.lda();
+    Int ldx = x.size(), nrhs = 1;
+
+    Int ret = LAPACKE_zgbsv(LAPACK_COL_MAJOR, a1.n1(), a1.nlow() , a1.nup(), nrhs, (double _Complex*)a1.ptr(), lda, ipiv.ptr(), (double _Complex*)x.ptr(), ldx);
+    if (ret != 0) {
+        cout << "LAPACK returned " << ret << endl;
+        SLS_ERR("something wrong!");
+    }
+}
+
+inline void lin_eq(SvecComp_IO x, CbandComp_I a)
+{
+#ifdef SLS_CHECK_SHAPES
     if (a.n1() != a.n2() || a.n2() != x.size())
         SLS_ERR("wrong shape!");
 #endif
@@ -383,9 +407,11 @@ inline void lin_eq(VecComp_IO x, CbandComp_I a)
 // copy(a1, a);
 inline void lin_eq(VecDoub_IO x, CbandDoub_IO a1, VecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a1.n1() != a1.n2() || a1.n2() != x.size())
         SLS_ERR("wrong shape!");
+    if (a1.lda() < a1.nup() + 2*a1.nlow() + 1 || a1.idiag() < a1.nup() + a1.nup())
+        SLS_ERR("wrong shape: lda < nup+2nlow+1 || idiag < nup+nlow !");
 #endif
     Int lda = a1.lda();
     Int ldx = x.size(), nrhs = 1;
@@ -398,9 +424,11 @@ inline void lin_eq(VecDoub_IO x, CbandDoub_IO a1, VecInt_IO ipiv)
 
 inline void lin_eq(VecComp_IO x, CbandComp_IO a1, VecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a1.n1() != a1.n2() || a1.n2() != x.size())
         SLS_ERR("wrong shape!");
+    if (a1.lda() < a1.nup() + 2*a1.nlow() + 1 || a1.idiag() < a1.nup() + a1.nup())
+        SLS_ERR("wrong shape: lda < nup+2nlow+1 || idiag < nup+nlow !");
 #endif
     Int lda = a1.lda();
     Int ldx = x.size(), nrhs = 1;
@@ -413,9 +441,11 @@ inline void lin_eq(VecComp_IO x, CbandComp_IO a1, VecInt_IO ipiv)
 
 inline void lin_eq(SvecComp_IO x, CbandComp_IO a1, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a1.n1() != a1.n2() || a1.n2() != x.size())
         SLS_ERR("wrong shape!");
+    if (a1.lda() < a1.nup() + 2*a1.nlow() + 1 || a1.idiag() < a1.nup() + a1.nup())
+        SLS_ERR("wrong shape: lda < nup+2nlow+1 || idiag < nup+nlow !");
 #endif
     Int lda = a1.lda();
     Int ldx = x.size(), nrhs = 1;
@@ -428,9 +458,11 @@ inline void lin_eq(SvecComp_IO x, CbandComp_IO a1, SvecInt_IO ipiv)
 
 inline void lin_eq(ScmatComp_IO x, CbandComp_IO a1, SvecInt_IO ipiv)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (a1.n1() != a1.n2() || a1.n2() != x.n1())
         SLS_ERR("wrong shape!");
+    if (a1.lda() < a1.nup() + 2*a1.nlow() + 1 || a1.idiag() < a1.nup() + a1.nup())
+        SLS_ERR("wrong shape: lda < nup+2nlow+1 || idiag < nup+nlow !");
 #endif
     Int lda = a1.lda();
     Int ldx = x.n1(), nrhs = x.n2();

@@ -1,12 +1,13 @@
 #pragma once
 #include "arithmetic.h"
 #include "slice_arith.h"
+#include "string.h"
 
 namespace slisc {
 
 // see if elm == vec[i], return i
 // return -1 if not found
-inline Long search(Int_I s, VecInt_I v, Long start = 0)
+inline Long search(Int_I s, VecInt_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -16,7 +17,7 @@ inline Long search(Int_I s, VecInt_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Llong_I s, VecLlong_I v, Long start = 0)
+inline Long search(Llong_I s, VecLlong_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -26,7 +27,7 @@ inline Long search(Llong_I s, VecLlong_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Char_I s, Str_I v, Long start = 0)
+inline Long search(Char_I s, Str_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -36,7 +37,7 @@ inline Long search(Char_I s, Str_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Char32_I s, Str32_I v, Long start = 0)
+inline Long search(Char32_I s, Str32_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -46,7 +47,7 @@ inline Long search(Char32_I s, Str32_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Str_I s, vecStr_I v, Long start = 0)
+inline Long search(Str_I s, vecStr_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -56,7 +57,7 @@ inline Long search(Str_I s, vecStr_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Str32_I s, vecStr32_I v, Long start = 0)
+inline Long search(Str32_I s, vecStr32_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
@@ -66,11 +67,55 @@ inline Long search(Str32_I s, vecStr32_I v, Long start = 0)
     return -1;
 }
 
-inline Long search(Llong_I s, vecLlong_I v, Long start = 0)
+inline Long search(Llong_I s, vecLlong_I v, Long_I start = 0)
 {
     Long N = v.size();
     for (Long i = start; i < N; ++i) {
         if (s == v[i])
+            return i;
+    }
+    return -1;
+}
+
+
+// see if `match_head(s, v[i])`, return i
+// see if `match_head(v[i], s)`, return i
+// return -1 if not found
+inline Long search_head(Str_I s_short, vecStr_I v_long, Long_I start = 0)
+{
+    Long N = v_long.size();
+    for (Long i = start; i < N; ++i) {
+        if (match_head(s_short, v_long[i]))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_head(vecStr_I v_short, Str_I s_long, Long_I start = 0)
+{
+    Long N = v_short.size();
+    for (Long i = start; i < N; ++i) {
+        if (match_head(v_short[i], s_long))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_head(Str32_I s_short, vecStr32_I v_long, Long_I start = 0)
+{
+    Long N = v_long.size();
+    for (Long i = start; i < N; ++i) {
+        if (match_head(s_short, v_long[i]))
+            return i;
+    }
+    return -1;
+}
+
+inline Long search_head(vecStr32_I v_short, Str32_I s_long, Long_I start = 0)
+{
+    Long N = v_short.size();
+    for (Long i = start; i < N; ++i) {
+        if (match_head(v_short[i], s_long))
             return i;
     }
     return -1;
@@ -86,7 +131,7 @@ inline Long search(Llong_I s, vecLlong_I v, Long start = 0)
 inline Bool lookup(Long_O ind, VecInt_I v, Int_I s)
 {
     Long N = v.size(), ind1 = 0, ind2 = N - 1;
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 1)
         SLS_ERR("empty container!");
 #endif
@@ -121,7 +166,7 @@ inline Bool lookup(Long_O ind, VecInt_I v, Int_I s)
 
 inline Bool lookup(Long_O ind, VecInt_I v, Int_I s, Long ind1, Long ind2)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     Long N = ind2 - ind1 + 1;
     if (N < 1)
         SLS_ERR("range error!");
@@ -158,7 +203,7 @@ inline Bool lookup(Long_O ind, VecInt_I v, Int_I s, Long ind1, Long ind2)
 inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s)
 {
     Long N = v.size(), ind1 = 0, ind2 = N - 1;
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 1)
         SLS_ERR("empty container!");
 #endif
@@ -193,7 +238,7 @@ inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s)
 
 inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s, Long ind1, Long ind2)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     Long N = ind2 - ind1 + 1;
     if (N < 1)
         SLS_ERR("range error!");
@@ -230,7 +275,7 @@ inline Bool lookup(Long_O ind, VecLlong_I v, Llong_I s, Long ind1, Long ind2)
 inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s)
 {
     Long N = v.size(), ind1 = 0, ind2 = N - 1;
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 1)
         SLS_ERR("empty container!");
 #endif
@@ -265,7 +310,7 @@ inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s)
 
 inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s, Long ind1, Long ind2)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     Long N = ind2 - ind1 + 1;
     if (N < 1)
         SLS_ERR("range error!");
@@ -302,7 +347,7 @@ inline Bool lookup(Long_O ind, VecDoub_I v, Doub_I s, Long ind1, Long ind2)
 inline Bool lookup(Long_O ind, vecInt_I v, Int_I s)
 {
     Long N = v.size(), ind1 = 0, ind2 = N - 1;
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 1)
         SLS_ERR("empty container!");
 #endif
@@ -337,7 +382,7 @@ inline Bool lookup(Long_O ind, vecInt_I v, Int_I s)
 
 inline Bool lookup(Long_O ind, vecInt_I v, Int_I s, Long ind1, Long ind2)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     Long N = ind2 - ind1 + 1;
     if (N < 1)
         SLS_ERR("range error!");
@@ -374,7 +419,7 @@ inline Bool lookup(Long_O ind, vecInt_I v, Int_I s, Long ind1, Long ind2)
 inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s)
 {
     Long N = v.size(), ind1 = 0, ind2 = N - 1;
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 1)
         SLS_ERR("empty container!");
 #endif
@@ -409,7 +454,7 @@ inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s)
 
 inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s, Long ind1, Long ind2)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     Long N = ind2 - ind1 + 1;
     if (N < 1)
         SLS_ERR("range error!");
@@ -444,13 +489,13 @@ inline Bool lookup(Long_O ind, vecLlong_I v, Llong_I s, Long ind1, Long ind2)
 }
 
 
-// check if v[i] == v[j] for any i and j
-// return the index of one of the repeated elements
+// check if v[i] == v[j] for any i and j > i
+// return i >= start
 // return -1 if no reapeat
-inline Long find_repeat(vecStr_I v)
+inline Long find_repeat(vecStr_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
@@ -459,10 +504,22 @@ inline Long find_repeat(vecStr_I v)
     return -1;
 }
 
-inline Long find_repeat(vecStr32_I v)
+inline Long find_repeat(Long_O j, vecStr_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(vecStr32_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
@@ -471,10 +528,22 @@ inline Long find_repeat(vecStr32_I v)
     return -1;
 }
 
-inline Long find_repeat(VecChar_I v)
+inline Long find_repeat(Long_O j, vecStr32_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(VecChar_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
@@ -483,10 +552,22 @@ inline Long find_repeat(VecChar_I v)
     return -1;
 }
 
-inline Long find_repeat(VecInt_I v)
+inline Long find_repeat(Long_O j, VecChar_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(VecInt_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
@@ -495,10 +576,22 @@ inline Long find_repeat(VecInt_I v)
     return -1;
 }
 
-inline Long find_repeat(VecLlong_I v)
+inline Long find_repeat(Long_O j, VecInt_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(VecLlong_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
@@ -507,11 +600,35 @@ inline Long find_repeat(VecLlong_I v)
     return -1;
 }
 
-inline Long find_repeat(vecLlong_I v)
+inline Long find_repeat(Long_O j, VecLlong_I v, Long_I start = 0)
 {
     Long N = v.size();
-    for (Long i = 0; i < N; ++i) {
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(vecLlong_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
         for (Long j = i + 1; j < N; ++j) {
+            if (v[i] == v[j])
+                return i;
+        }
+    }
+    return -1;
+}
+
+inline Long find_repeat(Long_O j, vecLlong_I v, Long_I start = 0)
+{
+    Long N = v.size();
+    for (Long i = start; i < N; ++i) {
+        for (j = i + 1; j < N; ++j) {
             if (v[i] == v[j])
                 return i;
         }
@@ -525,7 +642,7 @@ inline Long find_repeat(vecLlong_I v)
 // return the row index, return -1 if not found
 inline Long search_row(VecInt_I v, CmatInt_I a, Long_I start = 0)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (v.size() != a.n2())
         SLS_ERR("wrong shape");
 #endif
@@ -538,7 +655,7 @@ inline Long search_row(VecInt_I v, CmatInt_I a, Long_I start = 0)
 
 inline Long search_row(VecLlong_I v, CmatLlong_I a, Long_I start = 0)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (v.size() != a.n2())
         SLS_ERR("wrong shape");
 #endif
@@ -551,7 +668,7 @@ inline Long search_row(VecLlong_I v, CmatLlong_I a, Long_I start = 0)
 
 inline Long search_row(DvecLlong_I v, CmatLlong_I a, Long_I start = 0)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (v.size() != a.n2())
         SLS_ERR("wrong shape");
 #endif
@@ -564,7 +681,7 @@ inline Long search_row(DvecLlong_I v, CmatLlong_I a, Long_I start = 0)
 
 inline Long search_row(VecDoub_I v, CmatDoub_I a, Long_I start = 0)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (v.size() != a.n2())
         SLS_ERR("wrong shape");
 #endif

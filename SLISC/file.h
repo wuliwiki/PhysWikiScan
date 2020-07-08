@@ -58,10 +58,12 @@ inline Bool file_exist(Str_I fname, Bool_I case_sens = true) {
 }
 
 // remove a file with error handling
+// do nothing if file doesn't exist
 inline void file_remove(Str_I fname)
 {
-    if (remove(fname.c_str()))
-        SLS_ERR("failed to remove, file being used? (" + fname + ")");
+    if (file_exist(fname))
+        if (remove(fname.c_str()))
+            SLS_ERR("failed to remove, file being used? (" + fname + ")");
 }
 
 // check if directory exist
@@ -78,6 +80,16 @@ inline Bool dir_exist(Str_I path)
     else {
         return false;
     }
+}
+
+// get directory from filename
+inline Str path2dir(Str_I fname)
+{
+    Llong ind = fname.rfind("/");
+    if (ind < 0)
+        return "./";
+    else
+        return fname.substr(0, ind+1);
 }
 
 // make multiple level of directory
@@ -161,6 +173,26 @@ inline void file_list(vecStr_O fnames, Str_I path, Bool_I append = false)
 #endif
 #endif
 
+// list all files in a directory recursively (containing relative paths)
+#ifdef __GNUC__
+inline void file_list_r(vecStr_O fnames, Str_I path, Bool_I append = false)
+{
+    if (!append)
+        fnames.resize(0);
+    // save a list of all files (no folder) to temporary file
+    std::istringstream iss(exec_str(("find " + path + " -type f").c_str()));
+    
+    // read the temporary file
+    Str name;
+    while (true) {
+        std::getline(iss, name);
+        if (iss.eof())
+            break;
+        fnames.push_back(name);
+    }
+}
+#endif
+
 // choose files with a given extension from a list of files
 inline void file_ext(vecStr_O fnames_ext, vecStr_I fnames, Str_I ext, Bool_I keep_ext = true, Bool_I append = false)
 {
@@ -198,7 +230,7 @@ inline void file_list_ext(vecStr_O fnames, Str_I path, Str_I ext, Bool_I keep_ex
 inline void file_copy(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
 {
     if (!file_exist(fname_in))
-        SLS_ERR("file not found!");
+        SLS_ERR("file not found: " + fname_in);
     if (file_exist(fname_out) && !replace) {
         while (true) {
             if (file_exist(fname_out)) {
@@ -255,17 +287,34 @@ inline void file_copy(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I rep
 }
 
 // move a file (copy and delete)
-inline void file_move(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
+inline void file_move_cp(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
 {
     file_copy(fname_out, fname_in, replace);
     file_remove(fname_in);
 }
 
-// file_move() with user buffer
-inline void file_move(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I replace = false)
+// file_move_cp() with user buffer
+inline void file_move_cp(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I replace = false)
 {
-    file_move(fname_out, fname_in, buffer, replace);
+    file_copy(fname_out, fname_in, buffer, replace);
     file_remove(fname_in);
+}
+
+inline void file_move(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
+{
+    Long ind = fname_in.find("\"");
+    if (ind >= 0)
+        SLS_ERR("double quote not supported: " + fname_in);
+    ind = fname_out.find("\"");
+    if (ind >= 0)
+        SLS_ERR("double quote not supported: " + fname_out);
+
+    Int ret;
+    if (replace)
+        ret = system(("mv -n \"" + fname_in + "\" \"" + fname_out + "\"").c_str());
+    else
+        ret = system(("mv \"" + fname_in + "\" \"" + fname_out + "\"").c_str());
+    ++ret;
 }
 
 // get number of bytes in file

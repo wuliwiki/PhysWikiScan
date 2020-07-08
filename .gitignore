@@ -6,3 +6,5 @@ backup/
 PhysWikiScan
 *.vcxproj.user
 npm-debug.log
+data/*.txt
+data/*.matt

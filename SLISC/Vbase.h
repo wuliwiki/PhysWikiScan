@@ -24,8 +24,6 @@ public:
     void resize(Long_I N);
     Char & operator[](Long_I i);
     const Char & operator[](Long_I i) const;
-    Char & operator()(Long_I i);
-    const Char & operator()(Long_I i) const;
     Char& end();
     const Char& end() const;
     Char& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -34,11 +32,12 @@ public:
     ~VbaseChar();
 };
 
-inline VbaseChar::VbaseChar() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseChar::VbaseChar() : m_N(0), m_p(nullptr) {}
 
 inline VbaseChar::VbaseChar(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -129,12 +128,6 @@ inline const Char & VbaseChar::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Char & VbaseChar::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Char & VbaseChar::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Char & VbaseChar::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -196,8 +189,6 @@ public:
     void resize(Long_I N);
     Int & operator[](Long_I i);
     const Int & operator[](Long_I i) const;
-    Int & operator()(Long_I i);
-    const Int & operator()(Long_I i) const;
     Int& end();
     const Int& end() const;
     Int& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -206,11 +197,12 @@ public:
     ~VbaseInt();
 };
 
-inline VbaseInt::VbaseInt() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseInt::VbaseInt() : m_N(0), m_p(nullptr) {}
 
 inline VbaseInt::VbaseInt(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -301,12 +293,6 @@ inline const Int & VbaseInt::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Int & VbaseInt::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Int & VbaseInt::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Int & VbaseInt::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -368,8 +354,6 @@ public:
     void resize(Long_I N);
     Llong & operator[](Long_I i);
     const Llong & operator[](Long_I i) const;
-    Llong & operator()(Long_I i);
-    const Llong & operator()(Long_I i) const;
     Llong& end();
     const Llong& end() const;
     Llong& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -378,11 +362,12 @@ public:
     ~VbaseLlong();
 };
 
-inline VbaseLlong::VbaseLlong() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseLlong::VbaseLlong() : m_N(0), m_p(nullptr) {}
 
 inline VbaseLlong::VbaseLlong(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -473,12 +458,6 @@ inline const Llong & VbaseLlong::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Llong & VbaseLlong::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Llong & VbaseLlong::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Llong & VbaseLlong::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -546,8 +525,6 @@ public:
     void resize(Long_I N);
     Float & operator[](Long_I i);
     const Float & operator[](Long_I i) const;
-    Float & operator()(Long_I i);
-    const Float & operator()(Long_I i) const;
     Float& end();
     const Float& end() const;
     Float& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -556,11 +533,12 @@ public:
     ~VbaseFloat();
 };
 
-inline VbaseFloat::VbaseFloat() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseFloat::VbaseFloat() : m_N(0), m_p(nullptr) {}
 
 inline VbaseFloat::VbaseFloat(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -651,12 +629,6 @@ inline const Float & VbaseFloat::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Float & VbaseFloat::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Float & VbaseFloat::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Float & VbaseFloat::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -718,8 +690,6 @@ public:
     void resize(Long_I N);
     Doub & operator[](Long_I i);
     const Doub & operator[](Long_I i) const;
-    Doub & operator()(Long_I i);
-    const Doub & operator()(Long_I i) const;
     Doub& end();
     const Doub& end() const;
     Doub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -728,11 +698,12 @@ public:
     ~VbaseDoub();
 };
 
-inline VbaseDoub::VbaseDoub() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseDoub::VbaseDoub() : m_N(0), m_p(nullptr) {}
 
 inline VbaseDoub::VbaseDoub(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -823,12 +794,6 @@ inline const Doub & VbaseDoub::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Doub & VbaseDoub::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Doub & VbaseDoub::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Doub & VbaseDoub::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -871,6 +836,336 @@ inline VbaseDoub::~VbaseDoub()
         delete[] m_p;
 }
 
+class VbaseLdoub
+{
+protected:
+    Ldoub *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    typedef Ldoub value_type;
+    // constructors
+    VbaseLdoub();
+    explicit VbaseLdoub(Long_I N);
+    VbaseLdoub(const VbaseLdoub &rhs); // copy constructor
+
+    // get properties
+    Ldoub* ptr(); // get pointer
+    const Ldoub* ptr() const;
+    Long size() const;
+    void resize(Long_I N);
+    Ldoub & operator[](Long_I i);
+    const Ldoub & operator[](Long_I i) const;
+    Ldoub& end();
+    const Ldoub& end() const;
+    Ldoub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Ldoub& end(Long_I i) const;
+    void operator<<(VbaseLdoub &rhs); // move data
+    ~VbaseLdoub();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseLdoub::VbaseLdoub() : m_N(0), m_p(nullptr) {}
+
+inline VbaseLdoub::VbaseLdoub(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Ldoub[N];
+}
+
+// copy constructor
+inline VbaseLdoub::VbaseLdoub(const VbaseLdoub &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Ldoub[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
+}
+
+inline Ldoub * VbaseLdoub::ptr()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Ldoub * VbaseLdoub::ptr() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseLdoub::size() const
+{
+    return m_N;
+}
+
+inline void VbaseLdoub::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) {
+            m_N = N; m_p = new Ldoub[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Ldoub[N];
+            }
+        }
+    }
+}
+
+inline void VbaseLdoub::operator<<(VbaseLdoub &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Ldoub & VbaseLdoub::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseLdoub index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Ldoub & VbaseLdoub::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseLdoub index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Ldoub & VbaseLdoub::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Ldoub & VbaseLdoub::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Ldoub & VbaseLdoub::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Ldoub & VbaseLdoub::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseLdoub::~VbaseLdoub()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
+class VbaseFcomp
+{
+protected:
+    Fcomp *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    typedef Fcomp value_type;
+    // constructors
+    VbaseFcomp();
+    explicit VbaseFcomp(Long_I N);
+    VbaseFcomp(const VbaseFcomp &rhs); // copy constructor
+
+    // get properties
+    Fcomp* ptr(); // get pointer
+    const Fcomp* ptr() const;
+    Long size() const;
+    void resize(Long_I N);
+    Fcomp & operator[](Long_I i);
+    const Fcomp & operator[](Long_I i) const;
+    Fcomp& end();
+    const Fcomp& end() const;
+    Fcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Fcomp& end(Long_I i) const;
+    void operator<<(VbaseFcomp &rhs); // move data
+    ~VbaseFcomp();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseFcomp::VbaseFcomp() : m_N(0), m_p(nullptr) {}
+
+inline VbaseFcomp::VbaseFcomp(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Fcomp[N];
+}
+
+// copy constructor
+inline VbaseFcomp::VbaseFcomp(const VbaseFcomp &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Fcomp[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
+}
+
+inline Fcomp * VbaseFcomp::ptr()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Fcomp * VbaseFcomp::ptr() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseFcomp::size() const
+{
+    return m_N;
+}
+
+inline void VbaseFcomp::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) {
+            m_N = N; m_p = new Fcomp[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Fcomp[N];
+            }
+        }
+    }
+}
+
+inline void VbaseFcomp::operator<<(VbaseFcomp &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Fcomp & VbaseFcomp::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseFcomp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Fcomp & VbaseFcomp::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseFcomp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Fcomp & VbaseFcomp::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Fcomp & VbaseFcomp::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Fcomp & VbaseFcomp::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Fcomp & VbaseFcomp::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseFcomp::~VbaseFcomp()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
 class VbaseComp
 {
 protected:
@@ -890,8 +1185,6 @@ public:
     void resize(Long_I N);
     Comp & operator[](Long_I i);
     const Comp & operator[](Long_I i) const;
-    Comp & operator()(Long_I i);
-    const Comp & operator()(Long_I i) const;
     Comp& end();
     const Comp& end() const;
     Comp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -900,11 +1193,12 @@ public:
     ~VbaseComp();
 };
 
-inline VbaseComp::VbaseComp() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseComp::VbaseComp() : m_N(0), m_p(nullptr) {}
 
 inline VbaseComp::VbaseComp(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -995,12 +1289,6 @@ inline const Comp & VbaseComp::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Comp & VbaseComp::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Comp & VbaseComp::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Comp & VbaseComp::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -1043,6 +1331,336 @@ inline VbaseComp::~VbaseComp()
         delete[] m_p;
 }
 
+class VbaseLcomp
+{
+protected:
+    Lcomp *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    typedef Lcomp value_type;
+    // constructors
+    VbaseLcomp();
+    explicit VbaseLcomp(Long_I N);
+    VbaseLcomp(const VbaseLcomp &rhs); // copy constructor
+
+    // get properties
+    Lcomp* ptr(); // get pointer
+    const Lcomp* ptr() const;
+    Long size() const;
+    void resize(Long_I N);
+    Lcomp & operator[](Long_I i);
+    const Lcomp & operator[](Long_I i) const;
+    Lcomp& end();
+    const Lcomp& end() const;
+    Lcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Lcomp& end(Long_I i) const;
+    void operator<<(VbaseLcomp &rhs); // move data
+    ~VbaseLcomp();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseLcomp::VbaseLcomp() : m_N(0), m_p(nullptr) {}
+
+inline VbaseLcomp::VbaseLcomp(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Lcomp[N];
+}
+
+// copy constructor
+inline VbaseLcomp::VbaseLcomp(const VbaseLcomp &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Lcomp[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
+}
+
+inline Lcomp * VbaseLcomp::ptr()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Lcomp * VbaseLcomp::ptr() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseLcomp::size() const
+{
+    return m_N;
+}
+
+inline void VbaseLcomp::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) {
+            m_N = N; m_p = new Lcomp[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Lcomp[N];
+            }
+        }
+    }
+}
+
+inline void VbaseLcomp::operator<<(VbaseLcomp &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Lcomp & VbaseLcomp::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseLcomp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Lcomp & VbaseLcomp::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseLcomp index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Lcomp & VbaseLcomp::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Lcomp & VbaseLcomp::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Lcomp & VbaseLcomp::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Lcomp & VbaseLcomp::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseLcomp::~VbaseLcomp()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
+class VbaseFimag
+{
+protected:
+    Fimag *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    typedef Fimag value_type;
+    // constructors
+    VbaseFimag();
+    explicit VbaseFimag(Long_I N);
+    VbaseFimag(const VbaseFimag &rhs); // copy constructor
+
+    // get properties
+    Fimag* ptr(); // get pointer
+    const Fimag* ptr() const;
+    Long size() const;
+    void resize(Long_I N);
+    Fimag & operator[](Long_I i);
+    const Fimag & operator[](Long_I i) const;
+    Fimag& end();
+    const Fimag& end() const;
+    Fimag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Fimag& end(Long_I i) const;
+    void operator<<(VbaseFimag &rhs); // move data
+    ~VbaseFimag();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseFimag::VbaseFimag() : m_N(0), m_p(nullptr) {}
+
+inline VbaseFimag::VbaseFimag(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Fimag[N];
+}
+
+// copy constructor
+inline VbaseFimag::VbaseFimag(const VbaseFimag &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Fimag[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
+}
+
+inline Fimag * VbaseFimag::ptr()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Fimag * VbaseFimag::ptr() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseFimag::size() const
+{
+    return m_N;
+}
+
+inline void VbaseFimag::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) {
+            m_N = N; m_p = new Fimag[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Fimag[N];
+            }
+        }
+    }
+}
+
+inline void VbaseFimag::operator<<(VbaseFimag &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Fimag & VbaseFimag::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseFimag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Fimag & VbaseFimag::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseFimag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Fimag & VbaseFimag::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Fimag & VbaseFimag::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Fimag & VbaseFimag::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Fimag & VbaseFimag::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseFimag::~VbaseFimag()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
 class VbaseImag
 {
 protected:
@@ -1062,8 +1680,6 @@ public:
     void resize(Long_I N);
     Imag & operator[](Long_I i);
     const Imag & operator[](Long_I i) const;
-    Imag & operator()(Long_I i);
-    const Imag & operator()(Long_I i) const;
     Imag& end();
     const Imag& end() const;
     Imag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1072,11 +1688,12 @@ public:
     ~VbaseImag();
 };
 
-inline VbaseImag::VbaseImag() : m_N(0) {}
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseImag::VbaseImag() : m_N(0), m_p(nullptr) {}
 
 inline VbaseImag::VbaseImag(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -1167,12 +1784,6 @@ inline const Imag & VbaseImag::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Imag & VbaseImag::operator()(Long_I i)
-{ return (*this)[i]; }
-
-inline const Imag & VbaseImag::operator()(Long_I i) const
-{ return (*this)[i]; }
-
 inline Imag & VbaseImag::end()
 {
 #ifdef SLS_CHECK_BOUNDS
@@ -1215,6 +1826,171 @@ inline VbaseImag::~VbaseImag()
         delete[] m_p;
 }
 
+class VbaseLimag
+{
+protected:
+    Limag *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    typedef Limag value_type;
+    // constructors
+    VbaseLimag();
+    explicit VbaseLimag(Long_I N);
+    VbaseLimag(const VbaseLimag &rhs); // copy constructor
+
+    // get properties
+    Limag* ptr(); // get pointer
+    const Limag* ptr() const;
+    Long size() const;
+    void resize(Long_I N);
+    Limag & operator[](Long_I i);
+    const Limag & operator[](Long_I i) const;
+    Limag& end();
+    const Limag& end() const;
+    Limag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Limag& end(Long_I i) const;
+    void operator<<(VbaseLimag &rhs); // move data
+    ~VbaseLimag();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseLimag::VbaseLimag() : m_N(0), m_p(nullptr) {}
+
+inline VbaseLimag::VbaseLimag(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Limag[N];
+}
+
+// copy constructor
+inline VbaseLimag::VbaseLimag(const VbaseLimag &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Limag[m_N];
+        memcpy(m_p, rhs.ptr(), m_N);
+    }
+}
+
+inline Limag * VbaseLimag::ptr()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Limag * VbaseLimag::ptr() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using ptr() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseLimag::size() const
+{
+    return m_N;
+}
+
+inline void VbaseLimag::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) {
+            m_N = N; m_p = new Limag[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Limag[N];
+            }
+        }
+    }
+}
+
+inline void VbaseLimag::operator<<(VbaseLimag &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Limag & VbaseLimag::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseLimag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Limag & VbaseLimag::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseLimag index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Limag & VbaseLimag::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Limag & VbaseLimag::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Limag & VbaseLimag::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Limag & VbaseLimag::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseLimag::~VbaseLimag()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
 
 class VbaseBool
 {
@@ -1230,20 +2006,18 @@ public:
     // get properties
     Long size() const;
     void resize(Long_I N);
-    VbaseBool::ref operator[](Long_I i);
+    ref operator[](Long_I i);
     Bool operator[](Long_I i) const;
-    VbaseBool::ref operator()(Long_I i);
-    Bool operator()(Long_I i) const;
-    VbaseBool::ref end();
+    ref end();
     Bool end() const;
-    VbaseBool::ref end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    ref end(Long_I i); // i = 1 for the last, i = 2 for the second last...
     Bool end(Long_I i) const;
     void operator<<(VbaseBool &rhs); // move data
 };
 
 inline VbaseBool::VbaseBool(Long_I N)
 {
-#ifdef SLS_CHECK_SHAPE
+#ifdef SLS_CHECK_SHAPES
     if (N < 0)
         SLS_ERR("size less than 0!");
 #endif
@@ -1292,12 +2066,6 @@ inline Bool VbaseBool::operator[](Long_I i) const
 #endif
     return m_v[i];
 }
-
-inline VbaseBool::ref VbaseBool::operator()(Long_I i)
-{ return m_v[i]; }
-
-inline Bool VbaseBool::operator()(Long_I i) const
-{ return m_v[i]; }
 
 inline VbaseBool::ref VbaseBool::end()
 {

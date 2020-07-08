@@ -170,14 +170,17 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
-        vecStr32 titles, entries;
-        try {entries_titles(titles, entries, path_in);}
+        vecStr32 titles, entries; VecLong entry_order;
+        Long Ntoc; // number of entries in main.tex
+        try { Ntoc = entries_titles(titles, entries, entry_order, path_in); }
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
         }
         write_vec_str(titles, path_data + U"titles.txt");
         write_vec_str(entries, path_data + U"entries.txt");
+        Matt matt(utf32to8(path_data) + "entry_order.matt", "w");
+        save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
