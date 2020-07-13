@@ -575,6 +575,8 @@ inline Long autoref_space(Str32_I str, Bool_I error)
         catch (...) {
             throw Str32(U"\autoref 后面没有大括号: " + str.substr(ind0, 20));
         }
+        if (ind0 >= str.size())
+            return N;
         Bool continue2 = false;
         for (Long i = 0; i < follow2.size(); ++i) {
             if (expect(str, follow2[i], ind0) >= 0) {
