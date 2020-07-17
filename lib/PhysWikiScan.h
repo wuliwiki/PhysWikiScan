@@ -563,7 +563,7 @@ inline Long theorem_like_env(Str32_IO str)
 inline Long autoref_space(Str32_I str, Bool_I error)
 {
     Long ind0 = 0, N = 0;
-    Str32 follow = U" ，、．）”";
+    Str32 follow = U" ，、．）~”";
     vecStr32 follow2 = { U"\\begin", U"\\upref" };
     Str32 msg;
     while (true) {
@@ -593,6 +593,27 @@ inline Long autoref_space(Str32_I str, Bool_I error)
         else
             SLS_WARN(utf32to8(msg));
         ++N;
+    }
+}
+
+inline Long autoref_tilde_upref(Str32_IO str)
+{
+    Long ind0 = 0, N = 0;
+    while (true) {
+        ind0 = find_command(str, U"autoref", ind0);
+        if (ind0 < 0)
+            return N;
+        ind0 = skip_command(str, ind0, 1);
+        if (ind0 == str.size())
+            return N;
+        Long ind1 = expect(str, U"~", ind0);
+        if (ind1 < 0)
+            continue;
+        Long ind2 = expect(str, U"\\upref", ind1);
+        if (ind2 < 0)
+            throw Str32(U"\\autoref{} 后面不应该有单独的 ~");
+        str.erase(ind1-1, 1);
+        ind0 = ind2;
     }
 }
 
@@ -1457,6 +1478,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     rm_comments(str); // remove comments
     limit_env_cmd(str);
     autoref_space(str, false); // set true to error instead of warning
+    autoref_tilde_upref(str);
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
