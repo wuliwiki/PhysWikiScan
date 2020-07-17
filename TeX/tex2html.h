@@ -429,6 +429,8 @@ inline Long Table(Str32_IO str)
         if (ind0 < 0 || ind0 > intv.R(i))
             throw Str32(U"table no caption!");
         command_arg(captions[i], str, ind0);
+        if ((Long)captions[i].find(U"\\footnote") >= 0)
+            throw Str32(U"表格标题中不能添加 \\footnote");
         // recognize \hline and replace with tags, also deletes '\\'
         while (true) {
             ind0 = str.find(U"\\hline", ind0);

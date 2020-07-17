@@ -440,7 +440,8 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
             throw Str32(U"图片标题未找到");
         }
         command_arg(caption, str, ind0);
-
+        if ((Long)caption.find(U"\\footnote") >= 0)
+            throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
         num2str(widthPt, (Long)(33.4 * width));
         num2str(figNo, i + 1);
