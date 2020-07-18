@@ -375,22 +375,25 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // if `imgs` is empty, `imgs` and `mark` will be ignored
 inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I imgs, Str32_I path_out, Str32_I path_in, Str32_I url)
 {
-    Long i{}, N{}, Nfig{}, ind0{}, ind1{}, indName1{}, indName2{};
-    double width{}; // figure width in cm
+    Long N = 0;
     Intvs intvFig;
     Str32 figName, fname_in, fname_out;
     Str32 format, caption, widthPt, figNo, version;
-    Nfig = find_env(intvFig, str, U"figure", 'o');
-    for (i = Nfig - 1; i >= 0; --i) {
+    Long Nfig = find_env(intvFig, str, U"figure", 'o');
+    for (Long i = Nfig - 1; i >= 0; --i) {
+        num2str(figNo, i + 1);
         // get width of figure
-        ind0 = str.find(U"width", intvFig.L(i)) + 5;
+        Long ind0 = str.find(U"width", intvFig.L(i)) + 5;
         ind0 = expect(str, U"=", ind0);
         ind0 = find_num(str, ind0);
+        Doub width; // figure width in cm
         str2double(width, str, ind0);
+        if (width > 14.5)
+            throw Str32(U"图" + figNo + U"尺寸不能超过 14.5cm");
 
         // get file name of figure
-        indName1 = str.find(U"figures/", ind0) + 8;
-        indName2 = str.find(U"}", ind0) - 1;
+        Long indName1 = str.find(U"figures/", ind0) + 8;
+        Long indName2 = str.find(U"}", ind0) - 1;
         if (indName1 < 0 || indName2 < 0) {
             throw Str32(U"读取图片名错误");
         }
@@ -443,8 +446,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         if ((Long)caption.find(U"\\footnote") >= 0)
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
-        num2str(widthPt, (Long)(33.4 * width));
-        num2str(figNo, i + 1);
+        num2str(widthPt, (Long)(39.8 * width));
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt
             + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
