@@ -608,8 +608,11 @@ inline Long autoref_tilde_upref(Str32_IO str)
         if (ind0 == str.size())
             return N;
         Long ind1 = expect(str, U"~", ind0);
-        if (ind1 < 0)
+        if (ind1 < 0) {
+            if (expect(str, U"\\upref", ind0) > 0)
+                throw Str32(U"\\autoref{} 和 \\upref{} 中间应该有 ~");
             continue;
+        }
         Long ind2 = expect(str, U"\\upref", ind1);
         if (ind2 < 0)
             throw Str32(U"\\autoref{} 后面不应该有单独的 ~");
