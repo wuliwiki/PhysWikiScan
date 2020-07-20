@@ -108,7 +108,7 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
     }
 
     // directly specify paths
-    if (N > 3 && args[N - 5] == U"--path-in-out-data-url") {
+    if (N > 5 && args[N - 5] == U"--path-in-out-data-url") {
         path_in = args[N - 4];
         path_out = args[N - 3];
         path_data = args[N - 2];
@@ -284,6 +284,13 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
+    else if (args[0] == U"--bib") {
+        // process bibliography
+        vecStr32 bib_labels, bib_details;
+        bibliography(bib_labels, bib_details, path_in, path_out);
+        write_vec_str(bib_labels, path_data + U"bib_labels.txt");
+        write_vec_str(bib_details, path_data + U"bib_details.txt");
+    }
     else if (args[0] == U"--all-commands") {
         vecStr32 commands;
         all_commands(commands, path_in + U"contents/");
@@ -299,7 +306,7 @@ int main(int argc, char *argv[]) {
     cout << u8"done!" << endl;
     if (argc <= 1) {
         cout << u8"按任意键退出..." << endl;
-        getchar();
+        Char c = getchar(); ++c;
     }
 
     return 0;

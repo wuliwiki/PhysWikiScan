@@ -644,18 +644,15 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             return N;
         inEq = index_in_env(ienv, ind0, envNames, str);
         ind1 = expect(str, U"{", ind0 + 8);
-        if (ind1 < 0) {
+        if (ind1 < 0)
             throw Str32(U"\\autoref 变量不能为空");
-        }
         ind1 = NextNoSpace(entry, str, ind1);
         ind2 = str.find('_', ind1);
-        if (ind2 < 0) {
+        if (ind2 < 0)
             throw Str32(U"\\autoref 格式错误");
-        }
         ind3 = find_num(str, ind2);
-        if (ind3 < 0) {
+        if (ind3 < 0)
             throw Str32(U"autoref 格式错误");
-        }
         idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
         if (idName == U"eq") kind = U"式";
         else if (idName == U"fig") kind = U"图";
@@ -877,6 +874,28 @@ inline Long upref(Str32_IO str, Str32_I path_in, Str32_I url)
         ++N;
     }
     return N;
+}
+
+// replace "\cite{}" with `[?]` cytation linke
+inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
+{
+    Long ind0 = 0, N = 0;
+    Str32 bib_label;
+    vecStr32 bib_labels, bib_details;
+    read_vec_str(bib_labels, path_data + U"bib_labels.txt");
+    // read_vec_str(bib_details, path_data + U"bib_details.txt");
+    while (true) {
+        ind0 = find_command(str, U"cite", ind0);
+        if (ind0 < 0)
+            return N;
+        ++N;
+        command_arg(bib_label, str, ind0);
+        Long ibib = search(bib_label, bib_labels);
+        if (ibib < 0)
+            throw Str32(U"文献 label 未找到：" + bib_label);
+        Long ind1 = skip_command(str, ind0, 1);
+        str.replace(ind0, ind1 - ind0, U" <a href=\"" + url + "bibliography.html#" + num2str(N) + "\">[" + num2str32(N) + "]</a> ");
+    }
 }
 
 // update entries.txt and titles.txt
@@ -1442,7 +1461,7 @@ inline Long inline_eq_space(Str32_IO str)
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
-    VecChar_IO imgs_mark, vecStr32_I imgs, Str32_I path_in, Str32_I path_out, Str32_I url)
+    VecChar_IO imgs_mark, vecStr32_I imgs, Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
     Str32 str;
     read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -1520,9 +1539,11 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
+    Command2Tag(U"textsl", U"<i>", U"</i>", str);
     // replace \upref{} with link icon
     upref(str, path_in, url);
     href(str);
+    cite(str, path_data, url); // citation
     // replace environments with html tags
     Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
                         U"\\end{equation}\n</div></div>", str);
@@ -1649,6 +1670,36 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     return 0;
 }
 
+inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I path_in, Str32_O path_out)
+{
+    Long N = 0;
+    Str32 str, bib_list, bib_label;
+    bib_labels.clear(); bib_details.clear();
+    read(str, path_in + U"bibliography.tex");
+    CRLF_to_LF(str);
+    Long ind0 = 0;
+    while (true) {
+        ind0 = find_command(str, U"bibitem", ind0);
+        if (ind0 < 0)
+            break;
+        command_arg(bib_label, str, ind0);
+        bib_labels.push_back(bib_label);
+        ind0 = skip_command(str, ind0, 1);
+        ind0 = expect(str, U"\n", ind0);
+        bib_details.push_back(getline(str, ind0));
+        href(bib_details.back()); Command2Tag(U"textsl", U"<i>", U"</i>", bib_details.back());
+        bib_list += U"<span id = \"" + num2str32(N) + "\"></span>[" + num2str32(++N) + U"] " + bib_details.back() + U"<br>\n";
+    }
+    Long ret = find_repeat(bib_labels);
+    if (ret > 0)
+        throw Str32(U"文献 label 重复：" + bib_labels[ret]);
+    Str32 html;
+    read(html, path_out + U"templates/bib_template.html");
+    replace(html, U"PhysWikiBibList", bib_list);
+    write(html, path_out + U"bibliography.html");
+    return N;
+}
+
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
 {
@@ -1694,7 +1745,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs, path_in, path_out, url);
+        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs, path_in, path_out, path_data, url);
     }
 
     // save id and label data
@@ -1796,7 +1847,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2;
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2, path_in, path_out, url);
+        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2, path_in, path_out, path_data, url);
     }
     
     write_vec_str(labels, path_data + U"labels.txt");

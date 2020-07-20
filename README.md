@@ -24,6 +24,7 @@
 * `PhysWikiScan --toc-changed`：生成目录 `changed.html`， 只含有 `changed.txt` 中列出的词条
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
 * `PhysWikiScan --autoref fname eq 8` 查找 `fname.tex` 词条的网页公式序号 (8) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{fname_eq#}`， 把插入的 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `added`， 更新 `ids.tex` 和 `labels.tex` （必须已经存在）。 如果 label 已经存在， 就直接把 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `exist`。 
+* `PhysWikiScan --bib` 生成文献列表
 
 ## 开发笔记
 * 如果要 debug 某一个文件的编译， 在 "PhysWikiScan.h" 中搜索 "one file debug"， 输入文件名设置 break point 即可。
