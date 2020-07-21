@@ -204,9 +204,11 @@ int main(int argc, char *argv[]) {
         }
     }
     else if (args[0] == U"--toc-changed" && args.size() == 1) {
+        SLS_WARN(u8"--toc-changed 选项已被弃用， 将自动忽略该命令");
+        return 0;
         // table of contents
         // read entries.txt and titles.txt, then generate changed.html from changed.txt
-        vecStr32 titles, entries;
+        /*vecStr32 titles, entries;
         if (file_exist(path_data + U"titles.txt"))
             read_vec_str(titles, path_data + U"titles.txt");
         if (file_exist(path_data + U"entries.txt"))
@@ -219,7 +221,7 @@ int main(int argc, char *argv[]) {
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
-        }
+        }*/
     }
     else if (args[0] == U"--clean" && args.size() == 1) {
         // clear changed record
