@@ -438,9 +438,10 @@ inline Long verb_intv(Intvs_O intv, Str32_I str)
     return N;
 }
 
-// find the range of inline equations using $$
+// find the range of inline equations using $...$
 // if option = 'i', intervals does not include $, if 'o', it does.
-// return the number of $$ environments found.
+// return the number of $...$ environments found.
+// "$$" with nothing inside will be ignored
 inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 {
     intv.clear();
@@ -450,8 +451,11 @@ inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
         ind0 = str.find(U"$", ind0);
         if (ind0 < 0)
             break;
-        if (ind0 > 0 && str.at(ind0 - 1) == '\\') { // escaped
+        if (ind0 > 0 && str[ind0 - 1] == U'\\') { // escaped
             ++ind0; continue;
+        }
+        if (ind0 < str.size() - 1 && str[ind0 + 1] == U'$') { // ignore $$
+            ind0 += 2; continue;
         }
         intv.push_back(ind0);
         ++ind0; ++N;
@@ -523,6 +527,32 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
     }
 }
 
+// find $$...$$ equation environments
+// assuming comments and verbatims are removed
+// if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
+inline void find_double_dollar_env(Intvs_O intv, Str32_I str, Char_I option)
+{
+    intv.clear();
+    Long ind0 = 0;
+    while (true) {
+        ind0 = str.find(U"$$", ind0);
+        if (ind0 < 0)
+            return;
+        if (option == 'i')
+            intv.pushL(ind0+2);
+        else
+            intv.pushL(ind0);
+        ind0 = str.find(U"$$", ind0+2);
+        if (ind0 < 0)
+            throw Str32(U"$$...$$ 公式环境不闭合");
+        if (option == 'i')
+            intv.pushR(ind0 - 1);
+        else
+            intv.pushR(ind0 + 1);
+        ++ind0;
+    }
+}
+
 // Find normal text range
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
@@ -538,6 +568,9 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     combine(intv, intv1);
     // inline equation environments
     find_inline_eq(intv1, str, 'o');
+    combine(intv, intv1);
+    // $$...$$ equation environments
+    find_double_dollar_env(intv1, str, 'o');
     combine(intv, intv1);
     // equation environments
     find_env(intv1, str, U"equation", 'o');

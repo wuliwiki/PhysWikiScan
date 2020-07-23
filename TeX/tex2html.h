@@ -389,7 +389,7 @@ inline Long TextEscape(Str32_IO str, Str32_I path_out)
     return N;
 }
 
-// deal with escape simbols in normal text, \x{} commands, Command environments
+// deal with escape simbols in normal text, Command environments
 // must be done before \command{} and environments are replaced with html tags
 inline Long NormalTextEscape(Str32_IO str, Str32_I path_out)
 {
