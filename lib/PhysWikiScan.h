@@ -79,7 +79,12 @@ inline Long paragraph_tag(Str32_IO str)
             next = 'f';
         }
         else {
+            Long double_dollar_right;
+            Long double_dollar_left = find_next_double_dollar_env(double_dollar_right, str, 'o', ind0);
             ind0 = find_command(ikey, str, commands, ind0);
+            if (ind0 > double_dollar_left&& ind0 < double_dollar_right) {
+                ind0 = double_dollar_right + 1; continue;
+            }            
             if (ind0 < 0)
                 next = 'f';
             else {

@@ -553,6 +553,32 @@ inline void find_double_dollar_env(Intvs_O intv, Str32_I str, Char_I option)
     }
 }
 
+// find next $$...$$ equation environments
+// assuming comments and verbatims are removed
+// return left index, output right index
+// return and output -1 if not found
+// if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
+inline Long find_next_double_dollar_env(Long_O right, Str32_I str, Char_I option, Long_I start = 0)
+{
+    Long left;
+    Long ind0 = str.find(U"$$", start);
+    if (ind0 < 0) {
+        right = -1; return -1;
+    }
+    if (option == 'i')
+        left = ind0 + 2;
+    else
+        left = ind0;
+    ind0 = str.find(U"$$", ind0 + 2);
+    if (ind0 < 0)
+        throw Str32(U"$$...$$ 公式环境不闭合");
+    if (option == 'i')
+        right = ind0 - 1;
+    else
+        right = ind0 + 1;
+    return left;
+}
+
 // Find normal text range
 inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
 {
