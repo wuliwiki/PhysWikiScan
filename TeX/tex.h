@@ -442,7 +442,7 @@ inline Long verb_intv(Intvs_O intv, Str32_I str)
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $...$ environments found.
 // "$$" with nothing inside will be ignored
-inline Long find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long find_single_dollar_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 {
     intv.clear();
     Long N{}; // number of $$
@@ -593,10 +593,10 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     find_comments(intv1, str, U"%");
     combine(intv, intv1);
     // inline equation environments
-    find_inline_eq(intv1, str, 'o');
+    find_single_dollar_eq(intv1, str, 'o');
     combine(intv, intv1);
     // $$...$$ equation environments
-    find_double_dollar_env(intv1, str, 'o');
+    find_double_dollar_eq(intv1, str, 'o');
     combine(intv, intv1);
     // equation environments
     find_env(intv1, str, U"equation", 'o');

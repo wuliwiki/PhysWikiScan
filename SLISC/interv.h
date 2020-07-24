@@ -161,6 +161,17 @@ inline Bool is_in(Long_I i, Intvs_I intvs)
     return false;
 }
 
+// if is_in() is true, return the number of interval
+// if not true, return -1
+inline Long is_in_no(Long_I i, Intvs_I intvs)
+{
+    for (Long j = 0; j < intvs.size(); ++j) {
+        if (intvs.L(j) <= i && i <= intvs.R(j))
+            return j;
+    }
+    return -1;
+}
+
 // invert ranges in ind0, output to ind1
 // [0, N-1] is the total domain
 Long invert(Intvs_O ind, Intvs_I ind0, Long_I N)

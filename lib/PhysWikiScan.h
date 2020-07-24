@@ -53,7 +53,6 @@ inline Long paragraph_tag1(Str32_IO str)
 inline Long paragraph_tag(Str32_IO str)
 {
     Long N = 0, ind0 = 0, left = 0, length, ikey;
-    Intvs intv;
     Str32 temp, env, end, begin = U"<p>　　\n";
 
     // "begin", and commands that cannot be in a paragraph
@@ -68,8 +67,7 @@ inline Long paragraph_tag(Str32_IO str)
     // 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
     char next, last = 'n';
 
-    Intvs intvInline;
-    find_inline_eq(intvInline, str);
+    Intvs intv, intvInline;
 
     // handle normal text intervals separated by
     // commands in "commands" and environments
@@ -79,17 +77,18 @@ inline Long paragraph_tag(Str32_IO str)
             next = 'f';
         }
         else {
-            Long double_dollar_right;
-            Long double_dollar_left = find_next_double_dollar_env(double_dollar_right, str, 'o', ind0);
             ind0 = find_command(ikey, str, commands, ind0);
-            if (ind0 > double_dollar_left&& ind0 < double_dollar_right) {
-                ind0 = double_dollar_right + 1; continue;
-            }            
+            find_double_dollar_eq(intv, str, 'o');
+            Long itmp = is_in_no(ind0, intv);
+            if (itmp >= 0) {
+                ind0 = intv.R(itmp) + 1; continue;
+            }
             if (ind0 < 0)
                 next = 'f';
             else {
                 next = 'n';
                 if (ikey == 0) { // found environment
+                    find_single_dollar_eq(intvInline, str);
                     if (is_in(ind0, intvInline)) {
                         ++ind0; continue; // ignore in inline equation
                     }
@@ -139,7 +138,7 @@ inline Long paragraph_tag(Str32_IO str)
             temp = begin + temp + end;
         }
         str.replace(left, length, temp);
-        find_inline_eq(intvInline, str);
+        find_single_dollar_eq(intvInline, str);
         if (next == 'f')
             return N;
         ind0 += temp.size() - length;
@@ -154,7 +153,7 @@ inline Long paragraph_tag(Str32_IO str)
                 temp = str.substr(left, length);
                 paragraph_tag(temp);
                 str.replace(left, length, temp);
-                find_inline_eq(intvInline, str);
+                find_single_dollar_eq(intvInline, str);
                 ind0 = ind1 + temp.size() - length;
             }
             else
@@ -1446,7 +1445,7 @@ inline Long inline_eq_space(Str32_IO str)
 {
     Long N = 0;
     Intvs intv;
-    find_inline_eq(intv, str, 'o');
+    find_single_dollar_eq(intv, str, 'o');
     for (Long i = intv.size() - 1; i >= 0; --i) {
         Long ind0 = intv.R(i) + 1;
         if (is_chinese(str[ind0])) {

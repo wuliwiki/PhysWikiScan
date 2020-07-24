@@ -43,7 +43,7 @@ inline Long EqOmitTag(Str32_IO str)
     Long i{}, N{}, Nrange{};
     Intvs intv, indInline;
     find_env(intv, str, U"equation");
-    find_inline_eq(indInline, str);
+    find_single_dollar_eq(indInline, str);
     Nrange = combine(intv, indInline);
     for (i = Nrange - 1; i >= 0; --i) {
         N += EnsureSpace(U"<", str, intv.L(i), intv.R(i));
