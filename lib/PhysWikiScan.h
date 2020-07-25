@@ -886,7 +886,8 @@ inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
     Long ind0 = 0, N = 0;
     Str32 bib_label;
     vecStr32 bib_labels, bib_details;
-    read_vec_str(bib_labels, path_data + U"bib_labels.txt");
+    if (file_exist(path_data + U"bib_labels.txt"))
+        read_vec_str(bib_labels, path_data + U"bib_labels.txt");
     // read_vec_str(bib_details, path_data + U"bib_details.txt");
     while (true) {
         ind0 = find_command(str, U"cite", ind0);
@@ -896,7 +897,7 @@ inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
         command_arg(bib_label, str, ind0);
         Long ibib = search(bib_label, bib_labels);
         if (ibib < 0)
-            throw Str32(U"文献 label 未找到：" + bib_label);
+            throw Str32(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
         Long ind1 = skip_command(str, ind0, 1);
         str.replace(ind0, ind1 - ind0, U" <a href=\"" + url + "bibliography.html#" + num2str(N) + "\">[" + num2str32(N) + "]</a> ");
     }
