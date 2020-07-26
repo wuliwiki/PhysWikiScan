@@ -1677,7 +1677,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     return 0;
 }
 
-inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I path_in, Str32_O path_out)
+inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I path_in, Str32_I path_out)
 {
     Long N = 0;
     Str32 str, bib_list, bib_label;
@@ -1720,6 +1720,12 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     vecStr32 chap_name, part_name;
     Long Ntoc; // number of entries in table of contents
     
+    // process bibliography
+    vecStr32 bib_labels, bib_details;
+    bibliography(bib_labels, bib_details, path_in, path_out);
+    write_vec_str(bib_labels, path_data + U"bib_labels.txt");
+    write_vec_str(bib_details, path_data + U"bib_details.txt");
+
     Ntoc = entries_titles(titles, entries, entry_order, path_in);
     write_vec_str(titles, path_data + U"titles.txt");
     write_vec_str(entries, path_data + U"entries.txt");
