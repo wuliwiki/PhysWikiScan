@@ -511,6 +511,7 @@ inline Long RemoveNoEntry(vecStr32_IO names)
     Long i{}, j{}, N{}, Nnames{}, Nnames0;
     vecStr32 names0; // names to remove
     names0.push_back(U"FrontMatters");
+    names0.push_back(U"bibliography");
     // add other names here
     Nnames = names.size();
     Nnames0 = names0.size();
