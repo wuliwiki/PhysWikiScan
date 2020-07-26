@@ -899,7 +899,7 @@ inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
         if (ibib < 0)
             throw Str32(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
         Long ind1 = skip_command(str, ind0, 1);
-        str.replace(ind0, ind1 - ind0, U" <a href=\"" + url + "bibliography.html#" + num2str(N) + "\">[" + num2str32(N) + "]</a> ");
+        str.replace(ind0, ind1 - ind0, U" <a href=\"" + url + "bibliography.html#" + num2str(ibib+1) + "\">[" + num2str32(ibib+1) + "]</a> ");
     }
 }
 
@@ -1695,7 +1695,8 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I 
         ind0 = expect(str, U"\n", ind0);
         bib_details.push_back(getline(str, ind0));
         href(bib_details.back()); Command2Tag(U"textsl", U"<i>", U"</i>", bib_details.back());
-        bib_list += U"<span id = \"" + num2str32(N) + "\"></span>[" + num2str32(++N) + U"] " + bib_details.back() + U"<br>\n";
+        ++N;
+        bib_list += U"<span id = \"" + num2str32(N) + "\"></span>[" + num2str32(N) + U"] " + bib_details.back() + U"<br>\n";
     }
     Long ret = find_repeat(bib_labels);
     if (ret > 0)
