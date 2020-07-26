@@ -377,7 +377,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // path must end with '\\'
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
-inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I imgs, Str32_I path_out, Str32_I path_in, Str32_I url)
+inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs, Str32_I path_out, Str32_I path_in, Str32_I url)
 {
     Long N = 0;
     Intvs intvFig;
@@ -423,7 +423,9 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, vecStr32_I img
         if (!file_exist(fname_in)) {
             throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
         }
-
+        Long itmp = figName.find(U'_');
+        if (itmp <= 0 || figName.substr(0, itmp) != entry)
+            throw Str32(U"图片 \"" + fname_in + U"\" 命名格式错误， 建议用上传按钮插入图片");
         if (imgs.size() > 0) {
             Long n = search(figName + U"." + format, imgs);
             if (n < 0)
@@ -1536,7 +1538,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(imgs_mark, str, imgs, path_out, path_in, url);
+    FigureEnvironment(imgs_mark, str, entries[ind], imgs, path_out, path_in, url);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
     // process \pentry{}
