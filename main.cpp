@@ -289,7 +289,11 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--bib") {
         // process bibliography
         vecStr32 bib_labels, bib_details;
-        bibliography(bib_labels, bib_details, path_in, path_out);
+        try { bibliography(bib_labels, bib_details, path_in, path_out); }
+        catch (Str32_I msg) {
+            cerr << utf32to8(msg) << endl;
+            return 0;
+        }
         write_vec_str(bib_labels, path_data + U"bib_labels.txt");
         write_vec_str(bib_details, path_data + U"bib_details.txt");
     }
