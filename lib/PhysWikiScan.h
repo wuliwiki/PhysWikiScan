@@ -420,12 +420,12 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
 
         fname_in = path_in + U"figures/" + figName + U"." + format;
         fname_out = path_out + figName + U"." + format;
-        if (!file_exist(fname_in)) {
-            throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
-        }
         Long itmp = figName.find(U'_');
         if (itmp <= 0 || figName.substr(0, itmp) != entry)
             throw Str32(U"图片 \"" + fname_in + U"\" 命名格式错误， 建议用上传按钮插入图片");
+        if (!file_exist(fname_in)) {
+            throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
+        }
         if (imgs.size() > 0) {
             Long n = search(figName + U"." + format, imgs);
             if (n < 0)
