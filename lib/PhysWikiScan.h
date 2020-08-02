@@ -381,8 +381,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
 {
     Long N = 0;
     Intvs intvFig;
-    Str32 figName, fname_in, fname_out;
-    Str32 format, caption, widthPt, figNo, version;
+    Str32 figName, fname_in, fname_out, href, format, caption, widthPt, figNo, version;
     Long Nfig = find_env(intvFig, str, U"figure", 'o');
     for (Long i = Nfig - 1; i >= 0; --i) {
         num2str(figNo, i + 1);
@@ -453,10 +452,11 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
+        href = url + figName + U"." + format + version;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
-            U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-            + U"em;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
-            + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图 " + figNo
+            U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
+            + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
+            + U"\" alt = \"图\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> 图 " + figNo
             + U"：" + caption + U"</div>");
         ++N;
     }
