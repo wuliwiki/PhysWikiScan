@@ -392,8 +392,8 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
         ind0 = find_num(str, ind0);
         Doub width; // figure width in cm
         str2double(width, str, ind0);
-        if (width > 14.5)
-            throw Str32(U"图" + figNo + U"尺寸不能超过 14.5cm");
+        if (width > 14.25)
+            throw Str32(U"图" + figNo + U"尺寸不能超过 14.25cm");
 
         // get file name of figure
         Long indName1 = str.find(U"figures/", ind0) + 8;
@@ -452,10 +452,10 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
         if ((Long)caption.find(U"\\footnote") >= 0)
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
-        num2str(widthPt, (Long)(39.8 * width));
+        num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt
-            + U"pt;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
+            + U"em;\">\n" + U"<img src = \"" + url + figName + U"." + format + version
             + U"\" alt = \"图\" style = \"width:100%;\">\n</div>\n<div align = \"center\"> 图 " + figNo
             + U"：" + caption + U"</div>");
         ++N;
