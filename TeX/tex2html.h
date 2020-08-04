@@ -154,7 +154,9 @@ inline Long define_newcommands(vecStr32_O rules)
             U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
     };
     rules += {
-        U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
+            U"lambdabar", U"", U"0", U"\\mkern-0.25mu {\\bar{\\phantom{a}}} \\mkern -10.2mu\\lambda",
+            
+            U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
 
             U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned} #1 \\end{aligned}\\right.",
 
