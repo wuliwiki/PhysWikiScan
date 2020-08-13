@@ -179,6 +179,7 @@ int main(int argc, char *argv[]) {
         }
         write_vec_str(titles, path_data + U"titles.txt");
         write_vec_str(entries, path_data + U"entries.txt");
+        file_remove(utf32to8(path_data) + "entry_order.matt");
         Matt matt(utf32to8(path_data) + "entry_order.matt", "w");
         save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     }
@@ -197,7 +198,7 @@ int main(int argc, char *argv[]) {
         vecStr32 not_used1, not_used3;
         vecLong not_used2, not_used4;
         try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
-            entries, path_in, path_out);}
+            entries, path_in, path_out, url);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;

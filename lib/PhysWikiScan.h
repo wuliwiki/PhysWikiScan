@@ -1015,10 +1015,10 @@ inline void check_normal_text_punc(Str32_I str)
 // `chap_ind[i]` is similar to `part_ind[i]`, for chapters
 // if part_ind.size() == 0, `chap_name, chap_ind, part_ind, part_name` will be ignored
 inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
-    vecLong_O part_ind, vecStr32_I entries, Str32_I path_in, Str32_I path_out)
+    vecLong_O part_ind, vecStr32_I entries, Str32_I path_in, Str32_I path_out, Str32_I url)
 {
     Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
-    vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\Entry", U"\\laserdog"};
+    vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
     vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
                 U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
                 U"十七", U"十八", U"十九", U"二十", U"二十一", U"二十二", U"二十三", U"二十四"};
@@ -1053,7 +1053,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         ind1 = find(ikey, str, keys, ind1);
         if (ind1 < 0)
             break;
-        if (ikey >= 2) { // found "\entry"
+        if (ikey == 2) { // found "\entry"
             // get chinese title and entry label
             ++N;
             command_arg(title, str, ind1);
@@ -1063,7 +1063,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             }
             command_arg(entryName, str, ind1, 1);
             // insert entry into html table of contents
-            ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
+            ind0 = insert(toc, U"<a href = \"" + url + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title
             Long n = search(entryName, entries);
@@ -1093,11 +1093,11 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
              ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
                  + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1;
-         }
-         else if (ikey == 0){ // found "\part"
+        }
+        else if (ikey == 0){ // found "\part"
              // get chinese part name
              chapNo = -1;
-            command_arg(title, str, ind1);
+             command_arg(title, str, ind1);
              replace(title, U"\\ ", U" ");
              // insert part into html table of contents
              ++partNo;
@@ -1110,7 +1110,13 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
                 U"</div>\n\n<div class = \"w3-container\">\n"
                 , ind0);
             ++ind1;
-         }
+        }
+        else if (ikey == 3) { // found "\bibli"
+            title = U"参考文献";
+            ind0 = insert(toc, U"<a href = \"" + url + U"bibliography.html\" target = \"_blank\">"
+                + title + U"</a>　\n", ind0);
+            ++ind1;
+        }
     }
     toc.insert(ind0, U"</p>\n</div>");
     write(toc, path_out + "index.html");
@@ -1742,7 +1748,7 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries, path_in, path_out);
+    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries, path_in, path_out, url);
     file_list_ext(imgs, path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); copy(imgs_mark, 0); // check if image has been used
