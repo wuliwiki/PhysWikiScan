@@ -560,7 +560,7 @@ inline Long issuesEnv(Str32_IO str)
 // mark incomplete
 inline Long addTODO(Str32_IO str)
 {
-    return Command2Tag(U"addTODO", U"<div class = \"w3-panel w3-round-large w3-khaki\"><ul><li>未完成：", U"</li></ul></div>", str);
+    return Command2Tag(U"addTODO", U"<div class = \"w3-panel w3-round-large w3-khaki\">未完成：", U"</div>", str);
 }
 
 // remove special .tex files from a list of name
