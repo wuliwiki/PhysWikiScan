@@ -660,9 +660,10 @@ inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
     return N;
 }
 
-// replace \nameComm{...} with strLeft...strRight
+// replace all \nameComm{...} with strLeft...strRight
 // {} cannot be omitted
 // must remove comments first
+// return the number replaced
 inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};

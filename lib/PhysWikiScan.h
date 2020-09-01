@@ -510,7 +510,7 @@ inline Long issuesEnv(Str32_IO str)
 {
     Long Nenv = Env2Tag(U"issues", U"<div class = \"w3-panel w3-round-large w3-khaki\"><ul>", U"</ul></div>", str);
     if (Nenv > 1)
-        throw Str32(U"不支持多个 issues 环境");
+        throw Str32(U"不支持多个 issues 环境， issues 必须放到最开始");
     else if (Nenv == 0)
         return 0;
 
@@ -520,7 +520,14 @@ inline Long issuesEnv(Str32_IO str)
     ind0 = find_command(str, U"issueDraft");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条处于草稿阶段，欢迎参与创作．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条处于草稿阶段．</li>");
+        ++N;
+    }
+    // issueTODO
+    ind0 = find_command(str, U"issueTODO");
+    if (ind0 > 0) {
+        ind1 = skip_command(str, ind0);
+        str.replace(ind0, ind1 - ind0, U"<li>本词条存在未完成的内容．</li>");
         ++N;
     }
     // issueNeedCite
@@ -532,16 +539,14 @@ inline Long issuesEnv(Str32_IO str)
     }
     // issueOther
     ind0 = 0;
-    while (true) {
-        ind0 = find_command(str, U"issueOther", ind0);
-        if (ind0 < 0)
-            break;
-        command_arg(arg, str, ind0);
-        ind1 = skip_command(str, ind0, 1);
-        str.replace(ind0, ind1 - ind0, U"<li>" + arg + U"</li>");
-        ++N;
-    }
+    N += Command2Tag(U"issueOther", U"<li>", U"</li>", str);
     return N;
+}
+
+// mark incomplete
+inline Long addTODO(Str32_IO str)
+{
+    return Command2Tag(U"addTODO", U"<div class = \"w3-panel w3-round-large w3-khaki\"><ul><li>未完成：", U"</li></ul></div>", str);
 }
 
 // remove special .tex files from a list of name
@@ -1588,6 +1593,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     depend_entry(links, str, entries, ind);
     // issues environment
     issuesEnv(str);
+    addTODO(str);
     // process \pentry{}
     pentry(str);
     // replace user defined commands
