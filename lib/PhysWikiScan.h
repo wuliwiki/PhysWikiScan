@@ -530,6 +530,20 @@ inline Long issuesEnv(Str32_IO str)
         str.replace(ind0, ind1 - ind0, U"<li>本词条存在未完成的内容．</li>");
         ++N;
     }
+    // issueMissDepend
+    ind0 = find_command(str, U"issueMissDepend");
+    if (ind0 > 0) {
+        ind1 = skip_command(str, ind0);
+        str.replace(ind0, ind1 - ind0, U"<li>本词条缺少预备知识， 初学者可能难以理解．</li>");
+        ++N;
+    }
+    // issueAbstract
+    ind0 = find_command(str, U"issueAbstract");
+    if (ind0 > 0) {
+        ind1 = skip_command(str, ind0);
+        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多讲解， 便于帮助理解．</li>");
+        ++N;
+    }
     // issueNeedCite
     ind0 = find_command(str, U"issueNeedCite");
     if (ind0 > 0) {
