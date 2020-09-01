@@ -508,7 +508,7 @@ inline Long pentry(Str32_IO str)
 // issue environment
 inline Long issuesEnv(Str32_IO str)
 {
-    Long Nenv = Env2Tag(U"issues", U"<div class = \"w3-panel w3-round-large w3-pale-red\"><ul>", U"</ul></div>", str);
+    Long Nenv = Env2Tag(U"issues", U"<div class = \"w3-panel w3-round-large w3-sand\"><ul>", U"</ul></div>", str);
     if (Nenv > 1)
         throw Str32(U"不支持多个 issues 环境， issues 必须放到最开始");
     else if (Nenv == 0)
@@ -534,7 +534,7 @@ inline Long issuesEnv(Str32_IO str)
     ind0 = find_command(str, U"issueMissDepend");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条缺少预备知识， 初学者可能难以理解．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条缺少预备知识， 初学者可能会遇到困难．</li>");
         ++N;
     }
     // issueAbstract
@@ -560,7 +560,7 @@ inline Long issuesEnv(Str32_IO str)
 // mark incomplete
 inline Long addTODO(Str32_IO str)
 {
-    return Command2Tag(U"addTODO", U"<div class = \"w3-panel w3-round-large w3-pale-red\">未完成：", U"</div>", str);
+    return Command2Tag(U"addTODO", U"<div class = \"w3-panel w3-round-large w3-sand\">未完成：", U"</div>", str);
 }
 
 // remove special .tex files from a list of name
