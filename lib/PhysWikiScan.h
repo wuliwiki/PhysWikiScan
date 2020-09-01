@@ -208,7 +208,7 @@ inline void limit_env_cmd(Str32_I str)
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
         U"case", U"Bmatrix", U"bmatrix", U"eqnarray", U"eqnarray*", U"multline", U"multline*",
-        U"smallmatrix", U"subarray", U"Vmatrix" };
+        U"smallmatrix", U"subarray", U"Vmatrix", U"issues" };
 
     Str32 env;
     Long ind0 = -1;
@@ -503,6 +503,45 @@ inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, L
 inline Long pentry(Str32_IO str)
 {
     return Command2Tag(U"pentry", U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", U"</div>", str);
+}
+
+// issue environment
+inline Long issuesEnv(Str32_IO str)
+{
+    Long Nenv = Env2Tag(U"issues", U"<div class = \"w3-panel w3-round-large w3-khaki\"><ul>", U"</ul></div>", str);
+    if (Nenv > 1)
+        throw Str32(U"不支持多个 issues 环境");
+    else if (Nenv == 0)
+        return 0;
+
+    Long ind0 = -1, ind1 = -1, N = 0;
+    Str32 arg;
+    // issueDraft
+    ind0 = find_command(str, U"issueDraft");
+    if (ind0 > 0) {
+        ind1 = skip_command(str, ind0);
+        str.replace(ind0, ind1 - ind0, U"<li>本词条处于草稿阶段，欢迎参与创作．</li>");
+        ++N;
+    }
+    // issueNeedCite
+    ind0 = find_command(str, U"issueNeedCite");
+    if (ind0 > 0) {
+        ind1 = skip_command(str, ind0);
+        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多参考文献．</li>");
+        ++N;
+    }
+    // issueOther
+    ind0 = 0;
+    while (true) {
+        ind0 = find_command(str, U"issueOther", ind0);
+        if (ind0 < 0)
+            break;
+        command_arg(arg, str, ind0);
+        ind1 = skip_command(str, ind0, 1);
+        str.replace(ind0, ind1 - ind0, U"<li>" + arg + U"</li>");
+        ++N;
+    }
+    return N;
 }
 
 // remove special .tex files from a list of name
@@ -1547,6 +1586,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     FigureEnvironment(imgs_mark, str, entries[ind], imgs, path_out, path_in, url);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
+    // issues environment
+    issuesEnv(str);
     // process \pentry{}
     pentry(str);
     // replace user defined commands
