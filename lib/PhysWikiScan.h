@@ -1031,7 +1031,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
 }
 
 // warn english punctuations , . " ? ( ) in normal text
-inline void check_normal_text_punc(Str32_I str, Str32_I path_out)
+inline void check_normal_text_punc(Str32_I str)
 {
     vecStr32 keys = {U",", U".", U"?", U"(", U":"};
     Intvs intvNorm;
@@ -1058,7 +1058,7 @@ inline void check_normal_text_punc(Str32_I str, Str32_I path_out)
                             continue;
                     }
                 }
-                SLS_ERR(utf32to8(U"正文中使用英文标点： " + str.substr(ind0, 40)) + "\n");
+                throw Str32(U"正文中使用英文标点： " + str.substr(ind0, 40));
             }
         }
     }
