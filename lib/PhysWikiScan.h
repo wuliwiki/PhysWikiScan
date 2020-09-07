@@ -655,7 +655,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
             continue;
         if (Llong(follow.find(str[ind0])) >= 0)
             continue;
-        msg = U"\\autoref{} 后面没有空格: " + str.substr(start, ind0 + 20 - start);
+        msg = U"\\autoref{} 后面需要空格: “" + str.substr(start, ind0 + 20 - start) + U"”";
         if (error)
             throw Str32(msg);
         else
@@ -1031,7 +1031,8 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
 }
 
 // warn english punctuations , . " ? ( ) in normal text
-inline void check_normal_text_punc(Str32_I str)
+// set error = true to throw error instead of console warning
+inline void check_normal_text_punc(Str32_I str, Bool_I error)
 {
     vecStr32 keys = {U",", U".", U"?", U"(", U":"};
     Intvs intvNorm;
@@ -1058,7 +1059,10 @@ inline void check_normal_text_punc(Str32_I str)
                             continue;
                     }
                 }
-                throw Str32(U"正文中使用英文标点： " + str.substr(ind0, 40));
+                if (error)
+                    throw Str32(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
+                else
+                    SLS_WARN(utf32to8(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”\n"));
             }
         }
     }
@@ -1576,7 +1580,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     verbatim(str_verb, str);
     rm_comments(str); // remove comments
     limit_env_cmd(str);
-    autoref_space(str, false); // set true to error instead of warning
+    autoref_space(str, true); // set true to error instead of warning
     autoref_tilde_upref(str);
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
@@ -1588,7 +1592,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // escape characters
     NormalTextEscape(str, path_out);
     // check english puctuation in normal text
-    check_normal_text_punc(str);
+    check_normal_text_punc(str, true);
     // add paragraph tags
     paragraph_tag(str);
     // itemize and enumerate
