@@ -14,3 +14,19 @@ http://wuli.wiki/online/
 data/
 【url 1】
 http://wuli.wiki/changed/
+【输入路径 2】
+../littleshi.cn/root/user/admin/
+【输出路径 2】
+../littleshi.cn/root/user/admin/changed/
+【data 路径 2】
+../littleshi.cn/root/user/admin/cmd_data/
+【url 2】
+http://wuli.wiki/user/admin/changed/
+【输入路径 2】
+../littleshi.cn/root/user/admin/
+【输出路径 2】
+../littleshi.cn/root/user/admin/online/
+【data 路径 2】
+../littleshi.cn/root/user/admin/cmd_data/
+【url 2】
+http://wuli.wiki/user/admin/online/
