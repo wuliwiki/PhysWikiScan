@@ -11,10 +11,10 @@ struct Node
 };
 
 // links[2n] -> links[2n+1]
-void tree_gen(vector<Node> &tree, vecLong_I links)
+void tree_gen(vector<Node> &tree, vecStr32_I entries, vecLong_I links)
 {
     Long Nlink = links.size();
-    tree.resize(Nlink);
+    tree.resize(entries.size());
     for (Long i = 0; i < Nlink; i += 2) {
         Long ind1 = links[i], ind2 = links[i + 1];
         tree[ind1].next.push_back(ind2);

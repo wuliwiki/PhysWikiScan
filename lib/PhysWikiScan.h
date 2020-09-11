@@ -1719,7 +1719,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     // report redundency
     vector<Node> tree;
     vecLong links1;
-    tree_gen(tree, links);
+    tree_gen(tree, entries, links);
     Long ret = tree_redundant(links1, tree, titles);
     if (ret < 0) {
         throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
