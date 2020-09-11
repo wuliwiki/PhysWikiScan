@@ -12,6 +12,15 @@
 
 using namespace slisc;
 
+// global variables, must be set only once
+namespace gv {
+    Str32 path_in; // e.g. ../PhysWiki/
+    Str32 path_out; // e.g. ../littleshi.cn/online/
+    Str32 path_data; // e.g. ../littleshi.cn/data/
+    Str32 url; // e.g. http://wuli.wiki/online/
+    Bool is_wiki; // editing wiki or note
+}
+
 // get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
 inline void get_title(Str32_O title, Str32_I str)
@@ -377,7 +386,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // path must end with '\\'
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
-inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs, Str32_I path_out, Str32_I path_in, Str32_I url)
+inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs)
 {
     Long N = 0;
     Intvs intvFig;
@@ -417,8 +426,8 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
             throw Str32(U"图片格式不支持");
         }
 
-        fname_in = path_in + U"figures/" + figName + U"." + format;
-        fname_out = path_out + figName + U"." + format;
+        fname_in = gv::path_in + U"figures/" + figName + U"." + format;
+        fname_out = gv::path_out + figName + U"." + format;
         Long itmp = figName.find(U'_');
         if (itmp <= 0 || figName.substr(0, itmp) != entry)
             throw Str32(U"图片 \"" + fname_in + U"\" 命名格式错误， 建议用上传按钮插入图片");
@@ -452,7 +461,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
-        href = url + figName + U"." + format + version;
+        href = gv::url + figName + U"." + format + version;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
             + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
@@ -692,7 +701,7 @@ inline Long autoref_tilde_upref(Str32_IO str)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str, Str32_I url)
+inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str)
 {
     unsigned i{};
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, Neq{}, ienv{};
@@ -753,7 +762,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         ind4 = find_num(ids[i], 0);
         idNum = ids[i].substr(ind4);     
         entry = str.substr(ind1, ind2 - ind1);
-        file = url + entry + U".html";
+        file = gv::url + entry + U".html";
         if (entry != entryName) // reference another entry
             newtab = U"target = \"_blank\"";
         if (!inEq)
@@ -793,7 +802,7 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // if exist, return 1, output label
 // if doesn't exist, return 0
 Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
-    vecStr32_I labels, vecStr32_I ids, Str32_I path_in)
+    vecStr32_I labels, vecStr32_I ids)
 {
     Long ind0 = 0;
     Str32 label0, newtab;
@@ -811,7 +820,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     }
 
     // label does not exist
-    Str32 full_name = path_in + "/contents/" + entry + ".tex";
+    Str32 full_name = gv::path_in + "/contents/" + entry + ".tex";
     if (!file_exist(full_name)) {
         throw Str32(U"文件不存在： " + entry + ".tex");
     }
@@ -918,7 +927,7 @@ inline Long href(Str32_IO str)
 
 // process upref
 // path must end with '\\'
-inline Long upref(Str32_IO str, Str32_I path_in, Str32_I url)
+inline Long upref(Str32_IO str)
 {
     Long ind0 = 0, right, N = 0;
     Str32 entryName;
@@ -928,13 +937,13 @@ inline Long upref(Str32_IO str, Str32_I path_in, Str32_I url)
             return N;
         command_arg(entryName, str, ind0);
         trim(entryName);
-        if (!file_exist(path_in + U"contents/" + entryName + U".tex")) {
+        if (!file_exist(gv::path_in + U"contents/" + entryName + U".tex")) {
             throw Str32(U"\\upref 引用的文件未找到： " + entryName + U".tex");
         }
         right = skip_command(str, ind0, 1);
         str.replace(ind0, right - ind0,
             U"<span class = \"icon\"><a href = \""
-            + url + entryName +
+            + gv::url + entryName +
             U".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
         ++N;
     }
@@ -942,13 +951,13 @@ inline Long upref(Str32_IO str, Str32_I path_in, Str32_I url)
 }
 
 // replace "\cite{}" with `[?]` cytation linke
-inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
+inline Long cite(Str32_IO str)
 {
     Long ind0 = 0, N = 0;
     Str32 bib_label;
     vecStr32 bib_labels, bib_details;
-    if (file_exist(path_data + U"bib_labels.txt"))
-        read_vec_str(bib_labels, path_data + U"bib_labels.txt");
+    if (file_exist(gv::path_data + U"bib_labels.txt"))
+        read_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
     // read_vec_str(bib_details, path_data + U"bib_details.txt");
     while (true) {
         ind0 = find_command(str, U"cite", ind0);
@@ -960,16 +969,16 @@ inline Long cite(Str32_IO str, Str32_I path_data, Str32_I url)
         if (ibib < 0)
             throw Str32(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
         Long ind1 = skip_command(str, ind0, 1);
-        str.replace(ind0, ind1 - ind0, U" <a href=\"" + url + "bibliography.html#" + num2str(ibib+1) + "\">[" + num2str32(ibib+1) + "]</a> ");
+        str.replace(ind0, ind1 - ind0, U" <a href=\"" + gv::url + "bibliography.html#" + num2str(ibib+1) + "\">[" + num2str32(ibib+1) + "]</a> ");
     }
 }
 
 // update entries.txt and titles.txt
 // return the number of entries in main.tex
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entry_order, Str32_I path_in)
+inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entry_order)
 {
     entries.clear(); titles.clear();
-    file_list_ext(entries, path_in + "contents/", Str32(U"tex"), false);
+    file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
     RemoveNoEntry(entries);
     if (entries.size() == 0)
         throw Str32(U"未找到任何词条");
@@ -983,7 +992,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
 
     Str32 title;
     Str32 entryName; // entry label
-    Str32 str; read(str, path_in + "main.tex");
+    Str32 str; read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
     titles.resize(entries.size());
     rm_comments(str); // remove comments
@@ -1018,7 +1027,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
     cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
-            read(str, path_in + U"contents/" + entries[i] + ".tex");
+            read(str, gv::path_in + U"contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
             get_title(title, str);
             titles[i] = title;
@@ -1077,7 +1086,7 @@ inline void check_normal_text_punc(Str32_I str, Bool_I error)
 // `chap_ind[i]` is similar to `part_ind[i]`, for chapters
 // if part_ind.size() == 0, `chap_name, chap_ind, part_ind, part_name` will be ignored
 inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
-    vecLong_O part_ind, vecStr32_I entries, Str32_I path_in, Str32_I path_out, Str32_I url)
+    vecLong_O part_ind, vecStr32_I entries)
 {
     Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
@@ -1097,9 +1106,9 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         part_ind.clear(); part_ind.resize(entries.size(), 0);
     }
 
-    read(str, path_in + "main.tex");
+    read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
-    read(toc, path_out + "templates/index_template.html"); // read html template
+    read(toc, gv::path_out + "templates/index_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiHTMLtitle");
@@ -1125,7 +1134,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             }
             command_arg(entryName, str, ind1, 1);
             // insert entry into html table of contents
-            ind0 = insert(toc, U"<a href = \"" + url + entryName + ".html" + "\" target = \"_blank\">"
+            ind0 = insert(toc, U"<a href = \"" + gv::url + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title
             Long n = search(entryName, entries);
@@ -1175,13 +1184,13 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         }
         else if (ikey == 3) { // found "\bibli"
             title = U"参考文献";
-            ind0 = insert(toc, U"<a href = \"" + url + U"bibliography.html\" target = \"_blank\">"
+            ind0 = insert(toc, U"<a href = \"" + gv::url + U"bibliography.html\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             ++ind1;
         }
     }
     toc.insert(ind0, U"</p>\n</div>");
-    write(toc, path_out + "index.html");
+    write(toc, gv::path_out + "index.html");
     return N;
 }
 
@@ -1190,7 +1199,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
 // return the number of entries
 // names is a list of filenames
 // titles[i] is the chinese title of entries[i]
-inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path_in, Str32_I path_out, Str32_I path_data)
+inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries)
 {
     Long i{}, N{}, ind0{};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
@@ -1199,26 +1208,26 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
     Str32 toc;
     vecStr32 changed, authors;
 
-    if (!file_exist(path_data + U"changed.txt")) {
-        write_vec_str(vecStr32(), path_data + U"changed.txt");
-        write_vec_str(vecStr32(), path_data + U"authors.txt");
+    if (!file_exist(gv::path_data + U"changed.txt")) {
+        write_vec_str(vecStr32(), gv::path_data + U"changed.txt");
+        write_vec_str(vecStr32(), gv::path_data + U"authors.txt");
     }
     else {
-        read_vec_str(changed, path_data + U"changed.txt");
-        read_vec_str(authors, path_data + U"authors.txt");
+        read_vec_str(changed, gv::path_data + U"changed.txt");
+        read_vec_str(authors, gv::path_data + U"authors.txt");
         if (changed.size() != authors.size()) {
             throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同");
             authors.resize(changed.size());
         }
     }
 
-    read(toc, path_out + "templates/changed_template.html"); // read html template
+    read(toc, gv::path_out + "templates/changed_template.html"); // read html template
     CRLF_to_LF(toc);
 
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     if (changed.size() == 0) {
         replace(toc, U"PhysWikiHTMLbody", U"</div>");
-        write(toc, path_out + "changed.html");
+        write(toc, gv::path_out + "changed.html");
         return 0;
     }
 
@@ -1249,11 +1258,11 @@ inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries, Str32_I path
             + titles[ind] + U"（" + authors[i] + U"）" + U"</a><br>\n", ind0);
     }
     toc.insert(ind0, U"</p>\n</div>");
-    write(toc, path_out + "changed.html");
+    write(toc, gv::path_out + "changed.html");
     if (changed.size() != authors.size())
         throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同");
-    write_vec_str(changed, path_data + U"changed.txt");
-    write_vec_str(authors, path_data + U"authors.txt");
+    write_vec_str(changed, gv::path_data + U"changed.txt");
+    write_vec_str(authors, gv::path_data + U"authors.txt");
     return N;
 }
 
@@ -1539,15 +1548,15 @@ inline Long inline_eq_space(Str32_IO str)
 // path0 is the parent folder of entryName.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
-    VecChar_IO imgs_mark, vecStr32_I imgs, Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
+    VecChar_IO imgs_mark, vecStr32_I imgs)
 {
     Str32 str;
-    read(str, path_in + "contents/" + entries[ind] + ".tex"); // read tex file
+    read(str, gv::path_in + "contents/" + entries[ind] + ".tex"); // read tex file
     CRLF_to_LF(str);
     Str32 title;
     // read html template and \newcommand{}
     Str32 html;
-    read(html, path_out + "templates/entry_template.html");
+    read(html, gv::path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
 
     // read title from first comment
@@ -1590,9 +1599,10 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // add spaces around inline equation
     inline_eq_space(str);
     // escape characters
-    NormalTextEscape(str, path_out);
+    NormalTextEscape(str);
     // check english puctuation in normal text
-    check_normal_text_punc(str, true);
+    if (gv::is_wiki)
+        check_normal_text_punc(str, true);
     // add paragraph tags
     paragraph_tag(str);
     // itemize and enumerate
@@ -1606,7 +1616,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(imgs_mark, str, entries[ind], imgs, path_out, path_in, url);
+    FigureEnvironment(imgs_mark, str, entries[ind], imgs);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
     // issues environment
@@ -1622,9 +1632,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
     // replace \upref{} with link icon
-    upref(str, path_in, url);
+    upref(str);
     href(str);
-    cite(str, path_data, url); // citation
+    cite(str); // citation
     // replace environments with html tags
     Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
                         U"\\end{equation}\n</div></div>", str);
@@ -1634,7 +1644,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         U"\\end{align}\n</div></div>", str);
     
     // footnote
-    footnote(str, entries[ind], url);
+    footnote(str, entries[ind], gv::url);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
     // verbatim recover (in inverse order of `verbatim()`)
@@ -1679,14 +1689,14 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 
     // save html file
-    write(html, path_out + entries[ind] + ".html");
+    write(html, gv::path_out + entries[ind] + ".html");
     return 0;
 }
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
 inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name, vecLong_I chap_ind,
-    vecStr32_I part_name, vecLong_I part_ind, vecLong_I links, Str32_I path_out)
+    vecStr32_I part_name, vecLong_I part_ind, vecLong_I links)
 {
     Str32 str;
     // write part names
@@ -1747,16 +1757,16 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     if (links.size() > 0)
         str.pop_back(); str.pop_back();
     str += U"\n  ]\n}\n";
-    write(str, path_out + U"../tree/data/dep.json");
+    write(str, gv::path_out + U"../tree/data/dep.json");
     return 0;
 }
 
-inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I path_in, Str32_I path_out)
+inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
 {
     Long N = 0;
     Str32 str, bib_list, bib_label;
     bib_labels.clear(); bib_details.clear();
-    read(str, path_in + U"bibliography.tex");
+    read(str, gv::path_in + U"bibliography.tex");
     CRLF_to_LF(str);
     Long ind0 = 0;
     while (true) {
@@ -1776,14 +1786,14 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details, Str32_I 
     if (ret > 0)
         throw Str32(U"文献 label 重复：" + bib_labels[ret]);
     Str32 html;
-    read(html, path_out + U"templates/bib_template.html");
+    read(html, gv::path_out + U"templates/bib_template.html");
     replace(html, U"PhysWikiBibList", bib_list);
-    write(html, path_out + U"bibliography.html");
+    write(html, gv::path_out + U"bibliography.html");
     return N;
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
-inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
+inline void PhysWikiOnline()
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
     VecLong entry_order; // entries[i] is the entry_order[i] -th entry main.tex
@@ -1796,15 +1806,15 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
     
     // process bibliography
     vecStr32 bib_labels, bib_details;
-    bibliography(bib_labels, bib_details, path_in, path_out);
-    write_vec_str(bib_labels, path_data + U"bib_labels.txt");
-    write_vec_str(bib_details, path_data + U"bib_details.txt");
+    bibliography(bib_labels, bib_details);
+    write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
+    write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
 
-    Ntoc = entries_titles(titles, entries, entry_order, path_in);
-    write_vec_str(titles, path_data + U"titles.txt");
-    write_vec_str(entries, path_data + U"entries.txt");
-    file_remove(utf32to8(path_data) + "entry_order.matt");
-    Matt matt(utf32to8(path_data) + "entry_order.matt", "w");
+    Ntoc = entries_titles(titles, entries, entry_order);
+    write_vec_str(titles, gv::path_data + U"titles.txt");
+    write_vec_str(entries, gv::path_data + U"entries.txt");
+    file_remove(utf32to8(gv::path_data) + "entry_order.matt");
+    Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
     save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     matt.close();
     part_ind.resize(entries.size());
@@ -1813,9 +1823,9 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries, path_in, path_out, url);
-    file_list_ext(imgs, path_in + U"figures/", U"png", true, true);
-    file_list_ext(imgs, path_in + U"figures/", U"svg", true, true);
+    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries);
+    file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
+    file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); copy(imgs_mark, 0); // check if image has been used
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
@@ -1833,12 +1843,12 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs, path_in, path_out, path_data, url);
+        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
     }
 
     // save id and label data
-    write_vec_str(labels, path_data + U"labels.txt");
-    write_vec_str(ids, path_data + U"ids.txt");
+    write_vec_str(labels, gv::path_data + U"labels.txt");
+    write_vec_str(ids, gv::path_data + U"ids.txt");
 
     // 2nd loop through tex files
     // deal with autoref
@@ -1849,16 +1859,16 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
-        read(html, path_out + entries[i] + ".html"); // read html file
+        read(html, gv::path_out + entries[i] + ".html"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[i], html, url);
-        write(html, path_out + entries[i] + ".html"); // save html file
+        autoref(ids, labels, entries[i], html);
+        write(html, gv::path_out + entries[i] + ".html"); // save html file
     }
     cout << endl;
     
     // generate dep.json
-    if (file_exist(path_out + U"../tree/data/dep.json"))
-        dep_json(entries, titles, chap_name, chap_ind, part_name, part_ind, links, path_out);
+    if (file_exist(gv::path_out + U"../tree/data/dep.json"))
+        dep_json(entries, titles, chap_name, chap_ind, part_name, part_ind, links);
 
     // warn unused figures
     Bool warn_fig = false;
@@ -1880,30 +1890,30 @@ inline void PhysWikiOnline(Str32_I path_in, Str32_I path_out, Str32_I path_data,
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out, Str32_I path_data, Str32_I url)
+inline Long PhysWikiOnlineN(vecStr32_I entryN)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
     vecStr32 labels, ids, entries, titles;
-    if (!file_exist(path_data + U"labels.txt"))
-        throw Str32(U"内部错误： " + path_data + U"labels.txt 不存在");
-    read_vec_str(labels, path_data + U"labels.txt");
+    if (!file_exist(gv::path_data + U"labels.txt"))
+        throw Str32(U"内部错误： " + gv::path_data + U"labels.txt 不存在");
+    read_vec_str(labels, gv::path_data + U"labels.txt");
     Long ind = find_repeat(labels);
     if (ind >= 0)
         throw Str32(U"内部错误： labels.txt 存在重复：" + labels[ind]);
-    if (!file_exist(path_data + U"ids.txt"))
-        throw Str32(U"内部错误： " + path_data + U"ids.txt 不存在");
-    read_vec_str(ids, path_data + U"ids.txt");
-    if (!file_exist(path_data + U"entries.txt"))
-        throw Str32(U"内部错误： " + path_data + U"entries.txt 不存在");
-    read_vec_str(entries, path_data + U"entries.txt");
-    if (!file_exist(path_data + U"titles.txt"))
-        throw Str32(U"内部错误： " + path_data + U"titles.txt 不存在");
-    read_vec_str(titles, path_data + U"titles.txt");
-    if (!file_exist(path_data + U"entry_order.matt"))
-        throw Str32(U"内部错误： " + path_data + U"entry_order.matt 不存在");
+    if (!file_exist(gv::path_data + U"ids.txt"))
+        throw Str32(U"内部错误： " + gv::path_data + U"ids.txt 不存在");
+    read_vec_str(ids, gv::path_data + U"ids.txt");
+    if (!file_exist(gv::path_data + U"entries.txt"))
+        throw Str32(U"内部错误： " + gv::path_data + U"entries.txt 不存在");
+    read_vec_str(entries, gv::path_data + U"entries.txt");
+    if (!file_exist(gv::path_data + U"titles.txt"))
+        throw Str32(U"内部错误： " + gv::path_data + U"titles.txt 不存在");
+    read_vec_str(titles, gv::path_data + U"titles.txt");
+    if (!file_exist(gv::path_data + U"entry_order.matt"))
+        throw Str32(U"内部错误： " + gv::path_data + U"entry_order.matt 不存在");
     VecLong entry_order;
-    Matt matt(utf32to8(path_data) + "entry_order.matt", "r");
+    Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "r");
     Long Ntoc; // number of entries in main.tex
     if (load(entry_order, "entry_order", matt) < 0 || load(Ntoc, "Ntoc", matt) < 0)
         throw Str32(U"内部错误： entry_order.matt 读取错误");
@@ -1935,11 +1945,11 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2;
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2, path_in, path_out, path_data, url);
+        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
     }
     
-    write_vec_str(labels, path_data + U"labels.txt");
-    write_vec_str(ids, path_data + U"ids.txt");
+    write_vec_str(labels, gv::path_data + U"labels.txt");
+    write_vec_str(ids, gv::path_data + U"ids.txt");
 
     // 2nd loop through tex files
     // deal with autoref
@@ -1953,10 +1963,10 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN, Str32_I path_in, Str32_I path_out
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
 
-        read(html, path_out + entries[ind] + ".html"); // read html file
+        read(html, gv::path_out + entries[ind] + ".html"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[ind], html, url);
-        write(html, path_out + entries[ind] + ".html"); // save html file
+        autoref(ids, labels, entries[ind], html);
+        write(html, gv::path_out + entries[ind] + ".html"); // save html file
     }
 
     cout << "\n\n" << endl;

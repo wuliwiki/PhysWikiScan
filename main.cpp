@@ -143,26 +143,21 @@ int main(int argc, char *argv[]) {
     vecStr32 args;
     get_args(args, argc, argv);
 
-    // input folder, put tex files and code files here
-    // same directory structure with PhysWiki
-    Str32 path_in;
-    // output folder, for html and images
-    Str32 path_out;
-    // data folder
-    Str32 path_data;
-    // absolute url for entries (e.g. "http://wuli.wiki/online")
-    Str32 url;
-    try {get_path(path_in, path_out, path_data, url, args);}
+    try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
     catch (Str32_I msg) {
         cerr << utf32to8(msg) << endl;
         return 0;
     }
+    if (gv::url == U"http://wuli.wiki/online/" || gv::url == U"http://wuli.wiki/changed/")
+        gv::is_wiki = true;
+    else
+        gv::is_wiki = false;
 
     // === parse arguments ===
 
     if (args[0] == U"." && args.size() == 1) {
         // interactive full run (ask to try again in error)
-        try {PhysWikiOnline(path_in, path_out, path_data, url);}
+        try {PhysWikiOnline();}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
@@ -172,25 +167,25 @@ int main(int argc, char *argv[]) {
         // update entries.txt and titles.txt
         vecStr32 titles, entries; VecLong entry_order;
         Long Ntoc; // number of entries in main.tex
-        try { Ntoc = entries_titles(titles, entries, entry_order, path_in); }
+        try { Ntoc = entries_titles(titles, entries, entry_order); }
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
         }
-        write_vec_str(titles, path_data + U"titles.txt");
-        write_vec_str(entries, path_data + U"entries.txt");
-        file_remove(utf32to8(path_data) + "entry_order.matt");
-        Matt matt(utf32to8(path_data) + "entry_order.matt", "w");
+        write_vec_str(titles, gv::path_data + U"titles.txt");
+        write_vec_str(entries, gv::path_data + U"entries.txt");
+        file_remove(utf32to8(gv::path_data) + "entry_order.matt");
+        Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
         save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from main.tex
         vecStr32 titles, entries;
-        if (file_exist(path_data + U"titles.txt"))
-            read_vec_str(titles, path_data + U"titles.txt");
-        if (file_exist(path_data + U"entries.txt"))
-            read_vec_str(entries, path_data + U"entries.txt");
+        if (file_exist(gv::path_data + U"titles.txt"))
+            read_vec_str(titles, gv::path_data + U"titles.txt");
+        if (file_exist(gv::path_data + U"entries.txt"))
+            read_vec_str(entries, gv::path_data + U"entries.txt");
         if (titles.size() != entries.size()) {
             cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
@@ -198,7 +193,7 @@ int main(int argc, char *argv[]) {
         vecStr32 not_used1, not_used3;
         vecLong not_used2, not_used4;
         try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
-            entries, path_in, path_out, url);}
+            entries);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
@@ -226,26 +221,26 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--clean" && args.size() == 1) {
         // clear changed record
-        write(U"", path_data + U"changed.txt");
-        write(U"", path_data + U"authors.txt");
+        write(U"", gv::path_data + U"changed.txt");
+        write(U"", gv::path_data + U"authors.txt");
     }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         vecStr32 labels, ids;
-        if (file_exist(path_data + U"labels.txt")) {
-            read_vec_str(labels, path_data + U"labels.txt");
+        if (file_exist(gv::path_data + U"labels.txt")) {
+            read_vec_str(labels, gv::path_data + U"labels.txt");
             Long ind = find_repeat(labels);
             if (ind >= 0) {
                 cerr << u8"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
                 return 0;
             }
         }
-        if (file_exist(path_data + U"ids.txt"))
-            read_vec_str(ids, path_data + U"ids.txt");
+        if (file_exist(gv::path_data + U"ids.txt"))
+            read_vec_str(ids, gv::path_data + U"ids.txt");
         Str32 label;
         Long ret;
         try {ret = check_add_label(label, args[1], args[2],
-            atoi(utf32to8(args[3]).c_str()), labels, ids, path_in);}
+            atoi(utf32to8(args[3]).c_str()), labels, ids);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
@@ -261,15 +256,15 @@ int main(int argc, char *argv[]) {
             else {
                 ids[i] = id;
             }
-            write_vec_str(labels, path_data + U"labels.txt");
-            write_vec_str(ids, path_data + U"ids.txt");
+            write_vec_str(labels, gv::path_data + U"labels.txt");
+            write_vec_str(ids, gv::path_data + U"ids.txt");
             output = { label, U"added" };
         }
         else // ret == 1, already exist
             output = {label, U"exist"};
         cout << output[0] << endl;
         cout << output[1] << endl;
-        write_vec_str(output, path_data + U"autoref.txt");
+        write_vec_str(output, gv::path_data + U"autoref.txt");
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process a single entry
@@ -281,7 +276,7 @@ int main(int argc, char *argv[]) {
                 break;
             entryN.push_back(temp);
         }
-        try {PhysWikiOnlineN(entryN, path_in, path_out, path_data, url);}
+        try {PhysWikiOnlineN(entryN);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
@@ -290,18 +285,18 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--bib") {
         // process bibliography
         vecStr32 bib_labels, bib_details;
-        try { bibliography(bib_labels, bib_details, path_in, path_out); }
+        try { bibliography(bib_labels, bib_details); }
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
         }
-        write_vec_str(bib_labels, path_data + U"bib_labels.txt");
-        write_vec_str(bib_details, path_data + U"bib_details.txt");
+        write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
+        write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
     }
     else if (args[0] == U"--all-commands") {
         vecStr32 commands;
-        all_commands(commands, path_in + U"contents/");
-        write_vec_str(commands, path_data + U"commands.txt");
+        all_commands(commands, gv::path_in + U"contents/");
+        write_vec_str(commands, gv::path_data + U"commands.txt");
     }
     else {
         cerr << u8"内部错误： 命令不合法" << endl;

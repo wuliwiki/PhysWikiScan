@@ -366,7 +366,7 @@ inline Long newcommand(Str32_IO str, vecStr32_I rules)
 
 // deal with escape simbols in normal text
 // str must be normal text
-inline Long TextEscape(Str32_IO str, Str32_I path_out)
+inline Long TextEscape(Str32_IO str)
 {
     Long N{};
     N += replace(str, U"<", U"&lt;");
@@ -393,7 +393,7 @@ inline Long TextEscape(Str32_IO str, Str32_I path_out)
 
 // deal with escape simbols in normal text, Command environments
 // must be done before \command{} and environments are replaced with html tags
-inline Long NormalTextEscape(Str32_IO str, Str32_I path_out)
+inline Long NormalTextEscape(Str32_IO str)
 {
     Long N1{}, N{}, Nnorm{};
     Str32 temp;
@@ -401,7 +401,7 @@ inline Long NormalTextEscape(Str32_IO str, Str32_I path_out)
     Nnorm = FindNormalText(intv, str);
     for (Long i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-        N1 = TextEscape(temp, path_out);
+        N1 = TextEscape(temp);
         if (N1 < 0)
             continue;
         N += N1;
