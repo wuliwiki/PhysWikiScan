@@ -920,7 +920,7 @@ inline Long href(Str32_IO str)
 
         Long ind1 = skip_command(str, ind0, 2);
         str.replace(ind0, ind1 - ind0,
-            "<a href=\"" + url + "\">" + name + "</a>");
+            "<a href=\"" + url + "\" target = \"_blank\">" + name + "</a>");
         ++N; ++ind0;
     }
 }
