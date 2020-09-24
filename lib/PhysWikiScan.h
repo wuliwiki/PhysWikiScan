@@ -1042,7 +1042,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
 // delete spaces around chinese punctuations
 inline Long rm_punc_space(Str32_IO str)
 {
-    vecStr32 keys = { U"，", U"．", U"？", U"（", U"）", U"：" };
+    vecStr32 keys = { U"，", U"、", U"．", U"？", U"（", U"）", U"：", U"；", U"【", U"】", U"…"};
     Long ind0 = 0, N = 0, ikey;
     while (true) {
         ind0 = find(ikey, str, keys, ind0);
