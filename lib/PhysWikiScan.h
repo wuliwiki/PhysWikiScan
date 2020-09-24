@@ -1555,7 +1555,7 @@ inline Long wikipedia_link(Str32_IO str)
         command_arg(link, str, ind0);
         ind0 = skip_command(str, ind0);
         ind0 = expect(str, U"{", ind0);
-        if (ind0 < 0) throw Str32(U"\href{网址}{文字} 命令格式错误！");
+        if (ind0 < 0) throw Str32(U"\\href{网址}{文字} 命令格式错误！");
         Long ind1 = pair_brace(str, ind0 - 1);
         if (Long(link.find(U"wikipedia.org")) > 0) {
             replace(link, U"wikipedia.org", alter_domain);
