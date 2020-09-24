@@ -1541,6 +1541,30 @@ inline Long inline_eq_space(Str32_IO str)
     return N;
 }
 
+// replace all wikipedia domain to another mirror domain
+// return the number replaced
+inline Long wikipedia_link(Str32_IO str)
+{
+    Str32 alter_domain = U"jinzhao.wiki";
+    Long ind0 = 0, N = 0;
+    Str32 link;
+    while (true) {
+        ind0 = find_command(str, U"href", ind0);
+        if (ind0 < 0)
+            return N;
+        command_arg(link, str, ind0);
+        ind0 = skip_command(str, ind0);
+        ind0 = expect(str, U"{", ind0);
+        if (ind0 < 0) throw Str32(U"\href{网址}{文字} 命令格式错误！");
+        Long ind1 = pair_brace(str, ind0 - 1);
+        if (Long(link.find(U"wikipedia.org")) > 0) {
+            replace(link, U"wikipedia.org", alter_domain);
+            str.replace(ind0, ind1 - ind0, link);
+        }
+        ++N;
+    }
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
@@ -1587,6 +1611,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
+    wikipedia_link(str);
     rm_comments(str); // remove comments
     limit_env_cmd(str);
     autoref_space(str, true); // set true to error instead of warning
