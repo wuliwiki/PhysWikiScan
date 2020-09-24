@@ -1039,6 +1039,24 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
     return entry_order1;
 }
 
+// delete spaces around chinese punctuations
+inline Long rm_punc_space(Str32_IO str)
+{
+    vecStr32 keys = { U"，", U"．", U"？", U"（", U"）", U"：" };
+    Long ind0 = 0, N = 0, ikey;
+    while (true) {
+        ind0 = find(ikey, str, keys, ind0);
+        if (ind0 < 0)
+            return N;
+        if (ind0 + 1 < str.size() && str[ind0 + 1] == U' ')
+            str.erase(ind0 + 1, 1);
+        if (ind0 > 0 && str[ind0 - 1] == U' ') {
+            str.erase(ind0 - 1, 1); --ind0;
+        }
+        ++N; ++ind0;
+    }
+}
+
 // warn english punctuations , . " ? ( ) in normal text
 // set error = true to throw error instead of console warning
 inline void check_normal_text_punc(Str32_I str, Bool_I error)
@@ -1672,6 +1690,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     footnote(str, entries[ind], gv::url);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
+    // remove spaces around chinese punctuations
+    rm_punc_space(str);
     // verbatim recover (in inverse order of `verbatim()`)
     lstlisting(str, str_verb);
     lstinline(str, str_verb);
