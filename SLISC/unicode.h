@@ -413,6 +413,14 @@ inline Bool is_num(Char32_I c)
     return false;
 }
 
+// check if a character is an ascii character (a-z, A-Z, 0-9)
+inline Bool is_ascii(Char32_I c)
+{
+    if (c > 0 && c < 128)
+        return true;
+    return false;
+}
+
 // check if a character is alphanumeric (a-z, A-Z, 0-9)
 inline Bool is_alphanum(Char32_I c)
 {

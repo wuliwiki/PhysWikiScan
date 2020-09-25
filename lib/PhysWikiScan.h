@@ -1639,13 +1639,15 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     chinese_alpha_num_space(str);
     // ensure spaces outside of chinese double quotes
     chinese_double_quote_space(str);
+    // check non ascii char in equations (except in \text)
+    check_eq_ascii(str);
+    // check english puctuation in normal text
+    if (gv::is_wiki)
+        check_normal_text_punc(str, true);
     // add spaces around inline equation
     inline_eq_space(str);
     // escape characters
     NormalTextEscape(str);
-    // check english puctuation in normal text
-    if (gv::is_wiki)
-        check_normal_text_punc(str, true);
     // add paragraph tags
     paragraph_tag(str);
     // itemize and enumerate

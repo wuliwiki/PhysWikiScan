@@ -152,6 +152,23 @@ inline Bool command_star(Str32_I str, Long_I ind)
     return false;
 }
 
+// check if an index is in a command \name{...}
+inline Bool is_in_cmd(Str32_I str, Str32_I name, Long_I ind)
+{
+    if (ind < 0 || ind >= str.size())
+        throw Str32(U"内部错误： is_in_cmd() index out of bound");
+    Long ind0 = str.rfind(U"\\" + name, ind);
+    if (ind0 < 0)
+        return false;
+    ind0 = expect(str, U"{", ind0 + name.size() + 1);
+    if (ind0 < 0)
+        return false;
+    Long ind1 = pair_brace(str, ind0 - 1);
+    if (ind1 <= ind)
+        return false;
+    return true;
+}
+
 // check if command has optional argument in []
 inline Bool command_has_opt(Str32_I str, Long_I ind, Bool_I trim = true)
 {
@@ -530,7 +547,7 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 // find $$...$$ equation environments
 // assuming comments and verbatims are removed
 // if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
-inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option)
+inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option = 'i')
 {
     intv.clear();
     Long ind0 = 0;
@@ -550,6 +567,23 @@ inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option)
         else
             intv.pushR(ind0 + 1);
         ++ind0;
+    }
+}
+
+inline void check_eq_ascii(Str32_I str)
+{
+    Intvs intv, intv1;
+    find_env(intv, str, U"equation");
+    find_single_dollar_eq(intv1, str);
+    combine(intv, intv1);
+    find_double_dollar_eq(intv1, str);
+    combine(intv, intv1);
+    Str32 tmp;
+    for (Long i = intv.size() - 1; i >= 0; --i) {
+        for (Long j = intv.L(i); j <= intv.R(i); ++j) {
+            if (!is_ascii(str[j]) && !is_in_cmd(str, U"text", j))
+                throw Str32(U"公式中存在非法字符：" + str.substr(j, 40));
+        }
     }
 }
 
