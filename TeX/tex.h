@@ -570,6 +570,25 @@ inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option = 'i'
     }
 }
 
+// forbid empty line in equations
+inline void check_eq_empty_line(Str32_I str)
+{
+    Intvs intv, intv1;
+    find_env(intv, str, U"equation");
+    find_single_dollar_eq(intv1, str);
+    combine(intv, intv1);
+    find_double_dollar_eq(intv1, str);
+    combine(intv, intv1);
+    Str32 tmp;
+    for (Long i = intv.size() - 1; i >= 0; --i) {
+        for (Long j = intv.L(i); j < intv.R(i); ++j) {
+            if (str[j] == U'\n' && str[j+1] == U'\n')
+                throw Str32(U"公式中禁止空行：" + str.substr(j, 40));
+        }
+    }
+}
+
+// forbid non-ascii char in equations (except in \text)
 inline void check_eq_ascii(Str32_I str)
 {
     Intvs intv, intv1;
