@@ -71,7 +71,7 @@ inline Long paragraph_tag(Str32_IO str)
     vecStr32 envs_eq = {U"equation", U"align", U"gather", U"lstlisting"};
 
     // environments that needs paragraph tags inside
-    vecStr32 envs_p = { U"example", U"exercise"};
+    vecStr32 envs_p = { U"example", U"exercise", U"definition", U"theorem", U"lemma", U"corollary"};
 
     // 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
     char next, last = 'n';
