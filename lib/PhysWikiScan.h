@@ -1075,18 +1075,20 @@ inline void check_normal_text_punc(Str32_I str, Bool_I error)
             Long ind1 = str.find_last_not_of(U" ", ind0-1);
             if (ind1 >= 0 && is_chinese(str[ind1])) {
                 Long ind2 = str.find_first_not_of(U" ", ind0+1);
+                // exceptions
                 if (ikey == 1 && is_alphanum(str[ind0 + 1]))
-                    continue;
+                    continue; // e.g. "文件名.jpg"
                 else if (ikey == 3) {
                     if (is_alphanum(str[ind0+1])) {
                         if (is_alphanum(str[ind0+2])) {
                             if (str[ind0+3] == U')')
-                                continue;
+                                continue; // e.g. "(a)", "(1)"
                         }
                         else if (str[ind0+2] == U')')
-                            continue;
+                            continue; // e.g. "(a1)", "(24)"
                     }
                 }
+                // end exceptions
                 if (error)
                     throw Str32(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
                 else
