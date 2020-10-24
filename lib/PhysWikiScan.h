@@ -1025,6 +1025,10 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
         ++ind0; ++entry_order1;
     }
 
+    Long ind1 = find_repeat(titles, 0);
+    if (ind1 >= 0)
+        throw Str32(U"目录中标题重复：" + titles[ind1]);
+
     cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
