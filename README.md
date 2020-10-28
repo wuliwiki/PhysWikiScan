@@ -19,6 +19,7 @@
 ## PhysWikiScan 所有控制行命令
 * 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
 * `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
+* `PhysWikiScan .,` 在 `PhysWikiScan .` 的基础上将正文中的部分英文标点替换成中文
 * `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
@@ -44,7 +45,6 @@
 * 蓝色小标题和黑色小标题中不能用 `\ ` 作为空格。
 
 ## New Features
-* Note 模式不需要禁止英文标点
 * 自动通过 `lstlisting` 环境生成代码文件（只生成有文件名的代码）
 * 保证 aligned 环境里面不能有空行（equation 环境也不行吗？）
 * 注意微软雅黑是收费的！ 用免费字体（方正的？）

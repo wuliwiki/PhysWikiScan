@@ -298,6 +298,15 @@ int main(int argc, char *argv[]) {
         all_commands(commands, gv::path_in + U"contents/");
         write_vec_str(commands, gv::path_data + U"commands.txt");
     }
+    else if (args[0] == U".,") {
+        gv::eng_punc = true;
+        // interactive full run (ask to try again in error)
+        try { PhysWikiOnline(); }
+        catch (Str32_I msg) {
+            cerr << utf32to8(msg) << endl;
+            return 0;
+        }
+    }
     else {
         cerr << u8"内部错误： 命令不合法" << endl;
         return 0;

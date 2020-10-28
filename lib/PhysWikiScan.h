@@ -19,6 +19,7 @@ namespace gv {
     Str32 path_data; // e.g. ../littleshi.cn/data/
     Str32 url; // e.g. http://wuli.wiki/online/
     Bool is_wiki; // editing wiki or note
+    Bool eng_punc = false; // replace English punctuations to Chinese in normal text
 }
 
 // get the title (defined in the first comment, can have space after %)
@@ -1070,12 +1071,14 @@ inline Long rm_punc_space(Str32_IO str)
 
 // warn english punctuations , . " ? ( ) in normal text
 // set error = true to throw error instead of console warning
-inline void check_normal_text_punc(Str32_I str, Bool_I error)
+// return the number replaced
+inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = false)
 {
     vecStr32 keys = {U",", U".", U"?", U"(", U":"};
+    Str32 keys_rep = U"，．？（：";
     Intvs intvNorm;
     FindNormalText(intvNorm, str);
-    Long ind0 = -1, ikey;
+    Long ind0 = -1, ikey, N = 0;
     while (true) {
         ind0 = find(ikey, str, keys, ind0 + 1);
         if (ind0 < 0)
@@ -1085,7 +1088,7 @@ inline void check_normal_text_punc(Str32_I str, Bool_I error)
             Long ind1 = str.find_last_not_of(U" ", ind0-1);
             if (ind1 >= 0 && is_chinese(str[ind1])) {
                 Long ind2 = str.find_first_not_of(U" ", ind0+1);
-                // exceptions
+                // --- exceptions ---
                 if (ikey == 1 && is_alphanum(str[ind0 + 1]))
                     continue; // e.g. "文件名.jpg"
                 else if (ikey == 3) {
@@ -1098,14 +1101,27 @@ inline void check_normal_text_punc(Str32_I str, Bool_I error)
                             continue; // e.g. "(a1)", "(24)"
                     }
                 }
-                // end exceptions
-                if (error)
-                    throw Str32(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
-                else
-                    SLS_WARN(utf32to8(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”\n"));
+                // --- end exceptions ---
+                if (replace) {
+                    str[ind0] = keys_rep[ikey]; ++N;
+                    if (keys[ikey] == U"(") {
+                        // replace possible matching ')' as well
+                        Long ind1 = str.find_first_of(U"()", ind0);
+                        if (ind1 > 0 && str[ind1] == U')' && is_in(ind1, intvNorm)) {
+                            str[ind1] = U'）'; ++N;
+                        }
+                    }
+                }
+                else {
+                    if (error)
+                        throw Str32(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
+                    else
+                        SLS_WARN(utf32to8(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”\n"));
+                }
             }
         }
     }
+    return N;
 }
 
 // create table of content from main.tex
@@ -1657,7 +1673,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // forbid empty lines in equations
     check_eq_empty_line(str);
     // check english puctuation in normal text
-    if (gv::is_wiki)
+    if (gv::eng_punc)
         check_normal_text_punc(str, true);
     // add spaces around inline equation
     inline_eq_space(str);
