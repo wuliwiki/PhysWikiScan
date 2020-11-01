@@ -46,3 +46,11 @@ http://wuli.wiki/user/note-template/online/
 ../littleshi.cn/root/user/note-template/cmd_data/
 【url 5】
 http://wuli.wiki/user/note-template/changed/
+【输入路径 6】
+../PhysWiki-full/
+【输出路径 6】
+../littleshi.cn/root/online/
+【data 路径 6】
+data/
+【url 6】
+http://wuli.wiki/online/

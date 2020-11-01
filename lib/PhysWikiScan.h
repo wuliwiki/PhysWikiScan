@@ -675,13 +675,21 @@ inline Long autoref_space(Str32_I str, Bool_I error)
     }
 }
 
-inline Long autoref_tilde_upref(Str32_IO str)
+// 1. make sure there is a ~ between autoref and upref
+// 2. make sure autoref and upref is for the same entry
+// 3. forbid upref this entry
+// 4. make sure label in autoref has underscore
+// 5. make sure autoref for other entry always has upref before or after
+inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
 {
     Long ind0 = 0, N = 0;
+    Str32 label, entry1, entry2;
     while (true) {
         ind0 = find_command(str, U"autoref", ind0);
         if (ind0 < 0)
             return N;
+        command_arg(label, str, ind0);
+        Long ind5 = ind0;
         ind0 = skip_command(str, ind0, 1);
         if (ind0 == str.size())
             return N;
@@ -689,12 +697,25 @@ inline Long autoref_tilde_upref(Str32_IO str)
         if (ind1 < 0) {
             if (expect(str, U"\\upref", ind0) > 0)
                 throw Str32(U"\\autoref{} 和 \\upref{} 中间应该有 ~");
+            Long ind2 = label.find(U'_');
+            if (ind2 < 0)
+                throw Str32(U"\\autoref{" + label + U"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
+            ind5 = str.rfind(U"\\upref", ind5-1); entry2.clear();
+            if (ind5 > 0 && ExpectKeyReverse(str, U"~", ind5 - 1) < 0)
+                command_arg(entry2, str, ind5);
+            if (label.substr(0, ind2) != entry && label.substr(0, ind2) != entry2)
+                throw Str32(U"\\autoref{" + label + U"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
             continue;
         }
         Long ind2 = expect(str, U"\\upref", ind1);
         if (ind2 < 0)
             throw Str32(U"\\autoref{} 后面不应该有单独的 ~");
-        str.erase(ind1-1, 1);
+        command_arg(entry1, str, ind2 - 6);
+        if (label.substr(0, entry1.size()) != entry1)
+            throw Str32(U"\\autoref{" + label + U"}~\\upref{" + entry1 + U"} 不一致， 请使用“外部引用”按钮");
+        if (entry == entry1)
+            throw Str32(U"不允许 \\upref{" + entry1 + U"} 本词条");
+        str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
     }
 }
@@ -1662,7 +1683,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     rm_comments(str); // remove comments
     limit_env_cmd(str);
     autoref_space(str, true); // set true to error instead of warning
-    autoref_tilde_upref(str);
+    autoref_tilde_upref(str, entries[ind]);
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
