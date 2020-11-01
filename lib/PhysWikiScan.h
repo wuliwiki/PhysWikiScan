@@ -677,9 +677,8 @@ inline Long autoref_space(Str32_I str, Bool_I error)
 
 // 1. make sure there is a ~ between autoref and upref
 // 2. make sure autoref and upref is for the same entry
-// 3. forbid upref this entry
-// 4. make sure label in autoref has underscore
-// 5. make sure autoref for other entry always has upref before or after
+// 3. make sure label in autoref has underscore
+// 4. make sure autoref for other entry always has upref before or after
 inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
 {
     Long ind0 = 0, N = 0;
@@ -713,8 +712,6 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
         command_arg(entry1, str, ind2 - 6);
         if (label.substr(0, entry1.size()) != entry1)
             throw Str32(U"\\autoref{" + label + U"}~\\upref{" + entry1 + U"} 不一致， 请使用“外部引用”按钮");
-        if (entry == entry1)
-            throw Str32(U"不允许 \\upref{" + entry1 + U"} 本词条");
         str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
     }
@@ -950,7 +947,7 @@ inline Long href(Str32_IO str)
 
 // process upref
 // path must end with '\\'
-inline Long upref(Str32_IO str)
+inline Long upref(Str32_IO str, Str32_I entry)
 {
     Long ind0 = 0, right, N = 0;
     Str32 entryName;
@@ -959,6 +956,8 @@ inline Long upref(Str32_IO str)
         if (ind0 < 0)
             return N;
         command_arg(entryName, str, ind0);
+        if (entryName == entry)
+            throw Str32(U"不允许 \\upref{" + entryName + U"} 本词条");
         trim(entryName);
         if (!file_exist(gv::path_in + U"contents/" + entryName + U".tex")) {
             throw Str32(U"\\upref 引用的文件未找到： " + entryName + U".tex");
@@ -1729,7 +1728,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
     // replace \upref{} with link icon
-    upref(str);
+    upref(str, entries[ind]);
     href(str);
     cite(str); // citation
     // replace environments with html tags
