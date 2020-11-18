@@ -1732,11 +1732,11 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     href(str);
     cite(str); // citation
     // replace environments with html tags
-    Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{equation}",
+    Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{equation}",
                         U"\\end{equation}\n</div></div>", str);
-    Env2Tag(U"gather", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{gather}",
+    Env2Tag(U"gather", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{gather}",
         U"\\end{gather}\n</div></div>", str);
-    Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:710px\">\n\\begin{align}",
+    Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{align}",
         U"\\end{align}\n</div></div>", str);
     
     // footnote
