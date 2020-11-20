@@ -916,7 +916,7 @@ inline Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO
     Long i{}, N{}, Nenv;
     Intvs intvEnvOut, intvEnvIn;
     Nenv = find_env(intvEnvIn, str, nameEnv, 'i');
-    Nenv = find_env(intvEnvOut, str, nameEnv, 'o');
+    find_env(intvEnvOut, str, nameEnv, 'o');
     for (i = Nenv - 1; i >= 0; --i) {
         str.erase(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i));
         str.insert(intvEnvIn.R(i) + 1, strRight);

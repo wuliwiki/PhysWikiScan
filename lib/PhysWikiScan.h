@@ -1608,6 +1608,29 @@ inline Long inline_eq_space(Str32_IO str)
     return N;
 }
 
+// add equation tags
+inline Long equation_tag(Str32_IO str, Str32_I nameEnv)
+{
+    Long page_width = 900;
+    Long i{}, N{}, Nenv;
+    Intvs intvEnvOut, intvEnvIn;
+    Nenv = find_env(intvEnvIn, str, nameEnv, 'i');
+    find_env(intvEnvOut, str, nameEnv, 'o');
+
+    for (i = Nenv - 1; i >= 0; --i) {
+        Long iname, width = page_width - 35;
+        if (index_in_env(iname, intvEnvOut.L(i), { U"example", U"exercise", U"definition", U"theorem", U"lemma", U"corollary"}, str))
+            width -= 40;
+        if (index_in_env(iname, intvEnvOut.L(i), { U"itemize", U"enumerate" }, str))
+            width -= 40;
+        Str32 strLeft = U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:" + num2str32(width) + U"px\">\n\\begin{" + nameEnv + U"}";
+        Str32 strRight = U"\\end{" + nameEnv + U"}\n</div></div>";
+        str.replace(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i), strRight);
+        str.replace(intvEnvOut.L(i), intvEnvIn.L(i) - intvEnvOut.L(i), strLeft);
+    }
+    return N;
+}
+
 // replace all wikipedia domain to another mirror domain
 // return the number replaced
 inline Long wikipedia_link(Str32_IO str)
@@ -1701,10 +1724,12 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     NormalTextEscape(str);
     // add paragraph tags
     paragraph_tag(str);
-    // itemize and enumerate
-    Itemize(str); Enumerate(str);
     // add html id for links
     EnvLabel(ids, labels, entries[ind], str);
+    // replace environments with html tags
+    equation_tag(str, U"equation"); equation_tag(str, U"align"); equation_tag(str, U"gather");
+    // itemize and enumerate
+    Itemize(str); Enumerate(str);
     // process table environments
     Table(str);
     // ensure '<' and '>' has spaces around them
@@ -1731,13 +1756,6 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     upref(str, entries[ind]);
     href(str);
     cite(str); // citation
-    // replace environments with html tags
-    Env2Tag(U"equation", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{equation}",
-                        U"\\end{equation}\n</div></div>", str);
-    Env2Tag(U"gather", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{gather}",
-        U"\\end{gather}\n</div></div>", str);
-    Env2Tag(U"align", U"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:860px\">\n\\begin{align}",
-        U"\\end{align}\n</div></div>", str);
     
     // footnote
     footnote(str, entries[ind], gv::url);
