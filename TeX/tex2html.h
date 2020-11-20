@@ -591,10 +591,10 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
         ++N;
         num2str(idNo, N);
         command_arg(temp, str, ind0);
-        str += U"<span id = \"footnote" + idNo + U"\"></span>" + idNo + U". " + temp + U"<br>\n";
+        str += U"<a href = \"" + url + entry + U".html#ret" + idNo + U"\" id = \"note" + idNo + U"\">" + idNo + U". <b>^</b></a> " + temp + U"<br>\n";
         ind0 -= eatL(str, ind0 - 1, U" \n");
         str.replace(ind0, skip_command(str, ind0, 1) - ind0,
-            U"<sup><a href = \"" + url + entry + U".html#footnote" + idNo + U"\">" + idNo + U"</a></sup>");
+            U"<sup><a href = \"" + url + entry + U".html#note" + idNo + U"\" id = \"ret" + idNo + U"\"><b>" + idNo + U"</b></a></sup>");
         ++ind0;
         ind0 = find_command(str, U"footnote", ind0);
         if (ind0 < 0)
