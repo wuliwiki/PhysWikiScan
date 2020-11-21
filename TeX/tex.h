@@ -601,7 +601,7 @@ inline void check_eq_ascii(Str32_I str)
     for (Long i = intv.size() - 1; i >= 0; --i) {
         for (Long j = intv.L(i); j <= intv.R(i); ++j) {
             if (!is_ascii(str[j]) && !is_in_cmd(str, U"text", j))
-                throw Str32(U"公式中存在非法字符：" + str.substr(j, 40));
+                throw Str32(U"公式中只能包含 ascii 字符： 不能有全角标点，汉字，希腊字母等， \\text{...} 命令内除外：" + str.substr(j, 40));
         }
     }
 }
