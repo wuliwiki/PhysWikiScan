@@ -1178,9 +1178,6 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     read(toc, gv::path_out + "templates/index_template.html"); // read html template
     CRLF_to_LF(toc);
 
-    ind0 = toc.find(U"PhysWikiHTMLtitle");
-    toc.replace(ind0, 17, U"小时物理");
-
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     toc.erase(ind0, 16);
 
