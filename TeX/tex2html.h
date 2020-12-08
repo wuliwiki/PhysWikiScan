@@ -136,6 +136,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
             U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
 
+            U"erf", U"", U"0", U"\\operatorname{erf}",
+
             U"erfi", U"", U"0", U"\\operatorname{erfi}",
 
             U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
