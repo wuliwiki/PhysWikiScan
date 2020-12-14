@@ -468,7 +468,8 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
             + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
-            + U"\" alt = \"" + (gv::is_eng?U"Fig. ":U"图") + "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> 图 " + figNo
+            + U"\" alt = \"" + (gv::is_eng?U"Fig":U"图") + "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> "
+            + (gv::is_eng ? U"Fig. " : U"图 ") + figNo
             + U"：" + caption + U"</div>");
         ++N;
     }
