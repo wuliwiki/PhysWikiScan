@@ -1703,9 +1703,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
     // check language U"\n%%eng\n" at the end of file means english, otherwise chinese
     if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n")
-        gv::is_eng == true;
+        gv::is_eng = true;
     else
-        gv::is_eng == false;
+        gv::is_eng = false;
 
     // add keyword meta to html
     vecStr32 keywords;
