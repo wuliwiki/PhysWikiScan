@@ -610,11 +610,12 @@ inline Long theorem_like_env(Str32_IO str)
     Str32 env_title, env_num;
     vecStr32 envNames = {U"definition", U"lemma", U"theorem",
         U"corollary", U"example", U"exercise"};
+    vecStr32 envCnNames;
     if (!gv::is_eng)
-        vecStr32 envCnNames = {U"定义", U"引理", U"定理",
+        envCnNames = {U"定义", U"引理", U"定理",
             U"推论", U"例", U"习题"};
     else
-        vecStr32 envCnNames = { U"Definition ", U"Lemma ", U"Theorem ",
+        envCnNames = { U"Definition ", U"Lemma ", U"Theorem ",
             U"Corollary ", U"Example ", U"Exercise " };
     vecStr32 envBorderColors = { U"w3-border-red", U"w3-border-red", U"w3-border-red",
         U"w3-border-red", U"w3-border-yellow", U"w3-border-green" };
