@@ -514,7 +514,9 @@ inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, L
 // replace \pentry comman with html round panel
 inline Long pentry(Str32_IO str)
 {
-    return Command2Tag(U"pentry", U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", U"</div>", str);
+    if (!gv::is_eng)
+        return Command2Tag(U"pentry", U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", U"</div>", str);
+    return Command2Tag(U"pentry", U"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", U"</div>", str);
 }
 
 // issue environment
@@ -608,8 +610,12 @@ inline Long theorem_like_env(Str32_IO str)
     Str32 env_title, env_num;
     vecStr32 envNames = {U"definition", U"lemma", U"theorem",
         U"corollary", U"example", U"exercise"};
-    vecStr32 envCnNames = {U"定义", U"引理", U"定理",
-        U"推论", U"例", U"习题"};
+    if (!gv::is_eng)
+        vecStr32 envCnNames = {U"定义", U"引理", U"定理",
+            U"推论", U"例", U"习题"};
+    else
+        vecStr32 envCnNames = { U"Definition ", U"Lemma ", U"Theorem ",
+            U"Corollary ", U"Example ", U"Exercise " };
     vecStr32 envBorderColors = { U"w3-border-red", U"w3-border-red", U"w3-border-red",
         U"w3-border-red", U"w3-border-yellow", U"w3-border-green" };
     for (Long i = 0; i < size(envNames); ++i) {
