@@ -2,7 +2,6 @@
 #include "../SLISC/file.h"
 #include "../SLISC/unicode.h"
 #include "../SLISC/tree.h"
-#include "../TeX/tex2html.h"
 #include "../highlight/matlab2html.h"
 #include "../highlight/cpp2html.h"
 #include "../SLISC/sha1sum.h"
@@ -20,7 +19,10 @@ namespace gv {
     Str32 url; // e.g. http://wuli.wiki/online/
     Bool is_wiki; // editing wiki or note
     Bool eng_punc = false; // replace English punctuations to Chinese in normal text
+    Bool is_eng = false; // use english for auto-generated text (Eq. Fig. etc.)
 }
+
+#include "../TeX/tex2html.h"
 
 // get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
@@ -466,7 +468,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
             + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
-            + U"\" alt = \"图\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> 图 " + figNo
+            + U"\" alt = \"" + (gv::is_eng?U"Fig. ":U"图") + "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> 图 " + figNo
             + U"：" + caption + U"</div>");
         ++N;
     }
@@ -748,27 +750,53 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         if (ind3 < 0)
             throw Str32(U"autoref 格式错误");
         idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
-        if (idName == U"eq") kind = U"式";
-        else if (idName == U"fig") kind = U"图";
-        else if (idName == U"def") kind = U"定义";
-        else if (idName == U"lem") kind = U"引理";
-        else if (idName == U"the") kind = U"定理";
-        else if (idName == U"cor") kind = U"推论";
-        else if (idName == U"ex") kind = U"例";
-        else if (idName == U"exe") kind = U"习题";
-        else if (idName == U"tab") kind = U"表";
-        else if (idName == U"sub") {
-            kind = U"节";
-            SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
-            ++ind0; continue;
-        }
-        else if (idName == U"lst") {
-            kind = U"代码";
-            SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
-            ++ind0; continue;
+        if (!gv::is_eng) {
+            if (idName == U"eq") kind = U"式";
+            else if (idName == U"fig") kind = U"图";
+            else if (idName == U"def") kind = U"定义";
+            else if (idName == U"lem") kind = U"引理";
+            else if (idName == U"the") kind = U"定理";
+            else if (idName == U"cor") kind = U"推论";
+            else if (idName == U"ex") kind = U"例";
+            else if (idName == U"exe") kind = U"习题";
+            else if (idName == U"tab") kind = U"表";
+            else if (idName == U"sub") {
+                kind = U"节";
+                SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
+                ++ind0; continue;
+            }
+            else if (idName == U"lst") {
+                kind = U"代码";
+                SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
+                ++ind0; continue;
+            }
+            else {
+                throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+            }
         }
         else {
-            throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+            if (idName == U"eq") kind = U"式";
+            else if (idName == U"fig") kind = U"fig. ";
+            else if (idName == U"def") kind = U"def. ";
+            else if (idName == U"lem") kind = U"lem. ";
+            else if (idName == U"the") kind = U"thm. ";
+            else if (idName == U"cor") kind = U"cor. ";
+            else if (idName == U"ex") kind = U"ex. ";
+            else if (idName == U"exe") kind = U"exer. ";
+            else if (idName == U"tab") kind = U"tab. ";
+            else if (idName == U"sub") {
+                kind.clear();
+                SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
+                ++ind0; continue;
+            }
+            else if (idName == U"lst") {
+                kind = U"code. ";
+                SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
+                ++ind0; continue;
+            }
+            else {
+                throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+            }
         }
         ind3 = str.find('}', ind3);
         // find id of the label
@@ -788,7 +816,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         if (!inEq)
             str.insert(ind3 + 1, U" </a>");
         if (idName == U"sub")
-            str.insert(ind3 + 1, U"第 " + idNum + " " + kind);
+            str.insert(ind3 + 1, (gv::is_eng?U"subsec. ":U"第 ") + idNum + " " + kind);
         else
             str.insert(ind3 + 1, kind + U' ' + idNum);
         if (!inEq)
@@ -1672,6 +1700,12 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
     // read title from first comment
     get_title(title, str);
+
+    // check language U"\n%%eng\n" at the end of file means english, otherwise chinese
+    if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n")
+        gv::is_eng == true;
+    else
+        gv::is_eng == false;
 
     // add keyword meta to html
     vecStr32 keywords;

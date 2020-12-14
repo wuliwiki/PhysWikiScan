@@ -470,7 +470,7 @@ inline Long Table(Str32_IO str)
         str.erase(ind0, ind1 - ind0 + 1);
         ind0 = str.find(str_beg, intv.L(i)) - 1;
         str.replace(intv.L(i), ind0 - intv.L(i) + 1,
-            U"<div align = \"center\"> 表" + num2str(i + 1) + U"：" +
+            U"<div align = \"center\"> " + Str32(gv::is_eng?U"Tab. ":U"表") + num2str(i + 1) + U"：" +
             captions[i] + U"</div>");
     }
     return N;
