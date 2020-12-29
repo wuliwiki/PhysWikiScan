@@ -642,7 +642,7 @@ inline Long theorem_like_env(Str32_IO str)
                 + envBorderColors[i]
                 + U" w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
                 + envCnNames[i]
-                + env_num + U"</b>　" + env_title + U"</h5>\n");
+                + env_num + U"</b>　" + env_title + U"</h3>\n");
         }
     }
     return N_tot;
