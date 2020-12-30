@@ -641,7 +641,7 @@ inline Long theorem_like_env(Str32_IO str)
             str.replace(ind0, ind1 - ind0, U"<div class = \"w3-panel "
                 + envBorderColors[i]
                 + U" w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
-                + envCnNames[i]
+                + envCnNames[i] + U" "
                 + env_num + U"</b>　" + env_title + U"</h3>\n");
         }
     }
