@@ -1125,6 +1125,30 @@ inline Long rm_punc_space(Str32_IO str)
     }
 }
 
+// [recycle] this problem is already fixed
+// prevent line wraping before specific chars
+// by using <span style="white-space:nowrap">...</space>
+// consecutive chars can be grouped together
+inline void puc_no_wrap(Str32_IO str)
+{
+    Str32 keys = U"，、。．！？）：”】", tmp;
+    Long ind0 = 0, ind1;
+    while (true) {
+        ind0 = str.find_first_of(keys, ind0);
+        if (ind0 < 0)
+            break;
+        if (ind0 == 0 || str[ind0 - 1] == U'\n') {
+            ++ind0; continue;
+        }
+        ind1 = ind0 + 1; --ind0;
+        while (search(str[ind1], keys) >= 0 && ind1 < str.size())
+            ++ind1;
+        tmp = U"<span style=\"white-space:nowrap\">" + str.substr(ind0, ind1 - ind0) + U"</span>";
+        str.replace(ind0, ind1 - ind0, tmp);
+        ind0 += tmp.size();
+    }
+}
+
 // warn english punctuations , . " ? ( ) in normal text
 // set error = true to throw error instead of console warning
 // return the number replaced
