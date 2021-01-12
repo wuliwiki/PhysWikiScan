@@ -36,9 +36,8 @@ Long tree_all_dep_imp(vecLong_O deps, const vector<Node> &tree, Long_I ind, vecS
         Long ind0 = tree[ind].last[i];
         deps.push_back(ind0);
         Long ret = tree_all_dep_imp(deps, tree, ind0, vector, Niter);
-        --Niter;
         if (ret < 0) {
-            cout << "debug: Niter = " << Niter << "  vector[" << ind << "] = " << vector[ind] << endl;
+            cout << "debug: Niter = " << Niter << "  vector[" << ind << "] = " << vector[ind] << endl; cout.flush();
             return ret;
         }
     }
