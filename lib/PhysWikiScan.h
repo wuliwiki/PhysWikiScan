@@ -16,7 +16,7 @@ namespace gv {
     Str32 path_in; // e.g. ../PhysWiki/
     Str32 path_out; // e.g. ../littleshi.cn/online/
     Str32 path_data; // e.g. ../littleshi.cn/data/
-    Str32 url; // e.g. http://wuli.wiki/online/
+    Str32 url; // e.g. https://wuli.wiki/online/
     Bool is_wiki; // editing wiki or note
     Bool eng_punc = false; // replace English punctuations to Chinese in normal text
     Bool is_eng = false; // use english for auto-generated text (Eq. Fig. etc.)
@@ -1733,7 +1733,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // read title from first comment
     get_title(title, str);
 
-    // check language U"\n%%eng\n" at the end of file means english, otherwise chinese
+    // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
     if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n")
         gv::is_eng = true;
     else
@@ -1817,7 +1817,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
     // replace \upref{} with link icon
     upref(str, entries[ind]);
-    href(str);
+    href(str); // hyperlinks
     cite(str); // citation
     
     // footnote
@@ -1975,7 +1975,7 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
 inline void PhysWikiOnline()
 {
     vecStr32 entries; // name in \entry{}, also .tex file name
-    VecLong entry_order; // entries[i] is the entry_order[i] -th entry main.tex
+    VecLong entry_order; // entries[i] is the entry_order[i] -th entry in main.tex
     vecLong part_ind, chap_ind; // toc part & chapter number of each entries[i]
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
