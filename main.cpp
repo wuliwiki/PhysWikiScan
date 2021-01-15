@@ -139,9 +139,10 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
 
 int main(int argc, char *argv[]) {
     using namespace slisc;
-
+    Timer timer;
     vecStr32 args;
     get_args(args, argc, argv);
+    timer.tic();
 
     try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
     catch (Str32_I msg) {
@@ -313,8 +314,8 @@ int main(int argc, char *argv[]) {
     }
     
     // PhysWikiCheck(U"../PhysWiki/contents/");
-
-    cout << u8"done!" << endl;
+    cout.precision(3);
+    cout << u8"done! time (s): " << timer.toc() << endl;
     if (argc <= 1) {
         cout << u8"按任意键退出..." << endl;
         Char c = getchar(); ++c;
