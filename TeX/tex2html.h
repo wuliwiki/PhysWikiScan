@@ -361,7 +361,6 @@ inline Long newcommand(Str32_IO str, vecStr32_I rules)
         for (Long i = 0; i < Narg_rule; ++i)
             replace(new_cmd, U"#" + num2str32(i + 1), args[i]);
         str.replace(ind0, end - ind0, U' ' + new_cmd + U' '); ++N;
-        ind0 += new_cmd.size();
     }
     return N;
 }
