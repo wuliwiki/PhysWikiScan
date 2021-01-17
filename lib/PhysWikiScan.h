@@ -1858,9 +1858,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         next_title = titles[next_ind];
     }
         
-    if (replace(html, U"PhysWikiLastEntry", last_entry) != 2)
+    if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
         throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiNextEntry", next_entry) != 2)
+    if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
         throw Str32(U"内部错误： \"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiLastTitle", last_title) != 2)
         throw Str32(U"内部错误： \"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
