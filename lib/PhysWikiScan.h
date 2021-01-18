@@ -961,12 +961,15 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 // with <a href="http://example.com">name</a>
 inline Long href(Str32_IO str)
 {
-    Long ind0 = 0, N = 0;
+    Long ind0 = 0, N = 0, tmp;
     Str32 name, url;
     while (true) {
         ind0 = find_command(str, U"href", ind0);
         if (ind0 < 0)
             return N;
+        if (index_in_env(tmp, ind0, { U"equation", U"align", U"gather" }, str)) {
+            ++ind0; continue;
+        }
         command_arg(url, str, ind0, 0);
         command_arg(name, str, ind0, 1);
         if (url.substr(0, 7) != U"http://" &&
