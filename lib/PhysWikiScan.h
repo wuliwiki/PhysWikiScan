@@ -887,29 +887,19 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     find_comments(intvComm, str, U"%");
 
     vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
-        U"the", U"cor", U"ex", U"exe", U"tab" };
+        U"the", U"cor", U"ex", U"exe", U"tab", U"sub" };
     vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
         U"theorem", U"corollary", U"example", U"exercise", U"table"};
 
     Long idNum = search(idName, idNames);
     if (idNum < 0) {
-        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab 之一");
+        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
     }
     
     // count environment display number starting at ind4
     Intvs intvEnv;
-    if (idName != U"eq") {
-        Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
-        if (ind > Nid) {
-            throw Str32(U"被引用对象不存在");
-        }
-
-        new_label_name(label, idName, entry, str);
-        str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
-        write(str, full_name);
-        return 0;
-    }
-    else { // count equations
+    if (idName == U"eq") { // add equation labels
+        // count equations
         ind0 = 0;
         Long idN = 0;
         vecStr32 eq_envs = { U"equation", U"gather", U"align" };
@@ -953,6 +943,30 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             }
             ++ind0;
         }
+    }
+    else if (idName == U"sub") { // add subsection labels
+        Long ind0 = -1;
+        for (Long i = 0; i < ind; ++i) {
+            ind0 = find_command(str, U"subsection", ind0+1);
+            if (ind0 < 0)
+                throw Str32(U"被引用对象不存在");
+        }
+        ind0 = skip_command(str, ind0, 1);
+        new_label_name(label, idName, entry, str);
+        str.insert(ind0, U"\\label{" + label + "}");
+        write(str, full_name);
+        return 0;
+    }
+    else { // add environment labels
+        Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
+        if (ind > Nid) {
+            throw Str32(U"被引用对象不存在");
+        }
+
+        new_label_name(label, idName, entry, str);
+        str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
+        write(str, full_name);
+        return 0;
     }
 }
 
