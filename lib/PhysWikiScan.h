@@ -171,8 +171,12 @@ inline Long paragraph_tag(Str32_IO str)
             else
                 ind0 = skip_env(str, ind0);
         }
-        else
+        else {
             ind0 = skip_command(str, ind0, 1);
+            Long ind1 = expect(str, U"\\label", ind0);
+            if (ind1 > 0)
+                ind0 = skip_command(str, ind1 - 6, 1);
+        }
 
         left = ind0;
         last = next;
@@ -249,9 +253,8 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 {
     Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
         Ngather{}, Nalign{}, i{}, j{};
-    Str32 idName; // "eq" or "fig" or "ex"...
+    Str32 idName; // "eq", "fig", "ex", "sub"...
     Str32 envName; // "equation" or "figure" or "example"...
-    Str32 idNum{}; // id = idName + idNum
     Long idN{}; // convert to idNum
     Str32 label, id;
     // clean existing labels of this entry
@@ -267,15 +270,10 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         // detect environment kind
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
-        if (ind2 >= 0 && ind4 >= 0 && ind2 > ind4) {
+        if (ind4 < 0 || ind4 >= 0 && ind2 > ind4) {
+            // label not in environment, must be a subsection label
             idName = U"sub"; envName = U"subsection";
-            SLS_WARN("subsection label not processed");
-            ind0 = ind5 + 1;
-            continue;
-        }
-        else if (ind4 < 0) {
-            // TODO: label not in environment, might be a section label
-            ++ind0; continue;
+            // TODO: make sure the label follows a \subsection{} command
         }
         else {
             Long ind1 = expect(str, U"{", ind4 + 6);
@@ -338,10 +336,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         
         // count idNum, insert html id tag, delete label
         Intvs intvEnv;
-        if (idName != U"eq") {
-            idN = find_env(intvEnv, str.substr(0,ind4), envName) + 1;
-        }
-        else { // count equations
+        if (idName == U"eq") { // count equations
             idN = find_env(intvEnv, str.substr(0,ind4), U"equation");
             Ngather = find_env(intvEnv, str.substr(0,ind4), U"gather");
             if (Ngather > 0) {
@@ -371,8 +366,19 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
             }
             ++idN;
         }
-        num2str(idNum, idN);
-        id = idName + idNum;
+        else if (idName == U"sub") { // count \subsection number
+            Long ind = -1; idN = 0; ind4 = -1;
+            while (true) {
+                ind = find_command(str, U"subsection", ind + 1);
+                if (ind > ind5 || ind < 0)
+                    break;
+                ind4 = ind; ++idN;
+            }
+        }
+        else {
+            idN = find_env(intvEnv, str.substr(0, ind4), envName) + 1;
+        }
+        id = idName + num2str32(idN);
         if (ind < 0)
             ids.push_back(id);
         else
@@ -768,11 +774,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             else if (idName == U"ex") kind = U"例";
             else if (idName == U"exe") kind = U"习题";
             else if (idName == U"tab") kind = U"表";
-            else if (idName == U"sub") {
-                kind = U"节";
-                SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
-                ++ind0; continue;
-            }
+            else if (idName == U"sub") kind = U"子节";
             else if (idName == U"lst") {
                 kind = U"代码";
                 SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
@@ -823,10 +825,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             newtab = U"target = \"_blank\"";
         if (!inEq)
             str.insert(ind3 + 1, U" </a>");
-        if (idName == U"sub")
-            str.insert(ind3 + 1, (gv::is_eng?U"subsec. ":U"第 ") + idNum + " " + kind);
-        else
-            str.insert(ind3 + 1, kind + U' ' + idNum);
+        str.insert(ind3 + 1, kind + U' ' + idNum);
         if (!inEq)
             str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + ids[i] + U"\" " + newtab + U">");
         str.erase(ind0, ind3 - ind0 + 1);
