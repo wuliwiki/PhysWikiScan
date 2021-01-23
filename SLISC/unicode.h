@@ -349,9 +349,11 @@ inline Long expect(Str32_I str, Str32_I key, Long_I start)
     Long L = str.size();
     Long L0 = key.size();
     Char32 c0, c;
+    if (start < 0 || start >= str.size())
+        return -1;
     while (true) {
-         c0 = key.at(ind0);
-         c = str.at(ind);
+         c0 = key[ind0];
+         c = str[ind];
          if (c == c0) {
              ++ind0;
              if (ind0 == L0)
