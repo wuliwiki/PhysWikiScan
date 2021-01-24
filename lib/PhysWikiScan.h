@@ -794,11 +794,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             else if (idName == U"ex") kind = U"ex. ";
             else if (idName == U"exe") kind = U"exer. ";
             else if (idName == U"tab") kind = U"tab. ";
-            else if (idName == U"sub") {
-                kind.clear();
-                SLS_WARN(utf32to8(U"autoref subsection 功能未完成！"));
-                ++ind0; continue;
-            }
+            else if (idName == U"sub") kind = U"sub. ";
             else if (idName == U"lst") {
                 kind = U"code. ";
                 SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
