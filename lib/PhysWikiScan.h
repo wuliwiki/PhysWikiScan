@@ -658,8 +658,8 @@ inline Long theorem_like_env(Str32_IO str)
 inline Long autoref_space(Str32_I str, Bool_I error)
 {
     Long ind0 = 0, N = 0;
-    Str32 follow = U" ，、．）~”";
-    vecStr32 follow2 = { U"\\begin", U"\\upref" };
+    Str32 follow = U" ，、．）~”\n";
+    vecStr32 follow2 = { U"\\begin" };
     Str32 msg;
     while (true) {
         ind0 = find_command(str, U"autoref", ind0);
@@ -668,7 +668,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
             return N;
         try {ind0 = skip_command(str, ind0, 1);}
         catch (...) {
-            throw Str32(U"\autoref 后面没有大括号: " + str.substr(ind0, 20));
+            throw Str32(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
         }
         if (ind0 >= str.size())
             return N;
