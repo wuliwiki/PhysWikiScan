@@ -225,6 +225,10 @@ int main(int argc, char *argv[]) {
         write(U"", gv::path_data + U"changed.txt");
         write(U"", gv::path_data + U"authors.txt");
     }
+    else if (args[0] == U"--check") {
+        // check format and auto correct .tex files
+        PhysWikiCheck(gv::path_in);
+    }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         vecStr32 labels, ids;

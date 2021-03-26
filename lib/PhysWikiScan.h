@@ -1529,35 +1529,6 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
     return N;
 }
 
-// find \bra{}\ket{} and mark
-inline Long OneFile4(Str32_I path)
-{
-    Long ind0{}, ind1{}, N{};
-    Str32 str;
-    read(str, path); // read file
-    CRLF_to_LF(str);
-    while (true) {
-        ind0 = str.find(U"\\bra", ind0);
-        if (ind0 < 0) break;
-        ind1 = ind0 + 4;
-        ind1 = expect(str, U"{", ind1);
-        if (ind1 < 0) {
-            ++ind0; continue;
-        }
-        ind1 = pair_brace(str, ind1 - 1);
-        ind1 = expect(str, U"\\ket", ind1 + 1);
-        if (ind1 > 0) {
-            str.insert(ind0, U"删除标记"); ++N;
-            ind0 = ind1 + 4;
-        }
-        else
-            ++ind0;
-    }
-    if (N > 0)
-        write(str, path);
-    return N;
-}
-
 // get keywords from the comment in the second line
 // return numbers of keywords found
 // e.g. "关键词1|关键词2|关键词3"
@@ -2185,20 +2156,36 @@ inline void all_commands(vecStr32_O commands, Str32_I in_path)
     }
 }
 
-// check format error of .tex files in path0
-inline void PhysWikiCheck(Str32_I path0)
+// check format and auto correct .tex files in path0
+inline void PhysWikiCheck(Str32_I path_in)
 {
     Long ind0{};
-    vecStr32 names;
-    file_list_ext(names, path0, U"tex", false);
+    vecStr32 names, str_verb;
+    Str32 fname, str;
+    Intvs intv;
+    file_list_ext(names, path_in + "contents/", U"tex", false);
+    
     //RemoveNoEntry(names);
     if (names.size() <= 0) return;
     //names.resize(0); names.push_back(U"Sample"));
+    
     for (unsigned i{}; i < names.size(); ++i) {
         cout << i << " ";
         cout << names[i] << "...";
+        if (names[i] == U"Sample" || names[i] == U"edTODO")
+            continue;
         // main process
-        cout << OneFile4(path0 + names[i] + ".tex");
+        fname = path_in + "contents/" + names[i] + ".tex";
+        read(str, fname);
+        CRLF_to_LF(str);
+        // verbatim(str_verb, str);
+        // TODO: hide comments then recover at the end
+        // find_comments(intv, str, "%");
+        Long N = inline_eq_space(str);
+
+        // verb_recover(str, str_verb);
+        if (N > 0)
+            write(str, fname);
         cout << endl;
     }
 }

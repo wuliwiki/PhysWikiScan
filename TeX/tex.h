@@ -832,6 +832,50 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
     return str_verb.size();
 }
 
+// reverse process of verbatim()
+inline Long verb_recover(Str32_IO str, vecStr32_IO str_verb)
+{
+    SLS_ERR("unfinished!");
+    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
+    Str32 ind_str, tmp;
+
+    // verb
+    while (true) {
+        ind0 = str.find(U"\\verb|", ind0);
+        if (ind0 < 0)
+            break;
+        ind0 += 6; // one char after |
+        Long ind1 = str.find(U'|', ind0 + 1);
+        if (ind1 < 0)
+            throw Str32(U"内部错误： verb_recover: \\verb|数字| 格式错误");
+
+        Long verb_ind = str2int(str.substr(ind0, ind1 - ind0));
+
+        // determin delimiter
+        Char32 dlm;
+        if (Long(str_verb[verb_ind].find(U'|')) >= 0) {
+            if (Long(str_verb[verb_ind].find(U'+')) >= 0) {
+                if (Long(str_verb[verb_ind].find(U'-')) >= 0) {
+                    if (Long(str_verb[verb_ind].find(U'*')) >= 0) {
+                        dlm = U'^';
+                    }
+                    else
+                        dlm = U'*';
+                }
+                else
+                    dlm = U'-';
+            }
+            else
+                dlm = U'+';
+        }
+        else
+            dlm = U'|';
+
+        str.replace(ind0, ind1 - ind0, dlm + str_verb[verb_ind] + dlm);
+    }
+    return N;
+}
+
 // replace `\lstinline|ind|` with `<code>str_verb[ind]</code>`
 // return the number replaced
 inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
