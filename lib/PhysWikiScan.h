@@ -1747,7 +1747,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
-    wikipedia_link(str);
+    // wikipedia_link(str);
     rm_comments(str); // remove comments
     limit_env_cmd(str);
     autoref_space(str, true); // set true to error instead of warning
