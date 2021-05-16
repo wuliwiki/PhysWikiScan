@@ -785,13 +785,13 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             }
         }
         else {
-            if (idName == U"eq") kind = U"式";
+            if      (idName == U"eq")  kind = U"eq. ";
             else if (idName == U"fig") kind = U"fig. ";
             else if (idName == U"def") kind = U"def. ";
             else if (idName == U"lem") kind = U"lem. ";
             else if (idName == U"the") kind = U"thm. ";
             else if (idName == U"cor") kind = U"cor. ";
-            else if (idName == U"ex") kind = U"ex. ";
+            else if (idName == U"ex")  kind = U"ex. ";
             else if (idName == U"exe") kind = U"exer. ";
             else if (idName == U"tab") kind = U"tab. ";
             else if (idName == U"sub") kind = U"sub. ";
