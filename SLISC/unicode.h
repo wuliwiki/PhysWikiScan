@@ -194,77 +194,65 @@ inline Long skip_line(Str32_I &str, Long_I start = 0)
     return ind + 1;
 }
 
-inline void num2str(Str32_O str, Char_I num)
+inline void num2str(Str32_O str, Char_I num, Long_I min_len = -1)
 {
-    Str str0;
-    num2str(str0, num);
-    utf8to32(str, str0);
+    utf8to32(str, num2str(num, min_len));
 }
 
-inline void num2str(Str32_O str, Int_I num)
-{
-    Str str0;
-    num2str(str0, num);
-    utf8to32(str, str0);
-}
-
-inline void num2str(Str32_O str, Llong_I num)
-{
-    Str str0;
-    num2str(str0, num);
-    utf8to32(str, str0);
-}
-
-inline void num2str(Str32_O str, Float_I num)
-{
-    Str str0;
-    num2str(str0, num);
-    utf8to32(str, str0);
-}
-
-inline void num2str(Str32_O str, Doub_I num)
-{
-    Str str0;
-    num2str(str0, num);
-    utf8to32(str, str0);
-}
-
-
-inline Str32 num2str32(Char_I num)
+inline Str32 num2str32(Char_I num, Long_I min_len = -1)
 {
     Str32 str;
-    num2str(str, num);
+    num2str(str, num, min_len);
     return str;
 }
 
-inline Str32 num2str32(Int_I num)
+inline void num2str(Str32_O str, Int_I num, Long_I min_len = -1)
+{
+    utf8to32(str, num2str(num, min_len));
+}
+
+inline Str32 num2str32(Int_I num, Long_I min_len = -1)
 {
     Str32 str;
-    num2str(str, num);
+    num2str(str, num, min_len);
     return str;
 }
 
-inline Str32 num2str32(Llong_I num)
+inline void num2str(Str32_O str, Llong_I num, Long_I min_len = -1)
+{
+    utf8to32(str, num2str(num, min_len));
+}
+
+inline Str32 num2str32(Llong_I num, Long_I min_len = -1)
 {
     Str32 str;
-    num2str(str, num);
+    num2str(str, num, min_len);
     return str;
 }
 
-inline Str32 num2str32(Float_I num)
+inline void num2str(Str32_O str, Float_I num, Long_I min_len = -1)
+{
+    utf8to32(str, num2str(num, min_len));
+}
+
+inline Str32 num2str32(Float_I num, Long_I min_len = -1)
 {
     Str32 str;
-    num2str(str, num);
+    num2str(str, num, min_len);
     return str;
 }
 
-inline Str32 num2str32(Doub_I num)
+inline void num2str(Str32_O str, Doub_I num, Long_I min_len = -1)
 {
-    Str32 str;
-    num2str(str, num);
-    return str;
+    utf8to32(str, num2str(num, min_len));
 }
 
+inline Str32 num2str32(Doub_I num, Long_I min_len = -1)
+{
+    Str32 str;
+    num2str(str, num, min_len);
+    return str;
+}
 
 // same as str.insert(), but return one index after key after insertion
 inline Long insert(Str32_IO str, Str32_I key, Long start)

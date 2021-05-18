@@ -199,7 +199,7 @@ Long invert(Intvs_O ind, Intvs_I ind0, Long_I N)
 // combine ranges ind1 and ind2
 // a range can contain another range, but not partial overlap
 // return total range number
-Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
+inline Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
 {
     Long i, N1 = ind1.size(), N2 = ind2.size();
     ind1.check_pair(); ind2.check_pair();
@@ -251,7 +251,7 @@ Long combine(Intvs_O ind, Intvs_I ind1, Intvs_I ind2)
 }
 
 // combine intervals ind and ind1, and assign the result to ind
-Long combine(Intvs_O ind, Intvs_I ind1)
+inline Long combine(Intvs_IO ind, Intvs_I ind1)
 {
     Intvs temp;
     Long ret = combine(temp, ind, ind1);

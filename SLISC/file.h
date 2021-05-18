@@ -508,6 +508,8 @@ inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
     Str32 str;
     vec_str.clear();
     read(str, fname);
+    if (str.empty())
+        return;
     CRLF_to_LF(str);
     Long ind0 = 0;
     for (Long i = 0; ; ++i) {

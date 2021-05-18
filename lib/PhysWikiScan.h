@@ -2156,6 +2156,71 @@ inline void all_commands(vecStr32_O commands, Str32_I in_path)
     }
 }
 
+// for google translation: hide equations and verbatims
+inline void hide_eq_verb(Str32_IO str)
+{
+    Str32 tmp;
+    vecStr32 eq_list, verb_list;
+    Intvs intv, intv1;
+    find_single_dollar_eq(intv, str, 'o');
+    find_double_dollar_eq(intv1, str, 'o');
+    combine(intv, intv1);
+    find_env(intv1, str, U"equation", 'o');
+    combine(intv, intv1);
+    find_env(intv1, str, U"align", 'o');
+    combine(intv, intv1);
+    find_env(intv1, str, U"gather", 'o');
+    combine(intv, intv1);
+
+    for (Long i = intv.size() - 1; i >= 0; --i) {
+        tmp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
+        replace(tmp, U"\n", U"PhysWikiScanLF");
+        eq_list.push_back(tmp);
+        str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, U"PhysWikiScanHideEq");
+    }
+    verbatim_o(verb_list, str);
+    // save to files
+    write_vec_str(eq_list, gv::path_data + U"eq_list.txt");
+    write_vec_str(verb_list, gv::path_data + U"verb_list.txt");
+}
+
+inline void unhide_eq_verb(Str32_IO str)
+{
+    Str32 tmp;
+    vecStr32 eq_list, verb_list;
+    read_vec_str(eq_list, gv::path_data + U"eq_list.txt");
+    read_vec_str(verb_list, gv::path_data + U"verb_list.txt");
+    Long k = 0;
+    while (true) {
+        Long ind = str.rfind(U"PhysWikiScanHideEq");
+        if (ind < 0)
+            break;
+        if (eq_list.size() == 0)
+            SLS_ERR("unexpected!");
+        tmp = eq_list[k]; ++k;
+        replace(tmp, U"PhysWikiScanLF", U"\n");
+        str.replace(ind, 18, tmp);
+    }
+    if (k != size(eq_list))
+        SLS_ERR("unexpected!");
+    
+
+    for (Str32& label : vecStr32{ U"PhysWikiScanHideLstlisting", U"PhysWikiScanHideLstinline", U"PhysWikiScanHideVerb" }) {
+        while (true) {
+            Long ind = str.rfind(label);
+            if (ind < 0)
+                break;
+            if (verb_list.size() == 0)
+                SLS_ERR("unexpected!");
+            tmp = verb_list.back(); verb_list.pop_back();
+            replace(tmp, U"PhysWikiScanLF", U"\n");
+            str.replace(ind, size(label), tmp);
+        }
+    }
+    if (!verb_list.empty())
+        SLS_ERR("unexpected!");
+}
+
 // check format and auto correct .tex files in path0
 inline void PhysWikiCheck(Str32_I path_in)
 {

@@ -298,6 +298,18 @@ int main(int argc, char *argv[]) {
         write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
         write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
     }
+    else if (args[0] == U"--hide" && args.size() > 1) {
+        Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+        read(str, fname); CRLF_to_LF(str);
+        hide_eq_verb(str);
+        write(str, fname);
+    }
+    else if (args[0] == U"--unhide" && args.size() > 1) {
+        Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+        read(str, fname); CRLF_to_LF(str);
+        unhide_eq_verb(str);
+        write(str, fname);
+    }
     else if (args[0] == U"--all-commands") {
         vecStr32 commands;
         all_commands(commands, gv::path_in + U"contents/");
