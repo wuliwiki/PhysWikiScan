@@ -1,56 +1,72 @@
-【输入路径 0 (默认)】
+------------------------------------ 输入路径 0 (默认)
 ../PhysWiki/
-【输出路径 0】
+------------------------------------ 输出路径 0
 ../littleshi.cn/root/online/
-【data 路径 0】
+------------------------------------ data 路径 0
 data/
-【url 0】
+------------------------------------ url 0
 https://wuli.wiki/online/
-【输入路径 1】
+------------------------------------ 输入路径 1
 ../PhysWiki/
-【输出路径 1】
+------------------------------------ 输出路径 1
 ../littleshi.cn/root/changed/
-【data 路径 1】
+------------------------------------ data 路径 1
 data/
-【url 1】
+------------------------------------ url 1
 
-【输入路径 2】
-../littleshi.cn/root/user/admin/
-【输出路径 2】
-../littleshi.cn/root/user/admin/online/
-【data 路径 2】
-../littleshi.cn/root/user/admin/cmd_data/
-【url 2】
-https://wuli.wiki/user/admin/online/
-【输入路径 3】
-../littleshi.cn/root/user/admin/
-【输出路径 3】
-../littleshi.cn/root/user/admin/changed/
-【data 路径 3】
-../littleshi.cn/root/user/admin/cmd_data/
-【url 3】
-https://wuli.wiki/user/admin/changed/
-【输入路径 4】
-../littleshi.cn/root/user/note-template/
-【输出路径 4】
-../littleshi.cn/root/user/note-template/online/
-【data 路径 4】
-../littleshi.cn/root/user/note-template/cmd_data/
-【url 4】
-https://wuli.wiki/user/note-template/online/
-【输入路径 5】
-../littleshi.cn/root/user/note-template/
-【输出路径 5】
-../littleshi.cn/root/user/note-template/changed/
-【data 路径 5】
-../littleshi.cn/root/user/note-template/cmd_data/
-【url 5】
-https://wuli.wiki/user/note-template/changed/
-【输入路径 6】
-../PhysWiki-full/
-【输出路径 6】
-../littleshi.cn/root/online/
-【data 路径 6】
+------------------------------------ 输入路径 2
+../PhysWiki/en/
+------------------------------------ 输出路径 2
+../littleshi.cn/root/en/online/
+------------------------------------ data 路径 2
 data/
-【url 6】
+------------------------------------ url 2
+https://wuli.wiki/en/online/
+------------------------------------ 输入路径 3
+../PhysWiki/en/
+------------------------------------ 输出路径 3
+../littleshi.cn/root/en/changed/
+------------------------------------ data 路径 3
+data/
+------------------------------------ url 3
+
+------------------------------------ 输入路径 4
+../littleshi.cn/root/user/admin/
+------------------------------------ 输出路径 4
+../littleshi.cn/root/user/admin/online/
+------------------------------------ data 路径 4
+../littleshi.cn/root/user/admin/cmd_data/
+------------------------------------ url 4
+https://wuli.wiki/user/admin/online/
+------------------------------------ 输入路径 5
+../littleshi.cn/root/user/admin/
+------------------------------------ 输出路径 5
+../littleshi.cn/root/user/admin/changed/
+------------------------------------ data 路径 5
+../littleshi.cn/root/user/admin/cmd_data/
+------------------------------------ url 5
+https://wuli.wiki/user/admin/changed/
+------------------------------------ 输入路径 6
+../littleshi.cn/root/user/note-template/
+------------------------------------ 输出路径 6
+../littleshi.cn/root/user/note-template/online/
+------------------------------------ data 路径 6
+../littleshi.cn/root/user/note-template/cmd_data/
+------------------------------------ url 6
+https://wuli.wiki/user/note-template/online/
+------------------------------------ 输入路径 7
+../littleshi.cn/root/user/note-template/
+------------------------------------ 输出路径 7
+../littleshi.cn/root/user/note-template/changed/
+------------------------------------ data 路径 7
+../littleshi.cn/root/user/note-template/cmd_data/
+------------------------------------ url 7
+https://wuli.wiki/user/note-template/changed/
+------------------------------------ 输入路径 8
+../PhysWiki-full/
+------------------------------------ 输出路径 8
+../littleshi.cn/root/online/
+------------------------------------ data 路径 8
+data/
+------------------------------------ url 8
 https://wuli.wiki/online/
