@@ -1717,7 +1717,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     get_title(title, str);
 
     // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
-    if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n")
+    if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n" || gv::path_in.substr(gv::path_in.size()-4) == U"/en/")
         gv::is_eng = true;
     else
         gv::is_eng = false;
