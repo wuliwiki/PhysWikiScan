@@ -2157,7 +2157,7 @@ inline void all_commands(vecStr32_O commands, Str32_I in_path)
 }
 
 // for google translation: hide code to protect them from translation
-// replace with `PhysWikiScanHideVerb` + number
+// replace with `\verb|编号|`
 inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
 {
     Long ind0 = 0, ind1, ind2;
@@ -2183,7 +2183,7 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
         tmp = str.substr(ind0, ind2 + 1 - ind0);
         replace(tmp, U"\n", U"PhysWikiScanLF");
         str_verb.push_back(tmp);
-        str.replace(ind0, ind2 + 1 - ind0, U"PhysWikiScanHideVerb" + num2str32(size(str_verb)-1, 4));
+        str.replace(ind0, ind2 + 1 - ind0, U"\\verb|" + num2str32(size(str_verb)-1, 4) + U"|");
         ind0 += 3;
     }
 
@@ -2208,7 +2208,7 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
         replace(tmp, U"\n", U"PhysWikiScanLF");
         str_verb.push_back(tmp);
 
-        str.replace(ind0, ind2 + 1 - ind0, U"PhysWikiScanHideVerb" + num2str32(size(str_verb)-1, 4));
+        str.replace(ind0, ind2 + 1 - ind0, U"\\verb|" + num2str32(size(str_verb)-1, 4) + U"|");
         ind0 += 3;
     }
 
@@ -2223,7 +2223,7 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
         tmp = str.substr(intv.L(i), intv.R(i) + 1 - intv.L(i));
         replace(tmp, U"\n", U"PhysWikiScanLF");
         str_verb1.push_back(tmp);
-        str.replace(intv.L(i), intv.R(i) + 1 - intv.L(i), U"PhysWikiScanHideVerb" + num2str32(size(str_verb)+i, 4));
+        str.replace(intv.L(i), intv.R(i) + 1 - intv.L(i), U"\\verb|" + num2str32(size(str_verb)+i, 4) + U"|");
     }
     for (Long i = 0; i < N; ++i) {
         str_verb.push_back(str_verb1.back());
@@ -2252,7 +2252,7 @@ inline void hide_eq_verb(Str32_IO str)
         tmp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
         replace(tmp, U"\n", U"PhysWikiScanLF");
         eq_list.push_back(tmp);
-        str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, U"PhysWikiScanHideEq" + num2str32(size(eq_list)-1, 4));
+        str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, U"$" + num2str32(size(eq_list)-1, 4) + U"$");
     }
     hide_verbatim(verb_list, str);
     // save to files
@@ -2267,23 +2267,25 @@ inline void unhide_eq_verb(Str32_IO str)
     read_vec_str(eq_list, gv::path_data + U"eq_list.txt");
     read_vec_str(verb_list, gv::path_data + U"verb_list.txt");
     for (Long i = 0; i < size(eq_list); ++i) {
-        label = U"PhysWikiScanHideEq" + num2str32(i, 4);
+        label = U"$" + num2str32(i, 4) + U"$";
         Long ind = str.find(label);
-        if (ind < 0)
-            SLS_ERR(label + " not found!");
         tmp = eq_list[i];
         replace(tmp, U"PhysWikiScanLF", U"\n");
-        str.replace(ind, label.size(), tmp);
+        if (ind < 0)
+            SLS_WARN(label + U" 没有找到，替换： \n" + tmp + U"\n");
+        else
+            str.replace(ind, label.size(), tmp);
     }
 
     for (Long i = 0; i < size(verb_list); ++i) {
-        label = U"PhysWikiScanHideVerb" + num2str32(i, 4);
+        label = U"\\verb|" + num2str32(i, 4) + U"|";
         Long ind = str.find(label);
-        if (ind < 0)
-            SLS_ERR(label + " not found!");
         tmp = verb_list[i];
         replace(tmp, U"PhysWikiScanLF", U"\n");
-        str.replace(ind, label.size(), tmp);
+        if (ind < 0)
+            SLS_WARN(label + U" 没有找到，替换： \n" + tmp + U"\n");
+        else
+            str.replace(ind, label.size(), tmp);
     }
 }
 
