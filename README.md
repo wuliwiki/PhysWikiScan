@@ -25,7 +25,7 @@
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
 * `PhysWikiScan --autoref fname eq 8` 查找 `fname.tex` 词条的网页公式序号 (8) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{fname_eq#}`， 把插入的 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `added`， 更新 `ids.tex` 和 `labels.tex` （必须已经存在）。 如果 label 已经存在， 就直接把 label 保存到 `autoref.txt` 第 1 行， 第 2 行为 `exist`。 
 * `PhysWikiScan --bib` 生成文献列表
-* `PhysWikiScan --hide fname` 把词条中的公式和代码全部替换成 `PhysWikiScanHideXXX`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`
+* `PhysWikiScan --hide fname` 把词条中的公式和代码全部替换成 `PhysWikiScanHideEq编号` 以及 `PhysWikiScanHideVerb编号`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`， 编号对应 txt 中的行号（从 0 开始）
 * `PhysWikiScan --unhide fname` 把词条中的公式和代码恢复。
 * 若文件最后是 `\n%%eng\n`, 则编译成英语（图表标题，autoref 等）
 
