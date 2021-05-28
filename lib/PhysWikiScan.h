@@ -1988,7 +1988,8 @@ inline void PhysWikiOnline()
     table_of_contents(chap_name, chap_ind, part_name, part_ind, entries);
     file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
-    VecChar imgs_mark(imgs.size()); copy(imgs_mark, 0); // check if image has been used
+    VecChar imgs_mark(imgs.size()); // check if image has been used
+    if (imgs.size() > 0) copy(imgs_mark, 0);
 
     // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
     vecLong links;
