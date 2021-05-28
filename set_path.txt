@@ -62,11 +62,3 @@ https://wuli.wiki/user/note-template/online/
 ../littleshi.cn/root/user/note-template/cmd_data/
 ------------------------------------ url 7
 https://wuli.wiki/user/note-template/changed/
------------------------------------- 输入路径 8
-../PhysWiki-full/
------------------------------------- 输出路径 8
-../littleshi.cn/root/online/
------------------------------------- data 路径 8
-data/
------------------------------------- url 8
-https://wuli.wiki/online/
