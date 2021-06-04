@@ -1750,7 +1750,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // wikipedia_link(str);
     rm_comments(str); // remove comments
     limit_env_cmd(str);
-    autoref_space(str, true); // set true to error instead of warning
+    if (!gv::is_eng)
+        autoref_space(str, true); // set true to error instead of warning
     autoref_tilde_upref(str, entries[ind]);
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char

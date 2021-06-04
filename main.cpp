@@ -153,6 +153,8 @@ int main(int argc, char *argv[]) {
         gv::is_wiki = true;
     else
         gv::is_wiki = false;
+    if (gv::path_in.substr(gv::path_in.size() - 4) == U"/en/")
+        gv::is_eng = true;
 
     // === parse arguments ===
 
