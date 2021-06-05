@@ -19,7 +19,7 @@ data/
 ------------------------------------ 输出路径 2
 ../littleshi.cn/root/en/online/
 ------------------------------------ data 路径 2
-data/
+../littleshi.cn/root/en/cmd_data/
 ------------------------------------ url 2
 https://wuli.wiki/en/online/
 ------------------------------------ 输入路径 3
@@ -27,7 +27,7 @@ https://wuli.wiki/en/online/
 ------------------------------------ 输出路径 3
 ../littleshi.cn/root/en/changed/
 ------------------------------------ data 路径 3
-data/
+../littleshi.cn/root/en/cmd_data/
 ------------------------------------ url 3
 
 ------------------------------------ 输入路径 4
@@ -62,3 +62,19 @@ https://wuli.wiki/user/note-template/online/
 ../littleshi.cn/root/user/note-template/cmd_data/
 ------------------------------------ url 7
 https://wuli.wiki/user/note-template/changed/
+------------------------------------ 输入路径 8
+../littleshi.cn/root/user/时光子/
+------------------------------------ 输出路径 8
+../littleshi.cn/root/user/时光子/online/
+------------------------------------ data 路径 8
+../littleshi.cn/root/user/时光子/cmd_data/
+------------------------------------ url 8
+https://wuli.wiki/user/时光子/online/
+------------------------------------ 输入路径 9
+../littleshi.cn/root/user/时光子/
+------------------------------------ 输出路径 9
+../littleshi.cn/root/user/时光子/changed/
+------------------------------------ data 路径 9
+../littleshi.cn/root/user/时光子/cmd_data/
+------------------------------------ url 9
+https://wuli.wiki/user/时光子/changed/
