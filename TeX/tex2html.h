@@ -147,7 +147,9 @@ inline Long define_newcommands(vecStr32_O rules)
             U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
     };
     rules += {
-        U"erf", U"", U"0", U"\\operatorname{erf}",
+        U"e", U"", U"1", U"\\times 10^{#1}",
+            
+            U"erf", U"", U"0", U"\\operatorname{erf}",
             U"erfi", U"", U"0", U"\\operatorname{erfi}",
 
             U"ev", U"*", U"2", U"\\langle #2 | #1 | #2 \\rangle",
