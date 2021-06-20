@@ -219,7 +219,8 @@ inline void limit_env_cmd(Str32_I str)
         throw Str32(U"不支持 \"maketitle\" 命令， 每个词条文件是一个 section，请先阅读说明");
 
     // allowed environments
-    vecStr32 envs_allow = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
+    // there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
+    vecStr32 envs_allow = { U"equation", /*U"gather", U"gather*", U"gathered", U"align", U"align*", */
         U"alignat", U"alignat*", U"alignedat", U"aligned", U"split", U"figure", U"itemize",
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
