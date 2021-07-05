@@ -383,7 +383,7 @@ inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
     return left;
 }
 
-// see if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
+// check if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of names[iname], -1 if return false
 inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
 {
@@ -399,6 +399,35 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
     }
     iname = -1;
     return false;
+}
+
+// find the current environment an index is in
+// commands that is an alias of environment will also count
+inline Str32 current_env(Long_I ind, Str32_I str)
+{
+    // check if in a qualified command
+    vecStr32 cmd_env = {
+        U"ali", U"aligned",
+        U"leftgroup", U"aligned",
+        U"pmat", U"pmatrix",
+        U"vmat", U"vmatrix",
+        U"bmat", U"bmatrix",
+        U"Bmat", U"matrix",
+        U"pentry", U"mdframed",
+        U"issues", U"mdframed",
+        U"addTODO", U"mdframed"
+    };
+    for (Long i = 0; i < size(cmd_env); i += 2)
+        if (is_in_cmd(str, cmd_env[i], ind))
+            return cmd_env[i + 1];
+
+    // check environment
+    Long ind0 = find_command(str, U"end");
+    if (ind < 0)
+        return U"document";
+    Str32 arg;
+    command_arg(arg, str, ind0);
+    return arg;
 }
 
 inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)

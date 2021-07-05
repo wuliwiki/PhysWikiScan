@@ -220,7 +220,7 @@ inline void limit_env_cmd(Str32_I str)
 
     // allowed environments
     // there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
-    vecStr32 envs_allow = { U"equation", /*U"gather", U"gather*", U"gathered", U"align", U"align*", */
+    vecStr32 envs_allow = { U"equation", U"gather", U"gather*", U"gathered", U"align", U"align*",
         U"alignat", U"alignat*", U"alignedat", U"aligned", U"split", U"figure", U"itemize",
         U"enumerate", U"lstlisting", U"example", U"exercise", U"lemma", U"theorem", U"definition",
         U"corollary", U"matrix", U"pmatrix", U"vmatrix", U"table", U"tabular", U"cases", U"array",
@@ -926,7 +926,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             if (ienv > 0) {// found gather or align
                 Long ind1 = skip_env(str, ind0);
                 for (Long i = ind0; i < ind1; ++i) {
-                    if (str.substr(i, 2) == U"\\\\") {
+                    if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
                         ++idN;
                         if (idN == ind) {
                             new_label_name(label, idName, entry, str);
