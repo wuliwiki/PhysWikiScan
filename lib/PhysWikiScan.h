@@ -924,6 +924,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                 return 0;
             }
             if (ienv > 0) {// found gather or align
+                throw Str32(U"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
                 Long ind1 = skip_env(str, ind0);
                 for (Long i = ind0; i < ind1; ++i) {
                     if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
@@ -1696,6 +1697,21 @@ inline Long wikipedia_link(Str32_IO str)
     }
 }
 
+inline Long subsections(Str32_IO str)
+{
+    Long ind0 = 0, N = 0;
+    Str32 subtitle;
+    while (true) {
+        ind0 = find_command(str, U"subsection", ind0);
+        if (ind0 < 0)
+            return N;
+        ++N;
+        command_arg(subtitle, str, ind0);
+        Long ind1 = skip_command(str, ind0, 1);
+        str.replace(ind0, ind1 - ind0, U"<h2 class = \"w3-text-indigo\"><b>" + num2str32(N) + U". " + subtitle + U"</b></h2>");
+    }
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
@@ -1795,8 +1811,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     pentry(str);
     // replace user defined commands
     Long Ndebug = newcommand(str, rules);
+    subsections(str);
     // replace \name{} with html tags
-    Command2Tag(U"subsection", U"<h2 class = \"w3-text-indigo\"><b>", U"</b></h2>", str);
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
