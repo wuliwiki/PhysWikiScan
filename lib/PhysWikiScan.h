@@ -1712,6 +1712,21 @@ inline Long subsections(Str32_IO str)
     }
 }
 
+// if a position is in \pay...\paid
+inline Bool ind_in_pay(Str32_I str, Long_I ind)
+{
+    Long ikey;
+    Long ind0 = rfind(ikey, str, { U"\\pay", U"\\paid" }, ind);
+    if (ind0 < 0)
+        return false;
+    else if (ikey == 1)
+        return false;
+    else if (ikey == 0)
+        return true;
+    else
+        throw Str32(U"ind_in_pay(): unknown!");
+}
+
 // deal with "\pay"..."\paid"
 inline Long pay2div(Str32_IO str)
 {
