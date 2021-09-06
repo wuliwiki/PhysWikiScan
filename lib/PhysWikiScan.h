@@ -1721,7 +1721,7 @@ inline Long pay2div(Str32_IO str)
         if (ind0 < 0)
             return N;
         ++N;
-        str.replace(ind0, 4, U"<div class=\"pay\">");
+        str.replace(ind0, 4, U"<div id=\"pay\">");
         ind0 = find_command(str, U"paid", ind0);
         if (ind0 < 0)
             throw Str32(U"\\pay 命令没有匹配的 \\paid 命令");
