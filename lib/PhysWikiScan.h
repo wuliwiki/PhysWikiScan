@@ -1712,6 +1712,23 @@ inline Long subsections(Str32_IO str)
     }
 }
 
+// deal with "\pay"..."\paid"
+inline Long pay2div(Str32_IO str)
+{
+    Long ind0 = 0, N = 0;
+    while (true) {
+        ind0 = find_command(str, U"pay", ind0);
+        if (ind0 < 0)
+            return N;
+        ++N;
+        str.replace(ind0, 4, U"<div class=\"pay\">");
+        ind0 = find_command(str, U"paid", ind0);
+        if (ind0 < 0)
+            throw Str32(U"\\pay 命令没有匹配的 \\paid 命令");
+        str.replace(ind0, 5, U"</div>");
+    }
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
@@ -1816,6 +1833,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
     Command2Tag(U"bb", U"<b>", U"</b>", str); Command2Tag(U"textbf", U"<b>", U"</b>", str);
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
+    pay2div(str); // deal with "\pay" "\paid" pseudo command
     // replace \upref{} with link icon
     upref(str, entries[ind]);
     href(str); // hyperlinks
