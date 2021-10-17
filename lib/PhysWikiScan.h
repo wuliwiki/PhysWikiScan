@@ -968,6 +968,43 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     }
 }
 
+// add author list
+inline Str32 author_list(Str32_I entry)
+{
+    Str32 tmp, str;
+    static vecStr32 entries, authors, hours;
+    if (entries.empty()) {
+        read(str, "../PhysWiki-backup/entry_author.txt");
+        CRLF_to_LF(str);
+        Long ind0 = 0;
+        for (Long i = 0; ; ++i) {
+            ind0 = get_line(tmp, str, ind0);
+            if (i < 2)
+                continue;
+            entries.push_back(tmp.substr(0, 6)); trim(entries.back());
+            hours.push_back(tmp.substr(8, 6)); trim(hours.back());
+            authors.push_back(tmp.substr(14)); trim(authors.back());
+            if (ind0 < 0)
+                break;
+        }
+    }
+
+    Str32 list;
+    Long ind = search(entry, entries);
+    if (ind >= 0) {
+        list += authors[ind];
+        for (Long i = ind+1; i < entries.size(); ++i) {
+            if (entries[i] != entries[i - 1])
+                break;
+            list += "; " + authors[i];
+        }
+    }
+    else {
+        list = U"待更新";
+    }
+    return list;
+}
+
 // replace "\href{http://example.com}{name}"
 // with <a href="http://example.com">name</a>
 inline Long href(Str32_IO str)
@@ -1891,7 +1928,9 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
         next_entry = entries[next_ind];
         next_title = titles[next_ind];
     }
-        
+    
+    if (replace(html, U"PhysWikiAuthorList", author_list(entries[ind])) != 1)
+        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
     if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
         throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
