@@ -1352,7 +1352,8 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             
              ind0 = insert(toc,
                 U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
-                U"<h2 align = \"center\" style=\"padding-top: 0px;\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
+                U"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
+                    + num2str32(partNo+1) + U"\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
                 U"</div>\n\n<div class = \"w3-container\">\n"
                 , ind0);
             ++ind1;
@@ -1365,6 +1366,19 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         }
     }
     toc.insert(ind0, U"</p>\n</div>");
+
+    // list parts
+    ind0 = toc.find(U"PhysWikiPartList", 0);
+    if (ind0 < 0)
+        throw Str32(U"内部错误： PhysWikiPartList not found!");
+    toc.erase(ind0, 16);
+    ind0 = insert(toc, U"|", ind0);
+    for (Long i = 1; i < part_name.size(); ++i) {
+        ind0 = insert(toc, U"   <a href = \"#part" + num2str32(i) + U"\">"
+            + part_name[i] + U"</a> |\n", ind0);
+    }
+
+    // write to index.html
     write(toc, gv::path_out + "index.html");
     return N;
 }
