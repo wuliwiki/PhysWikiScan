@@ -137,7 +137,7 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
     }
 }
 
-inline Long replace_eng_punc_to_chinese(Str32_I path_in)
+inline void replace_eng_punc_to_chinese(Str32_I path_in)
 {
     Long ind0{};
     vecStr32 names, str_verb;
@@ -146,7 +146,7 @@ inline Long replace_eng_punc_to_chinese(Str32_I path_in)
     file_list_ext(names, path_in + "contents/", U"tex", false);
 
     //RemoveNoEntry(names);
-    if (names.size() <= 0) return 0;
+    if (names.size() <= 0) return;
     //names.resize(0); names.push_back(U"Sample"));
 
     vecStr32 skip_list = { U"Sample", U"edTODO" };
