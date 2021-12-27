@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
         cerr << utf32to8(msg) << endl;
         return 0;
     }
-    if (gv::url == U"http://wuli.wiki/online/" || gv::url == U"http://wuli.wiki/changed/")
+    if (gv::url == U"https://wuli.wiki/online/" || gv::url == U"https://wuli.wiki/changed/")
         gv::is_wiki = true;
     else
         gv::is_wiki = false;
