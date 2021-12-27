@@ -27,6 +27,8 @@
 * `PhysWikiScan --bib` 生成文献列表
 * `PhysWikiScan --hide fname` 把词条中的公式和代码全部替换成 `$四位编号$` 以及 `\verb|四位编号|`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`， 编号对应 txt 中的行号（从 0 开始）
 * `PhysWikiScan --unhide fname` 把词条中的公式和代码恢复。
+* `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会跳过该词条）
+* `PhysWikiScan --eng-punc-to-chinese` 批量把正文中汉字两边的英文标点变为中文（有少量 bug，碰到会跳过该词条）
 * 若文件最后是 `\n%%eng\n`, 则编译成英语（图表标题，autoref 等）
 
 ## 开发笔记

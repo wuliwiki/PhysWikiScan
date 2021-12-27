@@ -137,6 +137,42 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
     }
 }
 
+inline Long replace_eng_punc_to_chinese(Str32_I path_in)
+{
+    Long ind0{};
+    vecStr32 names, str_verb;
+    Str32 fname, str;
+    Intvs intv;
+    file_list_ext(names, path_in + "contents/", U"tex", false);
+
+    //RemoveNoEntry(names);
+    if (names.size() <= 0) return 0;
+    //names.resize(0); names.push_back(U"Sample"));
+
+    vecStr32 skip_list = { U"Sample", U"edTODO" };
+    for (unsigned i{}; i < names.size(); ++i) {
+        cout << i << " ";
+        cout << names[i] << "...";
+        if (search(names[i], skip_list) >= 0)
+            continue;
+        // main process
+        fname = path_in + "contents/" + names[i] + ".tex";
+        read(str, fname);
+        CRLF_to_LF(str);
+        // verbatim(str_verb, str);
+        // TODO: hide comments then recover at the end
+        // find_comments(intv, str, "%");
+        Long N;
+        try { N = check_normal_text_punc(str, false, true); }
+        catch (...) { continue; }
+
+        // verb_recover(str, str_verb);
+        if (N > 0)
+            write(str, fname);
+        cout << endl;
+    }
+}
+
 int main(int argc, char *argv[]) {
     using namespace slisc;
     Timer timer;
@@ -227,9 +263,13 @@ int main(int argc, char *argv[]) {
         write(U"", gv::path_data + U"changed.txt");
         write(U"", gv::path_data + U"authors.txt");
     }
-    else if (args[0] == U"--check") {
+    else if (args[0] == U"--inline-eq-space") {
         // check format and auto correct .tex files
-        PhysWikiCheck(gv::path_in);
+        add_space_around_inline_eq(gv::path_in);
+    }
+    else if (args[0] == U"--eng-punc-to-chinese") {
+        // check format and auto correct .tex files
+        replace_eng_punc_to_chinese(gv::path_in);
     }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary

@@ -2395,7 +2395,7 @@ inline void unhide_eq_verb(Str32_IO str)
 }
 
 // check format and auto correct .tex files in path0
-inline void PhysWikiCheck(Str32_I path_in)
+inline void add_space_around_inline_eq(Str32_I path_in)
 {
     Long ind0{};
     vecStr32 names, str_verb;
@@ -2419,7 +2419,11 @@ inline void PhysWikiCheck(Str32_I path_in)
         // verbatim(str_verb, str);
         // TODO: hide comments then recover at the end
         // find_comments(intv, str, "%");
-        Long N = inline_eq_space(str);
+        Long N;
+        try{ N = inline_eq_space(str); }
+        catch (...) {
+            continue;
+        }
 
         // verb_recover(str, str_verb);
         if (N > 0)
