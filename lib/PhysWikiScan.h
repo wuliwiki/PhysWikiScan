@@ -1862,9 +1862,6 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     check_eq_ascii(str);
     // forbid empty lines in equations
     check_eq_empty_line(str);
-    // check english puctuation in normal text
-    if (gv::is_wiki || gv::eng_punc)
-        check_normal_text_punc(str, true);
     // add spaces around inline equation
     inline_eq_space(str);
     // escape characters
