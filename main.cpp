@@ -313,6 +313,38 @@ int main(int argc, char *argv[]) {
         cout << output[1] << endl;
         write_vec_str(output, gv::path_data + U"autoref.txt");
     }
+    else if (args[0] == U"--autoref-dry" && args.size() == 4) {
+        // check a label only, without adding
+        vecStr32 labels, ids;
+        if (file_exist(gv::path_data + U"labels.txt")) {
+            read_vec_str(labels, gv::path_data + U"labels.txt");
+            Long ind = find_repeat(labels);
+            if (ind >= 0) {
+                cerr << u8"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
+                return 0;
+            }
+        }
+        if (file_exist(gv::path_data + U"ids.txt"))
+            read_vec_str(ids, gv::path_data + U"ids.txt");
+        Str32 label;
+        Long ret;
+        try {
+            ret = check_add_label_dry(label, args[1], args[2],
+                atoi(utf32to8(args[3]).c_str()), labels, ids);
+        }
+        catch (Str32_I msg) {
+            cerr << utf32to8(msg) << endl;
+            return 0;
+        }
+        vecStr32 output;
+        if (ret == 0) // added
+            output = { label, U"added" };
+        else // ret == 1, already exist
+            output = { label, U"exist" };
+        cout << output[0] << endl;
+        cout << output[1] << endl;
+        write_vec_str(output, gv::path_data + U"autoref.txt");
+    }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process a single entry
         vecStr32 entryN;

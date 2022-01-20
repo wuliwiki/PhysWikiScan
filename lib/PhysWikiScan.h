@@ -968,6 +968,122 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     }
 }
 
+// check only, don't add label
+Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
+    vecStr32_I labels, vecStr32_I ids)
+{
+    Long ind0 = 0;
+    Str32 label0, newtab;
+
+    while (true) {
+        ind0 = search(idName + num2str(ind), ids, ind0);
+        if (ind0 < 0)
+            break;
+        Long len = labels[ind0].rfind(U'_');
+        if (labels[ind0].substr(0, len) != entry) {
+            ++ind0; continue;
+        }
+        label = labels[ind0];
+        return 1;
+    }
+
+    // label does not exist
+    Str32 full_name = gv::path_in + "/contents/" + entry + ".tex";
+    if (!file_exist(full_name)) {
+        throw Str32(U"文件不存在： " + entry + ".tex");
+    }
+    Str32 str;
+    read(str, full_name);
+
+    // find comments
+    Intvs intvComm;
+    find_comments(intvComm, str, U"%");
+
+    vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
+        U"the", U"cor", U"ex", U"exe", U"tab", U"sub" };
+    vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
+        U"theorem", U"corollary", U"example", U"exercise", U"table" };
+
+    Long idNum = search(idName, idNames);
+    if (idNum < 0) {
+        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
+    }
+
+    // count environment display number starting at ind4
+    Intvs intvEnv;
+    if (idName == U"eq") { // add equation labels
+        // count equations
+        ind0 = 0;
+        Long idN = 0;
+        vecStr32 eq_envs = { U"equation", U"gather", U"align" };
+        Str32 env0;
+        while (true) {
+            ind0 = find_command(str, U"begin", ind0);
+            if (ind0 < 0) {
+                throw Str32(U"被引用公式不存在");
+            }
+            if (is_in(ind0, intvComm)) {
+                ++ind0; continue;
+            }
+            command_arg(env0, str, ind0);
+            Long ienv = search(env0, eq_envs);
+            if (ienv < 0) {
+                ++ind0; continue;
+            }
+            // found one of eq_envs
+            ++idN;
+            if (idN == ind) {
+                new_label_name(label, idName, entry, str);
+                ind0 = skip_command(str, ind0, 1);
+                str.insert(ind0, U"\\label{" + label + "}");
+                // write(str, full_name);
+                return 0;
+            }
+            if (ienv > 0) {// found gather or align
+                throw Str32(U"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
+                Long ind1 = skip_env(str, ind0);
+                for (Long i = ind0; i < ind1; ++i) {
+                    if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
+                        ++idN;
+                        if (idN == ind) {
+                            new_label_name(label, idName, entry, str);
+                            ind0 = skip_command(str, ind0, 1);
+                            str.insert(i + 2, U"\n\\label{" + label + "}");
+                            // write(str, full_name);
+                            return 0;
+                        }
+                    }
+                }
+            }
+            ++ind0;
+        }
+    }
+    else if (idName == U"sub") { // add subsection labels
+        Long ind0 = -1;
+        for (Long i = 0; i < ind; ++i) {
+            ind0 = find_command(str, U"subsection", ind0 + 1);
+            if (ind0 < 0)
+                throw Str32(U"被引用对象不存在");
+        }
+        ind0 = skip_command(str, ind0, 1);
+        new_label_name(label, idName, entry, str);
+        str.insert(ind0, U"\\label{" + label + "}");
+        // write(str, full_name);
+        return 0;
+    }
+    else { // add environment labels
+        Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
+        if (ind > Nid) {
+            throw Str32(U"被引用对象不存在");
+        }
+
+        new_label_name(label, idName, entry, str);
+        str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
+        // write(str, full_name);
+        return 0;
+    }
+}
+
 // add author list
 inline Str32 author_list(Str32_I entry)
 {
