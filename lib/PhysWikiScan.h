@@ -385,7 +385,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         else
             ids[ind] = id;
         str.erase(ind5, ind3 - ind5 + 1);
-        str.insert(ind4, U"<span id = \"" + id + U"\"></span>");
+        str.insert(ind4, U"<span id = \"" + label + U"\"></span>");
         ind0 = ind4 + 6;
     }
 }
@@ -824,7 +824,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             str.insert(ind3 + 1, U" </a>");
         str.insert(ind3 + 1, kind + U' ' + idNum);
         if (!inEq)
-            str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + ids[i] + U"\" " + newtab + U">");
+            str.insert(ind3 + 1, U"<a href = \"" + file + U"#" + labels[i] + U"\" " + newtab + U">");
         str.erase(ind0, ind3 - ind0 + 1);
         ++N;
     }
