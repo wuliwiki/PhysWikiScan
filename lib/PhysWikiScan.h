@@ -1690,6 +1690,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 prism_lang = U" class=\"language-" + lang + U"\"";
                 SLS_WARN(u8"lstlisting 环境不支持 " + utf32to8(lang) + u8" 语言， 可能未添加高亮！");
             }
+            else
+                prism_lang = U" class=\"language-plain\"";
         }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
         str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
