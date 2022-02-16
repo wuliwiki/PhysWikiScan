@@ -1819,6 +1819,26 @@ inline Long inline_eq_space(Str32_IO str)
     return N;
 }
 
+// replace "<" and ">" in equations
+inline Long rep_eq_lt_gt(Str32_IO str)
+{
+    Long N = 0;
+    Intvs intv, intv1;
+    Str32 tmp;
+    find_single_dollar_eq(intv, str);
+    find_double_dollar_eq(intv1, str); combine(intv, intv1);
+    find_env(intv1, str, U"equation"); combine(intv, intv1);
+    find_env(intv1, str, U"align"); combine(intv, intv1);
+    find_env(intv1, str, U"gather"); combine(intv, intv1);
+    for (Long i = intv.size() - 1; i >= 0; --i) {
+        Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
+        tmp = str.substr(ind0, Nstr);
+        replace(tmp, U"<", U"&lt"); replace(tmp, U">", U"&gt");
+        str.replace(ind0, Nstr, tmp);
+    }
+    return N;
+}
+
 // add equation tags
 inline Long equation_tag(Str32_IO str, Str32_I nameEnv)
 {
@@ -1982,6 +2002,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     check_eq_empty_line(str);
     // add spaces around inline equation
     inline_eq_space(str);
+    // replace "<" and ">" in equations
+    rep_eq_lt_gt(str);
     // escape characters
     NormalTextEscape(str);
     // add paragraph tags
