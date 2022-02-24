@@ -1386,7 +1386,11 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
     vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
                 U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
-                U"十七", U"十八", U"十九", U"二十", U"二十一", U"二十二", U"二十三", U"二十四"};
+                U"十七", U"十八", U"十九", U"二十", U"二十一", U"二十二", U"二十三", U"二十四",
+                U"二十五", U"二十六", U"二十七", U"二十八", U"二十九", U"三十", U"三十一", 
+                U"三十二", U"三十三", U"三十四", U"三十五", U"三十六", U"三十七", U"三十八", 
+                U"三十九", U"四十", U"四十一", U"四十二", U"四十三", U"四十四", U"四十五", 
+                U"四十六", U"四十七", U"四十八", U"四十九", U"五十", U"五十一", U"五十二" };
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
     Str32 title; // chinese entry name, chapter name, or part name
