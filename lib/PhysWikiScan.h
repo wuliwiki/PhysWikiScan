@@ -1393,9 +1393,9 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
                 U"四十六", U"四十七", U"四十八", U"四十九", U"五十", U"五十一", U"五十二" };
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
-    Str32 title; // chinese entry name, chapter name, or part name
+    Str32 title, title2; // chinese entry name, chapter name, or part name
     Str32 entryName; // entry label
-    Str32 str, toc;
+    Str32 str, str2, toc;
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
     if (part_ind.size() > 0) {
         chap_name.clear(); part_name.clear();
@@ -1435,6 +1435,10 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             Long n = search(entryName, entries);
             if (n < 0)
                 throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到！");
+            read(str2, gv::path_in + U"contents/" + entryName + U".tex"); CRLF_to_LF(str2);
+            get_title(title2, str2);
+            if (title != title2)
+                throw Str32(U"目录标题 “" + title + U"” 与词条标题 “" + title2 + U"” 不符！");
             if (mark[n] == 0)
                 mark[n] = 1;
             else
