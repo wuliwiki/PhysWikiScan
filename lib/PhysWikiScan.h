@@ -1827,6 +1827,28 @@ inline Long inline_eq_space(Str32_IO str)
     return N;
 }
 
+// ensure space around a char
+inline Long ensure_space_around(Str32_IO str, Char32_I c)
+{
+    Long N = 0;
+    for (Long i = str.size() - 1; i >= 0; --i) {
+        if (str[i] == c) {
+            // check right
+            if (i == str.size() - 1) {
+                str += U" "; ++N;
+            }
+            else if (str[i + 1] != U' ') {
+                str.insert(i + 1, U" "); ++N;
+            }
+            // check left
+            if (i == 0 || str[i - 1] != U' ') {
+                str.insert(i, U" "); ++N;
+            }
+        }
+    }
+    return N;
+}
+
 // replace "<" and ">" in equations
 inline Long rep_eq_lt_gt(Str32_IO str)
 {
@@ -1841,7 +1863,7 @@ inline Long rep_eq_lt_gt(Str32_IO str)
     for (Long i = intv.size() - 1; i >= 0; --i) {
         Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
         tmp = str.substr(ind0, Nstr);
-        replace(tmp, U"<", U"&lt"); replace(tmp, U">", U"&gt");
+        N += ensure_space_around(tmp, U'<') + ensure_space_around(tmp, U'>');
         str.replace(ind0, Nstr, tmp);
     }
     return N;
