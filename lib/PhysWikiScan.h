@@ -1662,7 +1662,16 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                     caption = str.substr(ind0, ind2 - ind0);
                 else
                     caption = str.substr(ind0, ind1 - ind0);
+                Long ind3 = 0;
                 trim(caption);
+                while (true) {
+                    ind3 = caption.find(U'_', ind3);
+                    if (ind3 < 0) break;
+                    if (ind3 > 0 && caption[ind3-1] != U'\\')
+                        throw Str32(U"lstlisting 标题中下划线前面要加 \\");
+                    ++ind3;
+                }
+                replace(caption, U"\\_", U"_");
                 capption_str = U"<div align = \"center\">代码 " + num2str32(Ncaption) + U"：" + caption + U"</div>\n";
                 --Ncaption;
             }
