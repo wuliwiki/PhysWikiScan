@@ -62,11 +62,21 @@ Long tree_all_dep(vecLong_O deps, const vector<Node> &tree, Long_I ind, vecStr32
 }
 
 // find redundant i.e. if A->B->...C, then A->C is redundent
+// multiple A->B links are also redundent
 // return -1-ind if too many levels (probably circular dependency), tree[ind] is the deepest level
 Long tree_redundant(vecLong_O links, const vector<Node> &tree, vecStr32_I vector)
 {
     vecLong deps;
     for (Long i = 0; i < Long(tree.size()); ++i) {
+        // multiple A->B links are redundent
+        for (Long j = 0; j < size(tree[i].last); ++j) {
+            for (Long k = j + 1; k < size(tree[i].last); ++k) {
+                if (tree[i].last[j] == tree[i].last[k]) {
+                    throw std::vector<Long>({ tree[i].last[j], i });
+                }
+            }
+        }
+        // if A->B->...C, then A->C is redundent
         deps.clear();
         Long ret = tree_all_dep_imp(deps, tree, i, vector);
         if (ret < 0)

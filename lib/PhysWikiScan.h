@@ -2172,7 +2172,11 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     vector<Node> tree;
     vecLong links1;
     tree_gen(tree, entries, links);
-    Long ret = tree_redundant(links1, tree, titles);
+    Long ret;
+    try { ret = tree_redundant(links1, tree, titles); }
+    catch (vector<Long> info) {
+        throw Str32(U"预备知识重复： " + titles[info[0]] + " (" + entries[info[0]] + ") -> " + titles[info[1]] + " (" + entries[info[1]] + ")");
+    }
     if (ret < 0) {
         throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
     }
