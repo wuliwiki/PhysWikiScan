@@ -273,10 +273,10 @@ int main(int argc, char *argv[]) {
             read(str, gv::path_in + "contents/" + entries[i] + U".tex");
             rm_comments(str);
             for (Long j = 0; j < (Long)str.size(); ++j)
-                if (is_chinese(str[j]))
+                if (is_chinese(str[j]) || is_chinese_punc(str[j]))
                     ++N;
         }
-        cout << "Chinese characters (not including punc): " << N << endl;
+        cout << u8"中文字符数 (含标点): " << N << endl;
     }
     else if (args[0] == U"--inline-eq-space") {
         // check format and auto correct .tex files
