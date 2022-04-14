@@ -263,6 +263,21 @@ int main(int argc, char *argv[]) {
         write(U"", gv::path_data + U"changed.txt");
         write(U"", gv::path_data + U"authors.txt");
     }
+    else if (args[0] == U"--wc" && args.size() == 1) {
+        // count number of Chinese characters (including punc)
+        vecStr32 entries;
+        Str32 str;
+        Long N = 0;
+        read_vec_str(entries, U"./data/entries.txt");
+        for (Long i = 0; i < (Long)entries.size(); ++i) {
+            read(str, gv::path_in + "contents/" + entries[i] + U".tex");
+            rm_comments(str);
+            for (Long j = 0; j < (Long)str.size(); ++j)
+                if (is_chinese(str[j]))
+                    ++N;
+        }
+        cout << "Chinese characters (not including punc): " << N << endl;
+    }
     else if (args[0] == U"--inline-eq-space") {
         // check format and auto correct .tex files
         add_space_around_inline_eq(gv::path_in);
