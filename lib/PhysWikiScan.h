@@ -2099,7 +2099,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1)
         throw Str32(U"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiEntry", entries[ind]) != gv::is_wiki? 4:2)
+    if (replace(html, U"PhysWikiEntry", entries[ind]) != (gv::is_wiki? 4:2))
         throw Str32(U"内部错误： \"PhysWikiEntry\" 在 entry_template.html 中数量不对");
     // insert last and next entry
     Str32 last_entry = entries[ind], next_entry = last_entry, last_title, next_title;
