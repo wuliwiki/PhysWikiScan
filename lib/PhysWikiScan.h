@@ -1710,6 +1710,12 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             else
                 prism_lang = U" class=\"language-plain\"";
         }
+        if (lang == U"matlab" && gv::is_wiki) {
+            Str32 fname = gv::path_in + U"code\\" + lang + "\\" + caption;
+            if (file_exist(fname))
+                throw Str32(U"代码文件名重复： " + caption);
+            write(code, fname);
+        }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
         str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
             U"<pre " + prism_line_num + U"><code" + prism_lang + U">" + code + U"\n</code></pre>\n");
