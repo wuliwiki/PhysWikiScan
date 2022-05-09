@@ -195,6 +195,9 @@ int main(int argc, char *argv[]) {
     // === parse arguments ===
 
     if (args[0] == U"." && args.size() == 1) {
+        gv::is_entire = true;
+        rmdir(utf32to8(gv::path_out) + "code/matlab/");
+        mkdir(utf32to8(gv::path_out) + "code/matlab/");
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline();}
         catch (Str32_I msg) {
@@ -406,6 +409,9 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U".,") {
         gv::eng_punc = true;
+        gv::is_entire = true;
+        rmdir(utf32to8(gv::path_out) + "code/matlab/");
+        mkdir(utf32to8(gv::path_out) + "code/matlab/");
         // interactive full run (ask to try again in error)
         try { PhysWikiOnline(); }
         catch (Str32_I msg) {

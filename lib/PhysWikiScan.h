@@ -20,6 +20,7 @@ namespace gv {
     Bool is_wiki; // editing wiki or note
     Bool eng_punc = false; // replace English punctuations to Chinese in normal text
     Bool is_eng = false; // use english for auto-generated text (Eq. Fig. etc.)
+    Bool is_entire = false; // running one tex or the entire wiki
 }
 
 #include "../TeX/tex2html.h"
@@ -1710,11 +1711,16 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             else
                 prism_lang = U" class=\"language-plain\"";
         }
-        if (lang == U"matlab" && gv::is_wiki && caption.back() == U'm') {
-            Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
-            // if (file_exist(fname))
-            //    throw Str32(U"代码文件名重复： " + caption);
-            write(code, fname);
+        if (lang == U"matlab" && gv::is_wiki) {
+            if (caption.back() == U'm') {
+                Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
+                if (gv::is_entire && file_exist(fname))
+                    throw Str32(U"代码文件名重复： " + caption);
+                write(code, fname);
+            }
+            else {
+                SLS_WARN(u8"matlab 代码没有文件名或拓展名错误!");
+            }
         }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
         str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
