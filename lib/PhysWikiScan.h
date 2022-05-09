@@ -1649,6 +1649,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         }
 
         // get caption
+        caption.clear();
         ind0 = expect(str, U"[", intvIn.L(i));
         capption_str.clear();
         if (ind0 > 0) {
@@ -1715,7 +1716,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             if (caption.back() == U'm') {
                 Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
-                    throw Str32(U"代码文件名重复： " + caption);
+                    throw Str32(U"代码文件名重复： " + fname);
                 write(code, fname);
             }
             else {
