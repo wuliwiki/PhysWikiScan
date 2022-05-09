@@ -1717,7 +1717,10 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
                     throw Str32(U"代码文件名重复： " + fname);
-                write(code, fname);
+                if (code.back() != U'\n')
+                    write(code+U'\n', fname);
+                else
+                    write(code, fname);
             }
             else {
                 SLS_WARN(u8"matlab 代码没有文件名或拓展名错误!");
