@@ -174,9 +174,11 @@ inline Long paragraph_tag(Str32_IO str)
         }
         else {
             ind0 = skip_command(str, ind0, 1);
-            Long ind1 = expect(str, U"\\label", ind0);
-            if (ind1 > 0)
-                ind0 = skip_command(str, ind1 - 6, 1);
+            if (ind0 < size(str)) {
+                Long ind1 = expect(str, U"\\label", ind0);
+                if (ind1 > 0)
+                    ind0 = skip_command(str, ind1 - 6, 1);
+            }
         }
 
         left = ind0;
