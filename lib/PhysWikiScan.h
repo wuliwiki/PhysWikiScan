@@ -2378,8 +2378,8 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     VecLong entry_order;
     Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "r");
     Long Ntoc; // number of entries in main.tex
-    if (load(entry_order, "entry_order", matt) < 0 || load(Ntoc, "Ntoc", matt) < 0)
-        throw Str32(U"内部错误： entry_order.matt 读取错误");
+    try { load(entry_order, "entry_order", matt); load(Ntoc, "Ntoc", matt); }
+    catch (...) { throw Str32(U"内部错误： entry_order.matt 读取错误"); }
     matt.close();
     if (labels.size() != ids.size())
         throw Str32(U"内部错误： labels.txt 与 ids.txt 长度不符");

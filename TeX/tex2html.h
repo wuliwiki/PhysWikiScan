@@ -59,7 +59,7 @@ inline Long define_newcommands(vecStr32_O rules)
     // an extra space will be inserted at both ends of each rule
     // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
     rules.clear();
-    rules += {
+    cat(rules, {
         U"Arctan", U"", U"0", U"\\operatorname{Arctan}",
 
             U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
@@ -109,8 +109,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"braket", U"", U"1", U"\\left\\langle{#1}\\middle| #1 \\right\\rangle",
 
             U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-    };
-    rules += {
+    });
+    cat(rules, {
         U"comm", U"*", U"2", U"[{#1},{#2}]",
             U"comm", U"", U"2", U"\\left[#1, #2\\right]",
 
@@ -129,8 +129,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"csc", U"()", U"1", U"\\csc\\left(#1\\right)",
 
             U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}",
-    };
-    rules += {
+    });
+    cat(rules, {
         U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
             U"dd", U"()", U"1", U"\\,\\mathrm{d}\\left(#1 \\right)",
             U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
@@ -145,8 +145,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"dv", U"[]", U"2", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
             U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
             U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
-    };
-    rules += {
+    });
+    cat(rules, {
         U"e", U"", U"1", U"\\times 10^{#1}",
             
             U"erf", U"", U"0", U"\\operatorname{erf}",
@@ -166,8 +166,8 @@ inline Long define_newcommands(vecStr32_O rules)
 
             U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
             U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
-    };
-    rules += {
+    });
+    cat(rules, {
         U"lambdabar", U"", U"0", U"\\mkern-0.25mu {\\bar{\\phantom{a}}} \\mkern -10.2mu\\lambda",
             
             U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
@@ -190,8 +190,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"opn", U"", U"0", U"\\operatorname",
 
             U"order", U"", U"1", U"\\mathcal{O}\\left(#1 \\right)",
-    };
-    rules += {
+    });
+    cat(rules, {
         U"pb", U"*", U"2", U"\\{#1, #2\\}",
             U"pb", U"", U"2", U"\\left\\{#1, #2\\right\\}",
 
@@ -212,8 +212,8 @@ inline Long define_newcommands(vecStr32_O rules)
             U"qty", U"[]", U"1", U"\\left[#1 \\right]",
             U"qty", U"", U"1", U"\\left\\{#1 \\right\\}",
 
-    };
-    rules += {
+    });
+    cat(rules, {
         U"sec", U"[]()", U"2", U"\\sec^{#1}\\left(#2\\right)",
             U"sec", U"()", U"1", U"\\sec\\left(#1\\right)",
 
@@ -240,7 +240,7 @@ inline Long define_newcommands(vecStr32_O rules)
             U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
 
             U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
-    };
+    });
     for (Long i = 4; i < rules.size(); i+=4) {
         if (rules[i] < rules[i - 4])
             throw Str32(U"内部错误： define_newcommands(): rules not sorted: " + rules[i]);

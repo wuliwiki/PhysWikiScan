@@ -137,13 +137,13 @@ inline void fftshift(DvecComp_IO v)
 
 inline void fftshift(MatDoub_IO a, Int_I dim = 1)
 {
-    Long N1 = a.n1(), N2 = a.n2();
+    Long N1 = a.n0(), N2 = a.n1();
     if (dim == 1) {
         if (isodd(N1))
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N1 / 2;
         for (Long j = 0; j < N2; ++j) {
-            DvecDoub sli = slice1(a, j);
+            DvecDoub sli = cut0(a, j);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -153,7 +153,7 @@ inline void fftshift(MatDoub_IO a, Int_I dim = 1)
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N2 / 2;
         for (Long i = 0; i < N1; ++i) {
-            SvecDoub sli = slice2(a, i);
+            SvecDoub sli = cut1(a, i);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -162,13 +162,13 @@ inline void fftshift(MatDoub_IO a, Int_I dim = 1)
 
 inline void fftshift(MatComp_IO a, Int_I dim = 1)
 {
-    Long N1 = a.n1(), N2 = a.n2();
+    Long N1 = a.n0(), N2 = a.n1();
     if (dim == 1) {
         if (isodd(N1))
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N1 / 2;
         for (Long j = 0; j < N2; ++j) {
-            DvecComp sli = slice1(a, j);
+            DvecComp sli = cut0(a, j);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -178,7 +178,7 @@ inline void fftshift(MatComp_IO a, Int_I dim = 1)
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N2 / 2;
         for (Long i = 0; i < N1; ++i) {
-            SvecComp sli = slice2(a, i);
+            SvecComp sli = cut1(a, i);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -187,13 +187,13 @@ inline void fftshift(MatComp_IO a, Int_I dim = 1)
 
 inline void fftshift(CmatDoub_IO a, Int_I dim = 1)
 {
-    Long N1 = a.n1(), N2 = a.n2();
+    Long N1 = a.n0(), N2 = a.n1();
     if (dim == 1) {
         if (isodd(N1))
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N1 / 2;
         for (Long j = 0; j < N2; ++j) {
-            SvecDoub sli = slice1(a, j);
+            SvecDoub sli = cut0(a, j);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -203,7 +203,7 @@ inline void fftshift(CmatDoub_IO a, Int_I dim = 1)
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N2 / 2;
         for (Long i = 0; i < N1; ++i) {
-            DvecDoub sli = slice2(a, i);
+            DvecDoub sli = cut1(a, i);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -212,13 +212,13 @@ inline void fftshift(CmatDoub_IO a, Int_I dim = 1)
 
 inline void fftshift(CmatComp_IO a, Int_I dim = 1)
 {
-    Long N1 = a.n1(), N2 = a.n2();
+    Long N1 = a.n0(), N2 = a.n1();
     if (dim == 1) {
         if (isodd(N1))
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N1 / 2;
         for (Long j = 0; j < N2; ++j) {
-            SvecComp sli = slice1(a, j);
+            SvecComp sli = cut0(a, j);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -228,7 +228,7 @@ inline void fftshift(CmatComp_IO a, Int_I dim = 1)
             SLS_ERR("fftshift only supports even rows!");
         Long halfn = N2 / 2;
         for (Long i = 0; i < N1; ++i) {
-            DvecComp sli = slice2(a, i);
+            DvecComp sli = cut1(a, i);
             for (Long i = 0; i < halfn; ++i)
                 swap(sli[i], sli[i + halfn]);
         }
@@ -291,16 +291,16 @@ inline void four1(Doub *data, Int_I n, Int_I isign) {
 }
 
 inline void fft(VecComp_IO data)
-{ four1((Doub*)data.ptr(), data.size(), -1); }
+{ four1((Doub*)data.p(), data.size(), -1); }
 
 inline void ifft(VecComp_IO data)
-{ four1((Doub*)data.ptr(), data.size(), 1); }
+{ four1((Doub*)data.p(), data.size(), 1); }
 
 // fft for each column of matrix
 // not optimized, very slow
 inline void fft(MatComp_IO data)
 {
-    Long i, j, m{ data.n1() }, n{ data.n2() };
+    Long i, j, m{ data.n0() }, n{ data.n1() };
     VecComp column(m);
     for (j = 0; j < n; ++j) {
         for (i = 0; i < m; ++i)
@@ -313,7 +313,7 @@ inline void fft(MatComp_IO data)
 
 inline void ifft(MatComp_IO data)
 {
-    Long i, j, m{ data.n1() }, n{ data.n2() };
+    Long i, j, m{ data.n0() }, n{ data.n1() };
     VecComp column(m);
     for (j = 0; j < n; ++j) {
         for (i = 0; i < m; ++i)
@@ -558,13 +558,13 @@ inline void four2x(Doub *data2, const Doub *data, Int_I n, Int_I isign) {
 inline void fft2x(VecComp_O data2, VecComp_I data)
 {
     data2.resize(data.size()*2);
-    four2x((Doub*)data2.ptr(), (Doub*)data.ptr(), data.size(), -1);
+    four2x((Doub*)data2.p(), (Doub*)data.p(), data.size(), -1);
 }
 
 inline void ifft2x(VecComp_O data2, VecComp_I data)
 {
     data2.resize(data.size()*2);
-    four2x((Doub*)data2.ptr(), (Doub*)data.ptr(), data.size(), 1);
+    four2x((Doub*)data2.p(), (Doub*)data.p(), data.size(), 1);
 }
 
 // optimized 4x zero padding: four1([data, 0, 0 ,0, 0, 0, 0, data]);
@@ -630,28 +630,28 @@ inline void fft4x(VecComp_O data4, VecComp_I data)
     if (data4.size() != data.size() * 4)
         SLS_ERR("wrong shape!");
 #endif
-    four4x((Doub*)data4.ptr(), (Doub*)data.ptr(), data.size(), -1);
+    four4x((Doub*)data4.p(), (Doub*)data.p(), data.size(), -1);
 }
 
 inline void ifft4x(VecComp_O data4, VecComp_I data)
 {
     data4.resize(data.size()*4);
-    four4x((Doub*)data4.ptr(), (Doub*)data.ptr(), data.size(), 1);
+    four4x((Doub*)data4.p(), (Doub*)data.p(), data.size(), 1);
 }
 
 inline void dft(MatComp_O Y, Doub kmin, Doub kmax, Long_I Nk, MatComp_I X, Doub xmin, Doub xmax)
 {
-    Long i, j, k, Nx = X.n1(), Nc = X.n2();
+    Long i, j, k, Nx = X.n0(), Nc = X.n1();
     Doub dk = (kmax - kmin) / (Nk - 1), dx = (xmax - xmin) / (Nx - 1);
     const Comp *pxi;
-    Comp *pyj, factor, expo, dexpo;
+    Comp *pyj, expo, dexpo;
     Y.resize(Nk, Nc); copy(Y, 0);
     for (j = 0; j < Nk; ++j) {
-        pyj = Y.ptr() + Nc*j;
+        pyj = Y.p() + Nc*j;
         expo = exp(Comp(0, -(kmin + dk*j)*(xmin - dx)));
         dexpo = exp(Comp(0, -(kmin + dk*j)*dx));
         for (i = 0; i < Nx; ++i) {
-            pxi = X.ptr() + Nc*i;
+            pxi = X.p() + Nc*i;
             expo *= dexpo;
             for (k = 0; k < Nc; ++k)
                 pyj[k] += expo*pxi[k];
@@ -662,19 +662,19 @@ inline void dft(MatComp_O Y, Doub kmin, Doub kmax, Long_I Nk, MatComp_I X, Doub 
 // parallel version
 inline void dft_par(MatComp_O Y, Doub kmin, Doub kmax, Long_I Nk, MatComp_I X, Doub xmin, Doub xmax)
 {
-    Long j, Nx = X.n1(), Nc = X.n2();
+    Long j, Nx = X.n0(), Nc = X.n1();
     Doub dk = (kmax - kmin) / (Nk - 1), dx = (xmax - xmin) / (Nx - 1);
     Y.resize(Nk, Nc); copy(Y, 0);
 #pragma omp parallel for
     for (j = 0; j < Nk; ++j) {
         Long i, k;
         const Comp *pxi;
-        Comp *pyj, factor, expo, dexpo;
-        pyj = Y.ptr() + Nc*j;
+        Comp *pyj, expo, dexpo;
+        pyj = Y.p() + Nc*j;
         expo = exp(Comp(0, -(kmin + dk*j)*(xmin - dx)));
         dexpo = exp(Comp(0, -(kmin + dk*j)*dx));
         for (i = 0; i < Nx; ++i) {
-            pxi = X.ptr() + Nc*i;
+            pxi = X.p() + Nc*i;
             expo *= dexpo;
             for (k = 0; k < Nc; ++k)
                 pyj[k] += expo*pxi[k];
@@ -684,17 +684,17 @@ inline void dft_par(MatComp_O Y, Doub kmin, Doub kmax, Long_I Nk, MatComp_I X, D
 
 inline void idft(MatComp_O X, Doub xmin, Doub xmax, Long_I Nx, MatComp_I Y, Doub kmin, Doub kmax)
 {
-    Long i, j, k, Nk = Y.n1(), Nc = Y.n2();
+    Long i, j, k, Nk = Y.n0(), Nc = Y.n1();
     Doub dk = (kmax - kmin) / (Nk - 1), dx = (xmax - xmin) / (Nx - 1);
     const Comp *pyi;
-    Comp *pxj, factor, expo, dexpo;
+    Comp *pxj, expo, dexpo;
     X.resize(Nx, Nc); copy(X, 0);
     for (j = 0; j < Nx; ++j) {
-        pxj = X.ptr() + Nc*j;
+        pxj = X.p() + Nc*j;
         expo = exp(Comp(0, (xmin + dx*j)*(kmin - dk)));
         dexpo = exp(Comp(0, (xmin + dx*j)*dk));
         for (i = 0; i < Nk; ++i) {
-            pyi = Y.ptr() + Nc*i;
+            pyi = Y.p() + Nc*i;
             expo *= dexpo;
             for (k = 0; k < Nc; ++k)
                 pxj[k] += expo*pyi[k];
@@ -704,19 +704,19 @@ inline void idft(MatComp_O X, Doub xmin, Doub xmax, Long_I Nx, MatComp_I Y, Doub
 
 inline void idft_par(MatComp_O X, Doub xmin, Doub xmax, Long_I Nx, MatComp_I Y, Doub kmin, Doub kmax)
 {
-    Long j, Nk = Y.n1(), Nc = Y.n2();
+    Long j, Nk = Y.n0(), Nc = Y.n1();
     Doub dk = (kmax - kmin) / (Nk - 1), dx = (xmax - xmin) / (Nx - 1);
     X.resize(Nx, Nc); copy(X, 0);
 #pragma omp parallel for
     for (j = 0; j < Nx; ++j) {
         Long i, k;
         const Comp *pyi;
-        Comp *pxj, factor, expo, dexpo;
-        pxj = X.ptr() + Nc*j;
+        Comp *pxj, expo, dexpo;
+        pxj = X.p() + Nc*j;
         expo = exp(Comp(0, (xmin + dx*j)*(kmin - dk)));
         dexpo = exp(Comp(0, (xmin + dx*j)*dk));
         for (i = 0; i < Nk; ++i) {
-            pyi = Y.ptr() + Nc*i;
+            pyi = Y.p() + Nc*i;
             expo *= dexpo;
             for (k = 0; k < Nc; ++k)
                 pxj[k] += expo*pyi[k];

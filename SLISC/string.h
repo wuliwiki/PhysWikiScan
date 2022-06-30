@@ -175,6 +175,38 @@ inline Str32 getline(Str32_I str, Long_I start = 0)
     return str.substr(start, ind - start);
 }
 
+// read a line from a string, from str[start] to 1 char before '\n'
+// return the start of the next line, return -1 if out of bound
+// if the file ends with `\n`, then the line.back() is not empty
+inline Long get_line(Str_O line, Str_I str, Long_I start = 0)
+{
+    Long ind = str.find('\n', start);
+    line = str.substr(start, ind - start);
+    if (ind < 0 || ind == Long(str.size()) - 1)
+        return -1;
+    return ind + 1;
+}
+
+inline Long get_line(Str32_O line, Str32_I str, Long_I start = 0)
+{
+    Long ind = str.find(U'\n', start);
+    line = str.substr(start, ind - start);
+    if (ind < 0 || ind == Long(str.size()) - 1)
+        return -1;
+    return ind + 1;
+}
+
+// skip to the next line
+// return the index after `\n`
+// return -1 if `\n` not found
+inline Long skip_line(Str32_I &str, Long_I start = 0)
+{
+    Long ind = str.find(U'\n', start);
+    if (ind < 0 || ind == Long(str.size()) - 1)
+        return -1;
+    return ind + 1;
+}
+
 // trim both sides
 // e.g. key = "\n " to trim space and '\n'
 inline Long trim(Str_IO str, Str_I key = " ")
@@ -191,6 +223,38 @@ inline Long CRLF_to_LF(Str_IO str)
         if (ind0 < 0) return N;
         str.erase(ind0, 1);
     }
+}
+
+// replace all occurance of "key" with "new_key"
+// return the number of keys replaced
+// works with utf-8
+inline Long replace(Str_IO str, Str_I key, Str_I new_key)
+{
+    Long ind0 = 0, N = 0, Nkey = key.size();;
+    while (true) {
+         ind0 = str.find(key, ind0);
+        if (ind0 < 0) break;
+        str.replace(ind0, Nkey, new_key);
+        ++N; ind0 += new_key.size();
+    }
+    return N;
+}
+
+// replace to new string
+inline Long replace(Str_O str1, Str_I str, Str_I key, Str_I new_key)
+{
+    Long N = 0, ind0 = 0, Nkey = key.size();
+    str1.clear();
+    while (true) {
+        Long ind1 = str.find(key, ind0);
+        if (ind1 < 0) break;
+        str1 += str.substr(ind0, ind1-ind0) + new_key;
+        ind0 = ind1 + Nkey;
+        ++N;
+    }
+    if (ind0 < Long(str.size()))
+        str1 += str.substr(ind0);
+    return N;
 }
 
 // convert string to lower case

@@ -7,18 +7,19 @@
 namespace slisc {
 
 // out = exp(a*s) for symmetric matrix
-void exp_mat_sym(CmatDoub_O out, CmatDoub_I a, Doub_I s)
+inline void exp_mat_sym(CmatDoub_O out, CmatDoub_I a, Doub_I s)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (a.n1() != a.n2() || !shape_cmp(out, a))
+    if (a.n0() != a.n1() || !shape_cmp(out, a))
         SLS_ERR("not a square matrix!");
 #endif
-    Long N = a.n1();
+    Long N = a.n0();
     VecDoub eigVal(N);
     CmatDoub eigVec(N, N);
     eig_sym(eigVal, eigVec, a);
     eigVal *= s;
-    exp(eigVal, eigVal);
+for (Long i = 0; i < N; ++i)
+        eigVal[i] = exp(eigVal[i]);
     CmatDoub temp(N, N);
     mul(temp, eigVec, diag(eigVal));
     trans(eigVec);
@@ -26,19 +27,20 @@ void exp_mat_sym(CmatDoub_O out, CmatDoub_I a, Doub_I s)
     mul_gen(out, temp, eigVec);
 }
 
-void exp_mat_sym(CmatComp_O out, CmatDoub_I a, Comp_I s)
+inline void exp_mat_sym(CmatComp_O out, CmatDoub_I a, Comp_I s)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (a.n1() != a.n2() || !shape_cmp(out, a))
+    if (a.n0() != a.n1() || !shape_cmp(out, a))
         SLS_ERR("not a square matrix!");
 #endif
-    Long N = a.n1();
+    Long N = a.n0();
     VecDoub eigVal(N);
     VecComp eigValComp(N);
     CmatDoub eigVec(N, N);
     eig_sym(eigVal, eigVec, a);
     times(eigValComp, eigVal, s);
-    exp(eigValComp, eigValComp);
+    for (Long i = 0; i < N; ++i)
+        eigValComp[i] = exp(eigValComp[i]);
     CmatComp temp(N, N);
     mul(temp, eigVec, diag(eigValComp));
     trans(eigVec);

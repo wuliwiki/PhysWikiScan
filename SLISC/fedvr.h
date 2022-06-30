@@ -164,9 +164,9 @@ inline Comp fedvr_interp1(VecDoub_I x, VecComp_I y, Long_I Ngs, Doub_I x_q)
         if (x_q <= xmin)
             return 0;
         x1[0] = xmin;
-        copy(slice(x1, 1, Ngs-1), slice(x, 0, Ngs-1));
+        copy(cut(x1, 1, Ngs-1), cut(x, 0, Ngs-1));
         y1[0] = 0;
-        copy(slice(y1, 1, Ngs-1), slice(y, 0, Ngs-1));
+        copy(cut(y1, 1, Ngs-1), cut(y, 0, Ngs-1));
         poly_comp_interp1 poly(x1, y1);
         return poly(x_q);
     }
@@ -176,14 +176,14 @@ inline Comp fedvr_interp1(VecDoub_I x, VecComp_I y, Long_I Ngs, Doub_I x_q)
         if (x_q >= xmax)
             return 0;
         x1.end() = xmax;
-        copy(slice(x1, 0, Ngs-1), slice(x, Nx-Ngs+1, Ngs-1));
+        copy(cut(x1, 0, Ngs-1), cut(x, Nx-Ngs+1, Ngs-1));
         y1.end() = 0;
-        copy(slice(y1, 0, Ngs-1), slice(y, Nx-Ngs+1, Ngs-1));
+        copy(cut(y1, 0, Ngs-1), cut(y, Nx-Ngs+1, Ngs-1));
         poly_comp_interp1 poly(x1, y1);
         return poly(x_q);
     }
     else {
-        poly_comp_interp1 poly(slice(x, start, Ngs), slice(y, start, Ngs));
+        poly_comp_interp1 poly(cut(x, start, Ngs), cut(y, start, Ngs));
         return poly(x_q);
     }
 }
@@ -209,9 +209,9 @@ inline Comp fedvr_interp2(VecDoub_I x, VecDoub_I y, CmatComp_I val,
         SLS_ERR("not implemented!");
     VecDoub y1(Ngs); VecComp val1(Ngs);
     Long start = indFEDVR(iFEy, 0, Ngs);
-    SvecDoub_c x_sli =  slice(x, ix, Ngs);
+    SvecDoub_c x_sli =  cut(x, ix, Ngs);
     for (Long j = start; j < start + Ngs; ++j) {
-        poly_comp_interp1 poly(x_sli, slice1(val, ix, Ngs, j));
+        poly_comp_interp1 poly(x_sli, cut0(val, ix, Ngs, j));
         val1[j-start] = poly(x_q);
         y1[j-start] = y[j];
     }
@@ -278,7 +278,7 @@ inline void legendre_interp_der(CmatDoub_O df, VecDoub_I x)
     Long i, j, k, N{ x.size() };
     Doub t;
 #ifdef SLS_CHECK_SHAPES
-    if (df.n1() != N || df.n2() != N)
+    if (df.n0() != N || df.n1() != N)
         SLS_ERR("wrong shape!");
 #endif
     for (i = 0; i < N; ++i)
@@ -324,10 +324,10 @@ inline void FEDVR_grid(VecDoub_O x, VecDoub_O w, VecDoub_I wFE, VecDoub_I xFE, V
 #endif
     Doub a, b;
     for (i = 0; i < Nfe; ++i) {
-        a = wFE(i);
-        b = xFE(i);
+        a = wFE[i];
+        b = xFE[i];
         if (i > 0)
-            w[k-1] += a*w0(0);
+            w[k-1] += a*w0[0];
         for (j = 1; j < Ngs; ++j) {
             x[k] = a*x0[j] + b;
             w[k] = a*w0[j];
@@ -363,7 +363,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
     Long Ngs = w0.size();
 #ifdef SLS_CHECK_SHAPES
     Long Nx = Nfe * (Ngs - 1) - 1;
-    if (D2.n1() != Nx || D2.n1() != Nx)
+    if (D2.n0() != Nx || D2.n0() != Nx)
         SLS_ERR("wrong shape!");
 #endif
 
@@ -375,7 +375,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
         for (i = 0; i <= j; ++i) {
             s = 0.;
             for (k = 0; k < Ngs; ++k)
-                s += w0(k) * df(k, i) * df(k, j);
+                s += w0[k] * df(k, i) * df(k, j);
             block(i, j) = s;
         }
     }
@@ -385,7 +385,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
     for (i = 0; i < Nfe; ++i) {
         // blocks without boundary
         for (n = 1; n < Ngs - 1; ++n) {
-            coeff = -1. / sqr(wFE(i));
+            coeff = -1. / sqr(wFE[i]);
             for (m = 1; m <= n; ++m) {
                 mm = indFEDVR(i, m, Ngs); nn = indFEDVR(i, n, Ngs);
                 s = coeff * block(m,n);
@@ -400,7 +400,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
     for (i = 0; i < Nfe - 1; ++i) {
         // block right boundary
         n = Ngs - 1;
-        coeff = -1. / (pow(wFE(i), 1.5) * ::sqrt(wFE(i) + wFE(i + 1)));
+        coeff = -1. / (pow(wFE[i], 1.5) * ::sqrt(wFE[i] + wFE[i + 1]));
         for (m = 1; m < n; ++m) {
             mm = indFEDVR(i, m, Ngs); nn = indFEDVR(i, n, Ngs);
             s = coeff * block(m, n);
@@ -409,13 +409,13 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
 
         // block lower right corner
         m = Ngs - 1;
-        coeff = -1. / (wFE(i) + wFE(i + 1));
+        coeff = -1. / (wFE[i] + wFE[i+1]);
         mm = indFEDVR(i, m, Ngs);
-        s = coeff*(block(m,n)/wFE(i) + block(0,0)/wFE(i+1));
+        s = coeff*(block(m,n)/wFE[i] + block(0,0)/wFE[i+1]);
         D2.push(s, mm, mm);
 
         // block upper boundary
-        coeff = -1. / (pow(wFE(i + 1), 1.5) * ::sqrt(wFE(i) + wFE(i + 1)));
+        coeff = -1. / (pow(wFE[i+1], 1.5) * ::sqrt(wFE[i] + wFE[i+1]));
         for (n = 1; n < Ngs - 1; ++n) {
             mm = indFEDVR(i, m, Ngs); nn = indFEDVR(i + 1, n, Ngs);
             s = coeff * block(0, n);
@@ -425,7 +425,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_I w0, VecDoub_I wFE, CmatDoub_I df)
 
     for (i = 0; i < Nfe - 2; ++i) {
         // block upper right corner
-        coeff = -1. / (wFE(i + 1) * ::sqrt((wFE(i) + wFE(i + 1))*(wFE(i + 1) + wFE(i + 2))));
+        coeff = -1. / (wFE[i+1] * ::sqrt((wFE[i] + wFE[i+1])*(wFE[i+1] + wFE[i+2])));
         mm = indFEDVR(i, Ngs-1, Ngs); nn = indFEDVR(i + 1, Ngs-1, Ngs);
         s = coeff * block(0, Ngs - 1);
         D2.push(s, mm, nn); D2.push(s, nn, mm);
@@ -444,7 +444,7 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_O x, VecDoub_O w, VecDoub_O u, VecD
 #ifdef SLS_CHECK_SHAPES
     Long Nx = Nfe * (Ngs - 1) - 1;
     if (x.size() != Nx || w.size() != Nx || u.size() != Nx ||
-        D2.n1() != Nx || D2.n1() != Nx)
+        D2.n0() != Nx || D2.n0() != Nx)
         SLS_ERR("wrong shape!");
 #endif
 
@@ -456,14 +456,14 @@ inline void D2_matrix(McooDoub_O D2, VecDoub_O x, VecDoub_O w, VecDoub_O u, VecD
     legendre_interp_der(df, x0);
     for (Long i = 0; i < Ngs; ++i)
         for (Long j = 0; j < Ngs; ++j)
-            df(j, i) *= f0(i);
+            df(j, i) *= f0[i];
 
     // midpoints, widths and bounds of finite elements
     VecDoub xFE(Nfe), wFE(Nfe);
 
     for (Long i = 0; i < Nfe; ++i) {
-        wFE(i) = 0.5*(bounds(i + 1) - bounds(i));
-        xFE(i) = 0.5*(bounds(i) + bounds(i + 1));
+        wFE[i] = 0.5*(bounds[i+1] - bounds[i]);
+        xFE[i] = 0.5*(bounds[i] + bounds[i+1]);
     }
 
     FEDVR_grid(x, w, wFE, xFE, x0, w0);

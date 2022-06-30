@@ -7,9 +7,11 @@
 #include <sys/types.h> // for time_stamp
 #include <sys/stat.h> // for time_stamp
 #include "unicode.h"
+#include "sort.h"
+#include "Bit.h"
 #ifdef _MSC_VER
 #include "search.h"
-#include "sort.h"
+#include "string.h"
 #endif
 
 namespace slisc {
@@ -99,20 +101,29 @@ inline Bool dir_exist(Str_I path)
     }
 }
 
+// get directory from filename
+inline Str path2dir(Str_I fname)
+{
+    Llong ind = fname.rfind("/");
+    if (ind < 0)
+        return "./";
+    else
+        return fname.substr(0, ind+1);
+}
+
 // make multiple level of directory
 
 inline void mkdir(Str_I path)
 {
-    Long ind = path.find("\"");
-    if (ind >= 0)
-        SLS_ERR("folder name should not contain double quote: " + path + ", i = " + num2str(ind));
+    Str tmp = path;
+    replace(tmp, "\"", "\\\""); // doesn't matter for utf8, multi-byte encoding all bytes > 127
 #ifndef _MSC_VER
-    Int ret = system(("mkdir -p \"" + path + "\"").c_str()); ret++;
+    Int ret = system(("mkdir -p \"" + tmp + "\"").c_str()); ret++;
 #else
-    CreateDirectory(utf82wstr(path).c_str(), NULL);
+    CreateDirectory(utf82wstr(tmp).c_str(), NULL);
 #endif
-    if (!dir_exist(path))
-        SLS_ERR("mkdir failed: " + path);
+    if (!dir_exist(tmp))
+        SLS_ERR("mkdir failed: " + tmp);
 }
 
 // remove an empty directory
@@ -148,7 +159,8 @@ inline void file_rm(Str_I wildcard_name) {
 #endif
 
 // list all files in current directory
-// only works for linux
+// path must end with '/'
+// result is sorted
 #ifndef _MSC_VER
 inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
 {    
@@ -165,9 +177,9 @@ inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
             break;
         fnames.push_back(name);
     }
+    sort(fnames);
 }
 #else
-// path must end with '/'
 inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
 {
     WIN32_FIND_DATA data;
@@ -185,11 +197,13 @@ inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
         } while (FindNextFile(h, &data));
         FindClose(h);
     }
+    sort(fnames);
 }
 #endif
 
 // list all files including paths
 // path should end with '/'
+// result is sorted
 inline void file_list_full(vecStr_O fnames, Str_I path, Bool_I append = false)
 {
     if (!append)
@@ -205,6 +219,7 @@ inline void file_list_full(vecStr_O fnames, Str_I path, Bool_I append = false)
 // path should end with '/'
 // path can be full, relative or empty (./)
 // `folders` will not include `path`
+// result is sorted
 inline void folder_list(vecStr_O folders, Str_I path, Bool_I append = false)
 {
     WIN32_FIND_DATA data;
@@ -223,10 +238,12 @@ inline void folder_list(vecStr_O folders, Str_I path, Bool_I append = false)
         } while (FindNextFile(h, &data));
         FindClose(h);
     }
+    sort(folders);
 }
 
 // `path` must end with '/'
 // `folders` will include `path`
+// result is sorted
 inline void folder_list_full(vecStr_O folders, Str_I path, Bool_I append = false)
 {
     if (!append)
@@ -239,6 +256,7 @@ inline void folder_list_full(vecStr_O folders, Str_I path, Bool_I append = false
 #endif
 
 // list all files in a directory recursively (containing relative paths)
+// result is sorted
 #ifndef _MSC_VER
 inline void file_list_r(vecStr_O fnames, Str_I path, Bool_I append = false)
 {
@@ -255,6 +273,7 @@ inline void file_list_r(vecStr_O fnames, Str_I path, Bool_I append = false)
             break;
         fnames.push_back(name);
     }
+    sort(fnames);
 }
 #else
 inline void file_list_r(vecStr_O fnames, Str_I path, Bool_I append = false)
@@ -277,7 +296,7 @@ inline void file_ext(vecStr_O fnames_ext, vecStr_I fnames, Str_I ext, Bool_I kee
         fnames_ext.clear();
     Long N_ext = ext.size();
     for (Long i = 0; i < size(fnames); ++i) {
-        const Str & str = fnames[i];
+        const Str &str = fnames[i];
         // check position of '.'
         Long ind = fnames[i].size() - N_ext - 1;
         if (ind < 0 || str[ind] != '.')
@@ -293,6 +312,7 @@ inline void file_ext(vecStr_O fnames_ext, vecStr_I fnames, Str_I ext, Bool_I kee
 }
 
 // list all files in current directory, with a given extension
+// result is sorted
 inline void file_list_ext(vecStr_O fnames, Str_I path, Str_I ext, Bool_I keep_ext = true, Bool_I append = false)
 {
     vecStr fnames0;
@@ -387,7 +407,7 @@ inline void file_move(Str_I fname_out, Str_I fname_in, Bool_I replace = false)
 // file_move() with user buffer
 inline void file_move(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I replace = false)
 {
-    file_move(fname_out, fname_in, buffer, replace);
+    file_copy(fname_out, fname_in, buffer, replace);
     file_remove(fname_in);
 }
 
@@ -451,7 +471,6 @@ inline Long read(Char *data, Long_I Nbyte, Str_I fname)
 }
 
 // write Str to file
-// this only works when file is opened in binary mode on Windows
 inline void write(Str_I str, Str_I fname)
 {
     write(str.c_str(), str.size(), fname);
@@ -471,6 +490,15 @@ inline void write(Str32_I str32, Str32_I fname)
 // write a vector of strings to file
 // no `\n` allowed in each string
 // file will be ended by a return
+inline void write_vec_str(vecStr_I vec_str, Str_I fname)
+{
+    Str str;
+    for (Long i = 0; i < size(vec_str); ++i) {
+        str += vec_str[i] + '\n';
+    }
+    write(str, fname);
+}
+
 inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 {
     Str32 str;
@@ -481,7 +509,6 @@ inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 }
 
 // read whole file to Str
-// this only works when file is opened in binary mode on Windows
 inline void read(Str_O str, Str_I fname)
 {
     str.resize(file_size(fname));
@@ -503,6 +530,24 @@ inline void read(Str32_O str32, Str32_I fname)
 
 // read the file written by `write_vec_str()`
 // file must be ended by a return
+
+inline void read_vec_str(vecStr_O vec_str, Str_I fname)
+{
+    Str str;
+    vec_str.clear();
+    read(str, fname);
+    if (str.empty())
+        return;
+    CRLF_to_LF(str);
+    Long ind0 = 0;
+    for (Long i = 0; ; ++i) {
+        vec_str.emplace_back();
+        ind0 = get_line(vec_str[i], str, ind0);
+        if (ind0 < 0)
+            return;
+    }
+}
+
 inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
 {
     Str32 str;
@@ -519,6 +564,7 @@ inline void read_vec_str(vecStr32_O vec_str, Str32_I fname)
             return;
     }
 }
+
 
 // read and write binary data from/to ifstrea/ofstream
 
@@ -608,18 +654,90 @@ inline void read(ifstream &fin, Str32_O str)
         str.resize(count);
 }
 
-// read a table from file
+// read a table from text file
 // two numbers should be separated by space
 // skipt specific number of lines at the beginning
 // matrix will auto-resize
-// 0 to multiple spaces & new line at the end of file are allowed
+// spaces & new line at the end of file are allowed
+inline void read(CmatInt_O mat, Str_I file, Long_I skip_lines = 0)
+{
+    ifstream input(file);
+    if (!input.good())
+        SLS_ERR(file + " does not exist!");
+    for (Long i = 0; i < skip_lines; ++i)
+        input.ignore(1000000, '\n');
+    // detect the number of columns
+    Str line;
+    getline(input, line);
+    std::istringstream iss(line);
+    vector<Int> v;
+    Doub num;
+    while (iss >> num)
+        v.push_back(num);
+    Long N2 = v.size();
+    while (true) {
+        num = NaN;
+        input >> num;
+        if (std::isnan(num))
+            break;
+        v.push_back(num);
+        if (input.eof())
+            break;
+    }
+    if (v.size() % N2 != 0)
+        SLS_ERR(file + ": each row might not have equal number of columns!");
+    Long N1 = v.size() / N2;
+    mat.resize(N1, N2);
+    for (Long i = 0; i < N1; ++i) {
+        for (Long j = 0; j < N2; ++j) {
+            mat(i, j) = v[N2*i + j];
+        }
+    }
+}
+
+inline void read(CmatLlong_O mat, Str_I file, Long_I skip_lines = 0)
+{
+    ifstream input(file);
+    if (!input.good())
+        SLS_ERR(file + " does not exist!");
+    for (Long i = 0; i < skip_lines; ++i)
+        input.ignore(1000000, '\n');
+    // detect the number of columns
+    Str line;
+    getline(input, line);
+    std::istringstream iss(line);
+    vector<Llong> v;
+    Doub num;
+    while (iss >> num)
+        v.push_back(num);
+    Long N2 = v.size();
+    while (true) {
+        num = NaN;
+        input >> num;
+        if (std::isnan(num))
+            break;
+        v.push_back(num);
+        if (input.eof())
+            break;
+    }
+    if (v.size() % N2 != 0)
+        SLS_ERR(file + ": each row might not have equal number of columns!");
+    Long N1 = v.size() / N2;
+    mat.resize(N1, N2);
+    for (Long i = 0; i < N1; ++i) {
+        for (Long j = 0; j < N2; ++j) {
+            mat(i, j) = v[N2*i + j];
+        }
+    }
+}
+
 inline void read(CmatDoub_O mat, Str_I file, Long_I skip_lines = 0)
 {
     ifstream input(file);
     if (!input.good())
         SLS_ERR(file + " does not exist!");
     for (Long i = 0; i < skip_lines; ++i)
-        input.ignore(100000, '\n');
+        input.ignore(1000000, '\n');
     // detect the number of columns
     Str line;
     getline(input, line);
@@ -647,6 +765,36 @@ inline void read(CmatDoub_O mat, Str_I file, Long_I skip_lines = 0)
             mat(i, j) = v[N2*i + j];
         }
     }
+}
+
+
+// read a vector from a text file
+// two numbers should be separated by space or enter
+// skipt specific number of lines at the beginning
+// vector will auto-resize
+// spaces & new line at the end of file are allowed
+inline void read(VecDoub_O v, Str_I file, Long_I skip_lines = 0)
+{
+    ifstream input(file);
+    if (!input.good())
+        SLS_ERR(file + " does not exist!");
+    for (Long i = 0; i < skip_lines; ++i)
+        input.ignore(1000000, '\n');
+    // detect the number of columns
+    vector<Doub> v0;
+    Doub num;
+    while (true) {
+        num = NaN;
+        input >> num;
+        if (isnan(num))
+            break;
+        v0.push_back(num);
+        if (input.eof())
+            break;
+    }
+    v.resize(v0.size());
+    for (Long i = 0; i < size(v0); ++i)
+        v[i] = v0[i];
 }
 
 // get time-stamp of a file
@@ -677,29 +825,6 @@ inline void last_modified(Str_O yymmddhhmmss, Str_I fname) {
 inline void set_buff(ofstream &fout, Str_IO buffer)
 {
     fout.rdbuf()->pubsetbuf(&buffer[0], buffer.size());
-}
-
-// test if system use little endian (less significant byte has smaller memory address)
-// for example, shot int(1) will be 00000001 0000000 in little endian
-// there is no concept of "bit endian" since they are not addressable
-// Intel x86 and x64 architechture use little endian
-inline Bool little_endian()
-{
-    short int num = 1;
-    Char *b = (Char *)&num;
-    return b[0];
-}
-
-// convert endianness
-inline void change_endian(Char *data, Long_I elm_size, Long_I Nelm)
-{
-    Long half = elm_size/2;
-    for (Long i = 0; i < Nelm; ++i) {
-        for (Long j = 0; j < half; ++j) {
-            swap(data[j], data[elm_size-j]);
-        }
-        data += elm_size;
-    }
 }
 
 } // namespace slisc

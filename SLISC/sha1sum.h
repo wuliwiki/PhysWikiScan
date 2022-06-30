@@ -196,9 +196,9 @@ namespace slisc {
     } // namespace sha1
 
     // sha1sum for a block of data
-    Str sha1sum(Char_I *ptr, Long_I N) {
+    inline Str sha1sum(Char_I *p, Long_I N) {
         sha1::SHA1 s;
-        s.processBytes(ptr, N);
+        s.processBytes(p, N);
         uint32_t digest[5];
         s.getDigest(digest);    
         char str[48];
@@ -207,12 +207,12 @@ namespace slisc {
     }
 
     // sha1sum for string
-    Str sha1sum(Str_I str)  {
+    inline Str sha1sum(Str_I str)  {
         return sha1sum(str.c_str(), str.size());
     }
 
     // sha1sum for file
-    Str sha1sum_f(Str_I fname) {
+    inline Str sha1sum_f(Str_I fname) {
         Str str;
         read(str, fname);
         return sha1sum(str);

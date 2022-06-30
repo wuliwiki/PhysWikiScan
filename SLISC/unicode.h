@@ -30,7 +30,7 @@ struct set_windows_console_utf8 {
     }
 };
 // in case of ODR error, put this in main function;
-set_windows_console_utf8 yes_set_windows_console_utf8;
+// set_windows_console_utf8 yes_set_windows_console_utf8;
 
 // Convert a wide Unicode wstring to an UTF8 string
 inline Str wstr2utf8(const std::wstring& wstr)
@@ -171,29 +171,6 @@ inline Str32 operator+(Str_I str, Str32_I str32)
     return utf8to32(str) + str32;
 }
 
-// read a line from a string, from str[start] to 1 char before '\n'
-// return the start of the next line, return -1 if out of bound
-// if the file ends with `\n`, then the line.back() is not empty
-inline Long get_line(Str32_O line, Str32_I str, Long_I start = 0)
-{
-    Long ind = str.find(U'\n', start);
-    line = str.substr(start, ind - start);
-    if (ind < 0 || ind == size(str) - 1)
-        return -1;
-    return ind + 1;
-}
-
-// skip to the next line
-// return the index after `\n`
-// return -1 if `\n` not found
-inline Long skip_line(Str32_I &str, Long_I start = 0)
-{
-    Long ind = str.find(U'\n', start);
-    if (ind < 0 || ind == size(str) - 1)
-        return -1;
-    return ind + 1;
-}
-
 inline void num2str(Str32_O str, Char_I num, Long_I min_len = -1)
 {
     utf8to32(str, num2str(num, min_len));
@@ -253,6 +230,7 @@ inline Str32 num2str32(Doub_I num, Long_I min_len = -1)
     num2str(str, num, min_len);
     return str;
 }
+
 
 // same as str.insert(), but return one index after key after insertion
 inline Long insert(Str32_IO str, Str32_I key, Long start)
@@ -332,13 +310,15 @@ inline Long rfind(vecLong_O ikey, Str32_I str, vecStr32_I key, Long_I start)
 // return the index after the key found, return -1 if nothing found.
 inline Long expect(Str32_I str, Str32_I key, Long_I start)
 {
+#ifdef SLS_CHECK_BOUNDS
+    if (start < 0 || start >= size(str))
+        throw Str32(U"内部错误： expect(): out of bound");
+#endif
     Long ind = start;
     Long ind0 = 0;
     Long L = str.size();
     Long L0 = key.size();
     Char32 c0, c;
-    if (start < 0 || start >= str.size())
-        return -1;
     while (true) {
          c0 = key[ind0];
          c = str[ind];
@@ -464,20 +444,35 @@ inline Long find_whole_word(Str32_I str, Str32_I key, Long_I start)
     }
 }
 
-// replace all occurance of "key" with "new_str"
+// replace all occurance of "key" with "new_key"
 // return the number of keys replaced
-inline Long replace(Str32_IO str, Str32_I key, Str32_I new_str)
+// works with utf-8
+inline Long replace(Str32_IO str, Str32_I key, Str32_I new_key)
 {
-    Long ind0 = 0;
-    Long Nkey = key.size();
-    Long N = 0;
+    Long ind0 = 0, N = 0, Nkey = key.size();
     while (true) {
          ind0 = str.find(key, ind0);
         if (ind0 < 0) break;
-        str.erase(ind0, Nkey);
-        str.insert(ind0, new_str);
-        ++N; ind0 += new_str.size();
+        str.replace(ind0, Nkey, new_key);
+        ++N; ind0 += new_key.size();
     }
+    return N;
+}
+
+// replace to new string
+inline Long replace(Str32_O str1, Str32_I str, Str32_I key, Str32_I new_key)
+{
+    Long ind0 = 0, N = 0, Nkey = key.size();
+    str1.clear();
+    while (true) {
+        Long ind1 = str.find(key, ind0);
+        if (ind1 < 0) break;
+        str1 += str.substr(ind0, ind1-ind0) + new_key;
+        ind0 = ind1 + Nkey;
+        ++N;
+    }
+    if (ind0 < size(str))
+        str1 += str.substr(ind0);
     return N;
 }
 

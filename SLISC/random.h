@@ -36,6 +36,14 @@ namespace internal
             w = v; int64();
         }
         Doub doub() { return 5.42101086242752217E-20 * int64(); }
+#ifdef SLS_USE_QUAD_MATH
+        Qdoub qdoub() {
+            // random int128 = int64()*2^64 + int64()
+            Qdoub q = int64()*18446744073709551616.0Q + int64();
+            q *= 2.9387358770557187699218413430556142e-39Q; // q *= 2^-128
+            return q;
+        }
+#endif
     };
 }
 
@@ -45,6 +53,21 @@ inline Doub randDoub()
     static internal::Ran rand_gen;
     return rand_gen.doub();
 }
+
+#ifdef SLS_USE_QUAD_MATH
+// generate random Qdoub in [0, 1]
+inline Qdoub randQdoub()
+{
+    static internal::Ran rand_gen;
+    return rand_gen.qdoub();
+}
+
+inline Qcomp randQcomp()
+{
+    static internal::Ran rand_gen;
+    return Qcomp(rand_gen.qdoub(), rand_gen.qdoub());
+}
+#endif
 
 // generate random Int in {0,1,2,...,N-1}
 inline Int randInt(Int_I N)
@@ -80,126 +103,130 @@ inline Comp randComp()
     return Comp(randDoub(), randDoub());
 }
 
-inline void rand(VecLlong_O v, Long_I N)
+inline void rand(VecLlong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(VecDoub_O &v)
+inline void rand(VecDoub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(VecComp_O &v)
+
+inline void rand(VecComp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randComp();
 }
 
-inline void rand(SvecLlong_O v, Long_I N)
+
+inline void rand(SvecLlong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(SvecDoub_O &v)
+inline void rand(SvecDoub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(SvecComp_O &v)
+inline void rand(SvecComp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randComp();
 }
 
-inline void rand(MatLlong_O v, Long_I N)
+inline void rand(MatLlong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(MatDoub_O &v)
+inline void rand(MatDoub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(MatComp_O &v)
+inline void rand(MatComp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randComp();
 }
 
-inline void rand(CmatLlong_O v, Long_I N)
+inline void rand(CmatLlong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(CmatDoub_O &v)
+inline void rand(CmatDoub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(CmatComp_O &v)
+
+inline void rand(CmatComp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randComp();
 }
 
-inline void rand(Cmat3Llong_O v, Long_I N)
+
+inline void rand(Cmat3Llong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(Cmat3Doub_O &v)
+inline void rand(Cmat3Doub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(Cmat3Comp_O &v)
+inline void rand(Cmat3Comp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randComp();
 }
 
-inline void rand(ScmatLlong_O v, Long_I N)
+inline void rand(ScmatLlong_O v)
 {
-    Long i, Nv = v.size();
-    for (i = 0; i < Nv; ++i)
+    Long i, N = v.size();
+    for (i = 0; i < N; ++i)
         v[i] = randLong(N);
 }
 
-inline void rand(ScmatDoub_O &v)
+inline void rand(ScmatDoub_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)
         v[i] = randDoub();
 }
 
-inline void rand(ScmatComp_O &v)
+inline void rand(ScmatComp_O v)
 {
     Long i, N = v.size();
     for (i = 0; i < N; ++i)

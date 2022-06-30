@@ -1,49 +1,48 @@
 #pragma once
 #include "Svec.h"
+// "_c" means lower level const
 
 namespace slisc {
-class ScmatChar_c : public SvecChar_c
+class ScmatChar_c : public SvbaseChar_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatChar_c();
-    ScmatChar_c(const Char *data, Long_I N1, Long_I N2); // unsafe
-    ScmatChar_c(const Char *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatChar_c(const Char *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatChar_c &operator=(const ScmatChar_c &) = delete;
 
-    // === Cmat functions ===
-    const Char& operator()(Long_I i, Long_I j) const; // double indexing
+    const Char &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Char *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Char *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatChar_c &sli);
+    void set(const Char *data, Long_I N0, Long_I N1);
     ~ScmatChar_c();
 };
 
 inline ScmatChar_c::ScmatChar_c() {}
 
-inline ScmatChar_c::ScmatChar_c(const Char *data, Long_I N1, Long_I N2)
-    : SvecChar_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatChar_c::ScmatChar_c(const Char *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecChar_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatChar_c::ScmatChar_c(const Char *data, Long_I N0, Long_I N1)
+    : SvbaseChar_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Char & ScmatChar_c::operator()(Long_I i, Long_I j) const
+inline const Char &ScmatChar_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatChar_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatChar_c::n1() const
@@ -51,89 +50,76 @@ inline Long ScmatChar_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatChar_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatChar_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatChar_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatChar_c::set(const Char *data, Long_I N1, Long_I N2)
+inline void ScmatChar_c::set(const Char *data, Long_I N0, Long_I N1)
 {
-    SvecChar_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatChar_c::set(const Char *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecChar_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseChar_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatChar_c::set(const ScmatChar_c &sli)
 {
-    SvecChar_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseChar_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatChar_c::~ScmatChar_c() {}
 
-typedef const ScmatChar_c & ScmatChar_I;
+typedef const ScmatChar_c &ScmatChar_I;
 
-class ScmatChar : public SvecChar
+class ScmatChar : public SvbaseChar
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatChar();
-    ScmatChar(Char *data, Long_I N1, Long_I N2); // unsafe
-    ScmatChar(Char *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatChar(Char *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatChar_c() const;
-    ScmatChar &operator=(const ScmatChar &) = delete;
 
-    // === Cmat functions ===
-    Char& operator()(Long_I i, Long_I j) const; // double indexing
+    Char &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Char *data, Long_I N1, Long_I N2); // unsafe
-    void set(Char *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatChar &sli);
+    void set(Char *data, Long_I N0, Long_I N1);
     ~ScmatChar();
 };
 
 inline ScmatChar::ScmatChar() {}
 
-inline ScmatChar::ScmatChar(Char *data, Long_I N1, Long_I N2)
-    : SvecChar(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatChar::ScmatChar(Char *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecChar(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatChar::ScmatChar(Char *data, Long_I N0, Long_I N1)
+    : SvbaseChar(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatChar::operator ScmatChar_c() const
 {
     return *((ScmatChar_c *)this);
 }
 
-inline Char & ScmatChar::operator()(Long_I i, Long_I j) const
+inline Char &ScmatChar::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatChar::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatChar::n1() const
@@ -141,84 +127,222 @@ inline Long ScmatChar::n1() const
     return m_N1;
 }
 
-inline Long ScmatChar::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatChar::reshape(Long_I N1, Long_I N2)
+inline void ScmatChar::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatChar::set(Char *data, Long_I N1, Long_I N2)
+inline void ScmatChar::set(Char *data, Long_I N0, Long_I N1)
 {
-    SvecChar::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatChar::set(Char *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecChar::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseChar::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatChar::set(const ScmatChar &sli)
 {
-    SvecChar::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseChar::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatChar::~ScmatChar() {}
 
-typedef const ScmatChar & ScmatChar_O, & ScmatChar_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatChar &ScmatChar_O, &ScmatChar_IO;
 
-class ScmatInt_c : public SvecInt_c
+class ScmatUchar_c : public SvbaseUchar_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
-    ScmatInt_c();
-    ScmatInt_c(const Int *data, Long_I N1, Long_I N2); // unsafe
-    ScmatInt_c(const Int *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatUchar_c();
+    ScmatUchar_c(const Uchar *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatInt_c &operator=(const ScmatInt_c &) = delete;
 
-    // === Cmat functions ===
-    const Int& operator()(Long_I i, Long_I j) const; // double indexing
+    const Uchar &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Int *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Int *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
+    void set(const ScmatUchar_c &sli);
+    void set(const Uchar *data, Long_I N0, Long_I N1);
+    ~ScmatUchar_c();
+};
+
+inline ScmatUchar_c::ScmatUchar_c() {}
+
+inline ScmatUchar_c::ScmatUchar_c(const Uchar *data, Long_I N0, Long_I N1)
+    : SvbaseUchar_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
+
+
+inline const Uchar &ScmatUchar_c::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
+        SLS_ERR("Matrix subscript out of bounds");
+#endif
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatUchar_c::n0() const
+{
+    return m_N0;
+}
+
+inline Long ScmatUchar_c::n1() const
+{
+    return m_N1;
+}
+
+inline void ScmatUchar_c::reshape(Long_I N0, Long_I N1)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N0*N1 != m_N)
+        SLS_ERR("illegal reshape!");
+#endif
+    m_N0 = N0; m_N1 = N1;
+}
+
+inline void ScmatUchar_c::set(const Uchar *data, Long_I N0, Long_I N1)
+{
+    SvbaseUchar_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
+}
+
+inline void ScmatUchar_c::set(const ScmatUchar_c &sli)
+{
+    SvbaseUchar_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
+}
+
+inline ScmatUchar_c::~ScmatUchar_c() {}
+
+typedef const ScmatUchar_c &ScmatUchar_I;
+
+class ScmatUchar : public SvbaseUchar
+{
+protected:
+    Long m_N0, m_N1;
+public:
+    ScmatUchar();
+    ScmatUchar(Uchar *data, Long_I N0, Long_I N1); // unsafe
+
+    operator ScmatUchar_c() const;
+
+    Uchar &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
+    Long n1() const;
+
+    // resize() is a bad idea, don't try to create it!
+
+    // There is no upper bound checking of N, use with care
+    void reshape(Long_I N0, Long_I N1);
+    void set(const ScmatUchar &sli);
+    void set(Uchar *data, Long_I N0, Long_I N1);
+    ~ScmatUchar();
+};
+
+inline ScmatUchar::ScmatUchar() {}
+
+inline ScmatUchar::ScmatUchar(Uchar *data, Long_I N0, Long_I N1)
+    : SvbaseUchar(data, N0*N1), m_N0(N0), m_N1(N1) {}
+
+inline ScmatUchar::operator ScmatUchar_c() const
+{
+    return *((ScmatUchar_c *)this);
+}
+
+inline Uchar &ScmatUchar::operator()(Long_I i, Long_I j) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
+        SLS_ERR("Matrix subscript out of bounds");
+#endif
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatUchar::n0() const
+{
+    return m_N0;
+}
+
+inline Long ScmatUchar::n1() const
+{
+    return m_N1;
+}
+
+inline void ScmatUchar::reshape(Long_I N0, Long_I N1)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N0*N1 != m_N)
+        SLS_ERR("illegal reshape!");
+#endif
+    m_N0 = N0; m_N1 = N1;
+}
+
+inline void ScmatUchar::set(Uchar *data, Long_I N0, Long_I N1)
+{
+    SvbaseUchar::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
+}
+
+inline void ScmatUchar::set(const ScmatUchar &sli)
+{
+    SvbaseUchar::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
+}
+
+inline ScmatUchar::~ScmatUchar() {}
+
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatUchar &ScmatUchar_O, &ScmatUchar_IO;
+
+class ScmatInt_c : public SvbaseInt_c
+{
+protected:
+    Long m_N0, m_N1;
+public:
+    ScmatInt_c();
+    ScmatInt_c(const Int *data, Long_I N0, Long_I N1); // unsafe
+
+
+    const Int &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
+    Long n1() const;
+
+    // resize() is a bad idea, don't try to create it!
+
+    // There is no upper bound checking of N, use with care
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatInt_c &sli);
+    void set(const Int *data, Long_I N0, Long_I N1);
     ~ScmatInt_c();
 };
 
 inline ScmatInt_c::ScmatInt_c() {}
 
-inline ScmatInt_c::ScmatInt_c(const Int *data, Long_I N1, Long_I N2)
-    : SvecInt_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatInt_c::ScmatInt_c(const Int *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecInt_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatInt_c::ScmatInt_c(const Int *data, Long_I N0, Long_I N1)
+    : SvbaseInt_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Int & ScmatInt_c::operator()(Long_I i, Long_I j) const
+inline const Int &ScmatInt_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatInt_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatInt_c::n1() const
@@ -226,89 +350,76 @@ inline Long ScmatInt_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatInt_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatInt_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatInt_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatInt_c::set(const Int *data, Long_I N1, Long_I N2)
+inline void ScmatInt_c::set(const Int *data, Long_I N0, Long_I N1)
 {
-    SvecInt_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatInt_c::set(const Int *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecInt_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseInt_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatInt_c::set(const ScmatInt_c &sli)
 {
-    SvecInt_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseInt_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatInt_c::~ScmatInt_c() {}
 
-typedef const ScmatInt_c & ScmatInt_I;
+typedef const ScmatInt_c &ScmatInt_I;
 
-class ScmatInt : public SvecInt
+class ScmatInt : public SvbaseInt
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatInt();
-    ScmatInt(Int *data, Long_I N1, Long_I N2); // unsafe
-    ScmatInt(Int *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatInt(Int *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatInt_c() const;
-    ScmatInt &operator=(const ScmatInt &) = delete;
 
-    // === Cmat functions ===
-    Int& operator()(Long_I i, Long_I j) const; // double indexing
+    Int &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Int *data, Long_I N1, Long_I N2); // unsafe
-    void set(Int *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatInt &sli);
+    void set(Int *data, Long_I N0, Long_I N1);
     ~ScmatInt();
 };
 
 inline ScmatInt::ScmatInt() {}
 
-inline ScmatInt::ScmatInt(Int *data, Long_I N1, Long_I N2)
-    : SvecInt(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatInt::ScmatInt(Int *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecInt(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatInt::ScmatInt(Int *data, Long_I N0, Long_I N1)
+    : SvbaseInt(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatInt::operator ScmatInt_c() const
 {
     return *((ScmatInt_c *)this);
 }
 
-inline Int & ScmatInt::operator()(Long_I i, Long_I j) const
+inline Int &ScmatInt::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatInt::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatInt::n1() const
@@ -316,84 +427,72 @@ inline Long ScmatInt::n1() const
     return m_N1;
 }
 
-inline Long ScmatInt::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatInt::reshape(Long_I N1, Long_I N2)
+inline void ScmatInt::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatInt::set(Int *data, Long_I N1, Long_I N2)
+inline void ScmatInt::set(Int *data, Long_I N0, Long_I N1)
 {
-    SvecInt::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatInt::set(Int *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecInt::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseInt::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatInt::set(const ScmatInt &sli)
 {
-    SvecInt::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseInt::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatInt::~ScmatInt() {}
 
-typedef const ScmatInt & ScmatInt_O, & ScmatInt_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatInt &ScmatInt_O, &ScmatInt_IO;
 
-class ScmatLlong_c : public SvecLlong_c
+class ScmatLlong_c : public SvbaseLlong_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLlong_c();
-    ScmatLlong_c(const Llong *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLlong_c(const Llong *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLlong_c(const Llong *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatLlong_c &operator=(const ScmatLlong_c &) = delete;
 
-    // === Cmat functions ===
-    const Llong& operator()(Long_I i, Long_I j) const; // double indexing
+    const Llong &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Llong *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Llong *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLlong_c &sli);
+    void set(const Llong *data, Long_I N0, Long_I N1);
     ~ScmatLlong_c();
 };
 
 inline ScmatLlong_c::ScmatLlong_c() {}
 
-inline ScmatLlong_c::ScmatLlong_c(const Llong *data, Long_I N1, Long_I N2)
-    : SvecLlong_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLlong_c::ScmatLlong_c(const Llong *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLlong_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLlong_c::ScmatLlong_c(const Llong *data, Long_I N0, Long_I N1)
+    : SvbaseLlong_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Llong & ScmatLlong_c::operator()(Long_I i, Long_I j) const
+inline const Llong &ScmatLlong_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLlong_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLlong_c::n1() const
@@ -401,89 +500,76 @@ inline Long ScmatLlong_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatLlong_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLlong_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatLlong_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLlong_c::set(const Llong *data, Long_I N1, Long_I N2)
+inline void ScmatLlong_c::set(const Llong *data, Long_I N0, Long_I N1)
 {
-    SvecLlong_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLlong_c::set(const Llong *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLlong_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLlong_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLlong_c::set(const ScmatLlong_c &sli)
 {
-    SvecLlong_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLlong_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLlong_c::~ScmatLlong_c() {}
 
-typedef const ScmatLlong_c & ScmatLlong_I;
+typedef const ScmatLlong_c &ScmatLlong_I;
 
-class ScmatLlong : public SvecLlong
+class ScmatLlong : public SvbaseLlong
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLlong();
-    ScmatLlong(Llong *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLlong(Llong *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLlong(Llong *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatLlong_c() const;
-    ScmatLlong &operator=(const ScmatLlong &) = delete;
 
-    // === Cmat functions ===
-    Llong& operator()(Long_I i, Long_I j) const; // double indexing
+    Llong &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Llong *data, Long_I N1, Long_I N2); // unsafe
-    void set(Llong *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLlong &sli);
+    void set(Llong *data, Long_I N0, Long_I N1);
     ~ScmatLlong();
 };
 
 inline ScmatLlong::ScmatLlong() {}
 
-inline ScmatLlong::ScmatLlong(Llong *data, Long_I N1, Long_I N2)
-    : SvecLlong(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLlong::ScmatLlong(Llong *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLlong(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLlong::ScmatLlong(Llong *data, Long_I N0, Long_I N1)
+    : SvbaseLlong(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatLlong::operator ScmatLlong_c() const
 {
     return *((ScmatLlong_c *)this);
 }
 
-inline Llong & ScmatLlong::operator()(Long_I i, Long_I j) const
+inline Llong &ScmatLlong::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLlong::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLlong::n1() const
@@ -491,41 +577,31 @@ inline Long ScmatLlong::n1() const
     return m_N1;
 }
 
-inline Long ScmatLlong::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLlong::reshape(Long_I N1, Long_I N2)
+inline void ScmatLlong::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLlong::set(Llong *data, Long_I N1, Long_I N2)
+inline void ScmatLlong::set(Llong *data, Long_I N0, Long_I N1)
 {
-    SvecLlong::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLlong::set(Llong *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLlong::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLlong::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLlong::set(const ScmatLlong &sli)
 {
-    SvecLlong::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLlong::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLlong::~ScmatLlong() {}
 
-typedef const ScmatLlong & ScmatLlong_O, & ScmatLlong_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatLlong &ScmatLlong_O, &ScmatLlong_IO;
 
 #ifdef SLS_USE_INT_AS_LONG
 typedef ScmatInt_c ScmatLong_c;
@@ -533,7 +609,7 @@ typedef ScmatInt_c ScmatLong_c;
 typedef ScmatLlong_c ScmatLong_c;
 #endif
 
-typedef const ScmatLong_c & ScmatLong_I;
+typedef const ScmatLong_c &ScmatLong_I;
 
 #ifdef SLS_USE_INT_AS_LONG
 typedef ScmatInt ScmatLong;
@@ -541,50 +617,49 @@ typedef ScmatInt ScmatLong;
 typedef ScmatLlong ScmatLong;
 #endif
 
-typedef const ScmatLong & ScmatLong_O, & ScmatLong_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatLong &ScmatLong_O, &ScmatLong_IO;
 
-class ScmatFloat_c : public SvecFloat_c
+class ScmatFloat_c : public SvbaseFloat_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFloat_c();
-    ScmatFloat_c(const Float *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFloat_c(const Float *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFloat_c(const Float *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatFloat_c &operator=(const ScmatFloat_c &) = delete;
 
-    // === Cmat functions ===
-    const Float& operator()(Long_I i, Long_I j) const; // double indexing
+    const Float &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Float *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Float *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFloat_c &sli);
+    void set(const Float *data, Long_I N0, Long_I N1);
     ~ScmatFloat_c();
 };
 
 inline ScmatFloat_c::ScmatFloat_c() {}
 
-inline ScmatFloat_c::ScmatFloat_c(const Float *data, Long_I N1, Long_I N2)
-    : SvecFloat_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFloat_c::ScmatFloat_c(const Float *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFloat_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFloat_c::ScmatFloat_c(const Float *data, Long_I N0, Long_I N1)
+    : SvbaseFloat_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Float & ScmatFloat_c::operator()(Long_I i, Long_I j) const
+inline const Float &ScmatFloat_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFloat_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFloat_c::n1() const
@@ -592,89 +667,76 @@ inline Long ScmatFloat_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatFloat_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFloat_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatFloat_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFloat_c::set(const Float *data, Long_I N1, Long_I N2)
+inline void ScmatFloat_c::set(const Float *data, Long_I N0, Long_I N1)
 {
-    SvecFloat_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFloat_c::set(const Float *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFloat_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFloat_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFloat_c::set(const ScmatFloat_c &sli)
 {
-    SvecFloat_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFloat_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFloat_c::~ScmatFloat_c() {}
 
-typedef const ScmatFloat_c & ScmatFloat_I;
+typedef const ScmatFloat_c &ScmatFloat_I;
 
-class ScmatFloat : public SvecFloat
+class ScmatFloat : public SvbaseFloat
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFloat();
-    ScmatFloat(Float *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFloat(Float *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFloat(Float *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatFloat_c() const;
-    ScmatFloat &operator=(const ScmatFloat &) = delete;
 
-    // === Cmat functions ===
-    Float& operator()(Long_I i, Long_I j) const; // double indexing
+    Float &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Float *data, Long_I N1, Long_I N2); // unsafe
-    void set(Float *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFloat &sli);
+    void set(Float *data, Long_I N0, Long_I N1);
     ~ScmatFloat();
 };
 
 inline ScmatFloat::ScmatFloat() {}
 
-inline ScmatFloat::ScmatFloat(Float *data, Long_I N1, Long_I N2)
-    : SvecFloat(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFloat::ScmatFloat(Float *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFloat(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFloat::ScmatFloat(Float *data, Long_I N0, Long_I N1)
+    : SvbaseFloat(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatFloat::operator ScmatFloat_c() const
 {
     return *((ScmatFloat_c *)this);
 }
 
-inline Float & ScmatFloat::operator()(Long_I i, Long_I j) const
+inline Float &ScmatFloat::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFloat::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFloat::n1() const
@@ -682,84 +744,72 @@ inline Long ScmatFloat::n1() const
     return m_N1;
 }
 
-inline Long ScmatFloat::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFloat::reshape(Long_I N1, Long_I N2)
+inline void ScmatFloat::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFloat::set(Float *data, Long_I N1, Long_I N2)
+inline void ScmatFloat::set(Float *data, Long_I N0, Long_I N1)
 {
-    SvecFloat::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFloat::set(Float *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFloat::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFloat::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFloat::set(const ScmatFloat &sli)
 {
-    SvecFloat::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFloat::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFloat::~ScmatFloat() {}
 
-typedef const ScmatFloat & ScmatFloat_O, & ScmatFloat_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatFloat &ScmatFloat_O, &ScmatFloat_IO;
 
-class ScmatDoub_c : public SvecDoub_c
+class ScmatDoub_c : public SvbaseDoub_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatDoub_c();
-    ScmatDoub_c(const Doub *data, Long_I N1, Long_I N2); // unsafe
-    ScmatDoub_c(const Doub *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatDoub_c(const Doub *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatDoub_c &operator=(const ScmatDoub_c &) = delete;
 
-    // === Cmat functions ===
-    const Doub& operator()(Long_I i, Long_I j) const; // double indexing
+    const Doub &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Doub *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Doub *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatDoub_c &sli);
+    void set(const Doub *data, Long_I N0, Long_I N1);
     ~ScmatDoub_c();
 };
 
 inline ScmatDoub_c::ScmatDoub_c() {}
 
-inline ScmatDoub_c::ScmatDoub_c(const Doub *data, Long_I N1, Long_I N2)
-    : SvecDoub_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatDoub_c::ScmatDoub_c(const Doub *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecDoub_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatDoub_c::ScmatDoub_c(const Doub *data, Long_I N0, Long_I N1)
+    : SvbaseDoub_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Doub & ScmatDoub_c::operator()(Long_I i, Long_I j) const
+inline const Doub &ScmatDoub_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatDoub_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatDoub_c::n1() const
@@ -767,89 +817,76 @@ inline Long ScmatDoub_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatDoub_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatDoub_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatDoub_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatDoub_c::set(const Doub *data, Long_I N1, Long_I N2)
+inline void ScmatDoub_c::set(const Doub *data, Long_I N0, Long_I N1)
 {
-    SvecDoub_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatDoub_c::set(const Doub *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecDoub_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseDoub_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatDoub_c::set(const ScmatDoub_c &sli)
 {
-    SvecDoub_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseDoub_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatDoub_c::~ScmatDoub_c() {}
 
-typedef const ScmatDoub_c & ScmatDoub_I;
+typedef const ScmatDoub_c &ScmatDoub_I;
 
-class ScmatDoub : public SvecDoub
+class ScmatDoub : public SvbaseDoub
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatDoub();
-    ScmatDoub(Doub *data, Long_I N1, Long_I N2); // unsafe
-    ScmatDoub(Doub *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatDoub(Doub *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatDoub_c() const;
-    ScmatDoub &operator=(const ScmatDoub &) = delete;
 
-    // === Cmat functions ===
-    Doub& operator()(Long_I i, Long_I j) const; // double indexing
+    Doub &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Doub *data, Long_I N1, Long_I N2); // unsafe
-    void set(Doub *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatDoub &sli);
+    void set(Doub *data, Long_I N0, Long_I N1);
     ~ScmatDoub();
 };
 
 inline ScmatDoub::ScmatDoub() {}
 
-inline ScmatDoub::ScmatDoub(Doub *data, Long_I N1, Long_I N2)
-    : SvecDoub(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatDoub::ScmatDoub(Doub *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecDoub(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatDoub::ScmatDoub(Doub *data, Long_I N0, Long_I N1)
+    : SvbaseDoub(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatDoub::operator ScmatDoub_c() const
 {
     return *((ScmatDoub_c *)this);
 }
 
-inline Doub & ScmatDoub::operator()(Long_I i, Long_I j) const
+inline Doub &ScmatDoub::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatDoub::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatDoub::n1() const
@@ -857,84 +894,72 @@ inline Long ScmatDoub::n1() const
     return m_N1;
 }
 
-inline Long ScmatDoub::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatDoub::reshape(Long_I N1, Long_I N2)
+inline void ScmatDoub::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatDoub::set(Doub *data, Long_I N1, Long_I N2)
+inline void ScmatDoub::set(Doub *data, Long_I N0, Long_I N1)
 {
-    SvecDoub::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatDoub::set(Doub *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecDoub::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseDoub::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatDoub::set(const ScmatDoub &sli)
 {
-    SvecDoub::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseDoub::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatDoub::~ScmatDoub() {}
 
-typedef const ScmatDoub & ScmatDoub_O, & ScmatDoub_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatDoub &ScmatDoub_O, &ScmatDoub_IO;
 
-class ScmatLdoub_c : public SvecLdoub_c
+class ScmatLdoub_c : public SvbaseLdoub_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLdoub_c();
-    ScmatLdoub_c(const Ldoub *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLdoub_c(const Ldoub *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLdoub_c(const Ldoub *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatLdoub_c &operator=(const ScmatLdoub_c &) = delete;
 
-    // === Cmat functions ===
-    const Ldoub& operator()(Long_I i, Long_I j) const; // double indexing
+    const Ldoub &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Ldoub *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Ldoub *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLdoub_c &sli);
+    void set(const Ldoub *data, Long_I N0, Long_I N1);
     ~ScmatLdoub_c();
 };
 
 inline ScmatLdoub_c::ScmatLdoub_c() {}
 
-inline ScmatLdoub_c::ScmatLdoub_c(const Ldoub *data, Long_I N1, Long_I N2)
-    : SvecLdoub_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLdoub_c::ScmatLdoub_c(const Ldoub *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLdoub_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLdoub_c::ScmatLdoub_c(const Ldoub *data, Long_I N0, Long_I N1)
+    : SvbaseLdoub_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Ldoub & ScmatLdoub_c::operator()(Long_I i, Long_I j) const
+inline const Ldoub &ScmatLdoub_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLdoub_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLdoub_c::n1() const
@@ -942,89 +967,76 @@ inline Long ScmatLdoub_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatLdoub_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLdoub_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatLdoub_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLdoub_c::set(const Ldoub *data, Long_I N1, Long_I N2)
+inline void ScmatLdoub_c::set(const Ldoub *data, Long_I N0, Long_I N1)
 {
-    SvecLdoub_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLdoub_c::set(const Ldoub *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLdoub_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLdoub_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLdoub_c::set(const ScmatLdoub_c &sli)
 {
-    SvecLdoub_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLdoub_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLdoub_c::~ScmatLdoub_c() {}
 
-typedef const ScmatLdoub_c & ScmatLdoub_I;
+typedef const ScmatLdoub_c &ScmatLdoub_I;
 
-class ScmatLdoub : public SvecLdoub
+class ScmatLdoub : public SvbaseLdoub
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLdoub();
-    ScmatLdoub(Ldoub *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLdoub(Ldoub *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLdoub(Ldoub *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatLdoub_c() const;
-    ScmatLdoub &operator=(const ScmatLdoub &) = delete;
 
-    // === Cmat functions ===
-    Ldoub& operator()(Long_I i, Long_I j) const; // double indexing
+    Ldoub &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Ldoub *data, Long_I N1, Long_I N2); // unsafe
-    void set(Ldoub *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLdoub &sli);
+    void set(Ldoub *data, Long_I N0, Long_I N1);
     ~ScmatLdoub();
 };
 
 inline ScmatLdoub::ScmatLdoub() {}
 
-inline ScmatLdoub::ScmatLdoub(Ldoub *data, Long_I N1, Long_I N2)
-    : SvecLdoub(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLdoub::ScmatLdoub(Ldoub *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLdoub(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLdoub::ScmatLdoub(Ldoub *data, Long_I N0, Long_I N1)
+    : SvbaseLdoub(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatLdoub::operator ScmatLdoub_c() const
 {
     return *((ScmatLdoub_c *)this);
 }
 
-inline Ldoub & ScmatLdoub::operator()(Long_I i, Long_I j) const
+inline Ldoub &ScmatLdoub::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLdoub::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLdoub::n1() const
@@ -1032,84 +1044,74 @@ inline Long ScmatLdoub::n1() const
     return m_N1;
 }
 
-inline Long ScmatLdoub::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLdoub::reshape(Long_I N1, Long_I N2)
+inline void ScmatLdoub::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLdoub::set(Ldoub *data, Long_I N1, Long_I N2)
+inline void ScmatLdoub::set(Ldoub *data, Long_I N0, Long_I N1)
 {
-    SvecLdoub::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLdoub::set(Ldoub *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLdoub::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLdoub::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLdoub::set(const ScmatLdoub &sli)
 {
-    SvecLdoub::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLdoub::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLdoub::~ScmatLdoub() {}
 
-typedef const ScmatLdoub & ScmatLdoub_O, & ScmatLdoub_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatLdoub &ScmatLdoub_O, &ScmatLdoub_IO;
 
-class ScmatFcomp_c : public SvecFcomp_c
+
+
+class ScmatFcomp_c : public SvbaseFcomp_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFcomp_c();
-    ScmatFcomp_c(const Fcomp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFcomp_c(const Fcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFcomp_c(const Fcomp *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatFcomp_c &operator=(const ScmatFcomp_c &) = delete;
 
-    // === Cmat functions ===
-    const Fcomp& operator()(Long_I i, Long_I j) const; // double indexing
+    const Fcomp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Fcomp *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Fcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFcomp_c &sli);
+    void set(const Fcomp *data, Long_I N0, Long_I N1);
     ~ScmatFcomp_c();
 };
 
 inline ScmatFcomp_c::ScmatFcomp_c() {}
 
-inline ScmatFcomp_c::ScmatFcomp_c(const Fcomp *data, Long_I N1, Long_I N2)
-    : SvecFcomp_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFcomp_c::ScmatFcomp_c(const Fcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFcomp_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFcomp_c::ScmatFcomp_c(const Fcomp *data, Long_I N0, Long_I N1)
+    : SvbaseFcomp_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Fcomp & ScmatFcomp_c::operator()(Long_I i, Long_I j) const
+inline const Fcomp &ScmatFcomp_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFcomp_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFcomp_c::n1() const
@@ -1117,89 +1119,76 @@ inline Long ScmatFcomp_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatFcomp_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFcomp_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatFcomp_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFcomp_c::set(const Fcomp *data, Long_I N1, Long_I N2)
+inline void ScmatFcomp_c::set(const Fcomp *data, Long_I N0, Long_I N1)
 {
-    SvecFcomp_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFcomp_c::set(const Fcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFcomp_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFcomp_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFcomp_c::set(const ScmatFcomp_c &sli)
 {
-    SvecFcomp_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFcomp_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFcomp_c::~ScmatFcomp_c() {}
 
-typedef const ScmatFcomp_c & ScmatFcomp_I;
+typedef const ScmatFcomp_c &ScmatFcomp_I;
 
-class ScmatFcomp : public SvecFcomp
+class ScmatFcomp : public SvbaseFcomp
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFcomp();
-    ScmatFcomp(Fcomp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFcomp(Fcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFcomp(Fcomp *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatFcomp_c() const;
-    ScmatFcomp &operator=(const ScmatFcomp &) = delete;
 
-    // === Cmat functions ===
-    Fcomp& operator()(Long_I i, Long_I j) const; // double indexing
+    Fcomp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Fcomp *data, Long_I N1, Long_I N2); // unsafe
-    void set(Fcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFcomp &sli);
+    void set(Fcomp *data, Long_I N0, Long_I N1);
     ~ScmatFcomp();
 };
 
 inline ScmatFcomp::ScmatFcomp() {}
 
-inline ScmatFcomp::ScmatFcomp(Fcomp *data, Long_I N1, Long_I N2)
-    : SvecFcomp(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFcomp::ScmatFcomp(Fcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFcomp(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFcomp::ScmatFcomp(Fcomp *data, Long_I N0, Long_I N1)
+    : SvbaseFcomp(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatFcomp::operator ScmatFcomp_c() const
 {
     return *((ScmatFcomp_c *)this);
 }
 
-inline Fcomp & ScmatFcomp::operator()(Long_I i, Long_I j) const
+inline Fcomp &ScmatFcomp::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFcomp::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFcomp::n1() const
@@ -1207,84 +1196,72 @@ inline Long ScmatFcomp::n1() const
     return m_N1;
 }
 
-inline Long ScmatFcomp::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFcomp::reshape(Long_I N1, Long_I N2)
+inline void ScmatFcomp::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFcomp::set(Fcomp *data, Long_I N1, Long_I N2)
+inline void ScmatFcomp::set(Fcomp *data, Long_I N0, Long_I N1)
 {
-    SvecFcomp::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFcomp::set(Fcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFcomp::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFcomp::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFcomp::set(const ScmatFcomp &sli)
 {
-    SvecFcomp::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFcomp::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFcomp::~ScmatFcomp() {}
 
-typedef const ScmatFcomp & ScmatFcomp_O, & ScmatFcomp_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatFcomp &ScmatFcomp_O, &ScmatFcomp_IO;
 
-class ScmatComp_c : public SvecComp_c
+class ScmatComp_c : public SvbaseComp_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatComp_c();
-    ScmatComp_c(const Comp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatComp_c(const Comp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatComp_c(const Comp *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatComp_c &operator=(const ScmatComp_c &) = delete;
 
-    // === Cmat functions ===
-    const Comp& operator()(Long_I i, Long_I j) const; // double indexing
+    const Comp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Comp *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Comp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatComp_c &sli);
+    void set(const Comp *data, Long_I N0, Long_I N1);
     ~ScmatComp_c();
 };
 
 inline ScmatComp_c::ScmatComp_c() {}
 
-inline ScmatComp_c::ScmatComp_c(const Comp *data, Long_I N1, Long_I N2)
-    : SvecComp_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatComp_c::ScmatComp_c(const Comp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecComp_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatComp_c::ScmatComp_c(const Comp *data, Long_I N0, Long_I N1)
+    : SvbaseComp_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Comp & ScmatComp_c::operator()(Long_I i, Long_I j) const
+inline const Comp &ScmatComp_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatComp_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatComp_c::n1() const
@@ -1292,89 +1269,76 @@ inline Long ScmatComp_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatComp_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatComp_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatComp_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatComp_c::set(const Comp *data, Long_I N1, Long_I N2)
+inline void ScmatComp_c::set(const Comp *data, Long_I N0, Long_I N1)
 {
-    SvecComp_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatComp_c::set(const Comp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecComp_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseComp_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatComp_c::set(const ScmatComp_c &sli)
 {
-    SvecComp_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseComp_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatComp_c::~ScmatComp_c() {}
 
-typedef const ScmatComp_c & ScmatComp_I;
+typedef const ScmatComp_c &ScmatComp_I;
 
-class ScmatComp : public SvecComp
+class ScmatComp : public SvbaseComp
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatComp();
-    ScmatComp(Comp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatComp(Comp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatComp(Comp *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatComp_c() const;
-    ScmatComp &operator=(const ScmatComp &) = delete;
 
-    // === Cmat functions ===
-    Comp& operator()(Long_I i, Long_I j) const; // double indexing
+    Comp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Comp *data, Long_I N1, Long_I N2); // unsafe
-    void set(Comp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatComp &sli);
+    void set(Comp *data, Long_I N0, Long_I N1);
     ~ScmatComp();
 };
 
 inline ScmatComp::ScmatComp() {}
 
-inline ScmatComp::ScmatComp(Comp *data, Long_I N1, Long_I N2)
-    : SvecComp(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatComp::ScmatComp(Comp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecComp(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatComp::ScmatComp(Comp *data, Long_I N0, Long_I N1)
+    : SvbaseComp(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatComp::operator ScmatComp_c() const
 {
     return *((ScmatComp_c *)this);
 }
 
-inline Comp & ScmatComp::operator()(Long_I i, Long_I j) const
+inline Comp &ScmatComp::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatComp::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatComp::n1() const
@@ -1382,84 +1346,72 @@ inline Long ScmatComp::n1() const
     return m_N1;
 }
 
-inline Long ScmatComp::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatComp::reshape(Long_I N1, Long_I N2)
+inline void ScmatComp::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatComp::set(Comp *data, Long_I N1, Long_I N2)
+inline void ScmatComp::set(Comp *data, Long_I N0, Long_I N1)
 {
-    SvecComp::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatComp::set(Comp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecComp::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseComp::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatComp::set(const ScmatComp &sli)
 {
-    SvecComp::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseComp::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatComp::~ScmatComp() {}
 
-typedef const ScmatComp & ScmatComp_O, & ScmatComp_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatComp &ScmatComp_O, &ScmatComp_IO;
 
-class ScmatLcomp_c : public SvecLcomp_c
+class ScmatLcomp_c : public SvbaseLcomp_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLcomp_c();
-    ScmatLcomp_c(const Lcomp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLcomp_c(const Lcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLcomp_c(const Lcomp *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatLcomp_c &operator=(const ScmatLcomp_c &) = delete;
 
-    // === Cmat functions ===
-    const Lcomp& operator()(Long_I i, Long_I j) const; // double indexing
+    const Lcomp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Lcomp *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Lcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLcomp_c &sli);
+    void set(const Lcomp *data, Long_I N0, Long_I N1);
     ~ScmatLcomp_c();
 };
 
 inline ScmatLcomp_c::ScmatLcomp_c() {}
 
-inline ScmatLcomp_c::ScmatLcomp_c(const Lcomp *data, Long_I N1, Long_I N2)
-    : SvecLcomp_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLcomp_c::ScmatLcomp_c(const Lcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLcomp_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLcomp_c::ScmatLcomp_c(const Lcomp *data, Long_I N0, Long_I N1)
+    : SvbaseLcomp_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Lcomp & ScmatLcomp_c::operator()(Long_I i, Long_I j) const
+inline const Lcomp &ScmatLcomp_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLcomp_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLcomp_c::n1() const
@@ -1467,89 +1419,76 @@ inline Long ScmatLcomp_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatLcomp_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLcomp_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatLcomp_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLcomp_c::set(const Lcomp *data, Long_I N1, Long_I N2)
+inline void ScmatLcomp_c::set(const Lcomp *data, Long_I N0, Long_I N1)
 {
-    SvecLcomp_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLcomp_c::set(const Lcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLcomp_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLcomp_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLcomp_c::set(const ScmatLcomp_c &sli)
 {
-    SvecLcomp_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLcomp_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLcomp_c::~ScmatLcomp_c() {}
 
-typedef const ScmatLcomp_c & ScmatLcomp_I;
+typedef const ScmatLcomp_c &ScmatLcomp_I;
 
-class ScmatLcomp : public SvecLcomp
+class ScmatLcomp : public SvbaseLcomp
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLcomp();
-    ScmatLcomp(Lcomp *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLcomp(Lcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLcomp(Lcomp *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatLcomp_c() const;
-    ScmatLcomp &operator=(const ScmatLcomp &) = delete;
 
-    // === Cmat functions ===
-    Lcomp& operator()(Long_I i, Long_I j) const; // double indexing
+    Lcomp &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Lcomp *data, Long_I N1, Long_I N2); // unsafe
-    void set(Lcomp *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLcomp &sli);
+    void set(Lcomp *data, Long_I N0, Long_I N1);
     ~ScmatLcomp();
 };
 
 inline ScmatLcomp::ScmatLcomp() {}
 
-inline ScmatLcomp::ScmatLcomp(Lcomp *data, Long_I N1, Long_I N2)
-    : SvecLcomp(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLcomp::ScmatLcomp(Lcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLcomp(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLcomp::ScmatLcomp(Lcomp *data, Long_I N0, Long_I N1)
+    : SvbaseLcomp(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatLcomp::operator ScmatLcomp_c() const
 {
     return *((ScmatLcomp_c *)this);
 }
 
-inline Lcomp & ScmatLcomp::operator()(Long_I i, Long_I j) const
+inline Lcomp &ScmatLcomp::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLcomp::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLcomp::n1() const
@@ -1557,84 +1496,74 @@ inline Long ScmatLcomp::n1() const
     return m_N1;
 }
 
-inline Long ScmatLcomp::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLcomp::reshape(Long_I N1, Long_I N2)
+inline void ScmatLcomp::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLcomp::set(Lcomp *data, Long_I N1, Long_I N2)
+inline void ScmatLcomp::set(Lcomp *data, Long_I N0, Long_I N1)
 {
-    SvecLcomp::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLcomp::set(Lcomp *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLcomp::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLcomp::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLcomp::set(const ScmatLcomp &sli)
 {
-    SvecLcomp::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLcomp::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLcomp::~ScmatLcomp() {}
 
-typedef const ScmatLcomp & ScmatLcomp_O, & ScmatLcomp_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatLcomp &ScmatLcomp_O, &ScmatLcomp_IO;
 
-class ScmatFimag_c : public SvecFimag_c
+
+
+class ScmatFimag_c : public SvbaseFimag_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFimag_c();
-    ScmatFimag_c(const Fimag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFimag_c(const Fimag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFimag_c(const Fimag *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatFimag_c &operator=(const ScmatFimag_c &) = delete;
 
-    // === Cmat functions ===
-    const Fimag& operator()(Long_I i, Long_I j) const; // double indexing
+    const Fimag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Fimag *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Fimag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFimag_c &sli);
+    void set(const Fimag *data, Long_I N0, Long_I N1);
     ~ScmatFimag_c();
 };
 
 inline ScmatFimag_c::ScmatFimag_c() {}
 
-inline ScmatFimag_c::ScmatFimag_c(const Fimag *data, Long_I N1, Long_I N2)
-    : SvecFimag_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFimag_c::ScmatFimag_c(const Fimag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFimag_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFimag_c::ScmatFimag_c(const Fimag *data, Long_I N0, Long_I N1)
+    : SvbaseFimag_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Fimag & ScmatFimag_c::operator()(Long_I i, Long_I j) const
+inline const Fimag &ScmatFimag_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFimag_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFimag_c::n1() const
@@ -1642,89 +1571,76 @@ inline Long ScmatFimag_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatFimag_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFimag_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatFimag_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFimag_c::set(const Fimag *data, Long_I N1, Long_I N2)
+inline void ScmatFimag_c::set(const Fimag *data, Long_I N0, Long_I N1)
 {
-    SvecFimag_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFimag_c::set(const Fimag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFimag_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFimag_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFimag_c::set(const ScmatFimag_c &sli)
 {
-    SvecFimag_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFimag_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFimag_c::~ScmatFimag_c() {}
 
-typedef const ScmatFimag_c & ScmatFimag_I;
+typedef const ScmatFimag_c &ScmatFimag_I;
 
-class ScmatFimag : public SvecFimag
+class ScmatFimag : public SvbaseFimag
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatFimag();
-    ScmatFimag(Fimag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatFimag(Fimag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatFimag(Fimag *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatFimag_c() const;
-    ScmatFimag &operator=(const ScmatFimag &) = delete;
 
-    // === Cmat functions ===
-    Fimag& operator()(Long_I i, Long_I j) const; // double indexing
+    Fimag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Fimag *data, Long_I N1, Long_I N2); // unsafe
-    void set(Fimag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatFimag &sli);
+    void set(Fimag *data, Long_I N0, Long_I N1);
     ~ScmatFimag();
 };
 
 inline ScmatFimag::ScmatFimag() {}
 
-inline ScmatFimag::ScmatFimag(Fimag *data, Long_I N1, Long_I N2)
-    : SvecFimag(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatFimag::ScmatFimag(Fimag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecFimag(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatFimag::ScmatFimag(Fimag *data, Long_I N0, Long_I N1)
+    : SvbaseFimag(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatFimag::operator ScmatFimag_c() const
 {
     return *((ScmatFimag_c *)this);
 }
 
-inline Fimag & ScmatFimag::operator()(Long_I i, Long_I j) const
+inline Fimag &ScmatFimag::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatFimag::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatFimag::n1() const
@@ -1732,84 +1648,72 @@ inline Long ScmatFimag::n1() const
     return m_N1;
 }
 
-inline Long ScmatFimag::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatFimag::reshape(Long_I N1, Long_I N2)
+inline void ScmatFimag::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatFimag::set(Fimag *data, Long_I N1, Long_I N2)
+inline void ScmatFimag::set(Fimag *data, Long_I N0, Long_I N1)
 {
-    SvecFimag::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatFimag::set(Fimag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecFimag::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseFimag::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatFimag::set(const ScmatFimag &sli)
 {
-    SvecFimag::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseFimag::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatFimag::~ScmatFimag() {}
 
-typedef const ScmatFimag & ScmatFimag_O, & ScmatFimag_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatFimag &ScmatFimag_O, &ScmatFimag_IO;
 
-class ScmatImag_c : public SvecImag_c
+class ScmatImag_c : public SvbaseImag_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatImag_c();
-    ScmatImag_c(const Imag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatImag_c(const Imag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatImag_c(const Imag *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatImag_c &operator=(const ScmatImag_c &) = delete;
 
-    // === Cmat functions ===
-    const Imag& operator()(Long_I i, Long_I j) const; // double indexing
+    const Imag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Imag *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Imag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatImag_c &sli);
+    void set(const Imag *data, Long_I N0, Long_I N1);
     ~ScmatImag_c();
 };
 
 inline ScmatImag_c::ScmatImag_c() {}
 
-inline ScmatImag_c::ScmatImag_c(const Imag *data, Long_I N1, Long_I N2)
-    : SvecImag_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatImag_c::ScmatImag_c(const Imag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecImag_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatImag_c::ScmatImag_c(const Imag *data, Long_I N0, Long_I N1)
+    : SvbaseImag_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Imag & ScmatImag_c::operator()(Long_I i, Long_I j) const
+inline const Imag &ScmatImag_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatImag_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatImag_c::n1() const
@@ -1817,89 +1721,76 @@ inline Long ScmatImag_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatImag_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatImag_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatImag_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatImag_c::set(const Imag *data, Long_I N1, Long_I N2)
+inline void ScmatImag_c::set(const Imag *data, Long_I N0, Long_I N1)
 {
-    SvecImag_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatImag_c::set(const Imag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecImag_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseImag_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatImag_c::set(const ScmatImag_c &sli)
 {
-    SvecImag_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseImag_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatImag_c::~ScmatImag_c() {}
 
-typedef const ScmatImag_c & ScmatImag_I;
+typedef const ScmatImag_c &ScmatImag_I;
 
-class ScmatImag : public SvecImag
+class ScmatImag : public SvbaseImag
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatImag();
-    ScmatImag(Imag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatImag(Imag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatImag(Imag *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatImag_c() const;
-    ScmatImag &operator=(const ScmatImag &) = delete;
 
-    // === Cmat functions ===
-    Imag& operator()(Long_I i, Long_I j) const; // double indexing
+    Imag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Imag *data, Long_I N1, Long_I N2); // unsafe
-    void set(Imag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatImag &sli);
+    void set(Imag *data, Long_I N0, Long_I N1);
     ~ScmatImag();
 };
 
 inline ScmatImag::ScmatImag() {}
 
-inline ScmatImag::ScmatImag(Imag *data, Long_I N1, Long_I N2)
-    : SvecImag(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatImag::ScmatImag(Imag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecImag(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatImag::ScmatImag(Imag *data, Long_I N0, Long_I N1)
+    : SvbaseImag(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatImag::operator ScmatImag_c() const
 {
     return *((ScmatImag_c *)this);
 }
 
-inline Imag & ScmatImag::operator()(Long_I i, Long_I j) const
+inline Imag &ScmatImag::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatImag::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatImag::n1() const
@@ -1907,84 +1798,72 @@ inline Long ScmatImag::n1() const
     return m_N1;
 }
 
-inline Long ScmatImag::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatImag::reshape(Long_I N1, Long_I N2)
+inline void ScmatImag::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatImag::set(Imag *data, Long_I N1, Long_I N2)
+inline void ScmatImag::set(Imag *data, Long_I N0, Long_I N1)
 {
-    SvecImag::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatImag::set(Imag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecImag::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseImag::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatImag::set(const ScmatImag &sli)
 {
-    SvecImag::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseImag::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatImag::~ScmatImag() {}
 
-typedef const ScmatImag & ScmatImag_O, & ScmatImag_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatImag &ScmatImag_O, &ScmatImag_IO;
 
-class ScmatLimag_c : public SvecLimag_c
+class ScmatLimag_c : public SvbaseLimag_c
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLimag_c();
-    ScmatLimag_c(const Limag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLimag_c(const Limag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLimag_c(const Limag *data, Long_I N0, Long_I N1); // unsafe
 
-    ScmatLimag_c &operator=(const ScmatLimag_c &) = delete;
 
-    // === Cmat functions ===
-    const Limag& operator()(Long_I i, Long_I j) const; // double indexing
+    const Limag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(const Limag *data, Long_I N1, Long_I N2); // unsafe
-    void set(const Limag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLimag_c &sli);
+    void set(const Limag *data, Long_I N0, Long_I N1);
     ~ScmatLimag_c();
 };
 
 inline ScmatLimag_c::ScmatLimag_c() {}
 
-inline ScmatLimag_c::ScmatLimag_c(const Limag *data, Long_I N1, Long_I N2)
-    : SvecLimag_c(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLimag_c::ScmatLimag_c(const Limag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLimag_c(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLimag_c::ScmatLimag_c(const Limag *data, Long_I N0, Long_I N1)
+    : SvbaseLimag_c(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 
-inline const Limag & ScmatLimag_c::operator()(Long_I i, Long_I j) const
+inline const Limag &ScmatLimag_c::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLimag_c::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLimag_c::n1() const
@@ -1992,89 +1871,76 @@ inline Long ScmatLimag_c::n1() const
     return m_N1;
 }
 
-inline Long ScmatLimag_c::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLimag_c::reshape(Long_I N1, Long_I N2)
+inline void ScmatLimag_c::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLimag_c::set(const Limag *data, Long_I N1, Long_I N2)
+inline void ScmatLimag_c::set(const Limag *data, Long_I N0, Long_I N1)
 {
-    SvecLimag_c::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLimag_c::set(const Limag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLimag_c::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLimag_c::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLimag_c::set(const ScmatLimag_c &sli)
 {
-    SvecLimag_c::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLimag_c::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLimag_c::~ScmatLimag_c() {}
 
-typedef const ScmatLimag_c & ScmatLimag_I;
+typedef const ScmatLimag_c &ScmatLimag_I;
 
-class ScmatLimag : public SvecLimag
+class ScmatLimag : public SvbaseLimag
 {
 protected:
-    Long m_N1, m_N2;
+    Long m_N0, m_N1;
 public:
     ScmatLimag();
-    ScmatLimag(Limag *data, Long_I N1, Long_I N2); // unsafe
-    ScmatLimag(Limag *data, Long_I data_len, Long_I N1, Long_I N2);
+    ScmatLimag(Limag *data, Long_I N0, Long_I N1); // unsafe
 
     operator ScmatLimag_c() const;
-    ScmatLimag &operator=(const ScmatLimag &) = delete;
 
-    // === Cmat functions ===
-    Limag& operator()(Long_I i, Long_I j) const; // double indexing
+    Limag &operator()(Long_I i, Long_I j) const; // double indexing
+    Long n0() const;
     Long n1() const;
-    Long n2() const;
 
     // resize() is a bad idea, don't try to create it!
 
     // There is no upper bound checking of N, use with care
-    void reshape(Long_I N1, Long_I N2);
-    void set(Limag *data, Long_I N1, Long_I N2); // unsafe
-    void set(Limag *data, Long_I data_len, Long_I N1, Long_I N2);
+    void reshape(Long_I N0, Long_I N1);
     void set(const ScmatLimag &sli);
+    void set(Limag *data, Long_I N0, Long_I N1);
     ~ScmatLimag();
 };
 
 inline ScmatLimag::ScmatLimag() {}
 
-inline ScmatLimag::ScmatLimag(Limag *data, Long_I N1, Long_I N2)
-    : SvecLimag(data, N1*N2), m_N1(N1), m_N2(N2) {}
-
-inline ScmatLimag::ScmatLimag(Limag *data, Long_I data_len, Long_I N1, Long_I N2)
-    : SvecLimag(data, data_len, N1*N2), m_N1(N1), m_N2(N2) {}
+inline ScmatLimag::ScmatLimag(Limag *data, Long_I N0, Long_I N1)
+    : SvbaseLimag(data, N0*N1), m_N0(N0), m_N1(N1) {}
 
 inline ScmatLimag::operator ScmatLimag_c() const
 {
     return *((ScmatLimag_c *)this);
 }
 
-inline Limag & ScmatLimag::operator()(Long_I i, Long_I j) const
+inline Limag &ScmatLimag::operator()(Long_I i, Long_I j) const
 {
 #ifdef SLS_CHECK_BOUNDS
-    if (i < 0 || i >= m_N1 || j < 0 || j >= m_N2)
+    if (i < 0 || i >= m_N0 || j < 0 || j >= m_N1)
         SLS_ERR("Matrix subscript out of bounds");
 #endif
-    return m_p[i + m_N1 * j];
+    return m_p[i + m_N0 * j];
+}
+
+inline Long ScmatLimag::n0() const
+{
+    return m_N0;
 }
 
 inline Long ScmatLimag::n1() const
@@ -2082,40 +1948,30 @@ inline Long ScmatLimag::n1() const
     return m_N1;
 }
 
-inline Long ScmatLimag::n2() const
-{
-    return m_N2;
-}
-
-inline void ScmatLimag::reshape(Long_I N1, Long_I N2)
+inline void ScmatLimag::reshape(Long_I N0, Long_I N1)
 {
 #ifdef SLS_CHECK_SHAPES
-    if (N1*N2 != m_N)
+    if (N0*N1 != m_N)
         SLS_ERR("illegal reshape!");
 #endif
-    m_N1 = N1; m_N2 = N2;
+    m_N0 = N0; m_N1 = N1;
 }
 
-inline void ScmatLimag::set(Limag *data, Long_I N1, Long_I N2)
+inline void ScmatLimag::set(Limag *data, Long_I N0, Long_I N1)
 {
-    SvecLimag::set(data, N1*N2);
-    m_N1 = N1; m_N2 = N2;
-}
-
-inline void ScmatLimag::set(Limag *data, Long_I data_len, Long_I N1, Long_I N2)
-{
-    SvecLimag::set(data, data_len, N1*N2);
-    m_N1 = N1; m_N2 = N2;
+    SvbaseLimag::set(data, N0*N1);
+    m_N0 = N0; m_N1 = N1;
 }
 
 inline void ScmatLimag::set(const ScmatLimag &sli)
 {
-    SvecLimag::set(sli);
-    m_N1 = sli.m_N1; m_N2 = sli.m_N2;
+    SvbaseLimag::set(sli);
+    m_N0 = sli.m_N0; m_N1 = sli.m_N1;
 }
 
 inline ScmatLimag::~ScmatLimag() {}
 
-typedef const ScmatLimag & ScmatLimag_O, & ScmatLimag_IO;
+// use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
+typedef const ScmatLimag &ScmatLimag_O, &ScmatLimag_IO;
 
 } // namespace slisc

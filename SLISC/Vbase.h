@@ -11,19 +11,18 @@ protected:
     Char *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Char value_type;
     // constructors
     VbaseChar();
     explicit VbaseChar(Long_I N);
     VbaseChar(const VbaseChar &rhs); // copy constructor
 
     // get properties
-    Char* ptr(); // get pointer
-    const Char* ptr() const;
+    Char* p(); // get pointer
+    const Char* p() const;
     Long size() const;
     void resize(Long_I N);
-    Char & operator[](Long_I i);
-    const Char & operator[](Long_I i) const;
+    Char &operator[](Long_I i);
+    const Char &operator[](Long_I i) const;
     Char& end();
     const Char& end() const;
     Char& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -55,24 +54,24 @@ inline VbaseChar::VbaseChar(const VbaseChar &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Char[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Char * VbaseChar::ptr()
+inline Char * VbaseChar::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Char * VbaseChar::ptr() const
+inline const Char * VbaseChar::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -85,7 +84,7 @@ inline Long VbaseChar::size() const
 inline void VbaseChar::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Char[N];
         }
         else { // m_N != 0
@@ -110,7 +109,7 @@ inline void VbaseChar::operator<<(VbaseChar &rhs)
     m_p = rhs.m_p;
 }
 
-inline Char & VbaseChar::operator[](Long_I i)
+inline Char &VbaseChar::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -119,7 +118,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Char & VbaseChar::operator[](Long_I i) const
+inline const Char &VbaseChar::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -128,7 +127,7 @@ inline const Char & VbaseChar::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Char & VbaseChar::end()
+inline Char &VbaseChar::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -137,7 +136,7 @@ inline Char & VbaseChar::end()
     return m_p[m_N - 1];
 }
 
-inline const Char & VbaseChar::end() const
+inline const Char &VbaseChar::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -146,7 +145,7 @@ inline const Char & VbaseChar::end() const
     return m_p[m_N - 1];
 }
 
-inline Char & VbaseChar::end(Long_I i)
+inline Char &VbaseChar::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -155,7 +154,7 @@ inline Char & VbaseChar::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Char & VbaseChar::end(Long_I i) const
+inline const Char &VbaseChar::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -170,25 +169,188 @@ inline VbaseChar::~VbaseChar()
         delete[] m_p;
 }
 
+class VbaseUchar
+{
+protected:
+    Uchar *m_p; // pointer to the first element
+    Long m_N; // number of elements
+public:
+    // constructors
+    VbaseUchar();
+    explicit VbaseUchar(Long_I N);
+    VbaseUchar(const VbaseUchar &rhs); // copy constructor
+
+    // get properties
+    Uchar* p(); // get pointer
+    const Uchar* p() const;
+    Long size() const;
+    void resize(Long_I N);
+    Uchar &operator[](Long_I i);
+    const Uchar &operator[](Long_I i) const;
+    Uchar& end();
+    const Uchar& end() const;
+    Uchar& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+    const Uchar& end(Long_I i) const;
+    void operator<<(VbaseUchar &rhs); // move data
+    ~VbaseUchar();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseUchar::VbaseUchar() : m_N(0), m_p(nullptr) {}
+
+inline VbaseUchar::VbaseUchar(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+    if (N < 0)
+        SLS_ERR("size less than 0!");
+#endif
+    m_N = N;
+    if (N > 0)
+        m_p = new Uchar[N];
+}
+
+// copy constructor
+inline VbaseUchar::VbaseUchar(const VbaseUchar &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+    SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+    m_N = rhs.m_N;
+    if (m_N > 0) {
+        m_p = new Uchar[m_N];
+        memcpy(m_p, rhs.p(), m_N);
+    }
+}
+
+inline Uchar * VbaseUchar::p()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using p() for empty container!");
+#endif
+    return m_p;
+}
+
+inline const Uchar * VbaseUchar::p() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("using p() for empty container!");
+#endif
+    return m_p;
+}
+
+inline Long VbaseUchar::size() const
+{
+    return m_N;
+}
+
+inline void VbaseUchar::resize(Long_I N)
+{
+    if (N != m_N) {
+        if (m_N == 0) { // N != 0
+            m_N = N; m_p = new Uchar[N];
+        }
+        else { // m_N != 0
+            delete[] m_p;
+            if (N == 0)
+                m_N = 0;
+            else {
+                m_N = N;
+                m_p = new Uchar[N];
+            }
+        }
+    }
+}
+
+inline void VbaseUchar::operator<<(VbaseUchar &rhs)
+{
+    if (this == &rhs)
+        SLS_ERR("self move is forbidden!");
+    if (m_N != 0)
+        delete[] m_p;
+    m_N = rhs.m_N; rhs.m_N = 0;
+    m_p = rhs.m_p;
+}
+
+inline Uchar &VbaseUchar::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+    SLS_ERR("VbaseUchar index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline const Uchar &VbaseUchar::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i<0 || i>=m_N)
+        SLS_ERR("VbaseUchar index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+    return m_p[i];
+}
+
+inline Uchar &VbaseUchar::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline const Uchar &VbaseUchar::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (m_N == 0)
+        SLS_ERR("tring to use end() on empty vector!");
+#endif
+    return m_p[m_N - 1];
+}
+
+inline Uchar &VbaseUchar::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline const Uchar &VbaseUchar::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+    if (i <= 0 || i > m_N)
+        SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+    return m_p[m_N - i];
+}
+
+inline VbaseUchar::~VbaseUchar()
+{
+    if (m_N != 0)
+        delete[] m_p;
+}
+
 class VbaseInt
 {
 protected:
     Int *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Int value_type;
     // constructors
     VbaseInt();
     explicit VbaseInt(Long_I N);
     VbaseInt(const VbaseInt &rhs); // copy constructor
 
     // get properties
-    Int* ptr(); // get pointer
-    const Int* ptr() const;
+    Int* p(); // get pointer
+    const Int* p() const;
     Long size() const;
     void resize(Long_I N);
-    Int & operator[](Long_I i);
-    const Int & operator[](Long_I i) const;
+    Int &operator[](Long_I i);
+    const Int &operator[](Long_I i) const;
     Int& end();
     const Int& end() const;
     Int& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -220,24 +382,24 @@ inline VbaseInt::VbaseInt(const VbaseInt &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Int[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Int * VbaseInt::ptr()
+inline Int * VbaseInt::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Int * VbaseInt::ptr() const
+inline const Int * VbaseInt::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -250,7 +412,7 @@ inline Long VbaseInt::size() const
 inline void VbaseInt::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Int[N];
         }
         else { // m_N != 0
@@ -275,7 +437,7 @@ inline void VbaseInt::operator<<(VbaseInt &rhs)
     m_p = rhs.m_p;
 }
 
-inline Int & VbaseInt::operator[](Long_I i)
+inline Int &VbaseInt::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -284,7 +446,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Int & VbaseInt::operator[](Long_I i) const
+inline const Int &VbaseInt::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -293,7 +455,7 @@ inline const Int & VbaseInt::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Int & VbaseInt::end()
+inline Int &VbaseInt::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -302,7 +464,7 @@ inline Int & VbaseInt::end()
     return m_p[m_N - 1];
 }
 
-inline const Int & VbaseInt::end() const
+inline const Int &VbaseInt::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -311,7 +473,7 @@ inline const Int & VbaseInt::end() const
     return m_p[m_N - 1];
 }
 
-inline Int & VbaseInt::end(Long_I i)
+inline Int &VbaseInt::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -320,7 +482,7 @@ inline Int & VbaseInt::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Int & VbaseInt::end(Long_I i) const
+inline const Int &VbaseInt::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -341,19 +503,18 @@ protected:
     Llong *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Llong value_type;
     // constructors
     VbaseLlong();
     explicit VbaseLlong(Long_I N);
     VbaseLlong(const VbaseLlong &rhs); // copy constructor
 
     // get properties
-    Llong* ptr(); // get pointer
-    const Llong* ptr() const;
+    Llong* p(); // get pointer
+    const Llong* p() const;
     Long size() const;
     void resize(Long_I N);
-    Llong & operator[](Long_I i);
-    const Llong & operator[](Long_I i) const;
+    Llong &operator[](Long_I i);
+    const Llong &operator[](Long_I i) const;
     Llong& end();
     const Llong& end() const;
     Llong& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -385,24 +546,24 @@ inline VbaseLlong::VbaseLlong(const VbaseLlong &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Llong[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Llong * VbaseLlong::ptr()
+inline Llong * VbaseLlong::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Llong * VbaseLlong::ptr() const
+inline const Llong * VbaseLlong::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -415,7 +576,7 @@ inline Long VbaseLlong::size() const
 inline void VbaseLlong::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Llong[N];
         }
         else { // m_N != 0
@@ -440,7 +601,7 @@ inline void VbaseLlong::operator<<(VbaseLlong &rhs)
     m_p = rhs.m_p;
 }
 
-inline Llong & VbaseLlong::operator[](Long_I i)
+inline Llong &VbaseLlong::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -449,7 +610,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Llong & VbaseLlong::operator[](Long_I i) const
+inline const Llong &VbaseLlong::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -458,7 +619,7 @@ inline const Llong & VbaseLlong::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Llong & VbaseLlong::end()
+inline Llong &VbaseLlong::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -467,7 +628,7 @@ inline Llong & VbaseLlong::end()
     return m_p[m_N - 1];
 }
 
-inline const Llong & VbaseLlong::end() const
+inline const Llong &VbaseLlong::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -476,7 +637,7 @@ inline const Llong & VbaseLlong::end() const
     return m_p[m_N - 1];
 }
 
-inline Llong & VbaseLlong::end(Long_I i)
+inline Llong &VbaseLlong::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -485,7 +646,7 @@ inline Llong & VbaseLlong::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Llong & VbaseLlong::end(Long_I i) const
+inline const Llong &VbaseLlong::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -512,19 +673,18 @@ protected:
     Float *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Float value_type;
     // constructors
     VbaseFloat();
     explicit VbaseFloat(Long_I N);
     VbaseFloat(const VbaseFloat &rhs); // copy constructor
 
     // get properties
-    Float* ptr(); // get pointer
-    const Float* ptr() const;
+    Float* p(); // get pointer
+    const Float* p() const;
     Long size() const;
     void resize(Long_I N);
-    Float & operator[](Long_I i);
-    const Float & operator[](Long_I i) const;
+    Float &operator[](Long_I i);
+    const Float &operator[](Long_I i) const;
     Float& end();
     const Float& end() const;
     Float& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -556,24 +716,24 @@ inline VbaseFloat::VbaseFloat(const VbaseFloat &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Float[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Float * VbaseFloat::ptr()
+inline Float * VbaseFloat::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Float * VbaseFloat::ptr() const
+inline const Float * VbaseFloat::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -586,7 +746,7 @@ inline Long VbaseFloat::size() const
 inline void VbaseFloat::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Float[N];
         }
         else { // m_N != 0
@@ -611,7 +771,7 @@ inline void VbaseFloat::operator<<(VbaseFloat &rhs)
     m_p = rhs.m_p;
 }
 
-inline Float & VbaseFloat::operator[](Long_I i)
+inline Float &VbaseFloat::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -620,7 +780,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Float & VbaseFloat::operator[](Long_I i) const
+inline const Float &VbaseFloat::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -629,7 +789,7 @@ inline const Float & VbaseFloat::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Float & VbaseFloat::end()
+inline Float &VbaseFloat::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -638,7 +798,7 @@ inline Float & VbaseFloat::end()
     return m_p[m_N - 1];
 }
 
-inline const Float & VbaseFloat::end() const
+inline const Float &VbaseFloat::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -647,7 +807,7 @@ inline const Float & VbaseFloat::end() const
     return m_p[m_N - 1];
 }
 
-inline Float & VbaseFloat::end(Long_I i)
+inline Float &VbaseFloat::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -656,7 +816,7 @@ inline Float & VbaseFloat::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Float & VbaseFloat::end(Long_I i) const
+inline const Float &VbaseFloat::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -677,19 +837,18 @@ protected:
     Doub *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Doub value_type;
     // constructors
     VbaseDoub();
     explicit VbaseDoub(Long_I N);
     VbaseDoub(const VbaseDoub &rhs); // copy constructor
 
     // get properties
-    Doub* ptr(); // get pointer
-    const Doub* ptr() const;
+    Doub* p(); // get pointer
+    const Doub* p() const;
     Long size() const;
     void resize(Long_I N);
-    Doub & operator[](Long_I i);
-    const Doub & operator[](Long_I i) const;
+    Doub &operator[](Long_I i);
+    const Doub &operator[](Long_I i) const;
     Doub& end();
     const Doub& end() const;
     Doub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -721,24 +880,24 @@ inline VbaseDoub::VbaseDoub(const VbaseDoub &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Doub[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Doub * VbaseDoub::ptr()
+inline Doub * VbaseDoub::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Doub * VbaseDoub::ptr() const
+inline const Doub * VbaseDoub::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -751,7 +910,7 @@ inline Long VbaseDoub::size() const
 inline void VbaseDoub::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Doub[N];
         }
         else { // m_N != 0
@@ -776,7 +935,7 @@ inline void VbaseDoub::operator<<(VbaseDoub &rhs)
     m_p = rhs.m_p;
 }
 
-inline Doub & VbaseDoub::operator[](Long_I i)
+inline Doub &VbaseDoub::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -785,7 +944,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Doub & VbaseDoub::operator[](Long_I i) const
+inline const Doub &VbaseDoub::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -794,7 +953,7 @@ inline const Doub & VbaseDoub::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Doub & VbaseDoub::end()
+inline Doub &VbaseDoub::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -803,7 +962,7 @@ inline Doub & VbaseDoub::end()
     return m_p[m_N - 1];
 }
 
-inline const Doub & VbaseDoub::end() const
+inline const Doub &VbaseDoub::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -812,7 +971,7 @@ inline const Doub & VbaseDoub::end() const
     return m_p[m_N - 1];
 }
 
-inline Doub & VbaseDoub::end(Long_I i)
+inline Doub &VbaseDoub::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -821,7 +980,7 @@ inline Doub & VbaseDoub::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Doub & VbaseDoub::end(Long_I i) const
+inline const Doub &VbaseDoub::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -842,19 +1001,18 @@ protected:
     Ldoub *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Ldoub value_type;
     // constructors
     VbaseLdoub();
     explicit VbaseLdoub(Long_I N);
     VbaseLdoub(const VbaseLdoub &rhs); // copy constructor
 
     // get properties
-    Ldoub* ptr(); // get pointer
-    const Ldoub* ptr() const;
+    Ldoub* p(); // get pointer
+    const Ldoub* p() const;
     Long size() const;
     void resize(Long_I N);
-    Ldoub & operator[](Long_I i);
-    const Ldoub & operator[](Long_I i) const;
+    Ldoub &operator[](Long_I i);
+    const Ldoub &operator[](Long_I i) const;
     Ldoub& end();
     const Ldoub& end() const;
     Ldoub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -886,24 +1044,24 @@ inline VbaseLdoub::VbaseLdoub(const VbaseLdoub &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Ldoub[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Ldoub * VbaseLdoub::ptr()
+inline Ldoub * VbaseLdoub::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Ldoub * VbaseLdoub::ptr() const
+inline const Ldoub * VbaseLdoub::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -916,7 +1074,7 @@ inline Long VbaseLdoub::size() const
 inline void VbaseLdoub::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Ldoub[N];
         }
         else { // m_N != 0
@@ -941,7 +1099,7 @@ inline void VbaseLdoub::operator<<(VbaseLdoub &rhs)
     m_p = rhs.m_p;
 }
 
-inline Ldoub & VbaseLdoub::operator[](Long_I i)
+inline Ldoub &VbaseLdoub::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -950,7 +1108,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Ldoub & VbaseLdoub::operator[](Long_I i) const
+inline const Ldoub &VbaseLdoub::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -959,7 +1117,7 @@ inline const Ldoub & VbaseLdoub::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Ldoub & VbaseLdoub::end()
+inline Ldoub &VbaseLdoub::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -968,7 +1126,7 @@ inline Ldoub & VbaseLdoub::end()
     return m_p[m_N - 1];
 }
 
-inline const Ldoub & VbaseLdoub::end() const
+inline const Ldoub &VbaseLdoub::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -977,7 +1135,7 @@ inline const Ldoub & VbaseLdoub::end() const
     return m_p[m_N - 1];
 }
 
-inline Ldoub & VbaseLdoub::end(Long_I i)
+inline Ldoub &VbaseLdoub::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -986,7 +1144,7 @@ inline Ldoub & VbaseLdoub::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Ldoub & VbaseLdoub::end(Long_I i) const
+inline const Ldoub &VbaseLdoub::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1001,25 +1159,25 @@ inline VbaseLdoub::~VbaseLdoub()
         delete[] m_p;
 }
 
+
 class VbaseFcomp
 {
 protected:
     Fcomp *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Fcomp value_type;
     // constructors
     VbaseFcomp();
     explicit VbaseFcomp(Long_I N);
     VbaseFcomp(const VbaseFcomp &rhs); // copy constructor
 
     // get properties
-    Fcomp* ptr(); // get pointer
-    const Fcomp* ptr() const;
+    Fcomp* p(); // get pointer
+    const Fcomp* p() const;
     Long size() const;
     void resize(Long_I N);
-    Fcomp & operator[](Long_I i);
-    const Fcomp & operator[](Long_I i) const;
+    Fcomp &operator[](Long_I i);
+    const Fcomp &operator[](Long_I i) const;
     Fcomp& end();
     const Fcomp& end() const;
     Fcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1051,24 +1209,24 @@ inline VbaseFcomp::VbaseFcomp(const VbaseFcomp &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Fcomp[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Fcomp * VbaseFcomp::ptr()
+inline Fcomp * VbaseFcomp::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Fcomp * VbaseFcomp::ptr() const
+inline const Fcomp * VbaseFcomp::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1081,7 +1239,7 @@ inline Long VbaseFcomp::size() const
 inline void VbaseFcomp::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Fcomp[N];
         }
         else { // m_N != 0
@@ -1106,7 +1264,7 @@ inline void VbaseFcomp::operator<<(VbaseFcomp &rhs)
     m_p = rhs.m_p;
 }
 
-inline Fcomp & VbaseFcomp::operator[](Long_I i)
+inline Fcomp &VbaseFcomp::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1115,7 +1273,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Fcomp & VbaseFcomp::operator[](Long_I i) const
+inline const Fcomp &VbaseFcomp::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1124,7 +1282,7 @@ inline const Fcomp & VbaseFcomp::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Fcomp & VbaseFcomp::end()
+inline Fcomp &VbaseFcomp::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1133,7 +1291,7 @@ inline Fcomp & VbaseFcomp::end()
     return m_p[m_N - 1];
 }
 
-inline const Fcomp & VbaseFcomp::end() const
+inline const Fcomp &VbaseFcomp::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1142,7 +1300,7 @@ inline const Fcomp & VbaseFcomp::end() const
     return m_p[m_N - 1];
 }
 
-inline Fcomp & VbaseFcomp::end(Long_I i)
+inline Fcomp &VbaseFcomp::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1151,7 +1309,7 @@ inline Fcomp & VbaseFcomp::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Fcomp & VbaseFcomp::end(Long_I i) const
+inline const Fcomp &VbaseFcomp::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1172,19 +1330,18 @@ protected:
     Comp *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Comp value_type;
     // constructors
     VbaseComp();
     explicit VbaseComp(Long_I N);
     VbaseComp(const VbaseComp &rhs); // copy constructor
 
     // get properties
-    Comp* ptr(); // get pointer
-    const Comp* ptr() const;
+    Comp* p(); // get pointer
+    const Comp* p() const;
     Long size() const;
     void resize(Long_I N);
-    Comp & operator[](Long_I i);
-    const Comp & operator[](Long_I i) const;
+    Comp &operator[](Long_I i);
+    const Comp &operator[](Long_I i) const;
     Comp& end();
     const Comp& end() const;
     Comp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1216,24 +1373,24 @@ inline VbaseComp::VbaseComp(const VbaseComp &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Comp[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Comp * VbaseComp::ptr()
+inline Comp * VbaseComp::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Comp * VbaseComp::ptr() const
+inline const Comp * VbaseComp::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1246,7 +1403,7 @@ inline Long VbaseComp::size() const
 inline void VbaseComp::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Comp[N];
         }
         else { // m_N != 0
@@ -1271,7 +1428,7 @@ inline void VbaseComp::operator<<(VbaseComp &rhs)
     m_p = rhs.m_p;
 }
 
-inline Comp & VbaseComp::operator[](Long_I i)
+inline Comp &VbaseComp::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1280,7 +1437,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Comp & VbaseComp::operator[](Long_I i) const
+inline const Comp &VbaseComp::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1289,7 +1446,7 @@ inline const Comp & VbaseComp::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Comp & VbaseComp::end()
+inline Comp &VbaseComp::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1298,7 +1455,7 @@ inline Comp & VbaseComp::end()
     return m_p[m_N - 1];
 }
 
-inline const Comp & VbaseComp::end() const
+inline const Comp &VbaseComp::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1307,7 +1464,7 @@ inline const Comp & VbaseComp::end() const
     return m_p[m_N - 1];
 }
 
-inline Comp & VbaseComp::end(Long_I i)
+inline Comp &VbaseComp::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1316,7 +1473,7 @@ inline Comp & VbaseComp::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Comp & VbaseComp::end(Long_I i) const
+inline const Comp &VbaseComp::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1337,19 +1494,18 @@ protected:
     Lcomp *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Lcomp value_type;
     // constructors
     VbaseLcomp();
     explicit VbaseLcomp(Long_I N);
     VbaseLcomp(const VbaseLcomp &rhs); // copy constructor
 
     // get properties
-    Lcomp* ptr(); // get pointer
-    const Lcomp* ptr() const;
+    Lcomp* p(); // get pointer
+    const Lcomp* p() const;
     Long size() const;
     void resize(Long_I N);
-    Lcomp & operator[](Long_I i);
-    const Lcomp & operator[](Long_I i) const;
+    Lcomp &operator[](Long_I i);
+    const Lcomp &operator[](Long_I i) const;
     Lcomp& end();
     const Lcomp& end() const;
     Lcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1381,24 +1537,24 @@ inline VbaseLcomp::VbaseLcomp(const VbaseLcomp &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Lcomp[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Lcomp * VbaseLcomp::ptr()
+inline Lcomp * VbaseLcomp::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Lcomp * VbaseLcomp::ptr() const
+inline const Lcomp * VbaseLcomp::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1411,7 +1567,7 @@ inline Long VbaseLcomp::size() const
 inline void VbaseLcomp::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Lcomp[N];
         }
         else { // m_N != 0
@@ -1436,7 +1592,7 @@ inline void VbaseLcomp::operator<<(VbaseLcomp &rhs)
     m_p = rhs.m_p;
 }
 
-inline Lcomp & VbaseLcomp::operator[](Long_I i)
+inline Lcomp &VbaseLcomp::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1445,7 +1601,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Lcomp & VbaseLcomp::operator[](Long_I i) const
+inline const Lcomp &VbaseLcomp::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1454,7 +1610,7 @@ inline const Lcomp & VbaseLcomp::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Lcomp & VbaseLcomp::end()
+inline Lcomp &VbaseLcomp::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1463,7 +1619,7 @@ inline Lcomp & VbaseLcomp::end()
     return m_p[m_N - 1];
 }
 
-inline const Lcomp & VbaseLcomp::end() const
+inline const Lcomp &VbaseLcomp::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1472,7 +1628,7 @@ inline const Lcomp & VbaseLcomp::end() const
     return m_p[m_N - 1];
 }
 
-inline Lcomp & VbaseLcomp::end(Long_I i)
+inline Lcomp &VbaseLcomp::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1481,7 +1637,7 @@ inline Lcomp & VbaseLcomp::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Lcomp & VbaseLcomp::end(Long_I i) const
+inline const Lcomp &VbaseLcomp::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1496,25 +1652,25 @@ inline VbaseLcomp::~VbaseLcomp()
         delete[] m_p;
 }
 
+
 class VbaseFimag
 {
 protected:
     Fimag *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Fimag value_type;
     // constructors
     VbaseFimag();
     explicit VbaseFimag(Long_I N);
     VbaseFimag(const VbaseFimag &rhs); // copy constructor
 
     // get properties
-    Fimag* ptr(); // get pointer
-    const Fimag* ptr() const;
+    Fimag* p(); // get pointer
+    const Fimag* p() const;
     Long size() const;
     void resize(Long_I N);
-    Fimag & operator[](Long_I i);
-    const Fimag & operator[](Long_I i) const;
+    Fimag &operator[](Long_I i);
+    const Fimag &operator[](Long_I i) const;
     Fimag& end();
     const Fimag& end() const;
     Fimag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1546,24 +1702,24 @@ inline VbaseFimag::VbaseFimag(const VbaseFimag &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Fimag[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Fimag * VbaseFimag::ptr()
+inline Fimag * VbaseFimag::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Fimag * VbaseFimag::ptr() const
+inline const Fimag * VbaseFimag::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1576,7 +1732,7 @@ inline Long VbaseFimag::size() const
 inline void VbaseFimag::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Fimag[N];
         }
         else { // m_N != 0
@@ -1601,7 +1757,7 @@ inline void VbaseFimag::operator<<(VbaseFimag &rhs)
     m_p = rhs.m_p;
 }
 
-inline Fimag & VbaseFimag::operator[](Long_I i)
+inline Fimag &VbaseFimag::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1610,7 +1766,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Fimag & VbaseFimag::operator[](Long_I i) const
+inline const Fimag &VbaseFimag::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1619,7 +1775,7 @@ inline const Fimag & VbaseFimag::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Fimag & VbaseFimag::end()
+inline Fimag &VbaseFimag::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1628,7 +1784,7 @@ inline Fimag & VbaseFimag::end()
     return m_p[m_N - 1];
 }
 
-inline const Fimag & VbaseFimag::end() const
+inline const Fimag &VbaseFimag::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1637,7 +1793,7 @@ inline const Fimag & VbaseFimag::end() const
     return m_p[m_N - 1];
 }
 
-inline Fimag & VbaseFimag::end(Long_I i)
+inline Fimag &VbaseFimag::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1646,7 +1802,7 @@ inline Fimag & VbaseFimag::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Fimag & VbaseFimag::end(Long_I i) const
+inline const Fimag &VbaseFimag::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1667,19 +1823,18 @@ protected:
     Imag *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Imag value_type;
     // constructors
     VbaseImag();
     explicit VbaseImag(Long_I N);
     VbaseImag(const VbaseImag &rhs); // copy constructor
 
     // get properties
-    Imag* ptr(); // get pointer
-    const Imag* ptr() const;
+    Imag* p(); // get pointer
+    const Imag* p() const;
     Long size() const;
     void resize(Long_I N);
-    Imag & operator[](Long_I i);
-    const Imag & operator[](Long_I i) const;
+    Imag &operator[](Long_I i);
+    const Imag &operator[](Long_I i) const;
     Imag& end();
     const Imag& end() const;
     Imag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1711,24 +1866,24 @@ inline VbaseImag::VbaseImag(const VbaseImag &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Imag[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Imag * VbaseImag::ptr()
+inline Imag * VbaseImag::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Imag * VbaseImag::ptr() const
+inline const Imag * VbaseImag::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1741,7 +1896,7 @@ inline Long VbaseImag::size() const
 inline void VbaseImag::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Imag[N];
         }
         else { // m_N != 0
@@ -1766,7 +1921,7 @@ inline void VbaseImag::operator<<(VbaseImag &rhs)
     m_p = rhs.m_p;
 }
 
-inline Imag & VbaseImag::operator[](Long_I i)
+inline Imag &VbaseImag::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1775,7 +1930,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Imag & VbaseImag::operator[](Long_I i) const
+inline const Imag &VbaseImag::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1784,7 +1939,7 @@ inline const Imag & VbaseImag::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Imag & VbaseImag::end()
+inline Imag &VbaseImag::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1793,7 +1948,7 @@ inline Imag & VbaseImag::end()
     return m_p[m_N - 1];
 }
 
-inline const Imag & VbaseImag::end() const
+inline const Imag &VbaseImag::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1802,7 +1957,7 @@ inline const Imag & VbaseImag::end() const
     return m_p[m_N - 1];
 }
 
-inline Imag & VbaseImag::end(Long_I i)
+inline Imag &VbaseImag::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1811,7 +1966,7 @@ inline Imag & VbaseImag::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Imag & VbaseImag::end(Long_I i) const
+inline const Imag &VbaseImag::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1832,19 +1987,18 @@ protected:
     Limag *m_p; // pointer to the first element
     Long m_N; // number of elements
 public:
-    typedef Limag value_type;
     // constructors
     VbaseLimag();
     explicit VbaseLimag(Long_I N);
     VbaseLimag(const VbaseLimag &rhs); // copy constructor
 
     // get properties
-    Limag* ptr(); // get pointer
-    const Limag* ptr() const;
+    Limag* p(); // get pointer
+    const Limag* p() const;
     Long size() const;
     void resize(Long_I N);
-    Limag & operator[](Long_I i);
-    const Limag & operator[](Long_I i) const;
+    Limag &operator[](Long_I i);
+    const Limag &operator[](Long_I i) const;
     Limag& end();
     const Limag& end() const;
     Limag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
@@ -1876,24 +2030,24 @@ inline VbaseLimag::VbaseLimag(const VbaseLimag &rhs)
     m_N = rhs.m_N;
     if (m_N > 0) {
         m_p = new Limag[m_N];
-        memcpy(m_p, rhs.ptr(), m_N);
+        memcpy(m_p, rhs.p(), m_N);
     }
 }
 
-inline Limag * VbaseLimag::ptr()
+inline Limag * VbaseLimag::p()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
 
-inline const Limag * VbaseLimag::ptr() const
+inline const Limag * VbaseLimag::p() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
-        SLS_ERR("using ptr() for empty container!");
+        SLS_ERR("using p() for empty container!");
 #endif
     return m_p;
 }
@@ -1906,7 +2060,7 @@ inline Long VbaseLimag::size() const
 inline void VbaseLimag::resize(Long_I N)
 {
     if (N != m_N) {
-        if (m_N == 0) {
+        if (m_N == 0) { // N != 0
             m_N = N; m_p = new Limag[N];
         }
         else { // m_N != 0
@@ -1931,7 +2085,7 @@ inline void VbaseLimag::operator<<(VbaseLimag &rhs)
     m_p = rhs.m_p;
 }
 
-inline Limag & VbaseLimag::operator[](Long_I i)
+inline Limag &VbaseLimag::operator[](Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
 if (i<0 || i>=m_N)
@@ -1940,7 +2094,7 @@ if (i<0 || i>=m_N)
     return m_p[i];
 }
 
-inline const Limag & VbaseLimag::operator[](Long_I i) const
+inline const Limag &VbaseLimag::operator[](Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i<0 || i>=m_N)
@@ -1949,7 +2103,7 @@ inline const Limag & VbaseLimag::operator[](Long_I i) const
     return m_p[i];
 }
 
-inline Limag & VbaseLimag::end()
+inline Limag &VbaseLimag::end()
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1958,7 +2112,7 @@ inline Limag & VbaseLimag::end()
     return m_p[m_N - 1];
 }
 
-inline const Limag & VbaseLimag::end() const
+inline const Limag &VbaseLimag::end() const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (m_N == 0)
@@ -1967,7 +2121,7 @@ inline const Limag & VbaseLimag::end() const
     return m_p[m_N - 1];
 }
 
-inline Limag & VbaseLimag::end(Long_I i)
+inline Limag &VbaseLimag::end(Long_I i)
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
@@ -1976,7 +2130,7 @@ inline Limag & VbaseLimag::end(Long_I i)
     return m_p[m_N - i];
 }
 
-inline const Limag & VbaseLimag::end(Long_I i) const
+inline const Limag &VbaseLimag::end(Long_I i) const
 {
 #ifdef SLS_CHECK_BOUNDS
     if (i <= 0 || i > m_N)
