@@ -139,7 +139,6 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
 
 inline void replace_eng_punc_to_chinese(Str32_I path_in)
 {
-    Long ind0{};
     vecStr32 names, str_verb;
     Str32 fname, str;
     Intvs intv;
@@ -370,7 +369,7 @@ int main(int argc, char *argv[]) {
         // process a single entry
         vecStr32 entryN;
         Str32 temp;
-        for (Int i = 1; i < args.size(); ++i) {
+        for (Int i = 1; i < size(args); ++i) {
             temp = args[i];
             if (temp[0] == '-' && temp[1] == '-')
                 break;

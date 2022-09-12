@@ -8,3 +8,4 @@ PhysWikiScan
 npm-debug.log
 data/*.txt
 data/*.matt
+cmake-build-physwikiscan/

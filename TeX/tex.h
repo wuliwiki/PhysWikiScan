@@ -34,7 +34,7 @@ inline Long rm_comments(Str32_IO str)
     for (Long i = intvComm.size() - 1; i >= 0; --i) {
         Long ind = ExpectKeyReverse(str, U"\n", intvComm.L(i) - 1) + 1;
         if (ind < 0) {
-            if (intvComm.R(i) < str.size() && str[intvComm.R(i)] == U'\n' &&
+            if (intvComm.R(i) < size(str) && str[intvComm.R(i)] == U'\n' &&
                 str[intvComm.R(i) + 1] != U'\n')
                 str.erase(intvComm.R(i), 1);
             str.erase(intvComm.L(i), intvComm.R(i) - intvComm.L(i));
@@ -155,7 +155,7 @@ inline Bool command_star(Str32_I str, Long_I ind)
 // check if an index is in a command \name{...}
 inline Bool is_in_cmd(Str32_I str, Str32_I name, Long_I ind)
 {
-    if (ind < 0 || ind >= str.size())
+    if (ind < 0 || ind >= size(str))
         throw Str32(U"内部错误： is_in_cmd() index out of bound");
     Long ind0 = str.rfind(U"\\" + name, ind);
     if (ind0 < 0)
@@ -239,7 +239,7 @@ inline Long command_Narg(Str32_I str, Long_I ind)
 // use `arg_no_brace` to get args without `{}`, e.g. `b` in `\frac{a} b` (single char/command), will return one index after arg
 inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false, Bool_I arg_no_brace = false)
 {
-    Long ind0 = ind, ind1, i1 = i;
+    Long ind0 = ind, ind1;
     if (ignore_opt)
         ind0 = skip_command(str, ind0, i, true, arg_no_brace);
     else if (i == 0) {
@@ -317,7 +317,7 @@ inline Long skip_env(Str32_I str, Long_I ind)
 // return the number of commands found
 inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 {
-    Long ind0 = 0, N = 0;
+    Long ind0 = 0;
     intv.clear();
     while (true) {
         ind0 = find_command(str, name, ind0);
@@ -335,8 +335,7 @@ inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
 inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 {
-    Long ind0{}, ind1{}, ind2{}, ind3{};
-    Long N{}; // number of environments found
+    Long ind0{};
     if (option != 'i' && option != 'o')
         throw Str32(U"内部错误： illegal option in find_env()!");
     intv.clear();
@@ -500,7 +499,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str32_I str, Char option = 'i')
         if (ind0 > 0 && str[ind0 - 1] == U'\\') { // escaped
             ++ind0; continue;
         }
-        if (ind0 < str.size() - 1 && str[ind0 + 1] == U'$') { // ignore $$
+        if (ind0 < size(str) - 1 && str[ind0 + 1] == U'$') { // ignore $$
             ind0 += 2; continue;
         }
         intv.push_back(ind0);
@@ -557,7 +556,7 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 {
     intv.clear();
-    Long N{}, ind0{}, ind1{};
+    Long N{}, ind0{};
     Str32 env1;
     while (true) {
         ind0 = find_command(str, U"end", ind0+1);
@@ -865,7 +864,7 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
 inline Long verb_recover(Str32_IO str, vecStr32_IO str_verb)
 {
     SLS_ERR("unfinished!");
-    Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
+    Long N = 0, ind0 = 0;
     Str32 ind_str, tmp;
 
     // verb

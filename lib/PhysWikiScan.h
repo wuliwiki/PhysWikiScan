@@ -29,11 +29,11 @@ namespace gv {
 // limited to 20 characters
 inline void get_title(Str32_O title, Str32_I str)
 {
-    if (str.size() == 0 || str.at(0) != U'%')
+    if (size(str) == 0 || str.at(0) != U'%')
         throw Str32(U"请在第一行注释标题！");
     Long ind1 = str.find(U'\n');
     if (ind1 < 0)
-        ind1 = str.size() - 1;
+        ind1 = size(str) - 1;
     title = str.substr(1, ind1 - 1);
     trim(title);
     if (title.empty())
@@ -86,7 +86,7 @@ inline Long paragraph_tag(Str32_IO str)
     // commands in "commands" and environments
     while (true) {
         // decide mode
-        if (ind0 == str.size()) {
+        if (ind0 == size(str)) {
             next = 'f';
         }
         else {
@@ -183,7 +183,7 @@ inline Long paragraph_tag(Str32_IO str)
 
         left = ind0;
         last = next;
-        if (ind0 == str.size()) {
+        if (ind0 == size(str)) {
             continue;
         }
         
@@ -255,7 +255,7 @@ inline void limit_env_cmd(Str32_I str)
 inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     Str32_I entryName, Str32_IO str)
 {
-    Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{}, temp{},
+    Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{},
         Ngather{}, Nalign{}, i{}, j{};
     Str32 idName; // "eq", "fig", "ex", "sub"...
     Str32 envName; // "equation" or "figure" or "example"...
@@ -274,7 +274,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         // detect environment kind
         ind2 = str.rfind(U"\\end", ind5);
         ind4 = str.rfind(U"\\begin", ind5);
-        if (ind4 < 0 || ind4 >= 0 && ind2 > ind4) {
+        if (ind4 < 0 || (ind4 >= 0 && ind2 > ind4)) {
             // label not in environment, must be a subsection label
             idName = U"sub"; envName = U"subsection";
             // TODO: make sure the label follows a \subsection{} command
@@ -616,7 +616,7 @@ inline Long RemoveNoEntry(vecStr32_IO names)
 // return number of environments processed
 inline Long theorem_like_env(Str32_IO str)
 {
-    Long N, N_tot = 0, ind0, ind1{};
+    Long N, N_tot = 0, ind0;
     Intvs intvIn, intvOut;
     Str32 env_title, env_num;
     vecStr32 envNames = {U"definition", U"lemma", U"theorem",
@@ -674,10 +674,10 @@ inline Long autoref_space(Str32_I str, Bool_I error)
         catch (...) {
             throw Str32(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
         }
-        if (ind0 >= str.size())
+        if (ind0 >= size(str))
             return N;
         Bool continue2 = false;
-        for (Long i = 0; i < follow2.size(); ++i) {
+        for (Long i = 0; i < size(follow2); ++i) {
             if (expect(str, follow2[i], ind0) >= 0) {
                 continue2 = true; break;
             }
@@ -710,7 +710,7 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
         command_arg(label, str, ind0);
         Long ind5 = ind0;
         ind0 = skip_command(str, ind0, 1);
-        if (ind0 == str.size())
+        if (ind0 == size(str))
             return N;
         Long ind1 = expect(str, U"~", ind0);
         if (ind1 < 0) {
@@ -744,7 +744,7 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
 inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_IO str)
 {
     unsigned i{};
-    Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, Neq{}, ienv{};
+    Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, ienv{};
     Bool inEq;
     Str32 entry, label0, idName, idNum, kind, newtab, file;
     vecStr32 envNames{U"equation", U"align", U"gather"};
@@ -1112,7 +1112,7 @@ inline Str32 author_list(Str32_I entry)
     Long ind = search(entry, entries);
     if (ind >= 0) {
         list += authors[ind];
-        for (Long i = ind+1; i < entries.size(); ++i) {
+        for (Long i = ind+1; i < size(entries); ++i) {
             if (entries[i] != entries[i - 1])
                 break;
             list += "; " + authors[i];
@@ -1253,10 +1253,10 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
     }
 
     // check repeated titles
-    for (Long i = 0; i < titles.size(); ++i) {
+    for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        for (Long j = i + 1; j < titles.size(); ++j) {
+        for (Long j = i + 1; j < size(titles); ++j) {
             if (titles[i] == titles[j])
                 throw Str32(U"目录中标题重复：" + titles[i]);
         }
@@ -1286,7 +1286,7 @@ inline Long rm_punc_space(Str32_IO str)
         ind0 = find(ikey, str, keys, ind0);
         if (ind0 < 0)
             return N;
-        if (ind0 + 1 < str.size() && str[ind0 + 1] == U' ')
+        if (ind0 + 1 < size(str) && str[ind0 + 1] == U' ')
             str.erase(ind0 + 1, 1);
         if (ind0 > 0 && str[ind0 - 1] == U' ') {
             str.erase(ind0 - 1, 1); --ind0;
@@ -1311,7 +1311,7 @@ inline void puc_no_wrap(Str32_IO str)
             ++ind0; continue;
         }
         ind1 = ind0 + 1; --ind0;
-        while (search(str[ind1], keys) >= 0 && ind1 < str.size())
+        while (search(str[ind1], keys) >= 0 && ind1 < size(str))
             ++ind1;
         tmp = U"<span style=\"white-space:nowrap\">" + str.substr(ind0, ind1 - ind0) + U"</span>";
         str.replace(ind0, ind1 - ind0, tmp);
@@ -1337,7 +1337,7 @@ inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = 
         if (is_in(ind0, intvNorm)) {
             Long ind1 = str.find_last_not_of(U" ", ind0-1);
             if (ind1 >= 0 && is_chinese(str[ind1])) {
-                Long ind2 = str.find_first_not_of(U" ", ind0+1);
+                str.find_first_not_of(U" ", ind0+1);
                 // --- exceptions ---
                 if (ikey == 1 && is_alphanum(str[ind0 + 1]))
                     continue; // e.g. "文件名.jpg"
@@ -1385,7 +1385,7 @@ inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = 
 inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
     vecLong_O part_ind, vecStr32_I entries)
 {
-    Long i{}, N{}, ind0{}, ind1{}, ind2{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
+    Long N{}, ind0{}, ind1{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
     vecStr32 chineseNo{U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
                 U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
@@ -1500,7 +1500,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         throw Str32(U"内部错误： PhysWikiPartList not found!");
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"|", ind0);
-    for (Long i = 1; i < part_name.size(); ++i) {
+    for (Long i = 1; i < size(part_name); ++i) {
         ind0 = insert(toc, U"   <a href = \"#part" + num2str32(i) + U"\">"
             + part_name[i] + U"</a> |\n", ind0);
     }
@@ -1517,7 +1517,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
 // titles[i] is the chinese title of entries[i]
 inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries)
 {
-    Long i{}, N{}, ind0{};
+    Long N{}, ind0{};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
     Str32 entryName; // entry label
@@ -1743,7 +1743,7 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
     keywords.clear();
     Str32 word;
     Long ind0 = str.find(U"\n", 0);
-    if (ind0 < 0 || ind0 == str.size()-1)
+    if (ind0 < 0 || ind0 == size(str)-1)
         return 0;
     ind0 = expect(str, U"%", ind0+1);
     if (ind0 < 0) {
@@ -1798,7 +1798,6 @@ inline Long chinese_alpha_num_space(Str32_IO str)
 // return the number of spaces added
 inline Long chinese_double_quote_space(Str32_IO str)
 {
-    Long N;
     Str32 quotes = { Char32(8220) , Char32(8221) }; // chinese left and right quotes
     Intvs intNorm;
     FindNormalText(intNorm, str);
@@ -1819,7 +1818,7 @@ inline Long chinese_double_quote_space(Str32_IO str)
                 }
             }
             else { // right quote
-                if (ind < str.size() - 1) {
+                if (ind < size(str) - 1) {
                     Char32 c = str[ind + 1];
                     /*if (search(c, U" \n，。．！？…：()（）：【】") >= 0)
                         continue;*/
@@ -1858,10 +1857,10 @@ inline Long inline_eq_space(Str32_IO str)
 inline Long ensure_space_around(Str32_IO str, Char32_I c)
 {
     Long N = 0;
-    for (Long i = str.size() - 1; i >= 0; --i) {
+    for (Long i = size(str) - 1; i >= 0; --i) {
         if (str[i] == c) {
             // check right
-            if (i == str.size() - 1) {
+            if (i == size(str) - 1) {
                 str += U" "; ++N;
             }
             else if (str[i + 1] != U' ') {
@@ -2012,7 +2011,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     get_title(title, str);
 
     // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
-    if (str.size() > 7 && str.substr(str.size() - 7) == U"\n%%eng\n" || gv::path_in.substr(gv::path_in.size()-4) == U"/en/")
+    if ((size(str) > 7 && str.substr(size(str) - 7) == U"\n%%eng\n") ||
+            gv::path_in.substr(gv::path_in.size()-4) == U"/en/")
         gv::is_eng = true;
     else
         gv::is_eng = false;
@@ -2087,7 +2087,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     // process \pentry{}
     pentry(str);
     // replace user defined commands
-    Long Ndebug = newcommand(str, rules);
+    newcommand(str, rules);
     subsections(str);
     // replace \name{} with html tags
     Command2Tag(U"subsubsection", U"<h3><b>", U"</b></h3>", str);
@@ -2387,7 +2387,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
         throw Str32(U"内部错误： labels.txt 与 ids.txt 长度不符");
     if (entries.size() != titles.size())
         throw Str32(U"内部错误： entries.txt 与 titles.txt 长度不符");
-    if (entry_order.size() < entries.size())
+    if (entry_order.size() < size(entries))
         resize_cpy(entry_order, entries.size(), -1);
 
     vecStr32 rules;  // for newcommand()
@@ -2595,7 +2595,6 @@ inline void unhide_eq_verb(Str32_IO str)
 // check format and auto correct .tex files in path0
 inline void add_space_around_inline_eq(Str32_I path_in)
 {
-    Long ind0{};
     vecStr32 names, str_verb;
     Str32 fname, str;
     Intvs intv;

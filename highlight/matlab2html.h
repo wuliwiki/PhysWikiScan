@@ -158,8 +158,6 @@ inline Long Matlab_highlight(Str32_IO code)
     Str32 keyword_class = U"keyword";
     Str32 str_class = U"string";
     Str32 comm_class = U"comment";
-
-    Long Nwidth = 160; // maximum line width
     // ==========================
 
     Long N = 0;

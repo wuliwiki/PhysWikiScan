@@ -17,7 +17,7 @@ inline Long EnsureSpace(Str32_I name, Str32_IO str, Long start, Long end)
             str.insert(ind0, U" "); ++ind0; ++N;
         }
         ind0 += name.size();
-        if (ind0 == str.size() || str.at(ind0) != U' ') {
+        if (ind0 == size(str) || str.at(ind0) != U' ') {
             str.insert(ind0, U" "); ++N;
         }
     }
@@ -241,7 +241,7 @@ inline Long define_newcommands(vecStr32_O rules)
 
             U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
     });
-    for (Long i = 4; i < rules.size(); i+=4) {
+    for (Long i = 4; i < size(rules); i+=4) {
         if (rules[i] < rules[i - 4])
             throw Str32(U"内部错误： define_newcommands(): rules not sorted: " + rules[i]);
     }
@@ -302,7 +302,6 @@ inline Long newcommand(Str32_IO str, vecStr32_I rules)
         Long ind = -1, Narg_rule = -1;
         Long candi = -1; // `rules[candi]` is the last compatible rule with omitted `{}`
         Str32 rule_format;
-        Doub tsearch, ttotal;
         while (1) {
             Long ind1;
             if (ind == 0) {
@@ -427,7 +426,7 @@ inline Long NormalTextEscape(Str32_IO str)
 // must be used after EnvLabel()
 inline Long Table(Str32_IO str)
 {
-    Long N{}, ind0{}, ind1{}, ind2{}, ind3{}, Nline;
+    Long N{}, ind0{}, ind1{}, Nline;
     Intvs intv;
     vecLong indLine; // stores the position of "\hline"
     vecStr32 captions;

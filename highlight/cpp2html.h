@@ -15,7 +15,7 @@ namespace slisc {
             throw Str32(U"cpp 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + U"...");
         write(code, U"tmp.cpp");
         remove("tmp.cpp.html");
-        int ret = system("source-highlight --src-lang cpp --out-format html "
+        system("source-highlight --src-lang cpp --out-format html "
             "--input tmp.cpp --output tmp.cpp.html");
         if (!file_exist("tmp.cpp.html")) {
             return -1;
