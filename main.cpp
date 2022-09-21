@@ -287,7 +287,7 @@ int main(int argc, char *argv[]) {
         // check format and auto correct .tex files
         add_space_around_inline_eq(gv::path_in);
     }
-    else if (args[0] == U"--eng-punc-to-chinese") {
+    else if (args[0] == U",") {
         // check format and auto correct .tex files
         replace_eng_punc_to_chinese(gv::path_in);
     }
@@ -408,21 +408,6 @@ int main(int argc, char *argv[]) {
         vecStr32 commands;
         all_commands(commands, gv::path_in + U"contents/");
         write_vec_str(commands, gv::path_data + U"commands.txt");
-    }
-    else if (args[0] == U".,") {
-        gv::eng_punc = true;
-        gv::is_entire = true;
-        // remove matlab files
-        vecStr fnames;
-        file_list_full(fnames, utf32to8(gv::path_out) + "code/matlab/");
-        for (Long i = 0; i < size(fnames); ++i)
-            file_remove(fnames[i]);
-        // interactive full run (ask to try again in error)
-        try { PhysWikiOnline(); }
-        catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
-        }
     }
     else {
         cerr << u8"内部错误： 命令不合法" << endl;

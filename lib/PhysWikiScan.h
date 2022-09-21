@@ -18,7 +18,6 @@ namespace gv {
     Str32 path_data; // e.g. ../littleshi.cn/data/
     Str32 url; // e.g. https://wuli.wiki/online/
     Bool is_wiki; // editing wiki or note
-    Bool eng_punc = false; // replace English punctuations to Chinese in normal text
     Bool is_eng = false; // use english for auto-generated text (Eq. Fig. etc.)
     Bool is_entire = false; // running one tex or the entire wiki
 }
@@ -1320,7 +1319,7 @@ inline void puc_no_wrap(Str32_IO str)
 }
 
 // warn english punctuations , . " ? ( ) in normal text
-// set error = true to throw error instead of console warning
+// when replace is false, set error = true to throw error instead of console warning
 // return the number replaced
 inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = false)
 {
@@ -1372,6 +1371,25 @@ inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = 
         }
     }
     return N;
+}
+
+// check escape characters in normal text i.e. `& # _ ^`
+inline Long check_normal_text_escape(Str32_IO str)
+{
+//    vecStr32 keys = {U"&", U"#", U"_", U"^"};
+//    Intvs intvNorm;
+//    FindNormalText(intvNorm, str);
+//    Long ind0 = -1, ikey, N = 0;
+//    while (true) {
+//        ind0 = find(ikey, str, keys, ind0 + 1);
+//        if (ind0 < 0)
+//            break;
+//        if (is_in(ind0, intvNorm))
+//            if (ind0 > 0 && str[ind0-1] != '\\')
+//                throw Str32(U"正文中出现非法字符： " + str.substr(ind0, 20));
+//    }
+//    return N;
+    return 0;
 }
 
 // create table of content from main.tex
@@ -2053,6 +2071,8 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
     chinese_alpha_num_space(str);
     // ensure spaces outside of chinese double quotes
     chinese_double_quote_space(str);
+    // check escape characters in normal text i.e. `& # _ ^`
+    check_normal_text_escape(str);
     // check non ascii char in equations (except in \text)
     check_eq_ascii(str);
     // forbid empty lines in equations

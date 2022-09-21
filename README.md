@@ -19,7 +19,6 @@
 ## PhysWikiScan 所有控制行命令
 * 如果不输入任何 argument， 程序运行后会提示从 stdin 输入 arguments
 * `PhysWikiScan .` 全部 tex 转换为 html， 并生成完整目录 `index.html`， 生成 `entries.txt`, `titles.txt`， `ids.txt`， `labels.txt`
-* `PhysWikiScan .,` 在 `PhysWikiScan .` 的基础上将正文中的部分英文标点替换成中文
 * `PhysWikiScan --titles`: 只更新 `entries.txt` 和 `titles.txt`
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`
 * `PhysWikiScan --entry fname1 fname2 ...`：指定要转换的词条， 不更新目录, 更新 `ids.txt` 和 `labels.txt` （必须已经存在）
@@ -29,7 +28,7 @@
 * `PhysWikiScan --hide fname` 把词条中的公式和代码全部替换成 `$四位编号$` 以及 `\verb|四位编号|`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`， 编号对应 txt 中的行号（从 0 开始）
 * `PhysWikiScan --unhide fname` 把词条中的公式和代码恢复。
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会跳过该词条）
-* `PhysWikiScan --eng-punc-to-chinese` 批量把正文中汉字两边的英文标点变为中文（有少量 bug，碰到会跳过该词条）
+* `PhysWikiScan ,` 批量把正文中汉字两边的英文标点变为中文（有少量 bug，碰到会跳过该词条）
 * `PhysWikiScan --wc` 统计中文字符数（含标点）
 * 若文件最后是 `\n%%eng\n`, 则编译成英语（图表标题，autoref 等）
 
