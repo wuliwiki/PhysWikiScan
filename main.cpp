@@ -209,15 +209,17 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
-        vecStr32 titles, entries; VecLong entry_order;
+        vecStr32 titles, entries, isDraft; VecLong entry_order;
         Long Ntoc; // number of entries in main.tex
-        try { Ntoc = entries_titles(titles, entries, entry_order); }
+        try { Ntoc = entries_titles(titles, entries, isDraft, entry_order); }
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;
         }
         write_vec_str(titles, gv::path_data + U"titles.txt");
         write_vec_str(entries, gv::path_data + U"entries.txt");
+        if (gv::is_wiki)
+            write_vec_str(isDraft, gv::path_data + U"isDraft.txt");
         file_remove(utf32to8(gv::path_data) + "entry_order.matt");
         Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
         save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
@@ -225,19 +227,25 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from main.tex
-        vecStr32 titles, entries;
+        vecStr32 titles, entries, isDraft;
         if (file_exist(gv::path_data + U"titles.txt"))
             read_vec_str(titles, gv::path_data + U"titles.txt");
         if (file_exist(gv::path_data + U"entries.txt"))
             read_vec_str(entries, gv::path_data + U"entries.txt");
+        if (file_exist(gv::path_data + U"is_draft.txt"))
+            read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
         if (titles.size() != entries.size()) {
             cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
+            return 0;
+        }
+        if (entries.size() != isDraft.size()) {
+            cerr << u8"内部错误： is_draft.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
         vecStr32 not_used1, not_used3;
         vecLong not_used2, not_used4;
         try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
-            entries);}
+            entries, isDraft);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl;
             return 0;

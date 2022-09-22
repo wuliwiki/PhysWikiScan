@@ -42,6 +42,24 @@ inline void get_title(Str32_O title, Str32_I str)
         throw Str32(U"第一行注释的标题不能含有 “\\” ");
 }
 
+// check if an entry is labeled "\issueDraft"
+inline Bool is_draft(Str32_I str)
+{
+    Intvs intv;
+    find_env(intv, str, U"issues");
+    if (intv.size() > 1)
+        throw Str32(U"每个词条最多支持一个 issues 环境!");
+    else if (intv.empty())
+        return false;
+    Long ind = str.find(U"\\issueDraft", intv.L(0));
+    if (ind < 0)
+        return false;
+    if (ind < intv.R(0))
+        return true;
+    else
+        throw Str32(U"\\issueDraft 命令不在 issues 环境中!");
+}
+
 // trim "\n" and " " on both sides
 // remove unnecessary "\n"
 // replace “\n\n" with "\n</p>\n<p>　　\n"
@@ -1202,7 +1220,7 @@ inline Long cite(Str32_IO str)
 
 // update entries.txt and titles.txt
 // return the number of entries in main.tex
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entry_order)
+inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isDraft, VecLong_O entry_order)
 {
     entries.clear(); titles.clear();
     file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
@@ -1220,8 +1238,11 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
     Str32 title;
     Str32 entryName; // entry label
     Str32 str; read(str, gv::path_in + "main.tex");
+    Str32 str_entry;
     CRLF_to_LF(str);
     titles.resize(entries.size());
+    if (gv::is_wiki)
+        isDraft.resize(entries.size());
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
     entry_order.resize(entries.size());
@@ -1243,6 +1264,11 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entr
         Long ind = search(entryName, entries);
         if (ind < 0)
             throw Str32(U"main.tex 中词条文件 " + entryName + U" 未找到");
+        if (gv::is_wiki) {
+            read(str_entry, gv::path_in + U"contents/" + entryName + ".tex");
+            CRLF_to_LF(str_entry);
+            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
+        }
         if (entry_order[ind] < 0)
             entry_order[ind] = entry_order1;
         else
@@ -1401,7 +1427,7 @@ inline Long check_normal_text_escape(Str32_IO str)
 // `chap_ind[i]` is similar to `part_ind[i]`, for chapters
 // if part_ind.size() == 0, `chap_name, chap_ind, part_ind, part_name` will be ignored
 inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
-    vecLong_O part_ind, vecStr32_I entries)
+    vecLong_O part_ind, vecStr32_I entries, vecStr32_I isDraft)
 {
     Long N{}, ind0{}, ind1{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
@@ -1416,7 +1442,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     
     Str32 title, title2; // chinese entry name, chapter name, or part name
     Str32 entryName; // entry label
-    Str32 str, str2, toc;
+    Str32 str, str2, toc, class_draft;
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
     if (part_ind.size() > 0) {
         chap_name.clear(); part_name.clear();
@@ -1449,11 +1475,13 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
                 throw Str32(U"main.tex 中词条中文名不能为空");
             }
             command_arg(entryName, str, ind1, 1);
+            Long n = search(entryName, entries);
             // insert entry into html table of contents
-            ind0 = insert(toc, U"<a href = \"" + gv::url + entryName + ".html" + "\" target = \"_blank\">"
+            // cout << "isDraft[" << n << "] = " + isDraft[n] << endl;
+            class_draft = (isDraft[n] == U"1") ? U"class=\"draft\" " : U"";
+            ind0 = insert(toc, U"<a " + class_draft + U"href = \"" + gv::url + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title
-            Long n = search(entryName, entries);
             if (n < 0)
                 throw Str32(U"main.tex 中词条文件 " + entryName + " 未找到！");
             read(str2, gv::path_in + U"contents/" + entryName + U".tex"); CRLF_to_LF(str2);
@@ -2012,7 +2040,7 @@ inline Long pay2div(Str32_IO str)
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
+inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
     VecChar_IO imgs_mark, vecStr32_I imgs)
 {
@@ -2027,6 +2055,7 @@ inline Long PhysWikiOnline1(vecStr32_IO ids, vecStr32_IO labels, vecLong_IO link
 
     // read title from first comment
     get_title(title, str);
+    isDraft = is_draft(str);
 
     // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
     if ((size(str) > 7 && str.substr(size(str) - 7) == U"\n%%eng\n") ||
@@ -2284,6 +2313,7 @@ inline void PhysWikiOnline()
     vecLong part_ind, chap_ind; // toc part & chapter number of each entries[i]
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
+    vecStr32 isDraft;  // if the corresponding entry is a draft ('1' or '0')
     vecStr32 imgs; // all images in figures/ except .pdf
     vecStr32 chap_name, part_name;
     Long Ntoc; // number of entries in table of contents
@@ -2294,9 +2324,11 @@ inline void PhysWikiOnline()
     write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
     write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
 
-    Ntoc = entries_titles(titles, entries, entry_order);
+    Ntoc = entries_titles(titles, entries, isDraft, entry_order);
     write_vec_str(titles, gv::path_data + U"titles.txt");
     write_vec_str(entries, gv::path_data + U"entries.txt");
+    if (gv::is_wiki)
+        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
     file_remove(utf32to8(gv::path_data) + "entry_order.matt");
     Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
     save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
@@ -2307,7 +2339,7 @@ inline void PhysWikiOnline()
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries);
+    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries, isDraft);
     file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); // check if image has been used
@@ -2328,12 +2360,15 @@ inline void PhysWikiOnline()
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
+        Bool tmp;
+        PhysWikiOnline1(tmp, ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
     }
 
     // save id and label data
     write_vec_str(labels, gv::path_data + U"labels.txt");
     write_vec_str(ids, gv::path_data + U"ids.txt");
+    if (gv::is_wiki)
+        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
     // 2nd loop through tex files
     // deal with autoref
@@ -2379,7 +2414,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vecStr32 labels, ids, entries, titles;
+    vecStr32 labels, ids, entries, titles, isDraft;
     if (!file_exist(gv::path_data + U"labels.txt"))
         throw Str32(U"内部错误： " + gv::path_data + U"labels.txt 不存在");
     read_vec_str(labels, gv::path_data + U"labels.txt");
@@ -2397,6 +2432,8 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     read_vec_str(titles, gv::path_data + U"titles.txt");
     if (!file_exist(gv::path_data + U"entry_order.matt"))
         throw Str32(U"内部错误： " + gv::path_data + U"entry_order.matt 不存在");
+    if (gv::is_wiki)
+        read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
     VecLong entry_order;
     Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "r");
     Long Ntoc; // number of entries in main.tex
@@ -2422,19 +2459,23 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     vecLong links;
     for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
-        if (ind < 0) {
+        if (ind < 0)
             throw Str32(U"entries.txt 中未找到该词条");
-        }
 
         cout << std::setw(5) << std::left << ind
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2;
-        PhysWikiOnline1(ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
+        Bool tmp;
+        PhysWikiOnline1(tmp, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
+        if (gv::is_wiki)
+            isDraft[i] = tmp ? U"1" : U"0";
     }
     
     write_vec_str(labels, gv::path_data + U"labels.txt");
     write_vec_str(ids, gv::path_data + U"ids.txt");
+    if (gv::is_wiki)
+        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
     // 2nd loop through tex files
     // deal with autoref
