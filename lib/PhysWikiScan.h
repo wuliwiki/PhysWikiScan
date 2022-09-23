@@ -1481,8 +1481,8 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             command_arg(entryName, str, ind1, 1);
             Long n = search(entryName, entries);
             // insert entry into html table of contents
-            // cout << "isDraft[" << n << "] = " + isDraft[n] << endl;
-            class_draft = (isDraft[n] == U"1") ? U"class=\"draft\" " : U"";
+            if (gv::is_wiki)
+                class_draft = (isDraft[n] == U"1") ? U"class=\"draft\" " : U"";
             ind0 = insert(toc, U"<a " + class_draft + U"href = \"" + gv::url + entryName + ".html" + "\" target = \"_blank\">"
                 + title + U"</a>　\n", ind0);
             // record Chinese title

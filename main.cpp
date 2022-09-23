@@ -233,13 +233,13 @@ int main(int argc, char *argv[]) {
             read_vec_str(titles, gv::path_data + U"titles.txt");
         if (file_exist(gv::path_data + U"entries.txt"))
             read_vec_str(entries, gv::path_data + U"entries.txt");
-        if (file_exist(gv::path_data + U"is_draft.txt"))
+        if (gv::is_wiki && file_exist(gv::path_data + U"is_draft.txt"))
             read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
         if (titles.size() != entries.size()) {
             cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        if (entries.size() != isDraft.size()) 
+        if (gv::is_wiki && entries.size() != isDraft.size()) 
             isDraft.resize(entries.size(), U"1");
         vecStr32 not_used1, not_used3;
         vecLong not_used2, not_used4;
