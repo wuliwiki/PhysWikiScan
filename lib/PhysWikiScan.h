@@ -3,7 +3,7 @@
 #include "../SLISC/unicode.h"
 #include "../SLISC/tree.h"
 #include "../highlight/matlab2html.h"
-#include "../highlight/cpp2html.h"
+// #include "../highlight/cpp2html.h"
 #include "../SLISC/sha1sum.h"
 #include "../SLISC/string.h"
 #include "../SLISC/sort.h"
@@ -2432,8 +2432,10 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     read_vec_str(titles, gv::path_data + U"titles.txt");
     if (!file_exist(gv::path_data + U"entry_order.matt"))
         throw Str32(U"内部错误： " + gv::path_data + U"entry_order.matt 不存在");
-    if (gv::is_wiki)
+    if (gv::is_wiki) {
         read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
+        isDraft.resize(entries.size(), U"1");
+    } 
     VecLong entry_order;
     Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "r");
     Long Ntoc; // number of entries in main.tex
@@ -2469,7 +2471,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
         Bool tmp;
         PhysWikiOnline1(tmp, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
         if (gv::is_wiki)
-            isDraft[i] = tmp ? U"1" : U"0";
+            isDraft[ind] = tmp ? U"1" : U"0";
     }
     
     write_vec_str(labels, gv::path_data + U"labels.txt");

@@ -238,10 +238,8 @@ int main(int argc, char *argv[]) {
             cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
             return 0;
         }
-        if (entries.size() != isDraft.size()) {
-            cerr << u8"内部错误： is_draft.txt 和 entries.txt 行数不同!" << endl;
-            return 0;
-        }
+        if (entries.size() != isDraft.size()) 
+            isDraft.resize(entries.size(), U"1");
         vecStr32 not_used1, not_used3;
         vecLong not_used2, not_used4;
         try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
