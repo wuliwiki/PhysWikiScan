@@ -1287,9 +1287,13 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
         }
     }    
 
-    cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
+    Bool warned = false;
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
+            if (!warned) {
+                cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
+                warned = true;
+            }
             read(str, gv::path_in + U"contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
             get_title(title, str);

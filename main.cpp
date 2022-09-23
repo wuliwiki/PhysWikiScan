@@ -197,6 +197,7 @@ int main(int argc, char *argv[]) {
         gv::is_entire = true;
         // remove matlab files
         vecStr fnames;
+        ensure_dir(utf32to8(gv::path_out) + "code/matlab/");
         file_list_full(fnames, utf32to8(gv::path_out) + "code/matlab/");
         for (Long i = 0; i < size(fnames); ++i)
             file_remove(fnames[i]);
