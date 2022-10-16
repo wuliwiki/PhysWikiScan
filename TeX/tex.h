@@ -678,8 +678,8 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     find_env(intv1, str, U"table", 'o');
     combine(intv, intv1);
     // subsubsection command
-    find_all_command_intv(intv1, U"subsubsection", str);
-    combine(intv, intv1);
+    // find_all_command_intv(intv1, U"subsubsection", str);
+    // combine(intv, intv1);
 
     //  \begin{example}{} and \end{example}
     FindAllBegin(intv1, U"example", str, '2');
