@@ -1699,6 +1699,9 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 trim(lang);
             }
         }
+        else {
+            throw Str32(U"lstlisting 需要在方括号中指定语言，格式：[language=xxx]。 建议使用菜单中的按钮插入该环境。");
+        }
 
         // get caption
         caption.clear();
