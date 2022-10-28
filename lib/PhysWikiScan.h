@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <unordered_set>
 #include "../SLISC/file.h"
 #include "../SLISC/unicode.h"
 #include "../SLISC/tree.h"
@@ -80,30 +81,37 @@ inline Long paragraph_tag1(Str32_IO str)
     return N;
 }
 
+std::unordered_set<Char32> illegal_chars;
+
 // globally forbidden characters
 // assuming comments are deleted and verbose envs are not hidden
 inline void global_forbid_char(Str32_I str)
 {
     // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
-    Str32 forbidden = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ⟺∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
+    Str32 forbidden = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
         U"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
         U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖";
 
     // check repetition
-    Long ind = 0;
-    while (ind < forbidden.size()) {
-        ind = find_repeat(forbidden, ind);
-        if (ind < 0) break;
-        cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
-        throw Str32("found repeated char in `forbidden`");
-        ++ind;
-    };
+    static bool checked = false;
+    if (!checked) {
+        checked = true;
+        Long ind = 0;
+        while (ind < forbidden.size()) {
+            ind = find_repeat(forbidden, ind);
+            if (ind < 0) break;
+            cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
+            throw Str32(U"found repeated char in `forbidden`");
+            ++ind;
+        };
+    }
 
-    ind = str.find_first_of(forbidden);
+    Long ind = str.find_first_of(forbidden);
     if (ind >= 0) {
         Long beg = max(Long(0),ind-30);
         SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
         // TODO: scan 应该搞一个批量替换功能
+        illegal_chars.insert(str[ind]);
     }
 
     Long N = str.size();
@@ -113,6 +121,7 @@ inline void global_forbid_char(Str32_I str)
         if (Long(str[i]) > 65536) {
             Long beg = max(Long(0),ind-30);
             SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
+            illegal_chars.insert(str[ind]);
         }
     }
 }

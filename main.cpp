@@ -207,6 +207,13 @@ int main(int argc, char *argv[]) {
             cerr << utf32to8(msg) << endl;
             return 0;
         }
+        if (!illegal_chars.empty()) {
+            SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
+            ofstream fout("data/illegal_chars.txt");
+            for (auto c : illegal_chars) {
+                fout << Long(c) << endl;
+            }
+        }
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
