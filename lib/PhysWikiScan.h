@@ -84,22 +84,26 @@ inline Long paragraph_tag1(Str32_IO str)
 // assuming comments are deleted and verbose envs are hidden
 inline void global_forbid_char(Str32_I str)
 {
+    // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
     Str32 forbidden = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ⟺∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
         U"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
         U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖";
 
     // check repetition
     Long ind = 0;
-    while (ind >= 0 && ind < forbidden.size()) {
-        SLS_WARN("found repeated char in `forbidden`:");
+    while (ind > 0 && ind < forbidden.size()) {
+        throw Str32("found repeated char in `forbidden`:");
         ind = find_repeat(forbidden, ind);
-        cout << forbidden[ind] << endl;
+        cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
         ++ind;
     };
 
     ind = str.find_first_of(forbidden);
-    if (ind >= 0)
-        throw Str32(U"latex 代码中出现非法字符： " + str[ind]);
+    if (ind >= 0) {
+        Long beg = max(Long(0),ind-30);
+        SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
+        // TODO: scan 应该搞一个批量替换功能
+    }
 }
 
 inline Long paragraph_tag(Str32_IO str)
@@ -2115,6 +2119,8 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels,
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1)
         throw Str32(U"内部错误： \"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 
+    // check globally forbidden char
+    global_forbid_char(str);
     // save and replace verbatim code with an index
     vecStr32 str_verb;
     verbatim(str_verb, str);
@@ -2131,8 +2137,6 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels,
     chinese_double_quote_space(str);
     // check escape characters in normal text i.e. `& # _ ^`
     check_normal_text_escape(str);
-    // check globally forbidden char
-    global_forbid_char(str);
     // check non ascii char in equations (except in \text)
     check_eq_ascii(str);
     // forbid empty lines in equations
