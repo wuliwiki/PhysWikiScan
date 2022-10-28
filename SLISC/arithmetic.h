@@ -43,24 +43,24 @@ inline void cat(vecStr32_IO v, vecStr32_I v1)
 
 
 // get unique elements from a vector
-inline void uniq_elm(vecInt_IO v)
+template <class T>
+inline void uniq_elm(vector<T> &v)
 {
-    Long N = v.size(), n = 0; // already done
-    for (Long i = 0; i < N; ++i) {
-        Bool repeat = false;
-        for (Long j = 0; j < n; ++j) {
-            if (v[i] == v[j]) {
-                repeat = true; break;
-            }
-        }
-        if (!repeat) {
-            v[n] = v[i];
-            ++n;
-        }
-    }
-    v.resize(n);
+	Long N = v.size(), n = 0;
+	for (Long i = 0; i < N; ++i) {
+	    Bool repeat = false;
+	    for (Long j = 0; j < n; ++j) {
+	        if (v[i] == v[j]) {
+	            repeat = true; break;
+	        }
+	    }
+	    if (!repeat) {
+	        v[n] = v[i];
+	        ++n;
+	    }
+	}
+	v.resize(n);
 }
-
 
 // get all unique rows from a matrix
 inline void uniq_rows(CmatInt_O a, CmatInt_I a1)

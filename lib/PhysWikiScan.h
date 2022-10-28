@@ -80,6 +80,28 @@ inline Long paragraph_tag1(Str32_IO str)
     return N;
 }
 
+// globally forbidden characters
+// assuming comments are deleted and verbose envs are hidden
+inline void global_forbid_char(Str32_I str)
+{
+    Str32 forbidden = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ⟺∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
+        U"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
+        U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖";
+
+    // check repetition
+    Long ind = 0;
+    while (ind >= 0 && ind < forbidden.size()) {
+        SLS_WARN("found repeated char in `forbidden`:");
+        ind = find_repeat(forbidden, ind);
+        cout << forbidden[ind] << endl;
+        ++ind;
+    };
+
+    ind = str.find_first_of(forbidden);
+    if (ind >= 0)
+        throw Str32(U"latex 代码中出现非法字符： " + str[ind]);
+}
+
 inline Long paragraph_tag(Str32_IO str)
 {
     Long N = 0, ind0 = 0, left = 0, length, ikey;
@@ -2109,6 +2131,8 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels,
     chinese_double_quote_space(str);
     // check escape characters in normal text i.e. `& # _ ^`
     check_normal_text_escape(str);
+    // check globally forbidden char
+    global_forbid_char(str);
     // check non ascii char in equations (except in \text)
     check_eq_ascii(str);
     // forbid empty lines in equations
