@@ -81,7 +81,7 @@ inline Long paragraph_tag1(Str32_IO str)
 }
 
 // globally forbidden characters
-// assuming comments are deleted and verbose envs are hidden
+// assuming comments are deleted and verbose envs are not hidden
 inline void global_forbid_char(Str32_I str)
 {
     // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
@@ -91,10 +91,11 @@ inline void global_forbid_char(Str32_I str)
 
     // check repetition
     Long ind = 0;
-    while (ind > 0 && ind < forbidden.size()) {
-        throw Str32("found repeated char in `forbidden`:");
+    while (ind < forbidden.size()) {
         ind = find_repeat(forbidden, ind);
+        if (ind < 0) break;
         cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
+        throw Str32("found repeated char in `forbidden`");
         ++ind;
     };
 
@@ -103,6 +104,16 @@ inline void global_forbid_char(Str32_I str)
         Long beg = max(Long(0),ind-30);
         SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
         // TODO: scan 应该搞一个批量替换功能
+    }
+
+    Long N = str.size();
+    for (Long i = 0; i < N; ++i) {
+        // overleaf only suppors Basic Multilingual Plane (BMP) characters
+        // we should do that too (except for comments)
+        if (Long(str[i]) > 65536) {
+            Long beg = max(Long(0),ind-30);
+            SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
+        }
     }
 }
 
