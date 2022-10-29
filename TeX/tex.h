@@ -516,6 +516,47 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str32_I str, Char option = 'i')
     return N;
 }
 
+// find the range of inline equations using \(...\)
+// if option = 'i', intervals does not include \( and \), if 'o', it does.
+// return the number of \(...\) environments found.
+inline Long find_paren_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+{
+    intv.clear();
+    Long N = 0; // number of \(...\)
+    Long ind0 = -1;
+    while (true) {
+        // find \(
+        ind0 = str.find(U"\\(", ++ind0);
+        if (ind0 < 0) break;
+        // `\\(` means a line break and (, 
+        //     whether inside or outside equation env
+        if (ind0 > 0 && str[ind0-1] == U'\\') continue;
+        intv.pushL(ind0);
+        // find `\)`, ignore `\\)`
+        while (true) {
+            ind0 = str.find(U"\\)", ++ind0);
+            if (ind0 < 0)
+                throw Str32(U"\\( 没有找到匹配的 \\)");
+            if (ind0 > 0 && str[ind0-1] == U'\\') continue;
+            intv.pushR(ind0+1); break;
+        }
+    }
+    N /= 2;
+    if (option == 'i' && N > 0)
+        for (Long i = 0; i < N; ++i)
+            intv.L(i)+=2, intv.R(i)-=2;
+    return N;
+}
+
+// combine find_single_dollar_eq() and find_paren_eq()
+inline void find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+{
+    Intvs intv1;
+    find_single_dollar_eq(intv, str, option);
+    find_paren_eq(intv1, str, option);
+    combine(intv, intv1);
+}
+
 // TODO: find one instead of all
 // TODO: find one using FindComBrace
 // Long FindAllBegin
@@ -598,14 +639,58 @@ inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option = 'i'
     }
 }
 
+// find the range of display equations using \[...\]
+// if option = 'i', intervals does not include \[ and \], if 'o', it does.
+// return the number of \[...\] environments found.
+inline Long find_sqr_bracket_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+{
+    intv.clear();
+    Long N = 0; // number of \[...\]
+    Long ind0 = -1;
+    while (true) {
+        // find \[
+        ind0 = str.find(U"\\[", ++ind0);
+        if (ind0 < 0) break;
+        if (ind0 > 0 && str[ind0-1] == U'\\')
+            continue; // `\\[3pt]` might be used in split environment
+        intv.pushL(ind0);
+        // find \]
+        ind0 = str.find(U"\\]", ++ind0);
+        if (ind0 < 0)
+            throw Str32(U"\\[ 没有找到匹配的 \\]");
+        if (ind0 > 0 && str[ind0-1] == U'\\')
+            throw Str32(U"非法命令： \\\\]");
+        intv.pushR(ind0+1);
+    }
+    N /= 2;
+    if (option == 'i' && N > 0)
+        for (Long i = 0; i < N; ++i)
+            intv.L(i)+=2, intv.R(i)-=2;
+    return N;
+}
+
+// find display equations
+inline void find_display_eq(Intvs_O intv, Str32_I str, Char_I option = 'i')
+{
+    Intvs intv1;
+    intv.clear();
+    find_double_dollar_eq(intv, str, option);
+    find_sqr_bracket_eq(intv1, str, option);
+    combine(intv, intv1);
+    find_env(intv1, str, U"equation", option);
+    combine(intv, intv1);
+    find_env(intv1, str, U"align", option);
+    combine(intv, intv1);
+    find_env(intv1, str, U"gather", option);
+    combine(intv, intv1);
+}
+
 // forbid empty line in equations
 inline void check_eq_empty_line(Str32_I str)
 {
     Intvs intv, intv1;
-    find_env(intv, str, U"equation");
-    find_single_dollar_eq(intv1, str);
-    combine(intv, intv1);
-    find_double_dollar_eq(intv1, str);
+    find_inline_eq(intv, str);
+    find_display_eq(intv1, str);
     combine(intv, intv1);
     Str32 tmp;
     for (Long i = intv.size() - 1; i >= 0; --i) {
@@ -620,10 +705,8 @@ inline void check_eq_empty_line(Str32_I str)
 inline void check_eq_ascii(Str32_I str)
 {
     Intvs intv, intv1;
-    find_env(intv, str, U"equation");
-    find_single_dollar_eq(intv1, str);
-    combine(intv, intv1);
-    find_double_dollar_eq(intv1, str);
+    find_inline_eq(intv, str);
+    find_display_eq(intv1, str);
     combine(intv, intv1);
     Str32 tmp;
     for (Long i = intv.size() - 1; i >= 0; --i) {
@@ -635,7 +718,7 @@ inline void check_eq_ascii(Str32_I str)
 }
 
 // Find normal text range
-inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
+inline Long FindNormalText(Intvs_O intvNorm, Str32_I str)
 {
     Intvs intv, intv1;
     // verbatim
@@ -647,23 +730,14 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     // comments
     find_comments(intv1, str, U"%");
     combine(intv, intv1);
-    // inline equation environments
-    find_single_dollar_eq(intv1, str, 'o');
+    // inline equations
+    find_inline_eq(intv1, str, 'o');
     combine(intv, intv1);
-    // $$...$$ equation environments
-    find_double_dollar_eq(intv1, str, 'o');
-    combine(intv, intv1);
-    // equation environments
-    find_env(intv1, str, U"equation", 'o');
+    // display equation environments
+    find_display_eq(intv1, str, 'o');
     combine(intv, intv1);
     // command environments
     find_env(intv1, str, U"Command", 'o');
-    combine(intv, intv1);
-    // gather environments
-    find_env(intv1, str, U"gather", 'o');
-    combine(intv, intv1);
-    // align environments (not "aligned")
-    find_env(intv1, str, U"align", 'o');
     combine(intv, intv1);
     // texttt command
     find_all_command_intv(intv1, U"texttt", str);
@@ -712,7 +786,7 @@ inline Long FindNormalText(Intvs_O indNorm, Str32_I str)
     FindEnd(intv1, U"corollary", str);
     combine(intv, intv1);
     // invert range
-    return invert(indNorm, intv, str.size());
+    return invert(intvNorm, intv, str.size());
 }
 
 // detect unnecessary braces and add "删除标记"

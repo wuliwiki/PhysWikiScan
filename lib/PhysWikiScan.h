@@ -90,7 +90,8 @@ inline void global_forbid_char(Str32_I str)
     // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
     Str32 forbidden = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
         U"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
-        U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖";
+        U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖"
+        U"⓪①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
 
     // check repetition
     static bool checked = false;
@@ -143,7 +144,7 @@ inline Long paragraph_tag(Str32_IO str)
     // 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
     char next, last = 'n';
 
-    Intvs intv, intvInline;
+    Intvs intv, intvInline, intv_tmp;
 
     // handle normal text intervals separated by
     // commands in "commands" and environments
@@ -155,6 +156,8 @@ inline Long paragraph_tag(Str32_IO str)
         else {
             ind0 = find_command(ikey, str, commands, ind0);
             find_double_dollar_eq(intv, str, 'o');
+            find_sqr_bracket_eq(intv_tmp, str, 'o');
+            combine(intv, intv_tmp);
             Long itmp = is_in_no(ind0, intv);
             if (itmp >= 0) {
                 ind0 = intv.R(itmp) + 1; continue;
@@ -164,7 +167,7 @@ inline Long paragraph_tag(Str32_IO str)
             else {
                 next = 'n';
                 if (ikey == 0) { // found environment
-                    find_single_dollar_eq(intvInline, str);
+                    find_inline_eq(intvInline, str);
                     if (is_in(ind0, intvInline)) {
                         ++ind0; continue; // ignore in inline equation
                     }
@@ -214,7 +217,7 @@ inline Long paragraph_tag(Str32_IO str)
             temp = begin + temp + end;
         }
         str.replace(left, length, temp);
-        find_single_dollar_eq(intvInline, str);
+        find_inline_eq(intvInline, str);
         if (next == 'f')
             return N;
         ind0 += temp.size() - length;
@@ -229,7 +232,7 @@ inline Long paragraph_tag(Str32_IO str)
                 temp = str.substr(left, length);
                 paragraph_tag(temp);
                 str.replace(left, length, temp);
-                find_single_dollar_eq(intvInline, str);
+                find_inline_eq(intvInline, str);
                 ind0 = ind1 + temp.size() - length;
             }
             else
@@ -1937,7 +1940,7 @@ inline Long inline_eq_space(Str32_IO str)
 {
     Long N = 0;
     Intvs intv;
-    find_single_dollar_eq(intv, str, 'o');
+    find_inline_eq(intv, str, 'o');
     for (Long i = intv.size() - 1; i >= 0; --i) {
         Long ind0 = intv.R(i) + 1;
         if (is_chinese(str[ind0])) {
@@ -1980,11 +1983,8 @@ inline Long rep_eq_lt_gt(Str32_IO str)
     Long N = 0;
     Intvs intv, intv1;
     Str32 tmp;
-    find_single_dollar_eq(intv, str);
-    find_double_dollar_eq(intv1, str); combine(intv, intv1);
-    find_env(intv1, str, U"equation"); combine(intv, intv1);
-    find_env(intv1, str, U"align"); combine(intv, intv1);
-    find_env(intv1, str, U"gather"); combine(intv, intv1);
+    find_inline_eq(intv, str);
+    find_display_eq(intv1, str); combine(intv, intv1);
     for (Long i = intv.size() - 1; i >= 0; --i) {
         Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
         tmp = str.substr(ind0, Nstr);
@@ -2659,14 +2659,8 @@ inline void hide_eq_verb(Str32_IO str)
     Str32 tmp;
     vecStr32 eq_list, verb_list;
     Intvs intv, intv1;
-    find_single_dollar_eq(intv, str, 'o');
-    find_double_dollar_eq(intv1, str, 'o');
-    combine(intv, intv1);
-    find_env(intv1, str, U"equation", 'o');
-    combine(intv, intv1);
-    find_env(intv1, str, U"align", 'o');
-    combine(intv, intv1);
-    find_env(intv1, str, U"gather", 'o');
+    find_inline_eq(intv, str, 'o');
+    find_display_eq(intv1, str, 'o');
     combine(intv, intv1);
 
     for (Long i = intv.size() - 1; i >= 0; --i) {

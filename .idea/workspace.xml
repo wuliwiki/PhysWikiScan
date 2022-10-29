@@ -18,12 +18,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8018292-1a38-4e70-931a-7d5e75d40aa6" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SLISC/interv.h" beforeDir="false" afterPath="$PROJECT_DIR$/SLISC/interv.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TeX/tex.h" beforeDir="false" afterPath="$PROJECT_DIR$/TeX/tex.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TeX/tex2html.h" beforeDir="false" afterPath="$PROJECT_DIR$/TeX/tex2html.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/highlight/cpp2html.h" beforeDir="false" afterPath="$PROJECT_DIR$/highlight/cpp2html.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/highlight/matlab2html.h" beforeDir="false" afterPath="$PROJECT_DIR$/highlight/matlab2html.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/PhysWikiScan.h" beforeDir="false" afterPath="$PROJECT_DIR$/lib/PhysWikiScan.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -64,7 +63,12 @@
   }
 }</component>
   <component name="RunManager">
-    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="." REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="PhysWikiScan" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+      <method v="2">
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--entry DrudeM" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="PhysWikiScan" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -80,6 +84,7 @@
       <updated>1662957977887</updated>
       <workItem from="1662957979071" duration="1147000" />
       <workItem from="1662959129606" duration="171000" />
+      <workItem from="1667024359612" duration="1255000" />
     </task>
     <servers />
   </component>
