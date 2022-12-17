@@ -611,35 +611,35 @@ inline Long issuesEnv(Str32_IO str)
     ind0 = find_command(str, U"issueDraft");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条处于草稿阶段．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条处于草稿阶段。</li>");
         ++N;
     }
     // issueTODO
     ind0 = find_command(str, U"issueTODO");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条存在未完成的内容．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条存在未完成的内容。</li>");
         ++N;
     }
     // issueMissDepend
     ind0 = find_command(str, U"issueMissDepend");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条缺少预备知识， 初学者可能会遇到困难．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条缺少预备知识， 初学者可能会遇到困难。</li>");
         ++N;
     }
     // issueAbstract
     ind0 = find_command(str, U"issueAbstract");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多讲解， 便于帮助理解．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多讲解， 便于帮助理解。</li>");
         ++N;
     }
     // issueNeedCite
     ind0 = find_command(str, U"issueNeedCite");
     if (ind0 > 0) {
         ind1 = skip_command(str, ind0);
-        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多参考文献．</li>");
+        str.replace(ind0, ind1 - ind0, U"<li>本词条需要更多参考文献。</li>");
         ++N;
     }
     // issueOther
@@ -728,7 +728,7 @@ inline Long theorem_like_env(Str32_IO str)
 inline Long autoref_space(Str32_I str, Bool_I error)
 {
     Long ind0 = 0, N = 0;
-    Str32 follow = U" ，、．）~”\n";
+    Str32 follow = U" ，、．。）~”\n";
     vecStr32 follow2 = { U"\\begin" };
     Str32 msg;
     while (true) {
@@ -1358,7 +1358,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
 // delete spaces around chinese punctuations
 inline Long rm_punc_space(Str32_IO str)
 {
-    vecStr32 keys = { U"，", U"、", U"．", U"？", U"（", U"）", U"：", U"；", U"【", U"】", U"…"};
+    vecStr32 keys = { U"，", U"、", U"．", U"。", U"？", U"（", U"）", U"：", U"；", U"【", U"】", U"…"};
     Long ind0 = 0, N = 0, ikey;
     while (true) {
         ind0 = find(ikey, str, keys, ind0);
@@ -1379,7 +1379,7 @@ inline Long rm_punc_space(Str32_IO str)
 // consecutive chars can be grouped together
 inline void puc_no_wrap(Str32_IO str)
 {
-    Str32 keys = U"，、。．！？）：”】", tmp;
+    Str32 keys = U"，、．。！？）：”】", tmp;
     Long ind0 = 0, ind1;
     while (true) {
         ind0 = str.find_first_of(keys, ind0);
@@ -1403,7 +1403,7 @@ inline void puc_no_wrap(Str32_IO str)
 inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = false)
 {
     vecStr32 keys = {U",", U".", U"?", U"(", U":"};
-    Str32 keys_rep = U"，．？（：";
+    Str32 keys_rep = U"，。？（：";
     Intvs intvNorm;
     FindNormalText(intvNorm, str);
     Long ind0 = -1, ikey, N = 0;
