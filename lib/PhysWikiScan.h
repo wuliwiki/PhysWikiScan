@@ -1327,31 +1327,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
         titles[ind] = title;
         ++ind0; ++entry_order1;
     }
-
-    // go through commented entries in main.tex
-    ind0 = 0;
-    while (true) {
-        ind0 = str0.find(U"\\entry", ind0);
-        if (ind0 < 0)
-            break;
-        // get chinese title and entry label
-        command_arg(title, str0, ind0);
-        replace(title, U"\\ ", U" ");
-        command_arg(entryName, str0, ind0, 1);
-
-        // record Chinese title
-        Long ind = search(entryName, entries);
-        if (!titles[ind].empty())
-            continue;
-        if (gv::is_wiki) {
-            read(str_entry, gv::path_in + U"contents/" + entryName + ".tex");
-            CRLF_to_LF(str_entry);
-            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
-        }
-        titles[ind] = title;
-        ++ind0;
-    }
-
+    
     // check repeated titles
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
@@ -1361,6 +1337,31 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
                 throw Str32(U"目录中标题重复：" + titles[i]);
         }
     }    
+
+    // go through commented entries in main.tex
+    ind0 = -1;
+    while (true) {
+        ind0 = str0.find(U"\\entry", ++ind0);
+        if (ind0 < 0)
+            break;
+        // get chinese title and entry label
+        command_arg(title, str0, ind0);
+        replace(title, U"\\ ", U" ");
+        if (command_arg(entryName, str0, ind0, 1) == -1) continue;
+        trim(entryName);
+        if (entryName.empty()) continue;
+
+        // record Chinese title
+        Long ind = search(entryName, entries);
+        if (ind < 0 || !titles[ind].empty())
+            continue;
+        if (gv::is_wiki) {
+            read(str_entry, gv::path_in + U"contents/" + entryName + ".tex");
+            CRLF_to_LF(str_entry);
+            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
+        }
+        titles[ind] = title;
+    }
 
     Bool warned = false;
     for (Long i = 0; i < size(titles); ++i) {
