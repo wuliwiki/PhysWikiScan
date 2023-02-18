@@ -1292,11 +1292,13 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
     titles.resize(entries.size());
     if (gv::is_wiki)
         isDraft.resize(entries.size());
+    Str32 str0 = str;
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
     entry_order.resize(entries.size());
     copy(entry_order, -1);
 
+    // go through uncommented entries in main.tex
     while (true) {
         ind0 = str.find(U"\\entry", ind0);
         if (ind0 < 0)
@@ -1326,6 +1328,30 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
         ++ind0; ++entry_order1;
     }
 
+    // go through commented entries in main.tex
+    ind0 = 0;
+    while (true) {
+        ind0 = str0.find(U"\\entry", ind0);
+        if (ind0 < 0)
+            break;
+        // get chinese title and entry label
+        command_arg(title, str0, ind0);
+        replace(title, U"\\ ", U" ");
+        command_arg(entryName, str0, ind0, 1);
+
+        // record Chinese title
+        Long ind = search(entryName, entries);
+        if (!titles[ind].empty)
+            continue;
+        if (gv::is_wiki) {
+            read(str_entry, gv::path_in + U"contents/" + entryName + ".tex");
+            CRLF_to_LF(str_entry);
+            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
+        }
+        titles[ind] = title;
+        ++ind0;
+    }
+
     // check repeated titles
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
@@ -1340,7 +1366,23 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty()) {
             if (!warned) {
-                cout << u8"\n\n警告: 以下词条没有被 main.tex 收录，但仍会被编译" << endl;
+                cout << u8"\n\n警告: 以下词条没有被 main.tex 提及，但仍会被编译" << endl;
+                warned = true;
+            }
+            read(str, gv::path_in + U"contents/" + entries[i] + ".tex");
+            CRLF_to_LF(str);
+            get_title(title, str);
+            titles[i] = title;
+            cout << std::setw(10) << std::left << entries[i]
+                << std::setw(20) << std::left << title << endl;
+        }
+    }
+
+    warned = false;
+    for (Long i = 0; i < size(titles); ++i) {
+        if (entry_order[i] < 0 && !titles[i].empty()) {
+            if (!warned) {
+                cout << u8"\n\n警告: 以下词条在 main.tex 中被注释，但仍会被编译" << endl;
                 warned = true;
             }
             read(str, gv::path_in + U"contents/" + entries[i] + ".tex");
