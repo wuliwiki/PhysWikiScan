@@ -1341,7 +1341,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
 
         // record Chinese title
         Long ind = search(entryName, entries);
-        if (!titles[ind].empty)
+        if (!titles[ind].empty())
             continue;
         if (gv::is_wiki) {
             read(str_entry, gv::path_in + U"contents/" + entryName + ".tex");
