@@ -166,6 +166,11 @@ inline Long define_newcommands(vecStr32_O rules)
 
             U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
             U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
+
+            U"ketbra", U"*", U"2", U"|{#1}\\rangle\\langle{#2}|",
+            U"ketbra", U"*", U"1", U"|{#1}\\rangle\\langle{#1}|",
+            U"ketbra", U"", U"2", U"\\left| #1 \\right\\rangle \\left\\langle #2 \\right|",
+            U"ketbra", U"", U"1", U"\\left| #1 \\right\\rangle \\left\\langle #1 \\right|"
     });
     cat(rules, {
         U"lambdabar", U"", U"0", U"\\mkern-0.25mu {\\bar{\\phantom{a}}} \\mkern -10.2mu\\lambda",
