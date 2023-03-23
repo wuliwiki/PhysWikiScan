@@ -43,13 +43,13 @@
 
 "braket" "*" "2" "\langle{#1}|{#2}\rangle"
 "braket" "*" "1" "\langle{#1}|{#1}\rangle"
-"braket" "" "2" "\left\langle{#1}\middle|{#2}\right\rangle"
-"braket" "" "1" "\left\langle{#1}\middle|{#1}\right\rangle"
+"braket" "" "2" "\left\langle #1 \middle| #2 \right\rangle"
+"braket" "" "1" "\left\langle{#1}\middle| #1 \right\rangle"
 
 "bvec" "" "1" "\boldsymbol{\mathbf{#1}}"
 
 "comm" "*" "2" "[{#1},{#2}]"
-"comm" "" "2" "\left[#1 #2\right]"
+"comm" "" "2" "\left[#1, #2\right]"
 
 "cos" "[]()" "2" "\cos^{#1}\left(#2\right)"
 "cos" "()" "1" "\cos\left(#1\right)"
@@ -104,8 +104,8 @@
 
 "ketbra" "*" "2" "|{#1}\rangle\langle{#2}|"
 "ketbra" "*" "1" "|{#1}\rangle\langle{#1}|"
-"ketbra" "" "2" "\left|{#1}\right\rangle\left\langle{#2}\right|"
-"ketbra" "" "1" "\left|{#1}\right\rangle \left\langle{#1}\right|"
+"ketbra" "" "2" "\left| #1 \right\rangle \left\langle #2 \right|"
+"ketbra" "" "1" "\left| #1 \right\rangle \left\langle #1 \right|"
 
 "lambdabar" "" "0" "\mkern-0.25mu {\bar{\phantom{a}}} \mkern -10.2mu\lambda"
 
@@ -130,8 +130,8 @@
 
 "order" "" "1" "\mathcal{O}\left(#1 \right)"
 
-"pb" "*" "2" "\{#1 #2\}"
-"pb" "" "2" "\left\{#1 #2\right\}"
+"pb" "*" "2" "\{#1, #2\}"
+"pb" "" "2" "\left\{#1, #2\right\}"
 
 "pdv" "*[]" "3" "\partial^{#1} #2/\partial {#3}^{#1}"
 "pdv" "*[]" "2" "\partial^{#1}/\partial {#2}^{#1}"
