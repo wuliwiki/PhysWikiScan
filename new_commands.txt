@@ -1,0 +1,178 @@
+"Arctan" "" "0" "\operatorname{Arctan}"
+
+"Bmat" "" "1" "\left\{\begin{matrix}#1\end{matrix}\right\}"
+
+"Cj" "" "0" "^*"
+
+"E" "" "0" "\mathrm{e}"
+"Her" "" "0" "^\dagger"
+
+"I" "" "0" "\mathrm{i}"
+
+"Im" "" "0" "\operatorname{Im}"
+
+"Nabla" "" "0" "\boldsymbol{\nabla}"
+
+"Q" "" "1" "\hat{#1}"
+
+"Qv" "" "1" "\hat{\boldsymbol{\mathbf{#1}}}"
+
+"Re" "" "0" "\operatorname{Re}"
+
+"Si" "" "1" "\,\mathrm{#1}"
+
+"Tr" "" "0" "^{\mathrm{T}}"
+
+"abs" "" "1" "\left\lvert #1 \right\rvert"
+
+"ali" "" "1" "\begin{aligned}#1\end{aligned}"
+
+"arccos" "[]()" "2" "\arccos^{#1}\left(#2\right)"
+"arccos" "()" "1" "\arccos\left(#1\right)"
+
+"arcsin" "[]()" "2" "\arcsin^{#1}\left(#2\right)"
+"arcsin" "()" "1" "\arcsin\left(#1\right)"
+
+"arctan" "[]()" "2" "\arctan^{#1}\left(#2\right)"
+"arctan" "()" "1" "\arctan\left(#1\right)"   
+
+"bmat" "" "1" "\begin{bmatrix}#1\end{bmatrix}"
+
+"bra" "*" "1" "\langle{#1}\rvert"
+"bra" "" "1" "\left\langle #1 \right\rvert"
+
+"braket" "*" "2" "\langle{#1}|{#2}\rangle"
+"braket" "*" "1" "\langle{#1}|{#1}\rangle"
+"braket" "" "2" "\left\langle{#1}\middle|{#2}\right\rangle"
+"braket" "" "1" "\left\langle{#1}\middle|{#1}\right\rangle"
+
+"bvec" "" "1" "\boldsymbol{\mathbf{#1}}"
+
+"comm" "*" "2" "[{#1},{#2}]"
+"comm" "" "2" "\left[#1 #2\right]"
+
+"cos" "[]()" "2" "\cos^{#1}\left(#2\right)"
+"cos" "()" "1" "\cos\left(#1\right)"
+
+"cosh" "[]()" "2" "\cosh^{#1}\left(#2\right)"
+"cosh" "()" "1" "\cosh\left(#1\right)"
+
+"cot" "[]()" "2" "\cot^{#1}\left(#2\right)"
+"cot" "()" "1" "\cot\left(#1\right)"
+
+"cross" "" "0" "\boldsymbol\times"
+
+"csc" "[]()" "2" "\csc^{#1}\left(#2\right)"
+"csc" "()" "1" "\csc\left(#1\right)"
+
+"curl" "" "0" "\boldsymbol{\nabla}\boldsymbol{\times}"
+
+"dd" "[]" "2" "\,\mathrm{d}^{#1}{#2}"
+"dd" "()" "1" "\,\mathrm{d}\left(#1 \right)"
+"dd" "" "1" "\,\mathrm{d}{#1}"
+
+"div" "" "0" "\boldsymbol{\nabla}\boldsymbol{\cdot}"
+
+"dv" "*[]" "3" "\mathrm{d}^{#1}{#2}/\mathrm{d}{#3}^{#1}"
+"dv" "*[]" "2" "\mathrm{d}^{#1}/\mathrm{d}{#2}^{#1}"
+"dv" "*" "2" "\mathrm{d}{#1}/\mathrm{d}{#2}"
+"dv" "*" "1" "\mathrm{d}/\mathrm{d}{#1}"
+"dv" "[]" "3" "\frac{\mathrm{d}^{#1}{#2}}{\mathrm{d}{#3}^{#1}}"
+"dv" "[]" "2" "\frac{\mathrm{d}^{#1}}{\mathrm{d}{#2}^{#1}}"
+"dv" "" "2" "\frac{\mathrm{d}{#1}}{\mathrm{d}{#2}}"
+"dv" "" "1" "\frac{\mathrm{d}}{\mathrm{d}{#1}}"
+
+"e" "" "1" "\times 10^{#1}"
+
+"erf" "" "0" "\operatorname{erf}"
+"erfi" "" "0" "\operatorname{erfi}"
+
+"ev" "*" "2" "\langle #2 | #1 | #2 \rangle"
+"ev" "*" "1" "\langle #1 \rangle"
+"ev" "" "2" "\left\langle #2 \middle| #1 \middle| #2 \right\rangle"
+"ev" "" "1" "\left\langle #1 \right\rangle"
+
+"eval" "" "1" "\left. #1 \right\rvert"
+
+"exp" "()" "1" "\exp\left(#1\right)"
+"exp" "[]" "1" "\exp\left[#1\right]"
+
+"grad" "" "0" "\boldsymbol\nabla"
+
+"ket" "*" "1" "\lvert{#1}\rangle"
+"ket" "" "1" "\left\lvert #1 \right\rangle"
+
+"ketbra" "*" "2" "|{#1}\rangle\langle{#2}|"
+"ketbra" "*" "1" "|{#1}\rangle\langle{#1}|"
+"ketbra" "" "2" "\left|{#1}\right\rangle\left\langle{#2}\right|"
+"ketbra" "" "1" "\left|{#1}\right\rangle \left\langle{#1}\right|"
+
+"lambdabar" "" "0" "\mkern-0.25mu {\bar{\phantom{a}}} \mkern -10.2mu\lambda"
+
+"laplacian" "" "0" "\boldsymbol{\nabla}^2"
+
+"leftgroup" "" "1" "\left\{\begin{aligned} #1 \end{aligned}\right."
+
+"ln" "[]()" "2" "\ln^{#1}\left(#2\right)"
+"ln" "()" "1" "\ln\left(#1\right)"
+
+"log" "[]()" "2" "\log^{#1}\left(#2\right)"
+"log" "()" "1" "\log\left(#1\right)"
+
+"mat" "" "1" "\boldsymbol{\mathbf{#1}}"
+
+"mel" "*" "3" "\langle{#1}|{#2}|{#3}\rangle"
+"mel" "" "3" "\left\langle #1 \middle| #2 \middle| #3 \right\rangle"
+
+"norm" "" "1" "\left\lVert #1 \right\rVert"
+
+"opn" "" "0" "\operatorname"
+
+"order" "" "1" "\mathcal{O}\left(#1 \right)"
+
+"pb" "*" "2" "\{#1 #2\}"
+"pb" "" "2" "\left\{#1 #2\right\}"
+
+"pdv" "*[]" "3" "\partial^{#1} #2/\partial {#3}^{#1}"
+"pdv" "*[]" "2" "\partial^{#1}/\partial {#2}^{#1}"
+"pdv" "*" "3" "\partial^2 #1/\partial #2 \partial #3"
+"pdv" "*" "2" "\partial #1/\partial #2"
+"pdv" "*" "1" "\partial/\partial #1"
+"pdv" "[]" "3" "\frac{\partial^{#1}{#2}}{\partial{#3}^{#1}}"
+"pdv" "[]" "2" "\frac{\partial^{#1}}{\partial{#2}^{#1}}"
+"pdv" "" "3" "\frac{\partial^2 #1}{\partial #2 \partial #3}"
+"pdv" "" "2" "\frac{\partial #1}{\partial #2}"
+"pdv" "" "1" "\frac{\partial}{\partial{#1}}"
+
+"pmat" "" "1" "\begin{pmatrix}#1\end{pmatrix}"
+
+"qty" "()" "1" "\left(#1 \right)"
+"qty" "[]" "1" "\left[#1 \right]"
+"qty" "" "1" "\left\{#1 \right\}"
+
+"sec" "[]()" "2" "\sec^{#1}\left(#2\right)"
+"sec" "()" "1" "\sec\left(#1\right)"
+
+"sin" "[]()" "2" "\sin^{#1}\left(#2\right)"
+"sin" "()" "1" "\sin\left(#1\right)"
+
+"sinc" "" "0" "\operatorname{sinc}"
+
+"sinh" "[]()" "2" "\sinh^{#1}\left(#2\right)"
+"sinh" "()" "1" "\sinh\left(#1\right)"
+
+"sumint" "" "0" "\int\kern-1.4em\sum"
+
+"tan" "[]()" "2" "\tan^{#1}\left(#2\right)"
+"tan" "()" "1" "\tan\left(#1\right)"
+
+"tanh" "[]()" "2" "\tanh^{#1}\left(#2\right)"
+"tanh" "()" "1" "\tanh\left(#1\right)"
+
+"ten" "" "1" "\boldsymbol{\mathbf{#1}}"
+
+"uvec" "" "1" "\hat{\boldsymbol{\mathbf{#1}}}"
+
+"vdot" "" "0" "\boldsymbol\cdot"
+
+"vmat" "" "1" "\begin{vmatrix}#1\end{vmatrix}"

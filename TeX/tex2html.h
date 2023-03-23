@@ -59,193 +59,21 @@ inline Long define_newcommands(vecStr32_O rules)
     // an extra space will be inserted at both ends of each rule
     // 1. cmd name | 2. format | 3. number of arguments (including optional) | 4. rule
     rules.clear();
-    cat(rules, {
-        U"Arctan", U"", U"0", U"\\operatorname{Arctan}",
-
-            U"Bmat", U"", U"1", U"\\left\\{\\begin{matrix}#1\\end{matrix}\\right\\}",
-
-            U"Cj", U"", U"0", U"^*",
-
-            U"E", U"", U"0", U"\\mathrm{e}",
-            U"Her", U"", U"0", U"^\\dagger",
-
-            U"I", U"", U"0", U"\\mathrm{i}",
-
-            U"Im", U"", U"0", U"\\operatorname{Im}",
-
-            U"Nabla", U"", U"0", U"\\boldsymbol{\\nabla}",
-
-            U"Q", U"", U"1", U"\\hat{#1}",
-
-            U"Qv", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-
-            U"Re", U"", U"0", U"\\operatorname{Re}",
-
-            U"Si", U"", U"1", U"\\,\\mathrm{#1}",
-
-            U"Tr", U"", U"0", U"^{\\mathrm{T}}",
-
-            U"abs", U"", U"1", U"\\left\\lvert #1 \\right\\rvert",
-            
-            U"ali", U"", U"1", U"\\begin{aligned}#1\\end{aligned}",
-
-            U"arccos", U"[]()", U"2", U"\\arccos^{#1}\\left(#2\\right)",
-            U"arccos", U"()", U"1", U"\\arccos\\left(#1\\right)",
-
-            U"arcsin", U"[]()", U"2", U"\\arcsin^{#1}\\left(#2\\right)",
-            U"arcsin", U"()", U"1", U"\\arcsin\\left(#1\\right)",
-
-            U"arctan", U"[]()", U"2", U"\\arctan^{#1}\\left(#2\\right)",
-            U"arctan", U"()", U"1", U"\\arctan\\left(#1\\right)",   
-
-            U"bmat", U"", U"1", U"\\begin{bmatrix}#1\\end{bmatrix}",
-            
-            U"bra", U"*", U"1", U"\\langle{#1}\\rvert",
-            U"bra", U"", U"1", U"\\left\\langle #1 \\right\\rvert",
-
-            U"braket", U"*", U"2", U"\\langle{#1}|{#2}\\rangle",
-            U"braket", U"*", U"1", U"\\langle{#1}|{#1}\\rangle",
-            U"braket", U"", U"2", U"\\left\\langle #1 \\middle| #2 \\right\\rangle",
-            U"braket", U"", U"1", U"\\left\\langle{#1}\\middle| #1 \\right\\rangle",
-
-            U"bvec", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-    });
-    cat(rules, {
-        U"comm", U"*", U"2", U"[{#1},{#2}]",
-            U"comm", U"", U"2", U"\\left[#1, #2\\right]",
-
-            U"cos", U"[]()", U"2", U"\\cos^{#1}\\left(#2\\right)",
-            U"cos", U"()", U"1", U"\\cos\\left(#1\\right)",
-
-            U"cosh", U"[]()", U"2", U"\\cosh^{#1}\\left(#2\\right)",
-            U"cosh", U"()", U"1", U"\\cosh\\left(#1\\right)",
-
-            U"cot", U"[]()", U"2", U"\\cot^{#1}\\left(#2\\right)",
-            U"cot", U"()", U"1", U"\\cot\\left(#1\\right)",
-
-            U"cross", U"", U"0", U"\\boldsymbol\\times",
-
-            U"csc", U"[]()", U"2", U"\\csc^{#1}\\left(#2\\right)",
-            U"csc", U"()", U"1", U"\\csc\\left(#1\\right)",
-
-            U"curl", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\times}",
-    });
-    cat(rules, {
-        U"dd", U"[]", U"2", U"\\,\\mathrm{d}^{#1}{#2}",
-            U"dd", U"()", U"1", U"\\,\\mathrm{d}\\left(#1 \\right)",
-            U"dd", U"", U"1", U"\\,\\mathrm{d}{#1}",
-            
-            U"div", U"", U"0", U"\\boldsymbol{\\nabla}\\boldsymbol{\\cdot}",
-
-            U"dv", U"*[]", U"3", U"\\mathrm{d}^{#1}{#2}/\\mathrm{d}{#3}^{#1}",
-            U"dv", U"*[]", U"2", U"\\mathrm{d}^{#1}/\\mathrm{d}{#2}^{#1}",
-            U"dv", U"*", U"2", U"\\mathrm{d}{#1}/\\mathrm{d}{#2}",
-            U"dv", U"*", U"1", U"\\mathrm{d}/\\mathrm{d}{#1}",
-            U"dv", U"[]", U"3", U"\\frac{\\mathrm{d}^{#1}{#2}}{\\mathrm{d}{#3}^{#1}}",
-            U"dv", U"[]", U"2", U"\\frac{\\mathrm{d}^{#1}}{\\mathrm{d}{#2}^{#1}}",
-            U"dv", U"", U"2", U"\\frac{\\mathrm{d}{#1}}{\\mathrm{d}{#2}}",
-            U"dv", U"", U"1", U"\\frac{\\mathrm{d}}{\\mathrm{d}{#1}}",
-    });
-    cat(rules, {
-        U"e", U"", U"1", U"\\times 10^{#1}",
-            
-            U"erf", U"", U"0", U"\\operatorname{erf}",
-            U"erfi", U"", U"0", U"\\operatorname{erfi}",
-
-            U"ev", U"*", U"2", U"\\langle #2 | #1 | #2 \\rangle",
-            U"ev", U"*", U"1", U"\\langle #1 \\rangle",
-            U"ev", U"", U"2", U"\\left\\langle #2 \\middle| #1 \\middle| #2 \\right\\rangle",
-            U"ev", U"", U"1", U"\\left\\langle #1 \\right\\rangle",
-
-            U"eval", U"", U"1", U"\\left. #1 \\right\\rvert",
-
-            U"exp", U"()", U"1", U"\\exp\\left(#1\\right)",
-            U"exp", U"[]", U"1", U"\\exp\\left[#1\\right]",
-
-            U"grad", U"", U"0", U"\\boldsymbol\\nabla",
-
-            U"ket", U"*", U"1", U"\\lvert{#1}\\rangle",
-            U"ket", U"", U"1", U"\\left\\lvert #1 \\right\\rangle",
-
-            U"ketbra", U"*", U"2", U"|{#1}\\rangle\\langle{#2}|",
-            U"ketbra", U"*", U"1", U"|{#1}\\rangle\\langle{#1}|",
-            U"ketbra", U"", U"2", U"\\left| #1 \\right\\rangle \\left\\langle #2 \\right|",
-            U"ketbra", U"", U"1", U"\\left| #1 \\right\\rangle \\left\\langle #1 \\right|"
-    });
-    cat(rules, {
-        U"lambdabar", U"", U"0", U"\\mkern-0.25mu {\\bar{\\phantom{a}}} \\mkern -10.2mu\\lambda",
-            
-            U"laplacian", U"", U"0", U"\\boldsymbol{\\nabla}^2",
-
-            U"leftgroup", U"", U"1", U"\\left\\{\\begin{aligned} #1 \\end{aligned}\\right.",
-
-            U"ln", U"[]()", U"2", U"\\ln^{#1}\\left(#2\\right)",
-            U"ln", U"()", U"1", U"\\ln\\left(#1\\right)",
-
-            U"log", U"[]()", U"2", U"\\log^{#1}\\left(#2\\right)",
-            U"log", U"()", U"1", U"\\log\\left(#1\\right)",
-
-            U"mat", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-
-            U"mel", U"*", U"3", U"\\langle{#1}|{#2}|{#3}\\rangle",
-            U"mel", U"", U"3", U"\\left\\langle #1 \\middle| #2 \\middle| #3 \\right\\rangle",
-
-            U"norm", U"", U"1", U"\\left\\lVert #1 \\right\\rVert",
-
-            U"opn", U"", U"0", U"\\operatorname",
-
-            U"order", U"", U"1", U"\\mathcal{O}\\left(#1 \\right)",
-    });
-    cat(rules, {
-        U"pb", U"*", U"2", U"\\{#1, #2\\}",
-            U"pb", U"", U"2", U"\\left\\{#1, #2\\right\\}",
-
-            U"pdv", U"*[]", U"3", U"\\partial^{#1} #2/\\partial {#3}^{#1}",
-            U"pdv", U"*[]", U"2", U"\\partial^{#1}/\\partial {#2}^{#1}",
-            U"pdv", U"*", U"3", U"\\partial^2 #1/\\partial #2 \\partial #3",
-            U"pdv", U"*", U"2", U"\\partial #1/\\partial #2",
-            U"pdv", U"*", U"1", U"\\partial/\\partial #1",
-            U"pdv", U"[]", U"3", U"\\frac{\\partial^{#1}{#2}}{\\partial{#3}^{#1}}",
-            U"pdv", U"[]", U"2", U"\\frac{\\partial^{#1}}{\\partial{#2}^{#1}}",
-            U"pdv", U"", U"3", U"\\frac{\\partial^2 #1}{\\partial #2 \\partial #3}",
-            U"pdv", U"", U"2", U"\\frac{\\partial #1}{\\partial #2}",
-            U"pdv", U"", U"1", U"\\frac{\\partial}{\\partial{#1}}",
-
-            U"pmat", U"", U"1", U"\\begin{pmatrix}#1\\end{pmatrix}",
-
-            U"qty", U"()", U"1", U"\\left(#1 \\right)",
-            U"qty", U"[]", U"1", U"\\left[#1 \\right]",
-            U"qty", U"", U"1", U"\\left\\{#1 \\right\\}",
-
-    });
-    cat(rules, {
-        U"sec", U"[]()", U"2", U"\\sec^{#1}\\left(#2\\right)",
-            U"sec", U"()", U"1", U"\\sec\\left(#1\\right)",
-
-            U"sin", U"[]()", U"2", U"\\sin^{#1}\\left(#2\\right)",
-            U"sin", U"()", U"1", U"\\sin\\left(#1\\right)",
-
-            U"sinc", U"", U"0", U"\\operatorname{sinc}",
-
-            U"sinh", U"[]()", U"2", U"\\sinh^{#1}\\left(#2\\right)",
-            U"sinh", U"()", U"1", U"\\sinh\\left(#1\\right)",
-
-            U"sumint", U"", U"0", U"\\int\\kern-1.4em\\sum",
-
-            U"tan", U"[]()", U"2", U"\\tan^{#1}\\left(#2\\right)",
-            U"tan", U"()", U"1", U"\\tan\\left(#1\\right)",
-
-            U"tanh", U"[]()", U"2", U"\\tanh^{#1}\\left(#2\\right)",
-            U"tanh", U"()", U"1", U"\\tanh\\left(#1\\right)",
-
-            U"ten", U"", U"1", U"\\boldsymbol{\\mathbf{#1}}",
-
-            U"uvec", U"", U"1", U"\\hat{\\boldsymbol{\\mathbf{#1}}}",
-
-            U"vdot", U"", U"0", U"\\boldsymbol\\cdot",
-
-            U"vmat", U"", U"1", U"\\begin{vmatrix}#1\\end{vmatrix}",
-    });
+    ifstream fin("new_commands.txt");
+    string line;
+    while (getline(fin, line)) {
+        Long ind0 = line.find("\""), ind1;
+        if (ind0 < 0) continue;
+        ind0 = -1;
+        for (Long i = 0; i < 4; ++i) {
+            if ((ind0 = line.find("\"", ind0+1)) < 0)
+                throw Str32(U"内部错误： new_commands.txt 格式错误！");
+            if ((ind1 = line.find("\"", ind0+1)) < 0)
+                throw Str32(U"内部错误： new_commands.txt 格式错误！");
+            rules.push_back(utf8to32(line.substr(ind0+1, ind1-ind0-1)));
+            ind0 = ind1;
+        }
+    }
     for (Long i = 4; i < size(rules); i+=4) {
         if (rules[i] < rules[i - 4])
             throw Str32(U"内部错误： define_newcommands(): rules not sorted: " + rules[i]);
