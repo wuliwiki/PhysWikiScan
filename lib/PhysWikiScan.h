@@ -2333,7 +2333,6 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
 
     // report redundency
     vector<DGnode> tree;
-    vecLong links1;
     vector<pair<Long,Long>> edges; // learning order
     for (Long i = 0; i < size(links); i += 2)
         edges.push_back(make_pair(links[i], links[i+1]));
@@ -2349,7 +2348,8 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     if (!dag_check(cycle, tree)) {
         Str32 msg = U"存在循环预备知识: ";
         for (auto ind : cycle)
-            msg += titles[ind] + " (" + entries[ind] + ") -> ";
+            msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
+        msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
         throw msg;
     }
     dag_reduce(edges, tree);

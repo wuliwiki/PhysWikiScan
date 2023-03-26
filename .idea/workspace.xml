@@ -21,91 +21,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8018292-1a38-4e70-931a-7d5e75d40aa6" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/other.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Bit.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Cband.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Cmat.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Cmat3.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Cmat4.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Cmobd.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Dcit.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Dcmat.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Ddoub.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Diag.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Dvec.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Imag.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Jcmat3.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Mat.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Mat3.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Mcoo.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Scmat.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Scmat3.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Svec.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Vbase.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/Vec.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/anglib.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/arb_extension.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/arith1.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/arith2.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/arith4.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/arithmetic.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/band_arith.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/bisection.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/bits.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/compare.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/complex_arith.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/copy.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/coulomb.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/cut.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/disp.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/eig.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/eigen.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/expokit.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/fedvr.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/fft.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/file.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/global.h" beforeDir="false" afterPath="$PROJECT_DIR$/SLISC/global.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/hydrogen.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/hypergeom.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/input.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/interp1.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/interv.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/lanczos.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/legendreP.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/lin_eq.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/linbcg.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/linux.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/mat_fun.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/matb.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/matfile.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/matt.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/mul.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/parser.h" beforeDir="false" afterPath="$PROJECT_DIR$/SLISC/parser.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/quad_math.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/random.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/reorder.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/scalar_arith.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/search.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/sha1sum.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/slice_arith.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/sort.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/sparse_arith.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/string.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/time.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/tree.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/unicode.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/utfcpp/utf8.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/utfcpp/utf8/checked.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/utfcpp/utf8/core.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/utfcpp/utf8/unchecked.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/ylm.h" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/TeX/tex.h" beforeDir="false" afterPath="$PROJECT_DIR$/TeX/tex.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TeX/tex2html.h" beforeDir="false" afterPath="$PROJECT_DIR$/TeX/tex2html.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/highlight/cpp2html.h" beforeDir="false" afterPath="$PROJECT_DIR$/highlight/cpp2html.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/highlight/matlab.h" beforeDir="false" afterPath="$PROJECT_DIR$/highlight/matlab.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/PhysWikiScan.h" beforeDir="false" afterPath="$PROJECT_DIR$/lib/PhysWikiScan.h" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -132,32 +50,54 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.cidr.known.project.marker": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "WebServerToolWindowFactoryState": "false",
-    "cf.first.check.clang-format": "false",
-    "cidr.known.project.marker": "true",
-    "last_opened_file_path": "G:/github/PhysWikiScan",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "reference.settingsdialog.project.grazie",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
+    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;G:/github/PhysWikiScan&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CMakeSettings&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
+  <component name="RdControllerToolWindowsLayoutState" isNewUi="false">
+    <layout>
+      <window_info id="Commit_Guest" />
+      <window_info id="Space Code Reviews" order="0" />
+      <window_info id="Bookmarks" order="0" side_tool="true" />
+      <window_info id="Pull Requests" order="0" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.15390626" />
+      <window_info id="Commit" order="0" />
+      <window_info id="Structure" order="0" side_tool="true" />
+      <window_info anchor="bottom" id="Version Control" order="0" />
+      <window_info anchor="bottom" id="Python Packages" order="4" />
+      <window_info anchor="bottom" id="Messages" order="4" weight="0.32994187" />
+      <window_info active="true" anchor="bottom" id="CMake" order="4" visible="true" weight="0.32994187" />
+      <window_info anchor="bottom" id="File Transfer" order="4" />
+      <window_info anchor="bottom" id="Database Changes" order="4" />
+      <window_info anchor="bottom" id="Problems View" order="4" />
+      <window_info anchor="bottom" id="Terminal" order="4" />
+      <window_info anchor="bottom" id="TypeScript" order="4" />
+      <window_info anchor="bottom" id="Services" order="4" />
+      <window_info anchor="bottom" id="Vcpkg" order="4" />
+      <window_info anchor="bottom" id="clangd" order="4" />
+      <window_info anchor="bottom" id="Debug" order="4" weight="0.2369186" />
+      <window_info anchor="right" id="Database" order="0" />
+      <window_info anchor="right" id="Notifications" order="0" weight="0.25" />
+      <window_info anchor="right" id="make" order="0" show_stripe_button="false" side_tool="true" />
+    </layout>
+  </component>
   <component name="RunManager">
-    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--entry DrudeM" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="PhysWikiScan" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS=". --path 1" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="PhysWikiScan" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -175,11 +115,19 @@
       <workItem from="1662959129606" duration="171000" />
       <workItem from="1667024359612" duration="1255000" />
       <workItem from="1679808301598" duration="1251000" />
+      <workItem from="1679815487666" duration="1017000" />
+      <workItem from="1679816787902" duration="7000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="VCPKGProject">
+    <isAutomaticEditVcpkgJson value="false" />
+    <isAutomaticCheckingOnLaunch value="false" />
+    <isAutomaticFoundErrors value="true" />
+    <isAutomaticFoundErrors value="true" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">

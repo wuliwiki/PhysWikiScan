@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(PhysWikiScan)
 
+set(opt_debug ON CACHE BOOL "debug mode")
+
 set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
@@ -19,12 +21,14 @@ set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize
 # SQLite
 # add_definitions(-D SLS_USE_SQLITE)
 # list(APPEND LIBS sqlite3)
-# Debug
-add_compile_options(-g -ftrapv)
-# Release
-# add_definitions(-D NDEBUG)
-# add_compile_options(-O3)
-
-add_compile_options(-Wall -Wno-reorder -Wno-misleading-indentation -fopenmp -fmax-errors=2)
+if (opt_debug)
+    # Debug
+    add_compile_options(-g -ftrapv)
+else()
+    # Release
+    add_definitions(-D NDEBUG)
+    add_compile_options(-O3)
+    add_compile_options(-Wall -Wno-reorder -Wno-misleading-indentation -fopenmp -fmax-errors=2)
+endif()
 
 add_executable(PhysWikiScan main.cpp)
