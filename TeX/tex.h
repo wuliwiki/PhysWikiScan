@@ -2,8 +2,7 @@
 // always remove comments first
 #pragma once
 #include "../SLISC/parser.h"
-#include <cassert>
-#include "../SLISC/search.h"
+#include "../SLISC/algo/search.h"
 
 namespace slisc {
 

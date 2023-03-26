@@ -1,14 +1,12 @@
 ﻿#pragma once
-#include <unordered_set>
-#include "../SLISC/file.h"
-#include "../SLISC/unicode.h"
-#include "../SLISC/tree.h"
+#include "../SLISC/str/unicode.h"
+#include "../SLISC/algo/graph.h"
 #include "../highlight/matlab2html.h"
 // #include "../highlight/cpp2html.h"
-#include "../SLISC/sha1sum.h"
-#include "../SLISC/string.h"
-#include "../SLISC/sort.h"
-#include "../SLISC/matt.h"
+#include "../SLISC/util/sha1sum.h"
+#include "../SLISC/str/str.h"
+#include "../SLISC/algo/sort.h"
+#include "../SLISC/file/matt.h"
 
 using namespace slisc;
 
@@ -98,7 +96,7 @@ inline void global_forbid_char(Str32_I str)
     if (!checked) {
         checked = true;
         Long ind = 0;
-        while (ind < forbidden.size()) {
+        while (ind < size(forbidden)) {
             ind = find_repeat(forbidden, ind);
             if (ind < 0) break;
             cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
@@ -2334,24 +2332,33 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     str += U"\n  ],\n";
 
     // report redundency
-    vector<Node> tree;
+    vector<DGnode> tree;
     vecLong links1;
-    tree_gen(tree, entries, links);
-    Long ret;
-    try { ret = tree_redundant(links1, tree, titles); }
-    catch (vector<Long> info) {
-        throw Str32(U"预备知识重复： " + titles[info[0]] + " (" + entries[info[0]] + ") -> " + titles[info[1]] + " (" + entries[info[1]] + ")");
+    vector<pair<Long,Long>> edges; // learning order
+    for (Long i = 0; i < size(links); i += 2)
+        edges.push_back(make_pair(links[i], links[i+1]));
+    sort(edges.begin(), edges.end());
+    for (Long i = 0; i < size(edges)-1; ++i) {
+        if (edges[i] == edges[i+1]) {
+            Long from, to;  std::tie(from, to) = edges[i];
+            throw Str32(U"预备知识重复： " + titles[from] + " (" + entries[from] + ") -> " + titles[to] + " (" + entries[to] + ")");
+        }
     }
-    if (ret < 0) {
-        throw Str32(U"预备知识层数过多： " + titles[-ret - 1] + " (" + entries[-ret - 1] + ") 可能存在循环预备知识！");
+    dg_add_edges(tree, edges);
+    vecLong cycle;
+    if (!dag_check(cycle, tree)) {
+        Str32 msg = U"存在循环预备知识: ";
+        for (auto ind : cycle)
+            msg += titles[ind] + " (" + entries[ind] + ") -> ";
+        throw msg;
     }
-    if (size(links1) > 0) {
+    dag_reduce(edges, tree);
+    if (size(edges)) {
         cout << u8"\n" << endl;
         cout << u8"==============  多余的预备知识  ==============" << endl;
-        for (Long i = 0; i < size(links1); i += 2) {
-            Long ind1 = links1[i], ind2 = links1[i + 1];
-            cout << titles[ind1] << " (" << entries[ind1] << ") -> "
-                << titles[ind2] << " (" << entries[ind2] << ")" << endl;
+        for (auto &edge : edges) {
+            cout << titles[edge.first] << " (" << entries[edge.first] << ") -> "
+                << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
         }
         cout << u8"=============================================\n" << endl;
     }

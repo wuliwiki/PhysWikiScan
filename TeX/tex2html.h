@@ -1,6 +1,6 @@
 ﻿#pragma once
 #include "tex.h"
-#include "../SLISC/scalar_arith.h"
+#include "../SLISC/arith/scalar_arith.h"
 
 namespace slisc {
 

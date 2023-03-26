@@ -1,7 +1,6 @@
 // Matlab parser utils
 #pragma once
-#include "../SLISC/global.h"
-#include "../SLISC/interv.h"
+#include "../SLISC/algo/interv.h"
 
 namespace slisc {
 

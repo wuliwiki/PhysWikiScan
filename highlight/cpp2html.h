@@ -1,5 +1,5 @@
 #pragma once
-#include "../SLISC/unicode.h"
+#include "../SLISC/str/unicode.h"
 
 namespace slisc {
 
