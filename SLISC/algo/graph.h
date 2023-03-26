@@ -282,7 +282,7 @@ namespace slisc {
 	    states[node] = 'c'; cycle.push_back(node);
 	    for (auto &next : dag[node]) {
 	        if (states[next] == 'u')
-	            dag_check_helper(dag, states, next);
+	            dag_check_helper(cycle, dag, states, next);
 	        else if (states[next] == 'v')
 	            continue;
 	        else { // states[next] == 'c'
