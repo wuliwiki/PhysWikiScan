@@ -217,7 +217,7 @@ inline Long TextEscape(Str32_IO str)
     N += replace(str, U">", U"&gt;");
     Long tmp = replace(str, U"\\\\", U"<br>");
     if (tmp > 0)
-        SLS_WARN(utf32to8(U"正文中发现 '\\\\' 强制换行！"));
+        throw Str32(U"正文中发现 '\\\\' 强制换行！");
     N += tmp;
     N += replace(str, U"\\ ", U" ");
     N += replace(str, U"{}", U"");
@@ -242,10 +242,15 @@ inline Long NormalTextEscape(Str32_IO str)
     Long N1{}, N{}, Nnorm{};
     Str32 temp;
     Intvs intv;
+    Bool warned = false;
     Nnorm = FindNormalText(intv, str);
     for (Long i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-        N1 = TextEscape(temp);
+        try {N1 = TextEscape(temp);}
+        catch(Str32 str) {
+            if (!warned)
+                SLS_WARN(str); warned = true;
+        }
         if (N1 < 0)
             continue;
         N += N1;

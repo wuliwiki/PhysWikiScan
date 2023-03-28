@@ -14,6 +14,9 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 # include_directories(../boost-headers)
 # list(APPEND LIBS boost_system boost_filesystem)
 
+add_definitions(-D SLS_USE_SQLITE)
+list(APPEND LIBS sqlite3)
+
 # Address Sanitizer
 add_definitions(-D SLS_USE_ASAN)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
@@ -32,3 +35,5 @@ else()
 endif()
 
 add_executable(PhysWikiScan main.cpp)
+
+target_link_libraries(PhysWikiScan ${LIBS})

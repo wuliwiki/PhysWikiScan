@@ -257,31 +257,6 @@ int main(int argc, char *argv[]) {
             return 0;
         }
     }
-    else if (args[0] == U"--toc-changed" && args.size() == 1) {
-        SLS_WARN(u8"--toc-changed 选项已被弃用， 将自动忽略该命令");
-        return 0;
-        // table of contents
-        // read entries.txt and titles.txt, then generate changed.html from changed.txt
-        /*vecStr32 titles, entries;
-        if (file_exist(path_data + U"titles.txt"))
-            read_vec_str(titles, path_data + U"titles.txt");
-        if (file_exist(path_data + U"entries.txt"))
-            read_vec_str(entries, path_data + U"entries.txt");
-        if (titles.size() != entries.size()) {
-            cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
-            return 0;
-        }
-        try {table_of_changed(titles, entries, path_in, path_out, path_data);}
-        catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
-        }*/
-    }
-    else if (args[0] == U"--clean" && args.size() == 1) {
-        // clear changed record
-        write(U"", gv::path_data + U"changed.txt");
-        write(U"", gv::path_data + U"authors.txt");
-    }
     else if (args[0] == U"--wc" && args.size() == 1) {
         // count number of Chinese characters (including punc)
         vecStr32 entries;
@@ -307,6 +282,7 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
+        // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
         vecStr32 labels, ids;
         if (file_exist(gv::path_data + U"labels.txt")) {
             read_vec_str(labels, gv::path_data + U"labels.txt");
@@ -405,6 +381,16 @@ int main(int argc, char *argv[]) {
         }
         write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
         write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
+    }
+    else if (args[0] == U"--history" && args.size() <= 2) {
+        Str32 path;
+        if (args.size() == 2) {
+            path = args[1]; assert(path[path.size()-1] == '/');
+        }
+        else
+            path = U"../PhysWiki-backup/";
+        // update db "history" table from backup files
+        db_update_author_history(path);
     }
     else if (args[0] == U"--hide" && args.size() > 1) {
         Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";

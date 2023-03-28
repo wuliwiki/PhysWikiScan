@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <sqlite3.h>
 #include "../SLISC/str/unicode.h"
 #include "../SLISC/algo/graph.h"
 #include "../highlight/matlab2html.h"
@@ -67,7 +68,7 @@ inline Long paragraph_tag1(Str32_IO str)
     Long ind0 = 0, N = 0;
     trim(str, U" \n");
     // delete extra '\n' (more than two continuous)
-    while (true) {
+    while (1) {
         ind0 = str.find(U"\n\n\n", ind0);
         if (ind0 < 0)
             break;
@@ -146,7 +147,7 @@ inline Long paragraph_tag(Str32_IO str)
 
     // handle normal text intervals separated by
     // commands in "commands" and environments
-    while (true) {
+    while (1) {
         // decide mode
         if (ind0 == size(str)) {
             next = 'f';
@@ -296,7 +297,7 @@ inline void limit_env_cmd(Str32_I str)
 
     Str32 env;
     Long ind0 = -1;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"begin", ind0+1);
         if (ind0 < 0)
             break;
@@ -332,7 +333,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
             ids.erase(ids.begin() + i);
         }
     }
-    while (true) {
+    while (1) {
         ind5 = find_command(str, U"label", ind0);
         if (ind5 < 0) return N;
         // detect environment kind
@@ -436,7 +437,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         }
         else if (idName == U"sub") { // count \subsection number
             Long ind = -1; idN = 0; ind4 = -1;
-            while (true) {
+            while (1) {
                 ind = find_command(str, U"subsection", ind + 1);
                 if (ind > ind5 || ind < 0)
                     break;
@@ -559,13 +560,13 @@ inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, L
     Str32 temp;
     Str32 depEntry;
     Str32 link[2];
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"pentry", ind0);
         if (ind0 < 0)
             return N;
         command_arg(temp, str, ind0, 0, 't');
         Long ind1 = 0;
-        while (true) {
+        while (1) {
             ind1 = find_command(temp, U"upref", ind1);
             if (ind1 < 0)
                 return N;
@@ -696,7 +697,7 @@ inline Long theorem_like_env(Str32_IO str)
         U"w3-border-red", U"w3-border-yellow", U"w3-border-green" };
     for (Long i = 0; i < size(envNames); ++i) {
         ind0 = 0; N = 0;
-        while (true) {
+        while (1) {
             ind0 = find_command_spec(str, U"begin", envNames[i], ind0);
             if (ind0 < 0)
                 break;
@@ -729,7 +730,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
     Str32 follow = U" ，、．。）~”\n";
     vecStr32 follow2 = { U"\\begin" };
     Str32 msg;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"autoref", ind0);
         Long start = ind0;
         if (ind0 < 0)
@@ -767,7 +768,7 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
 {
     Long ind0 = 0, N = 0;
     Str32 label, entry1, entry2;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"autoref", ind0);
         if (ind0 < 0)
             return N;
@@ -812,7 +813,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
     Bool inEq;
     Str32 entry, label0, idName, idNum, kind, newtab, file;
     vecStr32 envNames{U"equation", U"align", U"gather"};
-    while (true) {
+    while (1) {
         newtab.clear(); file.clear();
         ind0 = find_command(str, U"autoref", ind0);
         if (is_in_tag(str, U"code", ind0)) {
@@ -903,7 +904,7 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
     Str32 label0;
     for (Long num = 1; ; ++num) {
         Long ind0 = 0;
-        while (true) {
+        while (1) {
             label = entry + "_" + envName + num2str(num);
             ind0 = find_command(str, U"label", ind0);
             if (ind0 < 0)
@@ -926,7 +927,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     Long ind0 = 0;
     Str32 label0, newtab;
 
-    while (true) {
+    while (1) {
         ind0 = search(idName + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
@@ -968,7 +969,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
         Long idN = 0;
         vecStr32 eq_envs = { U"equation", U"gather", U"align" };
         Str32 env0;
-        while (true) {
+        while (1) {
             ind0 = find_command(str, U"begin", ind0);
             if (ind0 < 0) {
                 throw Str32(U"被引用公式不存在");
@@ -1042,7 +1043,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     Long ind0 = 0;
     Str32 label0, newtab;
 
-    while (true) {
+    while (1) {
         ind0 = search(idName + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
@@ -1084,7 +1085,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
         Long idN = 0;
         vecStr32 eq_envs = { U"equation", U"gather", U"align" };
         Str32 env0;
-        while (true) {
+        while (1) {
             ind0 = find_command(str, U"begin", ind0);
             if (ind0 < 0) {
                 throw Str32(U"被引用公式不存在");
@@ -1194,7 +1195,7 @@ inline Long href(Str32_IO str)
 {
     Long ind0 = 0, N = 0, tmp;
     Str32 name, url;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"href", ind0);
         if (ind0 < 0)
             return N;
@@ -1221,7 +1222,7 @@ inline Long upref(Str32_IO str, Str32_I entry)
 {
     Long ind0 = 0, right, N = 0;
     Str32 entryName;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"upref", ind0);
         if (ind0 < 0)
             return N;
@@ -1251,7 +1252,7 @@ inline Long cite(Str32_IO str)
     if (file_exist(gv::path_data + U"bib_labels.txt"))
         read_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
     // read_vec_str(bib_details, path_data + U"bib_details.txt");
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"cite", ind0);
         if (ind0 < 0)
             return N;
@@ -1297,7 +1298,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
     copy(entry_order, -1);
 
     // go through uncommented entries in main.tex
-    while (true) {
+    while (1) {
         ind0 = str.find(U"\\entry", ind0);
         if (ind0 < 0)
             break;
@@ -1338,7 +1339,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
 
     // go through commented entries in main.tex
     ind0 = -1;
-    while (true) {
+    while (1) {
         ind0 = str0.find(U"\\entry", ++ind0);
         if (ind0 < 0)
             break;
@@ -1401,7 +1402,7 @@ inline Long rm_punc_space(Str32_IO str)
 {
     vecStr32 keys = { U"，", U"、", U"．", U"。", U"？", U"（", U"）", U"：", U"；", U"【", U"】", U"…"};
     Long ind0 = 0, N = 0, ikey;
-    while (true) {
+    while (1) {
         ind0 = find(ikey, str, keys, ind0);
         if (ind0 < 0)
             return N;
@@ -1422,7 +1423,7 @@ inline void puc_no_wrap(Str32_IO str)
 {
     Str32 keys = U"，、．。！？）：”】", tmp;
     Long ind0 = 0, ind1;
-    while (true) {
+    while (1) {
         ind0 = str.find_first_of(keys, ind0);
         if (ind0 < 0)
             break;
@@ -1448,7 +1449,7 @@ inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = 
     Intvs intvNorm;
     FindNormalText(intvNorm, str);
     Long ind0 = -1, ikey, N = 0;
-    while (true) {
+    while (1) {
         ind0 = find(ikey, str, keys, ind0 + 1);
         if (ind0 < 0)
             break;
@@ -1500,7 +1501,7 @@ inline Long check_normal_text_escape(Str32_IO str)
 //    Intvs intvNorm;
 //    FindNormalText(intvNorm, str);
 //    Long ind0 = -1, ikey, N = 0;
-//    while (true) {
+//    while (1) {
 //        ind0 = find(ikey, str, keys, ind0 + 1);
 //        if (ind0 < 0)
 //            break;
@@ -1556,7 +1557,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
 
-    while (true) {
+    while (1) {
         ind1 = find(ikey, str, keys, ind1);
         if (ind1 < 0)
             break;
@@ -1650,84 +1651,12 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     return N;
 }
 
-// create table of content from main.tex
-// path must end with '\\'
-// return the number of entries
-// names is a list of filenames
-// titles[i] is the chinese title of entries[i]
-inline Long table_of_changed(vecStr32_I titles, vecStr32_I entries)
-{
-    Long N{}, ind0{};
-    //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
-    
-    Str32 entryName; // entry label
-    Str32 toc;
-    vecStr32 changed, authors;
-
-    if (!file_exist(gv::path_data + U"changed.txt")) {
-        write_vec_str(vecStr32(), gv::path_data + U"changed.txt");
-        write_vec_str(vecStr32(), gv::path_data + U"authors.txt");
-    }
-    else {
-        read_vec_str(changed, gv::path_data + U"changed.txt");
-        read_vec_str(authors, gv::path_data + U"authors.txt");
-        if (changed.size() != authors.size()) {
-            throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同");
-            authors.resize(changed.size());
-        }
-    }
-
-    read(toc, gv::path_out + "templates/changed_template.html"); // read html template
-    CRLF_to_LF(toc);
-
-    ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
-    if (changed.size() == 0) {
-        replace(toc, U"PhysWikiHTMLbody", U"</div>");
-        write(toc, gv::path_out + "changed.html");
-        return 0;
-    }
-
-    toc.erase(ind0, 16);
-    ind0 = insert(toc, U"<p>\n", ind0);
-
-    for (Long i = 0; i < size(changed); ++i) {
-        Long ind = changed[i].rfind('.');
-        if (ind < 0) {
-            throw Str32(U"内部错误： changed.txt 中文件必须有后缀名");
-        }
-        if (changed[i].substr(ind + 1) != U"tex")
-            continue;
-        entryName = changed[i].substr(0, ind);
-        if (entryName == U"main") // ignore PhysWiki
-            continue;
-        // get chinese title and entry label
-        ++N;
-        // get Chinese title
-        ind = search(entryName, entries);
-        if (ind < 0) {
-            changed.erase(changed.begin() + i);
-            authors.erase(authors.begin() + i);
-            continue;
-        }
-        // insert entry into html table of contents
-        ind0 = insert(toc, U"<a href = \"" + entryName + ".html" + "\" target = \"_blank\">"
-            + titles[ind] + U"（" + authors[i] + U"）" + U"</a><br>\n", ind0);
-    }
-    toc.insert(ind0, U"</p>\n</div>");
-    write(toc, gv::path_out + "changed.html");
-    if (changed.size() != authors.size())
-        throw Str32(U"内部错误： changed.txt 和 authors.txt 行数不同");
-    write_vec_str(changed, gv::path_data + U"changed.txt");
-    write_vec_str(authors, gv::path_data + U"authors.txt");
-    return N;
-}
-
 // add line numbers to the code (using table)
 inline void code_table(Str32_O table_str, Str32_I code)
 {
     Str32 line_nums;
     Long ind1 = 0, N = 0;
-    while (true) {
+    while (1) {
         ++N;
         line_nums += num2str(N) + U"<br>";
         ind1 = code.find(U'\n', ind1);
@@ -1811,7 +1740,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                     caption = str.substr(ind0, ind1 - ind0);
                 Long ind3 = 0;
                 trim(caption);
-                while (true) {
+                while (1) {
                     ind3 = caption.find(U'_', ind3);
                     if (ind3 < 0) break;
                     if (ind3 > 0 && caption[ind3-1] != U'\\')
@@ -1890,18 +1819,18 @@ inline Long get_keywords(vecStr32_O keywords, Str32_I str)
         return 0;
     ind0 = expect(str, U"%", ind0+1);
     if (ind0 < 0) {
-        SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
+        // SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
     Str32 line; get_line(line, str, ind0);
     Long tmp = line.find(U"|", 0);
     if (tmp < 0) {
-        SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
+        // SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
     }
 
     ind0 = 0;
-    while (true) {
+    while (1) {
         Long ind1 = line.find(U"|", ind0);
         if (ind1 < 0)
             break;
@@ -1946,7 +1875,7 @@ inline Long chinese_double_quote_space(Str32_IO str)
     FindNormalText(intNorm, str);
     vecLong inds; // locations to insert space
     Long ind = -1;
-    while (true) {
+    while (1) {
         ind = str.find_first_of(quotes, ind + 1);
         if (ind < 0)
             break;
@@ -2065,7 +1994,7 @@ inline Long wikipedia_link(Str32_IO str)
     Str32 alter_domain = U"jinzhao.wiki";
     Long ind0 = 0, N = 0;
     Str32 link;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"href", ind0);
         if (ind0 < 0)
             return N;
@@ -2086,7 +2015,7 @@ inline Long subsections(Str32_IO str)
 {
     Long ind0 = 0, N = 0;
     Str32 subtitle;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"subsection", ind0);
         if (ind0 < 0)
             return N;
@@ -2116,7 +2045,7 @@ inline Bool ind_in_pay(Str32_I str, Long_I ind)
 inline Long pay2div(Str32_IO str)
 {
     Long ind0 = 0, N = 0;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"pay", ind0);
         if (ind0 < 0)
             return N;
@@ -2134,7 +2063,7 @@ inline Long pay2div(Str32_IO str)
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
+inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_O keywords, vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
     VecChar_IO imgs_mark, vecStr32_I imgs)
 {
@@ -2159,7 +2088,6 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels,
         gv::is_eng = false;
 
     // add keyword meta to html
-    vecStr32 keywords;
     if (get_keywords(keywords, str) > 0) {
         Str32 keywords_str = keywords[0];
         for (Long i = 1; i < size(keywords); ++i) {
@@ -2300,8 +2228,8 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_IO ids, vecStr32_IO labels,
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name, vecLong_I chap_ind,
-    vecStr32_I part_name, vecLong_I part_ind, vecLong_I links)
+inline Long dep_json(vector<DGnode> &tree, vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name,
+                     vecLong_I chap_ind, vecStr32_I part_name, vecLong_I part_ind, vecLong_I links)
 {
     Str32 str;
     // write part names
@@ -2332,7 +2260,6 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
     str += U"\n  ],\n";
 
     // report redundency
-    vector<DGnode> tree;
     vector<pair<Long,Long>> edges; // learning order
     for (Long i = 0; i < size(links); i += 2)
         edges.push_back(make_pair(links[i], links[i+1]));
@@ -2343,6 +2270,7 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
             throw Str32(U"预备知识重复： " + titles[from] + " (" + entries[from] + ") -> " + titles[to] + " (" + entries[to] + ")");
         }
     }
+    tree.resize(entries.size());
     dg_add_edges(tree, edges);
     vecLong cycle;
     if (!dag_check(cycle, tree)) {
@@ -2387,10 +2315,9 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
     read(str, gv::path_in + U"bibliography.tex");
     CRLF_to_LF(str);
     Long ind0 = 0;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"bibitem", ind0);
-        if (ind0 < 0)
-            break;
+        if (ind0 < 0) break;
         command_arg(bib_label, str, ind0);
         bib_labels.push_back(bib_label);
         ind0 = skip_command(str, ind0, 1);
@@ -2408,6 +2335,175 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
     replace(html, U"PhysWikiBibList", bib_list);
     write(html, gv::path_out + U"bibliography.html");
     return N;
+}
+
+// update "bibliography" table of sqlite db
+inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
+    int ret;
+    sqlite3* db;
+    if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        throw Str32(U"内部错误： 无法打开 scan.db");
+    Str str = "INSERT OR REPLACE INTO bibliography (bib, details) VALUES (?, ?);";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    for (Long i = 0; i < size(bib_labels); i++) {
+        sqlite3_bind_text(stmt, 1, utf32to8(bib_labels[i]).c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, utf32to8(bib_details[i]).c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt) != SQLITE_DONE)
+            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt);
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+}
+
+// update "entries" table of sqlite db
+inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecLong_I chap_ind,
+     VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
+     const vector<DGnode> &tree, vecStr32_I labels, vecStr32_I ids)
+{
+    cout << "updating sqlite database (" << entries.size() << " entries) ..."; cout.flush();
+    int ret;
+    sqlite3* db;
+    if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        throw Str32(U"内部错误： 无法打开 scan.db");
+    Str str = "INSERT OR REPLACE INTO entries"
+              "(entry, title, keys, part, chapter, section, draft, pentry, labels)"
+              "VALUES"
+              "(    ?,     ?,    ?,    ?,       ?,       ?,     ?,      ?,      ?);";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    for (Long i = 0; i < size(entries); i++) {
+        auto &entry = entries[i];
+        sqlite3_bind_text(stmt, 1, utf32to8(entry).c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
+        str.clear();
+        for (auto &key : keywords_list[i]) str += utf32to8(key) + '|';
+        str.pop_back();
+        sqlite3_bind_text(stmt, 3, str.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 4, part_ind[i]);
+        sqlite3_bind_int64(stmt, 5, chap_ind[i]);
+        sqlite3_bind_int64(stmt, 6, entry_order[i]);
+        sqlite3_bind_int(stmt, 7, isDraft[i] == U"0" ? 0 : 1);
+        str.clear();
+        for (auto next : tree[i])
+            str += utf32to8(entries[next]) + " ";
+        str.pop_back();
+        sqlite3_bind_text(stmt, 8, str.c_str(), -1, SQLITE_TRANSIENT);
+        str.clear();
+        for (Long j = 0; j < size(labels); ++j) {
+            auto &label = labels[j], &id = ids[j];
+            Long ind1 = label.find('_');
+            if (label.substr(0, ind1) == entry) {
+                Long ind2;
+                for (ind2 = 0; ind2 < size(id); ++ind2)
+                    if ('0' <= id[ind2] && id[ind2] <= '9')
+                        break;
+                // e.g. label=fname_eq2, id=eq3
+                assert(label.substr(ind1+1, ind2) == id.substr(0, ind2));
+                str += utf32to8(id.substr(0, ind2) + " " + id.substr(ind2)) +
+                    " " + utf32to8(label.substr(ind1+1+ind2)) + " ";
+            }
+        }
+        str.pop_back();
+        sqlite3_bind_text(stmt, 9, str.c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt) != SQLITE_DONE)
+            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt);
+    }
+    sqlite3_finalize(stmt);
+    sqlite3_close(db);
+    cout << "done." << endl;
+}
+
+inline int callback(void* data, int argc, char** argv, char** azColName) {
+    for (int i = 0; i < argc; i++) {
+        strcpy((char*)data, argv[i]);
+        // std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << std::endl;
+    }
+    cout << endl;
+    return 0;
+}
+
+// updating sqlite database "authors" and "history" table from backup files
+inline void db_update_author_history(Str32_I path)
+{
+    vecStr32 fnames;
+    unordered_map<Str32, Long> authors;
+    Str32 author;
+    Str sha1, time, entry;
+    Long authorID = 0;
+    file_list_ext(fnames, path, U"tex", false);
+    cout << "updating sqlite database \"history\" table (" << fnames.size()
+        << " backup) ..."; cout.flush();
+
+    // update "history" table
+    sqlite3* db;
+    if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        throw Str32(U"内部错误： 无法打开 scan.db");
+    Str str = "INSERT OR REPLACE INTO history"
+              "(hash, time, authorID, entry)"
+              "VALUES"
+              "(   ?,    ?,        ?,     ?);";
+    sqlite3_stmt* stmt;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
+    for (auto &fname : fnames) {
+        sha1 = sha1sum_f(utf32to8(path + fname) + ".tex");
+        time = utf32to8(fname.substr(0, 12));
+        Long ind = fname.rfind('_');
+        author = fname.substr(13, ind-13);
+        if (authors.count(author) == 0)
+            authors[author] = ++authorID;
+        entry = utf32to8(fname.substr(ind+1));
+
+        sqlite3_bind_text(stmt, 1, sha1.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, time.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt, 3, authorID);
+        sqlite3_bind_text(stmt, 4, entry.c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt) != SQLITE_DONE)
+            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt);
+    }
+    sqlite3_finalize(stmt);
+    cout << "done." << endl;
+
+    // update "authors" table
+    cout << "updating sqlite database \"authors\" table (" << authors.size()
+        << " authors) ..."; cout.flush();
+    str = "INSERT OR REPLACE INTO authors (id, name) VALUES (?, ?);";
+    sqlite3_stmt* stmt2;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt2, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    for (auto &author : authors) {
+        sqlite3_bind_int64(stmt, 1, author.second);
+        sqlite3_bind_text(stmt, 2, utf32to8(author.first).c_str(), -1, SQLITE_TRANSIENT);
+        // cout << author.second << '.' << utf32to8(author.first) << endl;
+        // for (auto c : utf32to8(author.first)) cout << std::hex << int(Uchar(c)) << ' ';
+        // cout << endl;
+        if (sqlite3_step(stmt) != SQLITE_DONE)
+            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt);
+
+        // verify:
+        // str = "SELECT name FROM authors WHERE id = " + to_string(author.second) + ';';
+        // char* errMsg = NULL;
+        // char data[1024];
+        // if (sqlite3_exec(db, str.c_str(), callback, data, &errMsg) != SQLITE_OK) {
+        //     std::cerr << "Error executing SELECT: " << errMsg << std::endl;
+        //     sqlite3_free(errMsg);
+        // }
+        // if (Str(data) != utf32to8(author.first)) {
+        //     for (auto c : Str(data)) cout << std::hex << int(Uchar(c)) << ' ';
+        //     SLS_FAIL;
+        // }
+        // cout << endl;
+    }
+    sqlite3_close(db);
+    cout << "done." << endl;
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
@@ -2428,6 +2524,7 @@ inline void PhysWikiOnline()
     bibliography(bib_labels, bib_details);
     write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
     write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
+    db_update_bib(bib_labels, bib_details);
 
     Ntoc = entries_titles(titles, entries, isDraft, entry_order);
     write_vec_str(titles, gv::path_data + U"titles.txt");
@@ -2455,6 +2552,8 @@ inline void PhysWikiOnline()
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
     vecStr32 labels, ids;
+    vecBool isdraft(entries.size());
+    vector<vecStr32> keywords_list(entries.size());
 
     // 1st loop through tex files
     // files are processed independently
@@ -2466,7 +2565,8 @@ inline void PhysWikiOnline()
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
         Bool tmp;
-        PhysWikiOnline1(tmp, ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
+        PhysWikiOnline1(tmp, keywords_list[i], ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
+        isdraft[i] = tmp;
     }
 
     // save id and label data
@@ -2492,8 +2592,11 @@ inline void PhysWikiOnline()
     cout << endl;
     
     // generate dep.json
+    vector<DGnode> tree;
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
-        dep_json(entries, titles, chap_name, chap_ind, part_name, part_ind, links);
+        dep_json(tree, entries, titles, chap_name, chap_ind, part_name, part_ind, links);
+
+    db_update_entry(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
 
     // warn unused figures
     Bool warn_fig = false;
@@ -2573,10 +2676,10 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2;
-        Bool tmp;
-        PhysWikiOnline1(tmp, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
+        Bool isdraft; vecStr32 keywords;
+        PhysWikiOnline1(isdraft, keywords, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
         if (gv::is_wiki)
-            isDraft[ind] = tmp ? U"1" : U"0";
+            isDraft[ind] = isdraft ? U"1" : U"0";
     }
     
     write_vec_str(labels, gv::path_data + U"labels.txt");
@@ -2615,7 +2718,7 @@ inline void all_commands(vecStr32_O commands, Str32_I in_path)
     for (Long i = 0; i < size(fnames); ++i) {
         read(str, in_path + fnames[i]);
         Long ind0 = 0;
-        while (true) {
+        while (1) {
             ind0 = str.find(U"\\", ind0);
             if (ind0 < 0)
                 break;
@@ -2636,7 +2739,7 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
     Str32 tmp;
 
     // verb
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"verb", ind0);
         if (ind0 < 0)
             break;
@@ -2660,7 +2763,7 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
 
     // lstinline
     ind0 = 0;
-    while (true) {
+    while (1) {
         ind0 = find_command(str, U"lstinline", ind0);
         if (ind0 < 0)
             break;

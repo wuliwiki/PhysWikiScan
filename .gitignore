@@ -1,4 +1,6 @@
+cmake-build-*
 .vs/
+.vscode/
 Debug/
 Release/
 x64/
@@ -8,4 +10,11 @@ PhysWikiScan
 npm-debug.log
 data/*.txt
 data/*.matt
+*.db
+*.db-journal
+*.sql
+!data/scan-template.sql
 cmake-build-physwikiscan/
+CMakeCache.txt
+*.cmake
+CMakeFiles/
