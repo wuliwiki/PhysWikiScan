@@ -18,6 +18,7 @@ CREATE TABLE "entries" (
 	
 	"pentry"	TEXT, -- "label1 label2 label3" 预备知识的
 	"labels"	TEXT, -- "eq 1 2 fig 2 2 ex 3 2 code 1 2" 标签（第一个数字是显示编号， 第二个是标签编号）
+	"deleted"	INTEGER DEFAULT 0, -- "if deleted"
 	PRIMARY KEY("entry")
 );
 

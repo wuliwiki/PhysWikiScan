@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include <sqlite3.h>
+#include "../SLISC/file/sqlite_ext.h"
 #include "../SLISC/str/unicode.h"
 #include "../SLISC/algo/graph.h"
 #include "../highlight/matlab2html.h"
@@ -2363,38 +2363,73 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
      VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
      const vector<DGnode> &tree, vecStr32_I labels, vecStr32_I ids)
 {
-    cout << "updating sqlite database (" << entries.size() << " entries) ..."; cout.flush();
-    int ret;
+    cout << "updating sqlite database (" << entries.size() << " entries) ..." << endl; cout.flush();
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
-    Str str = "INSERT OR REPLACE INTO entries"
-              "(entry, title, keys, part, chapter, section, draft, pentry, labels)"
-              "VALUES"
-              "(    ?,     ?,    ?,    ?,       ?,       ?,     ?,      ?,      ?);";
-    sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
+    // get a list of entries
+    vecStr db_entries;
+    get_column_str(db_entries, db, "entries", "entry");
+    cout << "there are already " << db_entries.size() << " entries in database." << endl;
+
+    // mark deleted entries
+    sqlite3_stmt* stmt_delete;
+    Str str = "UPDATE entries SET deleted=1 WHERE entry=?;";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_delete, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    for (auto &entry : db_entries) {
+        if (search(utf8to32(entry), entries) < 0) {
+            SLS_WARN("数据库中存在多余的词条（将标记为 deleted）： " + entry);
+            sqlite3_bind_text(stmt_delete, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt_delete) != SQLITE_DONE)
+                throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_delete);
+        }
+    }
+    sqlite3_finalize(stmt_delete);
+
+    // check if an entry exists
+    sqlite3_stmt* stmt_exist;
+    str = "SELECT EXISTS(SELECT 1 FROM entries WHERE entry = ?);";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_exist, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
+    // insert a new entry
+    sqlite3_stmt* stmt_insert;
+    str = "INSERT INTO entries "
+        "(entry, title, keys, part, chapter, section, draft, pentry, labels) "
+        "VALUES "
+        "(    ?,     ?,    ?,    ?,       ?,       ?,     ?,      ?,      ?);";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    
+    // update an existing entry
+    sqlite3_stmt* stmt_update;
+    str = "UPDATE entries SET "
+        "title=?, keys=?, part=?, chapter=?, section=?, draft=?, pentry=?, labels=? "
+        "WHERE entry=?;";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_update, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
+    Str str_keys, str_pentry, str_labels;
+    
     for (Long i = 0; i < size(entries); i++) {
-        auto &entry = entries[i];
-        sqlite3_bind_text(stmt, 1, utf32to8(entry).c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
-        str.clear();
-        for (auto &key : keywords_list[i]) str += utf32to8(key) + '|';
-        str.pop_back();
-        sqlite3_bind_text(stmt, 3, str.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 4, part_ind[i]);
-        sqlite3_bind_int64(stmt, 5, chap_ind[i]);
-        sqlite3_bind_int64(stmt, 6, entry_order[i]);
-        sqlite3_bind_int(stmt, 7, isDraft[i] == U"0" ? 0 : 1);
-        str.clear();
+        Str entry = utf32to8(entries[i]);
+        sqlite3_bind_text(stmt_exist, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
+
+        str_keys.clear();
+        for (auto &key : keywords_list[i]) str_keys += utf32to8(key) + '|';
+        str_keys.pop_back();
+
+        str_pentry.clear();
         for (auto next : tree[i])
-            str += utf32to8(entries[next]) + " ";
-        str.pop_back();
-        sqlite3_bind_text(stmt, 8, str.c_str(), -1, SQLITE_TRANSIENT);
-        str.clear();
+            str_pentry += utf32to8(entries[next]) + " ";
+        str_pentry.pop_back();
+
+        str_labels.clear();
+        Str label, id;
         for (Long j = 0; j < size(labels); ++j) {
-            auto &label = labels[j], &id = ids[j];
+            label = utf32to8(labels[j]), id = utf32to8(ids[j]);
             Long ind1 = label.find('_');
             if (label.substr(0, ind1) == entry) {
                 Long ind2;
@@ -2403,17 +2438,47 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
                         break;
                 // e.g. label=fname_eq2, id=eq3
                 assert(label.substr(ind1+1, ind2) == id.substr(0, ind2));
-                str += utf32to8(id.substr(0, ind2) + " " + id.substr(ind2)) +
-                    " " + utf32to8(label.substr(ind1+1+ind2)) + " ";
+                str_labels += id.substr(0, ind2) + " " + id.substr(ind2) +
+                    " " + label.substr(ind1+1+ind2) + " ";
             }
         }
-        str.pop_back();
-        sqlite3_bind_text(stmt, 9, str.c_str(), -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(stmt) != SQLITE_DONE)
-            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt);
+        str_labels.pop_back();
+
+        // does entry already exist (expected)?
+        Bool entry_exist;
+        entry_exist = sqlite3_column_int(stmt_exist, 0);
+        if (entry_exist) {
+            // update entry
+            sqlite3_bind_text(stmt_update, 1, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_update, 2, str_keys.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
+            sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
+            sqlite3_bind_int64(stmt_update, 5, entry_order[i]);
+            sqlite3_bind_int(stmt_update, 6, isDraft[i] == U"0" ? 0 : 1);
+            sqlite3_bind_text(stmt_update, 7, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_update, 8, str_labels.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_update, 9, entry.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt_update) != SQLITE_DONE)
+                throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_update);
+        }
+        else { // entry_exist == false
+            SLS_WARN("数据库的 entries 表格中不存在词条（将添加）：" + entry);
+            sqlite3_bind_text(stmt_insert, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_insert, 2, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_insert, 3, str_keys.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(stmt_insert, 4, part_ind[i]);
+            sqlite3_bind_int64(stmt_insert, 5, chap_ind[i]);
+            sqlite3_bind_int64(stmt_insert, 6, entry_order[i]);
+            sqlite3_bind_int(stmt_insert, 7, isDraft[i] == U"0" ? 0 : 1);
+            sqlite3_bind_text(stmt_insert, 8, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_insert, 9, str_labels.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt_insert) != SQLITE_DONE)
+                throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_insert);
+        }
     }
-    sqlite3_finalize(stmt);
+    sqlite3_finalize(stmt_update); sqlite3_finalize(stmt_insert);
     sqlite3_close(db);
     cout << "done." << endl;
 }
@@ -2443,50 +2508,66 @@ inline void db_update_author_history(Str32_I path)
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
-    Str str = "INSERT OR REPLACE INTO history"
+    
+    vecStr db_sha10;
+    get_column_str(db_sha10, db, "authors", "hash");
+    cout << "there are already " << db_sha10.size() << " records in database." << endl;
+
+    unordered_set<Str> db_sha1(db_sha10.begin(), db_sha10.end());
+    db_sha10.clear();
+    
+    Str str = "INSERT INTO history"
               "(hash, time, authorID, entry)"
               "VALUES"
               "(   ?,    ?,        ?,     ?);";
-    sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
+    sqlite3_stmt* stmt_insert;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-
-    for (auto &fname : fnames) {
+  
+    for (Long i = 0; i < size(fnames); ++i) {
+        auto &fname = fnames[i];
         sha1 = sha1sum_f(utf32to8(path + fname) + ".tex");
-        time = utf32to8(fname.substr(0, 12));
-        Long ind = fname.rfind('_');
-        author = fname.substr(13, ind-13);
-        if (authors.count(author) == 0)
-            authors[author] = ++authorID;
-        entry = utf32to8(fname.substr(ind+1));
+        bool sha1_exist = db_sha1.count(sha1);
+        if (sha1_exist) {
+            // TODO: 已经存在， 要检查文件名是否匹配数据库中的信息
+            // 如果不一致， 是否要更新呢？
+            db_sha1.erase(sha1);
+        }
+        else {
+            SLS_WARN("数据库的 history 表格中不存在备份文件（将添加）：" + fname);
 
-        sqlite3_bind_text(stmt, 1, sha1.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, time.c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt, 3, authorID);
-        sqlite3_bind_text(stmt, 4, entry.c_str(), -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(stmt) != SQLITE_DONE)
-            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt);
+            time = utf32to8(fname.substr(0, 12));
+            Long ind = fname.rfind('_');
+            author = fname.substr(13, ind-13);
+            if (authors.count(author) == 0)
+                authors[author] = ++authorID;
+            entry = utf32to8(fname.substr(ind+1));
+
+            sqlite3_bind_text(stmt_insert, 1, sha1.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_insert, 2, time.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_int64(stmt_insert, 3, authorID);
+            sqlite3_bind_text(stmt_insert, 4, entry.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt_insert) != SQLITE_DONE)
+                throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_insert);
+        }
     }
-    sqlite3_finalize(stmt);
+    sqlite3_finalize(stmt_insert);
     cout << "done." << endl;
 
     // update "authors" table
     cout << "updating sqlite database \"authors\" table (" << authors.size()
         << " authors) ..."; cout.flush();
-    str = "INSERT OR REPLACE INTO authors (id, name) VALUES (?, ?);";
-    sqlite3_stmt* stmt2;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt2, NULL) != SQLITE_OK)
+    str = "INSERT INTO authors (id, name) VALUES (?, ?);";
+    sqlite3_stmt* stmt_insert_auth;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_auth, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
     for (auto &author : authors) {
-        sqlite3_bind_int64(stmt, 1, author.second);
-        sqlite3_bind_text(stmt, 2, utf32to8(author.first).c_str(), -1, SQLITE_TRANSIENT);
-        // cout << author.second << '.' << utf32to8(author.first) << endl;
-        // for (auto c : utf32to8(author.first)) cout << std::hex << int(Uchar(c)) << ' ';
-        // cout << endl;
-        if (sqlite3_step(stmt) != SQLITE_DONE)
+        sqlite3_bind_int64(stmt_insert_auth, 1, author.second);
+        sqlite3_bind_text(stmt_insert_auth, 2, utf32to8(author.first).c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt_insert_auth) != SQLITE_DONE)
             throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt);
+        sqlite3_reset(stmt_insert_auth);
 
         // verify:
         // str = "SELECT name FROM authors WHERE id = " + to_string(author.second) + ';';
@@ -2503,6 +2584,13 @@ inline void db_update_author_history(Str32_I path)
         // cout << endl;
     }
     sqlite3_close(db);
+
+    if (!db_sha1.empty()) {
+        SLS_WARN("数据库中存在以下备份文件的信息， 但文件夹中没有找到：");
+        for (auto &sha1 : db_sha1)
+            cout << sha1 << endl;
+    }
+
     cout << "done." << endl;
 }
 
