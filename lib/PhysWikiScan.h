@@ -1542,7 +1542,7 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
     if (part_ind.size() > 0) {
         chap_name.clear(); part_name.clear();
-        chap_name.push_back(U"无"); part_name.push_back(U"无");
+        chap_name.push_back(U"无"); part_name.push_back(U"无"); chap_part.push_back(-1);
         chap_ind.clear(); chap_ind.resize(entries.size(), 0);
         part_ind.clear(); part_ind.resize(entries.size(), 0);
     }
@@ -2401,12 +2401,13 @@ inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecL
 
     // insert parts
     sqlite3_stmt* stmt_insert_part;
-    Str str = "INSERT INTO parts (name) VALUES ?;";
+    Str str = "INSERT INTO parts (id, name) VALUES (?, ?);";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_part, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
     
-    for (auto &part : part_name) {
-        sqlite3_bind_text(stmt_insert_part, 1, utf32to8(part).c_str(), -1, SQLITE_TRANSIENT);
+    for (Long i = 1; i < size(part_name); ++i) {
+        sqlite3_bind_int64(stmt_insert_part, 1, i);
+        sqlite3_bind_text(stmt_insert_part, 2, utf32to8(part_name[i]).c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt_insert_part) != SQLITE_DONE)
             throw Str32(U"内部错误： db_update_chap_part():stmt_insert_part: " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt_insert_part);
@@ -2415,18 +2416,20 @@ inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecL
 
     // insert chapters
     sqlite3_stmt* stmt_insert_chap;
-    str = "INSERT INTO chapters (name, part) VALUES (?, ?);";
+    str = "INSERT INTO chapters (id, name, part) VALUES (?, ?, ?);";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_chap, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
 
-    for (Long i = 0; i < size(chap_name); ++i) {
-        sqlite3_bind_text(stmt_insert_chap, 1, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt_insert_chap, 2, chap_part[i]);
+    for (Long i = 1; i < size(chap_name); ++i) {
+        sqlite3_bind_int64(stmt_insert_chap, 1, i);
+        sqlite3_bind_text(stmt_insert_chap, 2, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt_insert_chap, 3, chap_part[i]);
         if (sqlite3_step(stmt_insert_chap) != SQLITE_DONE)
             throw Str32(U"内部错误： db_update_chap_part():stmt_insert_chap: " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt_insert_chap);
     }
     sqlite3_finalize(stmt_insert_chap);
+    cout << "done." << endl;
 }
 
 // update "entries" table of sqlite db
