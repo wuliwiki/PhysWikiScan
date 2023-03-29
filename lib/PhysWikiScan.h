@@ -2570,7 +2570,7 @@ inline void db_update_author_history(Str32_I path)
     vecLong db_data20;
     get_matrix(db_data10, db, "history", {"hash","time","entry"});
     get_column(db_data20, db, "history", "authorID");
-    Long authorID = db_data20.empty() ? -1 : max(db_data20);
+    Long id_max = db_data20.empty() ? -1 : max(db_data20);
 
     cout << "there are already " << db_data10.size() << " backup (history) records in database." << endl;
 
@@ -2611,21 +2611,27 @@ inline void db_update_author_history(Str32_I path)
         time = utf32to8(fname.substr(0, 12));
         Long ind = fname.rfind('_');
         author = utf32to8(fname.substr(13, ind-13));
-        if (db_author_to_id.count(author) == 0 && new_authors.count(author) == 0) {
-            ++authorID;
-            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(authorID));
-            new_authors[author] = authorID;
+        Long authorID;
+        if (db_author_to_id.count(author))
+            authorID = db_author_to_id[author];
+        else if (new_authors.count(author))
+            authorID = new_authors[author];
+        else {
+            authorID = ++id_max;
+            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(id_max));
+            new_authors[author] = id_max;
         }
         entry = utf32to8(fname.substr(ind+1));
 
         if (sha1_exist) {
-            auto &time_author_entry = db_data[sha1];
-            if (get<0>(time_author_entry) != time)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
-            if (db_id_to_author[get<1>(time_author_entry)] != author)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的作者不同， 数据库中为（将不更新）： " + db_id_to_author[get<1>(time_author_entry)]);
-            if (get<2>(time_author_entry) != entry)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
+            auto &time_id_entry = db_data[sha1];
+            if (get<0>(time_id_entry) != time)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_id_entry));
+            if (db_id_to_author[get<1>(time_id_entry)] != author)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
+                    to_string(get<1>(time_id_entry)) + "." + db_id_to_author[get<1>(time_id_entry)]);
+            if (get<2>(time_id_entry) != entry)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_id_entry));
             db_data.erase(sha1);
         }
         else {

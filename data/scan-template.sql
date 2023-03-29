@@ -32,7 +32,7 @@ CREATE TABLE "bibliography" (
 
 -- 编辑历史
 CREATE TABLE "history" (
-	"hash"	TEXT NOT NULL UNIQUE, -- 暂定 SHA1 的前 12 位
+	"hash"	TEXT NOT NULL UNIQUE, -- 暂定 SHA1 的前 16 位
 	"time"	TEXT NOT NULL, -- 备份时间
 	"authorID"	INTEGER NOT NULL, -- 作者 ID
 	"entry"	TEXT, -- 词条标签
@@ -49,6 +49,7 @@ CREATE TABLE "history" (
 CREATE TABLE "authors" (
 	"id"	INTEGER NOT NULL UNIQUE, -- ID
 	"name"	TEXT NOT NULL, -- 昵称
+	"official"	INTEGER DEFAULT 0, -- [0|1] 已申请
 	"salary"	INTEGER, -- 时薪
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
