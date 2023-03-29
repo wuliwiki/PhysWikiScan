@@ -1267,7 +1267,7 @@ inline Long cite(Str32_IO str)
     }
 }
 
-// update entries.txt and titles.txt
+// update entries and titles
 // return the number of entries in main.tex
 inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isDraft, VecLong_O entry_order)
 {

@@ -242,16 +242,15 @@ int main(int argc, char *argv[]) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from main.tex
         vecStr32 titles, entries, isDraft;
-        if (file_exist(gv::path_data + U"titles.txt"))
-            read_vec_str(titles, gv::path_data + U"titles.txt");
-        if (file_exist(gv::path_data + U"entries.txt"))
-            read_vec_str(entries, gv::path_data + U"entries.txt");
-        if (gv::is_wiki && file_exist(gv::path_data + U"is_draft.txt"))
-            read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
-        if (titles.size() != entries.size()) {
-            cerr << u8"内部错误： titles.txt 和 entries.txt 行数不同!" << endl;
-            return 0;
-        }
+        sqlite3* db;
+        if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+            throw Str32(U"内部错误： 无法打开 scan.db");
+        get_column(entries, db, "entries", "entry");
+        get_column(titles, db, "entries", "title");
+        vecLong is_draft;
+        for (bool is : is_draft)
+            isDraft.push_back(is ? U"1" : U"0");
+        is_draft.clear(); is_draft.shrink_to_fit();
         if (gv::is_wiki && entries.size() != isDraft.size()) 
             isDraft.resize(entries.size(), U"1");
         vecStr32 not_used1, not_used3;
@@ -270,8 +269,11 @@ int main(int argc, char *argv[]) {
         vecStr32 entries;
         Str32 str;
         Long N = 0;
-        read_vec_str(entries, U"./data/entries.txt");
-        for (Long i = 0; i < (Long)entries.size(); ++i) {
+        sqlite3* db;
+        if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+            throw Str32(U"内部错误： 无法打开 scan.db");
+        get_column(entries, db, "entries", "entry");
+        for (Long i = 0; i < size(entries); ++i) {
             read(str, gv::path_in + "contents/" + entries[i] + U".tex");
             rm_comments(str);
             for (Long j = 0; j < (Long)str.size(); ++j)

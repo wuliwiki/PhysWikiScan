@@ -1,6 +1,7 @@
 #pragma once
 #include <sqlite3.h>
 #include "../arith/scalar_arith.h"
+#include "../str/unicode.h"
 
 namespace slisc {
 
@@ -111,6 +112,25 @@ inline void get_column(vecStr_O data, sqlite3* db, Str_I table, Str_I field)
     sqlite3_finalize(stmt);
 }
 
+inline void get_column(vecStr32_O data, sqlite3* db, Str_I table, Str_I field)
+{
+	data.clear();
+    sqlite3_stmt* stmt;
+    Str str = "SELECT " + field + " FROM " + table;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
+        sqlite3_close(db);
+        throw Str("get_column():sqlite3_prepare_v2(): ") + sqlite3_errmsg(db);
+    }
+    int ret;
+	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
+		data.push_back(utf8to32((char*)sqlite3_column_text(stmt, 0)));
+    if (ret != SQLITE_DONE) {
+        sqlite3_close(db);
+        throw Str("get_column():sqlite3_step(): ") + sqlite3_errmsg(db);
+    }
+    sqlite3_finalize(stmt);
+}
+
 inline void get_column(vecLlong_O data, sqlite3* db, Str_I table, Str_I field)
 {
 	data.clear();
@@ -199,6 +219,32 @@ inline void get_matrix(vector<vecStr> &data, sqlite3* db, Str_I table, vecStr_I 
         data.emplace_back();
         for (Long i = 0; i < size(fields); ++i)
 		    data.back().push_back((char*)sqlite3_column_text(stmt, i));
+    }
+    if (ret != SQLITE_DONE) {
+        sqlite3_close(db);
+        throw Str("get_matrix(vector<vecStr>):sqlite3_step(): ") + sqlite3_errmsg(db);
+    }
+    sqlite3_finalize(stmt);
+}
+
+inline void get_matrix(vector<vecStr32> &data, sqlite3* db, Str_I table, vecStr_I fields)
+{
+	data.clear();
+    sqlite3_stmt* stmt;
+    Str str = "SELECT ";
+    for (auto &field : fields)
+        str += field + ',';
+    str.pop_back();
+    str += " FROM " + table + ";";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
+        sqlite3_close(db);
+        throw Str("get_matrix(vector<vecStr>):sqlite3_prepare_v2(): ") + sqlite3_errmsg(db);
+    }
+    int ret;
+	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
+        data.emplace_back();
+        for (Long i = 0; i < size(fields); ++i)
+		    data.back().push_back(utf8to32((char*)sqlite3_column_text(stmt, i)));
     }
     if (ret != SQLITE_DONE) {
         sqlite3_close(db);
