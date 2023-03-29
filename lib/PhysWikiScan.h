@@ -2232,7 +2232,7 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_O keywords, vecStr32_IO ids
         throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 
     // save html file
-    write(html, gv::path_out + entries[ind] + ".html");
+    write(html, gv::path_out + entries[ind] + ".html.tmp");
     return 0;
 }
 
@@ -2677,15 +2677,17 @@ inline void PhysWikiOnline()
     // deal with autoref
     // need `IdList` and `LabelList` from 1st loop
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
-    Str32 html;
+    Str32 html, fname;
     for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
-        read(html, gv::path_out + entries[i] + ".html"); // read html file
+        fname = gv::path_out + entries[i] + ".html";
+        read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
         autoref(ids, labels, entries[i], html);
-        write(html, gv::path_out + entries[i] + ".html"); // save html file
+        write(html, fname); // save html file
+        file_remove(utf32to8(fname) + ".tmp");
     }
     cout << endl;
     
@@ -2790,17 +2792,18 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     // need `IdList` and `LabelList` from 1st loop
     cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
-    Str32 html;
+    Str32 html, fname;
     for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         cout << std::setw(5) << std::left << ind
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
-
-        read(html, gv::path_out + entries[ind] + ".html"); // read html file
+        fname = gv::path_out + entries[ind] + ".html";
+        read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
         autoref(ids, labels, entries[ind], html);
-        write(html, gv::path_out + entries[ind] + ".html"); // save html file
+        write(html, fname); // save html file
+        file_remove(utf32to8(fname) + ".tmp");
     }
 
     cout << "\n\n" << endl;
