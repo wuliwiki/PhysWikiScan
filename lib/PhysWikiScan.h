@@ -1557,6 +1557,8 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
 
+    Char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
+
     while (1) {
         ind1 = find(ikey, str, keys, ind1);
         if (ind1 < 0)
@@ -1566,9 +1568,11 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             ++N;
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
-            if (title.empty()) {
+            if (title.empty())
                 throw Str32(U"main.tex 中词条中文名不能为空");
-            }
+            if (last_command != 'e' && last_command != 'c') 
+                throw Str32(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
+            last_command = 'e';
             command_arg(entryName, str, ind1, 1);
             Long n = search(entryName, entries);
             // insert entry into html table of contents
@@ -1597,28 +1601,34 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
         else if (ikey == 1) { // found "\chapter"
             // get chinese chapter name
             command_arg(title, str, ind1);
-             replace(title, U"\\ ", U" ");
-             // insert chapter into html table of contents
-             ++chapNo; ++chapNo_tot;
-             if (chapNo > 0)
-                 ind0 = insert(toc, U"</p>", ind0);
-             if (part_ind.size() > 0)
+            replace(title, U"\\ ", U" ");
+            if (last_command != 'p' && last_command != 'e') 
+                throw Str32(U"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
+            last_command = 'c';
+            // insert chapter into html table of contents
+            ++chapNo; ++chapNo_tot;
+            if (chapNo > 0)
+                ind0 = insert(toc, U"</p>", ind0);
+            if (part_ind.size() > 0)
                 chap_name.push_back(title);
-             ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
-                 + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
+            ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
+                + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1;
         }
         else if (ikey == 0){ // found "\part"
-             // get chinese part name
-             chapNo = -1;
-             command_arg(title, str, ind1);
-             replace(title, U"\\ ", U" ");
-             // insert part into html table of contents
-             ++partNo;
-             if (part_ind.size() > 0)
+            // get chinese part name
+            chapNo = -1;
+            command_arg(title, str, ind1);
+            replace(title, U"\\ ", U" ");
+            if (last_command != 'e' && last_command != 'n')
+                throw Str32(U"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
+            last_command = 'p';
+            // insert part into html table of contents
+            ++partNo;
+            if (part_ind.size() > 0)
                 part_name.push_back(title);
             
-             ind0 = insert(toc,
+            ind0 = insert(toc,
                 U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
                 U"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
                     + num2str32(partNo+1) + U"\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
