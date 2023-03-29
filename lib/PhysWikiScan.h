@@ -1522,8 +1522,8 @@ inline Long check_normal_text_escape(Str32_IO str)
 // `part_ind[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `chap_ind[i]` is similar to `part_ind[i]`, for chapters
 // if part_ind.size() == 0, `chap_name, chap_ind, part_ind, part_name` will be ignored
-inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32_O part_name,
-    vecLong_O part_ind, vecStr32_I entries, vecStr32_I isDraft)
+inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong_O chap_ind,
+    vecStr32_O part_name, vecLong_O part_ind, vecStr32_I entries, vecStr32_I isDraft)
 {
     Long N{}, ind0{}, ind1{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
@@ -1610,8 +1610,10 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_ind, vecStr32
             ++chapNo; ++chapNo_tot;
             if (chapNo > 0)
                 ind0 = insert(toc, U"</p>", ind0);
-            if (part_ind.size() > 0)
+            if (part_ind.size() > 0) {
                 chap_name.push_back(title);
+                chap_part.push_back(partNo + 1);
+            }
             ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
                 + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1;
@@ -2387,6 +2389,46 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     sqlite3_close(db);
 }
 
+// delete and rewrite "chapters" and "parts" table of sqlite db
+inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecLong_I chap_part)
+{
+    cout << "updating sqlite database (" << part_name.size() << " parts, "
+        << chap_name.size() << " chapters) ..." << endl; cout.flush();
+    sqlite3* db;
+    if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        throw Str32(U"内部错误： 无法打开 scan.db");
+    table_clear(db, "parts"); table_clear(db, "chapters");
+
+    // insert parts
+    sqlite3_stmt* stmt_insert_part;
+    Str str = "INSERT INTO parts (name) VALUES ?;";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_part, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+    
+    for (auto &part : part_name) {
+        sqlite3_bind_text(stmt_insert_part, 1, utf32to8(part).c_str(), -1, SQLITE_TRANSIENT);
+        if (sqlite3_step(stmt_insert_part) != SQLITE_DONE)
+            throw Str32(U"内部错误： db_update_chap_part():stmt_insert_part: " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt_insert_part);
+    }
+    sqlite3_finalize(stmt_insert_part);
+
+    // insert chapters
+    sqlite3_stmt* stmt_insert_chap;
+    str = "INSERT INTO chapters (name, part) VALUES (?, ?);";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_chap, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
+    for (Long i = 0; i < size(chap_name); ++i) {
+        sqlite3_bind_text(stmt_insert_chap, 1, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_int64(stmt_insert_chap, 2, chap_part[i]);
+        if (sqlite3_step(stmt_insert_chap) != SQLITE_DONE)
+            throw Str32(U"内部错误： db_update_chap_part():stmt_insert_chap: " + utf8to32(sqlite3_errmsg(db)));
+        sqlite3_reset(stmt_insert_chap);
+    }
+    sqlite3_finalize(stmt_insert_chap);
+}
+
 // update "entries" table of sqlite db
 inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecLong_I chap_ind,
      VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
@@ -2686,7 +2728,8 @@ inline void PhysWikiOnline()
     vecStr32 rules;  // for newcommand()
     vecStr32 isDraft;  // if the corresponding entry is a draft ('1' or '0')
     vecStr32 imgs; // all images in figures/ except .pdf
-    vecStr32 chap_name, part_name;
+    vecStr32 chap_name, part_name; // list of chapter and part titles in order
+    vecLong chap_part; // chap_part[i] is the part num of chap_name[i]
     Long Ntoc; // number of entries in table of contents
     
     // process bibliography
@@ -2711,7 +2754,7 @@ inline void PhysWikiOnline()
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
 
-    table_of_contents(chap_name, chap_ind, part_name, part_ind, entries, isDraft);
+    table_of_contents(chap_name, chap_part, chap_ind, part_name, part_ind, entries, isDraft);
     file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); // check if image has been used
@@ -2769,6 +2812,7 @@ inline void PhysWikiOnline()
         dep_json(tree, entries, titles, chap_name, chap_ind, part_name, part_ind, links);
 
     db_update_entry(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
+    db_update_chap_part(part_name, chap_name, chap_part);
 
     // warn unused figures
     Bool warn_fig = false;

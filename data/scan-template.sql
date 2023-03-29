@@ -27,14 +27,14 @@ CREATE TABLE "entries" (
 
 -- 所有部分
 CREATE TABLE "parts" (
-	"id"	INTEGER NOT NULL UNIQUE, -- 部分编号（从 1 开始）
+	"id"	INTEGER NOT NULL UNIQUE AUTOINCREMENT, -- 部分编号（从 1 开始）
 	"name"	TEXT NOT NULL UNIQUE, -- 部分名称
 	PRIMARY KEY("id")
 );
 
 -- 所有章
 CREATE TABLE "chapters" (
-	"id"	INTEGER NOT NULL UNIQUE, -- 章编号（从 1 开始）
+	"id"	INTEGER NOT NULL UNIQUE AUTOINCREMENT, -- 章编号（从 1 开始）
 	"name"	TEXT NOT NULL UNIQUE, -- 章名称
 	"part"	INTEGER NOT NULL, -- 所在部分
 	PRIMARY KEY("id"),
@@ -43,7 +43,7 @@ CREATE TABLE "chapters" (
 
 -- 所有参考文献
 CREATE TABLE "bibliography" (
-	"bib"	TEXT NOT NULL UNIQUE, -- \cite{} 中的标签
+	"bib"	TEXT NOT NULL UNIQUE AUTOINCREMENT, -- \cite{} 中的标签
 	"details"	TEXT NOT NULL, -- 详细信息（待拆分成若干field）
 	PRIMARY KEY("bib")
 );
@@ -65,7 +65,7 @@ CREATE TABLE "history" (
 
 -- 所有作者
 CREATE TABLE "authors" (
-	"id"	INTEGER NOT NULL UNIQUE, -- ID
+	"id"	INTEGER NOT NULL UNIQUE AUTOINCREMENT, -- ID
 	"name"	TEXT NOT NULL, -- 昵称
 	"official"	INTEGER DEFAULT 0, -- [0|1] 已申请
 	"salary"	INTEGER, -- 时薪

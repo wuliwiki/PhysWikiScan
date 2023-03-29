@@ -255,8 +255,8 @@ int main(int argc, char *argv[]) {
         if (gv::is_wiki && entries.size() != isDraft.size()) 
             isDraft.resize(entries.size(), U"1");
         vecStr32 not_used1, not_used3;
-        vecLong not_used2, not_used4;
-        try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
+        vecLong not_used2, not_used4, not_used5;
+        try {table_of_contents(not_used1, not_used5, not_used2, not_used3, not_used4,
             entries, isDraft);}
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl; return 0;
