@@ -2549,23 +2549,13 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
     cout << "done." << endl;
 }
 
-inline int callback(void* data, int argc, char** argv, char** azColName) {
-    for (int i = 0; i < argc; i++) {
-        strcpy((char*)data, argv[i]);
-        // std::cout << azColName[i] << " = " << (argv[i] ? argv[i] : "NULL") << std::endl;
-    }
-    cout << endl;
-    return 0;
-}
-
 // updating sqlite database "authors" and "history" table from backup files
 inline void db_update_author_history(Str32_I path)
 {
     vecStr32 fnames;
-    unordered_map<Str32, Long> authors;
-    Str32 author;
+    unordered_map<Str, Long> new_authors;
+    Str author;
     Str sha1, time, entry;
-    Long authorID = 0;
     file_list_ext(fnames, path, U"tex", false);
     cout << "updating sqlite database \"history\" table (" << fnames.size()
         << " backup) ..."; cout.flush();
@@ -2574,13 +2564,36 @@ inline void db_update_author_history(Str32_I path)
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
-    
-    vecStr db_sha10;
-    get_column(db_sha10, db, "authors", "hash");
-    cout << "there are already " << db_sha10.size() << " records in database." << endl;
 
-    unordered_set<Str> db_sha1(db_sha10.begin(), db_sha10.end());
-    db_sha10.clear();
+    vector<vecStr> db_data10;
+    
+    vecLong db_data20;
+    get_matrix(db_data10, db, "history", {"hash","time","entry"});
+    get_column(db_data20, db, "history", "authorID");
+    Long authorID = db_data20.empty() ? -1 : max(db_data20);
+
+    cout << "there are already " << db_data10.size() << " backup (history) records in database." << endl;
+
+    //            hash       time authorID entry
+    unordered_map<Str, tuple<Str, Long,    Str>> db_data;
+    for (Long i = 0; i < size(db_data10); ++i)
+        db_data[db_data10[i][0]] = make_tuple(db_data10[i][1], db_data20[i], db_data10[i][2]);
+    db_data10.clear(); db_data20.clear();
+    db_data10.shrink_to_fit(); db_data20.shrink_to_fit();
+
+    vecStr db_authors0; vecLong db_author_ids0;
+    get_column(db_author_ids0, db, "authors", "id");
+    get_column(db_authors0, db, "authors", "name");
+    cout << "there are already " << db_author_ids0.size() << " author records in database." << endl;
+    unordered_map<Long, Str> db_id_to_author;
+    unordered_map<Str, Long> db_author_to_id;
+    for (Long i = 0; i < size(db_author_ids0); ++i) {
+        db_id_to_author[db_author_ids0[i]] = db_authors0[i];
+        db_author_to_id[db_authors0[i]] = db_author_ids0[i];
+    }
+
+    db_author_ids0.clear(); db_authors0.clear();
+    db_author_ids0.shrink_to_fit(); db_authors0.shrink_to_fit();
     
     Str str = "INSERT INTO history"
               "(hash, time, authorID, entry)"
@@ -2592,23 +2605,31 @@ inline void db_update_author_history(Str32_I path)
   
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
-        sha1 = sha1sum_f(utf32to8(path + fname) + ".tex");
-        bool sha1_exist = db_sha1.count(sha1);
+        sha1 = sha1sum_f(utf32to8(path + fname) + ".tex").substr(0, 16);
+        bool sha1_exist = db_data.count(sha1);
+
+        time = utf32to8(fname.substr(0, 12));
+        Long ind = fname.rfind('_');
+        author = utf32to8(fname.substr(13, ind-13));
+        if (db_author_to_id.count(author) == 0 && new_authors.count(author) == 0) {
+            ++authorID;
+            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(authorID));
+            new_authors[author] = authorID;
+        }
+        entry = utf32to8(fname.substr(ind+1));
+
         if (sha1_exist) {
-            // TODO: 已经存在， 要检查文件名是否匹配数据库中的信息
-            // 如果不一致， 是否要更新呢？
-            db_sha1.erase(sha1);
+            auto &time_author_entry = db_data[sha1];
+            if (get<0>(time_author_entry) != time)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
+            if (db_id_to_author[get<1>(time_author_entry)] != author)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的作者不同， 数据库中为（将不更新）： " + db_id_to_author[get<1>(time_author_entry)]);
+            if (get<2>(time_author_entry) != entry)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
+            db_data.erase(sha1);
         }
         else {
-            SLS_WARN("数据库的 history 表格中不存在备份文件（将添加）：" + fname);
-
-            time = utf32to8(fname.substr(0, 12));
-            Long ind = fname.rfind('_');
-            author = fname.substr(13, ind-13);
-            if (authors.count(author) == 0)
-                authors[author] = ++authorID;
-            entry = utf32to8(fname.substr(ind+1));
-
+            SLS_WARN("数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
             sqlite3_bind_text(stmt_insert, 1, sha1.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_insert, 2, time.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_int64(stmt_insert, 3, authorID);
@@ -2619,43 +2640,32 @@ inline void db_update_author_history(Str32_I path)
         }
     }
     sqlite3_finalize(stmt_insert);
-    cout << "done." << endl;
 
-    // update "authors" table
-    cout << "updating sqlite database \"authors\" table (" << authors.size()
-        << " authors) ..."; cout.flush();
+    if (!db_data.empty()) {
+        SLS_WARN("以下数据库中记录的备份无法找到对应文件： ");
+        for (auto &row : db_data) {
+            cout << row.first << ", " << get<0>(row.second) << ", " <<
+                get<1>(row.second) << ", " << get<2>(row.second) << endl;
+        }
+    }
+    cout << "\ndone." << endl;
+
+    // insert new_authors to "authors" table
+    cout << "updating sqlite database \"authors\" table (" << new_authors.size()
+        << " new authors) ..." << endl;
     str = "INSERT INTO authors (id, name) VALUES (?, ?);";
     sqlite3_stmt* stmt_insert_auth;
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_auth, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-    for (auto &author : authors) {
+    for (auto &author : new_authors) {
+        cout << "新作者： " << author.second << ". " << author.first << endl;
         sqlite3_bind_int64(stmt_insert_auth, 1, author.second);
-        sqlite3_bind_text(stmt_insert_auth, 2, utf32to8(author.first).c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt_insert_auth, 2, author.first.c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt_insert_auth) != SQLITE_DONE)
             throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt_insert_auth);
-
-        // verify:
-        // str = "SELECT name FROM authors WHERE id = " + to_string(author.second) + ';';
-        // char* errMsg = NULL;
-        // char data[1024];
-        // if (sqlite3_exec(db, str.c_str(), callback, data, &errMsg) != SQLITE_OK) {
-        //     std::cerr << "Error executing SELECT: " << errMsg << std::endl;
-        //     sqlite3_free(errMsg);
-        // }
-        // if (Str(data) != utf32to8(author.first)) {
-        //     for (auto c : Str(data)) cout << std::hex << int(Uchar(c)) << ' ';
-        //     SLS_FAIL;
-        // }
-        // cout << endl;
     }
     sqlite3_close(db);
-
-    if (!db_sha1.empty()) {
-        SLS_WARN("数据库中存在以下备份文件的信息， 但文件夹中没有找到：");
-        for (auto &sha1 : db_sha1)
-            cout << sha1 << endl;
-    }
 
     cout << "done." << endl;
 }

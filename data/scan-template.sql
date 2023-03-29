@@ -18,7 +18,8 @@ CREATE TABLE "entries" (
 	
 	"pentry"	TEXT, -- "label1 label2 label3" 预备知识的
 	"labels"	TEXT, -- "eq 1 2 fig 2 2 ex 3 2 code 1 2" 标签（第一个数字是显示编号， 第二个是标签编号）
-	"deleted"	INTEGER DEFAULT 0, -- "if deleted"
+	"deleted"	INTEGER DEFAULT 0, -- [0|1] 是否已删除
+	"occupied"	INTEGER DEFAULT 0, -- [-1|authorID] 是否正在被占用
 	PRIMARY KEY("entry")
 );
 
@@ -31,10 +32,10 @@ CREATE TABLE "bibliography" (
 
 -- 编辑历史
 CREATE TABLE "history" (
-	"hash"	TEXT NOT NULL UNIQUE, -- 暂定 SHA1
-	"time"	INTEGER NOT NULL, -- 备份时间
+	"hash"	TEXT NOT NULL UNIQUE, -- 暂定 SHA1 的前 12 位
+	"time"	TEXT NOT NULL, -- 备份时间
 	"authorID"	INTEGER NOT NULL, -- 作者 ID
-	"entry"	INTEGER, -- 词条标签
+	"entry"	TEXT, -- 词条标签
 	"add"	INTEGER, -- 新增字符数
 	"del"	INTEGER, -- 减少字符数
 	"discount"	INTEGER, -- 备份时时薪折扣%

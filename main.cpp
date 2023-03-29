@@ -406,7 +406,13 @@ int main(int argc, char *argv[]) {
         else
             path = U"../PhysWiki-backup/";
         // update db "history" table from backup files
-        db_update_author_history(path);
+        try { db_update_author_history(path); }
+        catch (Str32_I msg) {
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
+        }
     }
     else if (args[0] == U"--hide" && args.size() > 1) {
         Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
