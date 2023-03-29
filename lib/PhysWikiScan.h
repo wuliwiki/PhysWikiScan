@@ -8,6 +8,7 @@
 #include "../SLISC/str/str.h"
 #include "../SLISC/algo/sort.h"
 #include "../SLISC/file/matt.h"
+#include "../SLISC/str/disp.h"
 
 using namespace slisc;
 
@@ -2379,7 +2380,7 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
         throw Str32(U"内部错误： 无法打开 scan.db");
     // get a list of entries
     vecStr db_entries;
-    get_column_str(db_entries, db, "entries", "entry");
+    get_column(db_entries, db, "entries", "entry");
     cout << "there are already " << db_entries.size() << " entries in database." << endl;
 
     // mark deleted entries
@@ -2397,12 +2398,6 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
         }
     }
     sqlite3_finalize(stmt_delete);
-
-    // check if an entry exists
-    sqlite3_stmt* stmt_exist;
-    str = "SELECT EXISTS(SELECT 1 FROM entries WHERE entry = ?);";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_exist, NULL) != SQLITE_OK)
-        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
 
     // insert a new entry
     sqlite3_stmt* stmt_insert;
@@ -2425,16 +2420,16 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
     
     for (Long i = 0; i < size(entries); i++) {
         Str entry = utf32to8(entries[i]);
-        sqlite3_bind_text(stmt_exist, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
 
         str_keys.clear();
         for (auto &key : keywords_list[i]) str_keys += utf32to8(key) + '|';
-        str_keys.pop_back();
+        if (!str_keys.empty()) str_keys.pop_back();
 
         str_pentry.clear();
-        for (auto next : tree[i])
+        for (auto next : tree[i]) {
             str_pentry += utf32to8(entries[next]) + " ";
-        str_pentry.pop_back();
+        }
+        if (!str_pentry.empty()) str_pentry.pop_back();
 
         str_labels.clear();
         Str label, id;
@@ -2452,19 +2447,59 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
                     " " + label.substr(ind1+1+ind2) + " ";
             }
         }
-        str_labels.pop_back();
+        if (!str_labels.empty()) str_labels.pop_back();
 
         // does entry already exist (expected)?
         Bool entry_exist;
-        entry_exist = sqlite3_column_int(stmt_exist, 0);
+        entry_exist = exist(db, "entries", "entry", entry);
         if (entry_exist) {
-            // update entry
+            // check if there is any change (unexpected)
+            vecStr row_str; vecLong row_int;
+            get_row(row_str, db, "entries", "entry", entry, {"title", "keys", "pentry", "labels"});
+            get_row(row_int, db, "entries", "entry", entry, {"part", "chapter", "section", "draft", "deleted"});
+            bool changed = false;
+            if (utf32to8(titles[i]) != row_str[0]) {
+                SLS_WARN("titles has changed from " + row_str[0] + " to " + utf32to8(titles[i]));
+                changed = true;
+            }
+            if (str_keys != row_str[1]) {
+                SLS_WARN("keys has changed from " + row_str[1] + " to " + str_keys);
+                changed = true;
+            }
+            if (part_ind[i] != row_int[0]) {
+                SLS_WARN("part has changed from " + to_string(row_int[0]) + " to " + to_string(part_ind[i]));
+                changed = true;
+            }
+            if (chap_ind[i] != row_int[1]) {
+                SLS_WARN("chapter has changed from " + to_string(row_int[1]) + " to " + to_string(chap_ind[i]));
+                changed = true;
+            }
+            if (entry_order[i] != row_int[2]) {
+                SLS_WARN("section has changed from " + to_string(row_int[2]) + " to " + to_string(entry_order[i]));
+                changed = true;
+            }
+            Long draft = (isDraft[i] == U"0" ? 0 : 1);
+            if (draft != row_int[3]) {
+                SLS_WARN("draft has changed from " + to_string(row_int[3]) + " to " + to_string(draft));
+                changed = true;
+            }
+            if (str_pentry != row_str[2]) {
+                SLS_WARN("pentry has changed from " + row_str[2] + " to " + str_pentry);
+                changed = true;
+            }
+            if (str_labels != row_str[3]) {
+                SLS_WARN("label has changed from " + row_str[3] + " to " + str_labels);
+                changed = true;
+            }
+            if (!changed)
+                continue;
+
             sqlite3_bind_text(stmt_update, 1, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_update, 2, str_keys.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
             sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
             sqlite3_bind_int64(stmt_update, 5, entry_order[i]);
-            sqlite3_bind_int(stmt_update, 6, isDraft[i] == U"0" ? 0 : 1);
+            sqlite3_bind_int(stmt_update, 6, draft);
             sqlite3_bind_text(stmt_update, 7, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_update, 8, str_labels.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_update, 9, entry.c_str(), -1, SQLITE_TRANSIENT);
@@ -2520,7 +2555,7 @@ inline void db_update_author_history(Str32_I path)
         throw Str32(U"内部错误： 无法打开 scan.db");
     
     vecStr db_sha10;
-    get_column_str(db_sha10, db, "authors", "hash");
+    get_column(db_sha10, db, "authors", "hash");
     cout << "there are already " << db_sha10.size() << " records in database." << endl;
 
     unordered_set<Str> db_sha1(db_sha10.begin(), db_sha10.end());

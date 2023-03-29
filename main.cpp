@@ -181,8 +181,10 @@ int main(int argc, char *argv[]) {
 
     try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
     catch (Str32_I msg) {
-        cerr << utf32to8(msg) << endl;
-        return 0;
+        cerr << utf32to8(msg) << endl; return 0;
+    }
+    catch (Str_I msg) {
+        cerr << msg << endl; return 0;
     }
     if (gv::url == U"https://wuli.wiki/online/" || gv::url == U"https://wuli.wiki/changed/")
         gv::is_wiki = true;
@@ -204,8 +206,10 @@ int main(int argc, char *argv[]) {
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline();}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
         if (!illegal_chars.empty()) {
             SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
@@ -221,8 +225,10 @@ int main(int argc, char *argv[]) {
         Long Ntoc; // number of entries in main.tex
         try { Ntoc = entries_titles(titles, entries, isDraft, entry_order); }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
         write_vec_str(titles, gv::path_data + U"titles.txt");
         write_vec_str(entries, gv::path_data + U"entries.txt");
@@ -253,8 +259,10 @@ int main(int argc, char *argv[]) {
         try {table_of_contents(not_used1, not_used2, not_used3, not_used4,
             entries, isDraft);}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
     }
     else if (args[0] == U"--wc" && args.size() == 1) {
@@ -299,8 +307,10 @@ int main(int argc, char *argv[]) {
         try {ret = check_add_label(label, args[1], args[2],
             atoi(utf32to8(args[3]).c_str()), labels, ids);}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
         vecStr32 output;
         if (ret == 0) { // added
@@ -343,8 +353,10 @@ int main(int argc, char *argv[]) {
                 atoi(utf32to8(args[3]).c_str()), labels, ids);
         }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
         vecStr32 output;
         if (ret == 0) // added
@@ -367,8 +379,10 @@ int main(int argc, char *argv[]) {
         }
         try {PhysWikiOnlineN(entryN);}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
     }
     else if (args[0] == U"--bib") {
@@ -376,8 +390,10 @@ int main(int argc, char *argv[]) {
         vecStr32 bib_labels, bib_details;
         try { bibliography(bib_labels, bib_details); }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl;
-            return 0;
+            cerr << utf32to8(msg) << endl; return 0;
+        }
+        catch (Str_I msg) {
+            cerr << msg << endl; return 0;
         }
         write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
         write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
