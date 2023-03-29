@@ -2352,15 +2352,33 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
 inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     int ret;
     sqlite3* db;
+    vector<vecStr> db_data0;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
-    Str str = "INSERT OR REPLACE INTO bibliography (bib, details) VALUES (?, ?);";
+    
+    get_matrix(db_data0, db, "bibliography", {"bib", "details"});
+    unordered_map<Str, Str> db_data;
+    for (auto &row : db_data0)
+        db_data[row[0]] = row[1];
+    
+    Str str = "INSERT INTO bibliography (bib, details) VALUES (?, ?);";
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
     for (Long i = 0; i < size(bib_labels); i++) {
-        sqlite3_bind_text(stmt, 1, utf32to8(bib_labels[i]).c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_text(stmt, 2, utf32to8(bib_details[i]).c_str(), -1, SQLITE_TRANSIENT);
+        Str bib_label = utf32to8(bib_labels[i]), bib_detail = utf32to8(bib_details[i]);
+        if (db_data.count(bib_label)) {
+            if (db_data[bib_label] != bib_detail) {
+                SLS_WARN("数据库文献详情 bib_detail 发生变化需要更新！ 该功能未实现，将不更新： " + bib_label);
+                cout << "数据库的 bib_detail： " << db_data[bib_label] << endl;
+                cout << "当前的   bib_detail： " << bib_detail << endl;
+            }
+            continue;
+        }
+        SLS_WARN("数据库中不存在文献（将添加）： " + bib_label);
+        sqlite3_bind_text(stmt, 1, bib_label.c_str(), -1, SQLITE_TRANSIENT);
+        sqlite3_bind_text(stmt, 2, bib_detail.c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt) != SQLITE_DONE)
             throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt);
@@ -2382,15 +2400,18 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
     vecStr db_entries;
     get_column(db_entries, db, "entries", "entry");
     cout << "there are already " << db_entries.size() << " entries in database." << endl;
+    vecLong db_entries_deleted;
+    get_column(db_entries_deleted, db, "entries", "deleted");
 
     // mark deleted entries
     sqlite3_stmt* stmt_delete;
     Str str = "UPDATE entries SET deleted=1 WHERE entry=?;";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_delete, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-    for (auto &entry : db_entries) {
-        if (search(utf8to32(entry), entries) < 0) {
-            SLS_WARN("数据库中存在多余的词条（将标记为 deleted）： " + entry);
+    for (Long i = 0; i < size(db_entries); ++i) {
+        Str entry = utf32to8(entries[i]);
+        if (search(utf8to32(entry), entries) < 0 && !db_entries_deleted[i]) {
+            SLS_WARN("数据库中存在多余的词条且没有标记为 deleted（将标记为 deleted）： " + entry);
             sqlite3_bind_text(stmt_delete, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt_delete) != SQLITE_DONE)
                 throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
