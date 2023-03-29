@@ -20,7 +20,25 @@ CREATE TABLE "entries" (
 	"labels"	TEXT, -- "eq 1 2 fig 2 2 ex 3 2 code 1 2" 标签（第一个数字是显示编号， 第二个是标签编号）
 	"deleted"	INTEGER DEFAULT 0, -- [0|1] 是否已删除
 	"occupied"	INTEGER DEFAULT 0, -- [-1|authorID] 是否正在被占用
-	PRIMARY KEY("entry")
+	PRIMARY KEY("entry"),
+	FOREIGN KEY("part") REFERENCES "parts"("id"),
+	FOREIGN KEY("chapter") REFERENCES "chapters"("id")
+);
+
+-- 所有部分
+CREATE TABLE "parts" (
+	"id"	INTEGER NOT NULL UNIQUE, -- 部分编号（从 1 开始）
+	"name"	TEXT NOT NULL UNIQUE, -- 部分名称
+	PRIMARY KEY("id")
+);
+
+-- 所有章
+CREATE TABLE "chapters" (
+	"id"	INTEGER NOT NULL UNIQUE, -- 章编号（从 1 开始）
+	"name"	TEXT NOT NULL UNIQUE, -- 章名称
+	"part"	INTEGER NOT NULL, -- 所在部分
+	PRIMARY KEY("id"),
+	FOREIGN KEY("part") REFERENCES "parts"("id")
 );
 
 -- 所有参考文献
