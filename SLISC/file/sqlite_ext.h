@@ -5,6 +5,19 @@
 
 namespace slisc {
 
+// check foreign key existence by default
+// need to run everytime db is opened
+inline void check_foreign_key(sqlite3* db)
+{
+    char* errMsg = NULL;
+    if (sqlite3_exec(db, "PRAGMA foreign_keys = ON;", NULL, NULL, &errMsg) != SQLITE_OK) {
+        fprintf(stderr, "SQL error: %s\n", errMsg);
+        Str err_msg("check_foreign_key(): sqlite3_exec(): ");
+        err_msg += errMsg; sqlite3_free(errMsg);
+        throw err_msg;
+    }
+}
+
 // check if an entry exists
 inline bool exist(sqlite3* db, Str_I table, Str_I field, Str_I text)
 {

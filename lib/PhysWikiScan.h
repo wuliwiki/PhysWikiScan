@@ -1540,12 +1540,11 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
     Str32 entryName; // entry label
     Str32 str, str2, toc, class_draft;
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
-    if (part_ind.size() > 0) {
-        chap_name.clear(); part_name.clear();
-        chap_name.push_back(U"无"); part_name.push_back(U"无"); chap_part.push_back(-1);
-        chap_ind.clear(); chap_ind.resize(entries.size(), 0);
-        part_ind.clear(); part_ind.resize(entries.size(), 0);
-    }
+
+    chap_name.clear(); part_name.clear();
+    chap_name.push_back(U"无"); part_name.push_back(U"无"); chap_part.push_back(0);
+    chap_ind.clear(); chap_ind.resize(entries.size(), 0);
+    part_ind.clear(); part_ind.resize(entries.size(), 0);
 
     read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
@@ -2357,6 +2356,7 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     vector<vecStr> db_data0;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
+    check_foreign_key(db);
     
     get_matrix(db_data0, db, "bibliography", {"bib", "details"});
     unordered_map<Str, Str> db_data;
@@ -2390,13 +2390,14 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
 }
 
 // delete and rewrite "chapters" and "parts" table of sqlite db
-inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecLong_I chap_part)
+inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name, vecLong_I chap_part)
 {
     cout << "updating sqlite database (" << part_name.size() << " parts, "
         << chap_name.size() << " chapters) ..." << endl; cout.flush();
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
+    check_foreign_key(db);
     table_clear(db, "parts"); table_clear(db, "chapters");
 
     // insert parts
@@ -2409,7 +2410,7 @@ inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecL
         sqlite3_bind_int64(stmt_insert_part, 1, i);
         sqlite3_bind_text(stmt_insert_part, 2, utf32to8(part_name[i]).c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt_insert_part) != SQLITE_DONE)
-            throw Str32(U"内部错误： db_update_chap_part():stmt_insert_part: " + utf8to32(sqlite3_errmsg(db)));
+            throw Str32(U"内部错误： db_update_parts_chapters():stmt_insert_part: " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt_insert_part);
     }
     sqlite3_finalize(stmt_insert_part);
@@ -2425,7 +2426,7 @@ inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecL
         sqlite3_bind_text(stmt_insert_chap, 2, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int64(stmt_insert_chap, 3, chap_part[i]);
         if (sqlite3_step(stmt_insert_chap) != SQLITE_DONE)
-            throw Str32(U"内部错误： db_update_chap_part():stmt_insert_chap: " + utf8to32(sqlite3_errmsg(db)));
+            throw Str32(U"内部错误： db_update_parts_chapters():stmt_insert_chap: " + utf8to32(sqlite3_errmsg(db)));
         sqlite3_reset(stmt_insert_chap);
     }
     sqlite3_finalize(stmt_insert_chap);
@@ -2433,14 +2434,15 @@ inline void db_update_chap_part(vecStr32_I part_name, vecStr32_I chap_name, vecL
 }
 
 // update "entries" table of sqlite db
-inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecLong_I chap_ind,
-     VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
-     const vector<DGnode> &tree, vecStr32_I labels, vecStr32_I ids)
+inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecLong_I chap_ind,
+    VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
+    const vector<DGnode> &tree, vecStr32_I labels, vecStr32_I ids)
 {
     cout << "updating sqlite database (" << entries.size() << " entries) ..." << endl; cout.flush();
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
+    check_foreign_key(db);
     // get a list of entries
     vecStr db_entries;
     get_column(db_entries, db, "entries", "entry");
@@ -2562,8 +2564,11 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
 
             sqlite3_bind_text(stmt_update, 1, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_update, 2, str_keys.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
-            sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
+            // cout << "debug: part_ind[i] = " << part_ind[i] << ",  chap_ind[i] = " << chap_ind[i] << endl;
+            if (part_ind[i]) sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
+            else sqlite3_bind_null(stmt_update, 3);
+            if (chap_ind[i]) sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
+            else sqlite3_bind_null(stmt_update, 4);
             sqlite3_bind_int64(stmt_update, 5, entry_order[i]);
             sqlite3_bind_int(stmt_update, 6, draft);
             sqlite3_bind_text(stmt_update, 7, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
@@ -2578,8 +2583,10 @@ inline void db_update_entry(vecStr32_I entries, vecStr32_I titles, vecLong_I par
             sqlite3_bind_text(stmt_insert, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_insert, 2, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_insert, 3, str_keys.c_str(), -1, SQLITE_TRANSIENT);
-            sqlite3_bind_int64(stmt_insert, 4, part_ind[i]);
-            sqlite3_bind_int64(stmt_insert, 5, chap_ind[i]);
+            if (part_ind[i]) sqlite3_bind_int64(stmt_insert, 4, part_ind[i]);
+            else sqlite3_bind_null(stmt_insert, 4);
+            if (chap_ind[i]) sqlite3_bind_int64(stmt_insert, 5, chap_ind[i]);
+            else sqlite3_bind_null(stmt_insert, 5);
             sqlite3_bind_int64(stmt_insert, 6, entry_order[i]);
             sqlite3_bind_int(stmt_insert, 7, isDraft[i] == U"0" ? 0 : 1);
             sqlite3_bind_text(stmt_insert, 8, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
@@ -2603,12 +2610,13 @@ inline void db_update_author_history(Str32_I path)
     Str sha1, time, entry;
     file_list_ext(fnames, path, U"tex", false);
     cout << "updating sqlite database \"history\" table (" << fnames.size()
-        << " backup) ..."; cout.flush();
+        << " backup) ..." << endl; cout.flush();
 
     // update "history" table
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
+    check_foreign_key(db);
 
     vector<vecStr> db_data10;
     
@@ -2639,7 +2647,7 @@ inline void db_update_author_history(Str32_I path)
 
     db_author_ids0.clear(); db_authors0.clear();
     db_author_ids0.shrink_to_fit(); db_authors0.shrink_to_fit();
-    
+
     Str str = "INSERT INTO history"
               "(hash, time, authorID, entry)"
               "VALUES"
@@ -2647,7 +2655,24 @@ inline void db_update_author_history(Str32_I path)
     sqlite3_stmt* stmt_insert;
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-  
+
+    vecStr entries0;
+    get_column(entries0, db, "entries", "entry");
+    unordered_set<Str> entries(entries0.begin(), entries0.end()), entries_deleted_inserted;
+    entries0.clear(); entries0.shrink_to_fit();
+
+    // insert a deleted entry (to ensure FOREIGN KEY exist)
+    sqlite3_stmt* stmt_insert_entry;
+    str = "INSERT INTO entries (entry, deleted) VALUES (?, 1);";
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_entry, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
+    // insert new_authors to "authors" table
+    str = "INSERT INTO authors (id, name) VALUES (?, ?);";
+    sqlite3_stmt* stmt_insert_auth;
+    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_auth, NULL) != SQLITE_OK)
+        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
+
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
         sha1 = sha1sum_f(utf32to8(path + fname) + ".tex").substr(0, 16);
@@ -2665,8 +2690,24 @@ inline void db_update_author_history(Str32_I path)
             authorID = ++id_max;
             SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(id_max));
             new_authors[author] = id_max;
+            sqlite3_bind_int64(stmt_insert_auth, 1, id_max);
+            sqlite3_bind_text(stmt_insert_auth, 2, author.c_str(), -1, SQLITE_TRANSIENT);
+            if (sqlite3_step(stmt_insert_auth) != SQLITE_DONE)
+                throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_insert_auth);
         }
         entry = utf32to8(fname.substr(ind+1));
+        if (entries.count(entry) == 0 &&
+            entries_deleted_inserted.count(entry) == 0) {
+            SLS_WARN("备份文件中的词条不在数据库中（将添加）： " + entry);
+            sqlite3_bind_text(stmt_insert_entry, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
+            // sqlite3_bind_int64(stmt_insert_entry, 2, 1);
+            if (sqlite3_step(stmt_insert_entry) != SQLITE_DONE)
+                throw Str32(U"内部错误： db_update_author_history():stmt_insert_entry:sqlite3_step(): "
+                    + utf8to32(sqlite3_errmsg(db)));
+            sqlite3_reset(stmt_insert_entry);
+            entries_deleted_inserted.insert(entry);
+        }
 
         if (sha1_exist) {
             auto &time_id_entry = db_data[sha1];
@@ -2691,6 +2732,8 @@ inline void db_update_author_history(Str32_I path)
         }
     }
     sqlite3_finalize(stmt_insert);
+    sqlite3_finalize(stmt_insert_auth);
+    sqlite3_finalize(stmt_insert_entry);
 
     if (!db_data.empty()) {
         SLS_WARN("以下数据库中记录的备份无法找到对应文件： ");
@@ -2701,21 +2744,8 @@ inline void db_update_author_history(Str32_I path)
     }
     cout << "\ndone." << endl;
 
-    // insert new_authors to "authors" table
-    cout << "updating sqlite database \"authors\" table (" << new_authors.size()
-        << " new authors) ..." << endl;
-    str = "INSERT INTO authors (id, name) VALUES (?, ?);";
-    sqlite3_stmt* stmt_insert_auth;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_auth, NULL) != SQLITE_OK)
-        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-    for (auto &author : new_authors) {
+    for (auto &author : new_authors)
         cout << "新作者： " << author.second << ". " << author.first << endl;
-        sqlite3_bind_int64(stmt_insert_auth, 1, author.second);
-        sqlite3_bind_text(stmt_insert_auth, 2, author.first.c_str(), -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(stmt_insert_auth) != SQLITE_DONE)
-            throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt_insert_auth);
-    }
     sqlite3_close(db);
 
     cout << "done." << endl;
@@ -2751,8 +2781,6 @@ inline void PhysWikiOnline()
     Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
     save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     matt.close();
-    part_ind.resize(entries.size());
-    chap_ind.resize(entries.size());
     define_newcommands(rules);
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
@@ -2814,8 +2842,8 @@ inline void PhysWikiOnline()
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
         dep_json(tree, entries, titles, chap_name, chap_ind, part_name, part_ind, links);
 
-    db_update_entry(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
-    db_update_chap_part(part_name, chap_name, chap_part);
+    db_update_parts_chapters(part_name, chap_name, chap_part);
+    db_update_entries(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
 
     // warn unused figures
     Bool warn_fig = false;
