@@ -26,7 +26,7 @@ CREATE TABLE "entries" (
 	"labels"	TEXT NOT NULL DEFAULT '', -- "eq 1 2 fig 2 2 ex 3 2 code 1 2" 标签（第一个数字是显示编号， 第二个是标签编号）
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
-	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authorID] 是否正在被占用
+	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authorID] 是否正在被占用（审核发布后解除）
 
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
@@ -67,6 +67,19 @@ CREATE TABLE "history" (
 	PRIMARY KEY("hash")
 	FOREIGN KEY("authorID") REFERENCES "authors"("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("entry")
+);
+
+-- 审稿历史
+CREATE TABLE "review" (
+	"time"	TEXT NOT NULL, -- 审稿提交时间
+	"refID"	INTEGER NOT NULL, -- 审稿人 ID
+	"entry"	TEXT NOT NULL, -- 词条
+	"authorID"	INTEGER NOT NULL, -- 作者 ID
+	"action"	TEXT NOT NULL DEFAULT '', -- [Pub] 发布 [Udo] 撤回 [Fix] 继续完善
+	"comment"	TEXT NOT NULL DEFAULT '', -- 意见（也可以直接修改正文或在正文中评论）
+	FOREIGN KEY("refID") REFERENCES "authors"("id"),
+	FOREIGN KEY("entry") REFERENCES "entries"("entry"),
+	FOREIGN KEY("authorID") REFERENCES "authors"("id")
 );
 
 -- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
