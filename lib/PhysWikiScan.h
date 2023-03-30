@@ -2406,7 +2406,7 @@ inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name,
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_part, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
     
-    for (Long i = 1; i < size(part_name); ++i) {
+    for (Long i = 0; i < size(part_name); ++i) {
         sqlite3_bind_int64(stmt_insert_part, 1, i);
         sqlite3_bind_text(stmt_insert_part, 2, utf32to8(part_name[i]).c_str(), -1, SQLITE_TRANSIENT);
         if (sqlite3_step(stmt_insert_part) != SQLITE_DONE)
@@ -2421,7 +2421,7 @@ inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name,
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_chap, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
 
-    for (Long i = 1; i < size(chap_name); ++i) {
+    for (Long i = 0; i < size(chap_name); ++i) {
         sqlite3_bind_int64(stmt_insert_chap, 1, i);
         sqlite3_bind_text(stmt_insert_chap, 2, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
         sqlite3_bind_int64(stmt_insert_chap, 3, chap_part[i]);
@@ -2565,10 +2565,8 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
             sqlite3_bind_text(stmt_update, 1, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_update, 2, str_keys.c_str(), -1, SQLITE_TRANSIENT);
             // cout << "debug: part_ind[i] = " << part_ind[i] << ",  chap_ind[i] = " << chap_ind[i] << endl;
-            if (part_ind[i]) sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
-            else sqlite3_bind_null(stmt_update, 3);
-            if (chap_ind[i]) sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
-            else sqlite3_bind_null(stmt_update, 4);
+            sqlite3_bind_int64(stmt_update, 3, part_ind[i]);
+            sqlite3_bind_int64(stmt_update, 4, chap_ind[i]);
             sqlite3_bind_int64(stmt_update, 5, entry_order[i]);
             sqlite3_bind_int(stmt_update, 6, draft);
             sqlite3_bind_text(stmt_update, 7, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
@@ -2583,10 +2581,8 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
             sqlite3_bind_text(stmt_insert, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_insert, 2, utf32to8(titles[i]).c_str(), -1, SQLITE_TRANSIENT);
             sqlite3_bind_text(stmt_insert, 3, str_keys.c_str(), -1, SQLITE_TRANSIENT);
-            if (part_ind[i]) sqlite3_bind_int64(stmt_insert, 4, part_ind[i]);
-            else sqlite3_bind_null(stmt_insert, 4);
-            if (chap_ind[i]) sqlite3_bind_int64(stmt_insert, 5, chap_ind[i]);
-            else sqlite3_bind_null(stmt_insert, 5);
+            sqlite3_bind_int64(stmt_insert, 4, part_ind[i]);
+            sqlite3_bind_int64(stmt_insert, 5, chap_ind[i]);
             sqlite3_bind_int64(stmt_insert, 6, entry_order[i]);
             sqlite3_bind_int(stmt_insert, 7, isDraft[i] == U"0" ? 0 : 1);
             sqlite3_bind_text(stmt_insert, 8, str_pentry.c_str(), -1, SQLITE_TRANSIENT);
