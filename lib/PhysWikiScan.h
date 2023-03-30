@@ -120,8 +120,8 @@ inline void global_forbid_char(Str32_I str)
         // overleaf only suppors Basic Multilingual Plane (BMP) characters
         // we should do that too (except for comments)
         if (Long(str[i]) > 65536) {
-            Long beg = max(Long(0),ind-30);
-            SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + U"？？？");
+            Long beg = max(Long(0),i-30);
+            SLS_WARN(U"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, i-beg) + U"？？？");
             illegal_chars.insert(str[ind]);
         }
     }
@@ -2397,8 +2397,10 @@ inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name,
     sqlite3* db;
     if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
         throw Str32(U"内部错误： 无法打开 scan.db");
-    check_foreign_key(db);
+
+    check_foreign_key(db, false);
     table_clear(db, "parts"); table_clear(db, "chapters");
+    check_foreign_key(db);
 
     // insert parts
     sqlite3_stmt* stmt_insert_part;
@@ -2431,6 +2433,7 @@ inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name,
     }
     sqlite3_finalize(stmt_insert_chap);
     cout << "done." << endl;
+    sqlite3_close(db);
 }
 
 // update "entries" table of sqlite db
@@ -2444,11 +2447,11 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
         throw Str32(U"内部错误： 无法打开 scan.db");
     check_foreign_key(db);
     // get a list of entries
-    vecStr db_entries;
-    get_column(db_entries, db, "entries", "entry");
-    cout << "there are already " << db_entries.size() << " entries in database." << endl;
+    vecStr32 db_entries;
     vecLong db_entries_deleted;
-    get_column(db_entries_deleted, db, "entries", "deleted");
+    get_column(db_entries_deleted, db_entries, db, "entries", "deleted", "entry");
+    cout << "there are already " << db_entries.size() << " entries in database." << endl;
+    SLS_ASSERT(db_entries_deleted.size() == db_entries.size());
 
     // mark deleted entries
     sqlite3_stmt* stmt_delete;
@@ -2456,10 +2459,10 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_delete, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
     for (Long i = 0; i < size(db_entries); ++i) {
-        Str entry = utf32to8(entries[i]);
-        if (search(utf8to32(entry), entries) < 0 && !db_entries_deleted[i]) {
+        Str32 &entry = db_entries[i];
+        if ((search(entry, entries) < 0) && (db_entries_deleted[i] == 0)) {
             SLS_WARN("数据库中存在多余的词条且没有标记为 deleted（将标记为 deleted）： " + entry);
-            sqlite3_bind_text(stmt_delete, 1, entry.c_str(), -1, SQLITE_TRANSIENT);
+            sqlite3_bind_text(stmt_delete, 1, utf32to8(entry).c_str(), -1, SQLITE_TRANSIENT);
             if (sqlite3_step(stmt_delete) != SQLITE_DONE)
                 throw Str32(U"内部错误： sqlite3_step(): " + utf8to32(sqlite3_errmsg(db)));
             sqlite3_reset(stmt_delete);
