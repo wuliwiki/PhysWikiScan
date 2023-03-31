@@ -8,18 +8,37 @@
 
 namespace slisc {
 
-// check foreign key existence by default
-// run after db is opened (default: OFF)
-inline void check_foreign_key(sqlite3* db, bool on = true)
+inline void exec(sqlite3* db, Str_I cmd)
 {
     char* errMsg = NULL;
-    Str str = on ? "ON" : "OFF";
-    str = "PRAGMA foreign_keys = " + str + ";";
-    if (sqlite3_exec(db, str.c_str(), NULL, NULL, &errMsg) != SQLITE_OK) {
+    if (sqlite3_exec(db, cmd.c_str(), NULL, NULL, &errMsg) != SQLITE_OK) {
         Str err_msg("check_foreign_key(): sqlite3_exec(): ");
         err_msg += errMsg; sqlite3_free(errMsg);
         throw err_msg;
     }
+}
+
+inline void prepare(sqlite3* db, sqlite3_stmt *&stmt, Str_I cmd)
+{
+    if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
+        Str msg = sqlite3_errmsg(db);
+        sqlite3_finalize(stmt); sqlite3_close(db);
+        throw "sqlite3_prepare_v2(): " + msg;
+    }
+}
+
+inline void bind(sqlite3_stmt* stmt, int i, Str_I text)
+{
+    sqlite3_bind_text(stmt, i, text.c_str(), -1, SQLITE_TRANSIENT);
+}
+
+// check foreign key existence by default
+// run after db is opened (default: OFF)
+inline void check_foreign_key(sqlite3* db, bool on = true)
+{
+    Str str = on ? "ON" : "OFF";
+    str = "PRAGMA foreign_keys = " + str + ";";
+    exec(db, str);
 }
 
 // check if an entry exists
@@ -27,12 +46,8 @@ inline bool exist(sqlite3* db, Str_I table, Str_I field, Str_I text)
 {
     Str cmd = "SELECT 1 FROM " + table + " WHERE " + field + " = ?;";
     sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "sqlite3_prepare_v2(): " + msg;
-    }
-    sqlite3_bind_text(stmt, 1, text.c_str(), -1, SQLITE_TRANSIENT);
+    prepare(db, stmt, cmd);
+    bind(stmt, 1, text);
 
     int ret = sqlite3_step(stmt);
     bool res;
@@ -43,7 +58,7 @@ inline bool exist(sqlite3* db, Str_I table, Str_I field, Str_I text)
     else {
         Str msg = sqlite3_errmsg(db);
         sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "sqlite3_prepare_v2(): " + msg;
+        throw "sqlite3_step(): " + msg;
     }
     sqlite3_finalize(stmt);
     return res;
@@ -54,13 +69,8 @@ inline bool count(sqlite3* db, Str_I table, Str_I field, Str_I text)
 {
     Str cmd = "SELECT COUNT(*) FROM " + table + " WHERE " + field + " = ?;";
     sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(db, cmd.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "count():sqlite3_prepare_v2(): " + msg;
-    }
-    sqlite3_bind_text(stmt, 1, text.c_str(), -1, SQLITE_TRANSIENT);
-
+    prepare(db, stmt, cmd);
+    bind(stmt, 1, text);
     int ret = sqlite3_step(stmt);
     int count = -1;
     if (ret == SQLITE_ROW)
@@ -80,11 +90,7 @@ inline Str get_text(sqlite3* db, Str_I table, Str_I field, Str_I val, Str_I fiel
     Str ret;
     sqlite3_stmt* stmt;
     Str str = "SELECT " + field_out + " FROM " + table + " WHERE " + field + " = '" + val + "';";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get(Llong):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW)
         ret = (char*)sqlite3_column_text(stmt, 0);
     else {
@@ -101,11 +107,7 @@ inline Llong get_int(sqlite3* db, Str_I table, Str_I field, Str_I val, Str_I fie
     Llong ret;
     sqlite3_stmt* stmt;
     Str str = "SELECT " + field_out + " FROM " + table + " WHERE " + field + " = '" + val + "';";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get(Llong):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW)
         ret = sqlite3_column_int64(stmt, 0);
     else {
@@ -123,11 +125,7 @@ inline void get_column(vecStr_O data, sqlite3* db, Str_I table, Str_I field)
 	data.clear();
     sqlite3_stmt* stmt;
     Str str = "SELECT " + field + " FROM " + table;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_column():sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
 		data.push_back((char*)sqlite3_column_text(stmt, 0));
@@ -144,11 +142,7 @@ inline void get_column(vecStr32_O data, sqlite3* db, Str_I table, Str_I field)
 	data.clear();
     sqlite3_stmt* stmt;
     Str str = "SELECT " + field + " FROM " + table;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_column():sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
 		data.push_back(utf8to32((char*)sqlite3_column_text(stmt, 0)));
@@ -165,11 +159,7 @@ inline void get_column(vecLlong_O data, sqlite3* db, Str_I table, Str_I field)
 	data.clear();
     sqlite3_stmt* stmt;
     Str str = "SELECT " + field + " FROM " + table;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_column():sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
 		data.push_back(sqlite3_column_int64(stmt, 0));
@@ -186,11 +176,7 @@ inline void get_column(vecLlong_O data1, vecStr32_O data2, sqlite3* db, Str_I ta
     data1.clear(); data2.clear();
     sqlite3_stmt* stmt;
     Str str = "SELECT \"" + field1 + "\", \"" + field2 + "\" FROM " + table;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_column(Llong,Str32):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
     while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data1.push_back(sqlite3_column_int64(stmt, 0));
@@ -214,11 +200,7 @@ inline void get_row(vecStr_O data, sqlite3* db, Str_I table, Str_I field, Str_I 
         str += field_out + ',';
     str.pop_back();
     str += " FROM " + table + " WHERE " + field + " = '" + val + "';";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_row(vecStr):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW) {
         for (Long i = 0; i < size(fields_out); ++i)
 		    data.push_back((char*)sqlite3_column_text(stmt, i));
@@ -240,11 +222,7 @@ inline void get_row(vecLlong_O data, sqlite3* db, Str_I table, Str_I field, Str_
         str += field_out + ',';
     str.pop_back();
     str += " FROM " + table + " WHERE " + field + " = '" + val + "';";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_row(vecLlong):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW) {
         for (Long i = 0; i < size(fields_out); ++i)
 		    data.push_back(sqlite3_column_int64(stmt, i));
@@ -269,11 +247,7 @@ inline void get_matrix(vector<vecStr> &data, sqlite3* db, Str_I table, vecStr_I 
         str += field + ',';
     str.pop_back();
     str += " FROM " + table + ";";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_matrix(vector<vecStr>):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data.emplace_back();
@@ -297,11 +271,7 @@ inline void get_matrix(vector<vecStr32> &data, sqlite3* db, Str_I table, vecStr_
         str += field + ',';
     str.pop_back();
     str += " FROM " + table + ";";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_matrix(vector<vecStr>):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data.emplace_back();
@@ -327,11 +297,7 @@ inline void get_matrix(vector<vecLlong> &data, sqlite3* db, Str_I table, vecStr_
         str += field + ',';
     str.pop_back();
     str += " FROM " + table + ";";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "get_matrix(vector<vecStr>):sqlite3_prepare_v2(): " + msg;
-    }
+    prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data.emplace_back();
@@ -351,16 +317,11 @@ inline void table_clear(sqlite3* db, Str_I table)
 {
     Str str = "DELETE FROM " + table + ";";
     sqlite3_stmt* stmt;
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt, NULL) != SQLITE_OK) {
-        Str msg = sqlite3_errmsg(db);
-        sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "table_clear():sqlite3_prepare_v2() 1: " + msg;
-    }
-
+    prepare(db, stmt, str);
     if (sqlite3_step(stmt) != SQLITE_DONE) {
         Str msg = sqlite3_errmsg(db);
         sqlite3_finalize(stmt); sqlite3_close(db);
-        throw "table_clear():sqlite3_prepare_v2() 2: " + msg;
+        throw "table_clear():sqlite3_step() 2: " + msg;
     }
     sqlite3_finalize(stmt);
 }
