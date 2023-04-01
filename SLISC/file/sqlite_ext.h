@@ -144,8 +144,13 @@ inline void get_column(vecStr32_O data, sqlite3* db, Str_I table, Str_I field)
     Str str = "SELECT " + field + " FROM " + table;
     prepare(db, stmt, str);
     int ret;
-	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
-		data.push_back(utf8to32((char*)sqlite3_column_text(stmt, 0)));
+	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const char *p = (const char*)sqlite3_column_text(stmt, 0);
+        if (!p)
+            data.emplace_back();
+        else
+		    data.push_back(utf8to32(p));
+    }
     if (ret != SQLITE_DONE) {
         Str msg = sqlite3_errmsg(db);
         sqlite3_finalize(stmt); sqlite3_close(db);
