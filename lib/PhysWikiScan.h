@@ -43,6 +43,51 @@ inline void get_title(Str32_O title, Str32_I str)
         throw Str32(U"第一行注释的标题不能含有 “\\” ");
 }
 
+// get label type (eq, fig, ...)
+inline Str32 label_type(Str32_I label)
+{
+    assert(label[0] != U' '); assert(label.back() != U' ');
+    Long ind1 = label.find(U'_');
+    return label.substr(0, ind1);
+}
+
+inline Str label_type(Str_I label)
+{
+    assert(label[0] != ' '); assert(label.back() != ' ');
+    Long ind1 = label.find('_');
+    return label.substr(0, ind1);
+}
+
+// get label id
+inline Str32 label_id(Str32_I label)
+{
+    assert(label[0] != U' '); assert(label.back() != U' ');
+    Long ind1 = label.find(U'_');
+    return label.substr(ind1+1);
+}
+
+inline Str label_id(Str_I label)
+{
+    assert(label[0] != ' '); assert(label.back() != ' ');
+    Long ind1 = label.find('_');
+    return label.substr(ind1+1);
+}
+
+// get entry from label (old format)
+inline Str32 label_entry_old(Str32_I label)
+{
+    Str32 id = label_id(label);
+    Long ind = id.rfind(U'_');
+    return id.substr(0, ind);
+}
+
+inline Str label_entry_old(Str_I label)
+{
+    Str id = label_id(label);
+    Long ind = id.rfind('_');
+    return id.substr(0, ind);
+}
+
 // check if an entry is labeled "\issueDraft"
 inline Bool is_draft(Str32_I str)
 {
@@ -329,7 +374,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
     Str32 label, id;
     // clean existing labels of this entry
     for (Long i = labels.size() - 1; i >= 0; --i) {
-        if (labels[i].substr(0, entryName.size() + 1) == entryName + U'_') {
+        if (label_entry_old(labels[i]) == entryName) {
             labels.erase(labels.begin()+i);
             ids.erase(ids.begin() + i);
         }
@@ -389,9 +434,9 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         
         // check label format and save label
         ind0 = expect(str, U"{", ind5 + 6);
-        ind3 = expect(str, entryName + U'_' + type, ind0);
+        ind3 = expect(str, type + U'_' + entryName, ind0);
         if (ind3 < 0) {
-            throw Str32(U"label 格式错误， 是否为 \"" + entryName + U'_' + type + U"\"？");
+            throw Str32(U"label " + str.substr(ind0, 20) + U"... 格式错误， 是否为 \"" + type + U'_' + entryName + U"\"？");
         }
         ind3 = str.find(U"}", ind3);
         
@@ -788,7 +833,8 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
             ind5 = str.rfind(U"\\upref", ind5-1); entry2.clear();
             if (ind5 > 0 && ExpectKeyReverse(str, U"~", ind5 - 1) < 0)
                 command_arg(entry2, str, ind5);
-            if (label.substr(0, ind2) != entry && label.substr(0, ind2) != entry2)
+            Str32 tmp = label_entry_old(label);
+            if (tmp != entry && tmp != entry2)
                 throw Str32(U"\\autoref{" + label + U"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
             continue;
         }
@@ -796,7 +842,7 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
         if (ind2 < 0)
             throw Str32(U"\\autoref{} 后面不应该有单独的 ~");
         command_arg(entry1, str, ind2 - 6);
-        if (label.substr(0, entry1.size()) != entry1)
+        if (label_entry_old(label) != entry1)
             throw Str32(U"\\autoref{" + label + U"}~\\upref{" + entry1 + U"} 不一致， 请使用“外部引用”按钮");
         str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
@@ -833,7 +879,8 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         ind3 = find_num(str, ind2);
         if (ind3 < 0)
             throw Str32(U"autoref 格式错误");
-        type = str.substr(ind2 + 1, ind3 - ind2 - 1);
+        entry = str.substr(ind2+1, ind3-ind2-1);
+        type = str.substr(ind1, ind2 - ind1);
         if (!gv::is_eng) {
             if (type == U"eq") kind = U"式";
             else if (type == U"fig") kind = U"图";
@@ -885,7 +932,6 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         }
         ind4 = find_num(ids[i], 0);
         idNum = ids[i].substr(ind4);     
-        entry = str.substr(ind1, ind2 - ind1);
         file = gv::url + entry + U".html";
         if (entry != entryName) // reference another entry
             newtab = U"target = \"_blank\"";
@@ -932,8 +978,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
         ind0 = search(type + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
-        Long len = labels[ind0].rfind(U'_');
-        if (labels[ind0].substr(0, len) != entry) {
+        if (label_entry_old(labels[ind0]) != entry) {
             ++ind0; continue;
         }
         label = labels[ind0];
@@ -1048,8 +1093,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I type, Long ind,
         ind0 = search(type + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
-        Long len = labels[ind0].rfind(U'_');
-        if (labels[ind0].substr(0, len) != entry) {
+        if (label_entry_old(labels[ind0]) != entry) {
             ++ind0; continue;
         }
         label = labels[ind0];
@@ -2507,15 +2551,13 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
         for (Long j = 0; j < size(labels); ++j) {
             label = utf32to8(labels[j]), id = utf32to8(ids[j]);
             Long ind1 = label.find('_');
-            if (label.substr(0, ind1) == entry) {
-                Long ind2;
-                for (ind2 = 0; ind2 < size(id); ++ind2)
-                    if ('0' <= id[ind2] && id[ind2] <= '9')
-                        break;
-                // e.g. label=fname_eq2, id=eq3
-                assert(label.substr(ind1+1, ind2) == id.substr(0, ind2));
+            if (utf32to8(label_entry_old(utf8to32(label))) == entry) {
+                Long ind2 = find_num(utf8to32(id), 0);
+                // e.g. label=eq_fname_2, id=eq3
+                assert(label_type(label) == id.substr(0, ind2));
+                Long ind3 = find_num(utf8to32(label), ind1);
                 str_labels += id.substr(0, ind2) + " " + id.substr(ind2) +
-                    " " + label.substr(ind1+1+ind2) + " ";
+                    " " + label.substr(ind3) + " ";
             }
         }
         if (!str_labels.empty()) str_labels.pop_back();
