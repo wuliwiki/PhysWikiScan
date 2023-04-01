@@ -879,7 +879,8 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         ind3 = find_num(str, ind2);
         if (ind3 < 0)
             throw Str32(U"autoref 格式错误");
-        entry = str.substr(ind2+1, ind3-ind2-1);
+        Long ind30 = str.find('_', ind2 + 1);
+        entry = str.substr(ind2+1, ind30-ind2-1);
         type = str.substr(ind1, ind2 - ind1);
         if (!gv::is_eng) {
             if (type == U"eq") kind = U"式";
