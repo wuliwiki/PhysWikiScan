@@ -323,7 +323,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 {
     Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{},
         Ngather{}, Nalign{}, i{}, j{};
-    Str32 idName; // "eq", "fig", "ex", "sub"...
+    Str32 type; // "eq", "fig", "ex", "sub"...
     Str32 envName; // "equation" or "figure" or "example"...
     Long idN{}; // convert to idNum
     Str32 label, id;
@@ -342,7 +342,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         ind4 = str.rfind(U"\\begin", ind5);
         if (ind4 < 0 || (ind4 >= 0 && ind2 > ind4)) {
             // label not in environment, must be a subsection label
-            idName = U"sub"; envName = U"subsection";
+            type = U"sub"; envName = U"subsection";
             // TODO: make sure the label follows a \subsection{} command
         }
         else {
@@ -350,37 +350,37 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
             if (ind1 < 0)
                 throw(Str32(U"\\begin 后面没有 {"));
             if (expect(str, U"equation", ind1) > 0) {
-                idName = U"eq"; envName = U"equation";
+                type = U"eq"; envName = U"equation";
             }
             else if (expect(str, U"figure", ind1) > 0) {
-                idName = U"fig"; envName = U"figure";
+                type = U"fig"; envName = U"figure";
             }
             else if (expect(str, U"definition", ind1) > 0) {
-                idName = U"def"; envName = U"definition";
+                type = U"def"; envName = U"definition";
             }
             else if (expect(str, U"lemma", ind1) > 0) {
-                idName = U"lem"; envName = U"lemma";
+                type = U"lem"; envName = U"lemma";
             }
             else if (expect(str, U"theorem", ind1) > 0) {
-                idName = U"the"; envName = U"theorem";
+                type = U"the"; envName = U"theorem";
             }
             else if (expect(str, U"corollary", ind1) > 0) {
-                idName = U"cor"; envName = U"corollary";
+                type = U"cor"; envName = U"corollary";
             }
             else if (expect(str, U"example", ind1) > 0) {
-                idName = U"ex"; envName = U"example";
+                type = U"ex"; envName = U"example";
             }
             else if (expect(str, U"exercise", ind1) > 0) {
-                idName = U"exe"; envName = U"exercise";
+                type = U"exe"; envName = U"exercise";
             }
             else if (expect(str, U"table", ind1) > 0) {
-                idName = U"tab"; envName = U"table";
+                type = U"tab"; envName = U"table";
             }
             else if (expect(str, U"gather", ind1) > 0) {
-                idName = U"eq"; envName = U"gather";
+                type = U"eq"; envName = U"gather";
             }
             else if (expect(str, U"align", ind1) > 0) {
-                idName = U"eq"; envName = U"align";
+                type = U"eq"; envName = U"align";
             }
             else {
                 throw Str32(U"该环境不支持 label");
@@ -389,9 +389,9 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         
         // check label format and save label
         ind0 = expect(str, U"{", ind5 + 6);
-        ind3 = expect(str, entryName + U'_' + idName, ind0);
+        ind3 = expect(str, entryName + U'_' + type, ind0);
         if (ind3 < 0) {
-            throw Str32(U"label 格式错误， 是否为 \"" + entryName + U'_' + idName + U"\"？");
+            throw Str32(U"label 格式错误， 是否为 \"" + entryName + U'_' + type + U"\"？");
         }
         ind3 = str.find(U"}", ind3);
         
@@ -406,7 +406,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         
         // count idNum, insert html id tag, delete label
         Intvs intvEnv;
-        if (idName == U"eq") { // count equations
+        if (type == U"eq") { // count equations
             idN = find_env(intvEnv, str.substr(0,ind4), U"equation");
             Ngather = find_env(intvEnv, str.substr(0,ind4), U"gather");
             if (Ngather > 0) {
@@ -436,7 +436,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
             }
             ++idN;
         }
-        else if (idName == U"sub") { // count \subsection number
+        else if (type == U"sub") { // count \subsection number
             Long ind = -1; idN = 0; ind4 = -1;
             while (1) {
                 ind = find_command(str, U"subsection", ind + 1);
@@ -448,7 +448,7 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
         else {
             idN = find_env(intvEnv, str.substr(0, ind4), envName) + 1;
         }
-        id = idName + num2str32(idN);
+        id = type + num2str32(idN);
         if (ind < 0)
             ids.push_back(id);
         else
@@ -812,7 +812,7 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
     unsigned i{};
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, ienv{};
     Bool inEq;
-    Str32 entry, label0, idName, idNum, kind, newtab, file;
+    Str32 entry, label0, type, idNum, kind, newtab, file;
     vecStr32 envNames{U"equation", U"align", U"gather"};
     while (1) {
         newtab.clear(); file.clear();
@@ -833,19 +833,19 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
         ind3 = find_num(str, ind2);
         if (ind3 < 0)
             throw Str32(U"autoref 格式错误");
-        idName = str.substr(ind2 + 1, ind3 - ind2 - 1);
+        type = str.substr(ind2 + 1, ind3 - ind2 - 1);
         if (!gv::is_eng) {
-            if (idName == U"eq") kind = U"式";
-            else if (idName == U"fig") kind = U"图";
-            else if (idName == U"def") kind = U"定义";
-            else if (idName == U"lem") kind = U"引理";
-            else if (idName == U"the") kind = U"定理";
-            else if (idName == U"cor") kind = U"推论";
-            else if (idName == U"ex") kind = U"例";
-            else if (idName == U"exe") kind = U"习题";
-            else if (idName == U"tab") kind = U"表";
-            else if (idName == U"sub") kind = U"子节";
-            else if (idName == U"lst") {
+            if (type == U"eq") kind = U"式";
+            else if (type == U"fig") kind = U"图";
+            else if (type == U"def") kind = U"定义";
+            else if (type == U"lem") kind = U"引理";
+            else if (type == U"the") kind = U"定理";
+            else if (type == U"cor") kind = U"推论";
+            else if (type == U"ex") kind = U"例";
+            else if (type == U"exe") kind = U"习题";
+            else if (type == U"tab") kind = U"表";
+            else if (type == U"sub") kind = U"子节";
+            else if (type == U"lst") {
                 kind = U"代码";
                 SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
                 ++ind0; continue;
@@ -855,17 +855,17 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entryName, Str32_
             }
         }
         else {
-            if      (idName == U"eq")  kind = U"eq. ";
-            else if (idName == U"fig") kind = U"fig. ";
-            else if (idName == U"def") kind = U"def. ";
-            else if (idName == U"lem") kind = U"lem. ";
-            else if (idName == U"the") kind = U"thm. ";
-            else if (idName == U"cor") kind = U"cor. ";
-            else if (idName == U"ex")  kind = U"ex. ";
-            else if (idName == U"exe") kind = U"exer. ";
-            else if (idName == U"tab") kind = U"tab. ";
-            else if (idName == U"sub") kind = U"sub. ";
-            else if (idName == U"lst") {
+            if      (type == U"eq")  kind = U"eq. ";
+            else if (type == U"fig") kind = U"fig. ";
+            else if (type == U"def") kind = U"def. ";
+            else if (type == U"lem") kind = U"lem. ";
+            else if (type == U"the") kind = U"thm. ";
+            else if (type == U"cor") kind = U"cor. ";
+            else if (type == U"ex")  kind = U"ex. ";
+            else if (type == U"exe") kind = U"exer. ";
+            else if (type == U"tab") kind = U"tab. ";
+            else if (type == U"sub") kind = U"sub. ";
+            else if (type == U"lst") {
                 kind = U"code. ";
                 SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
                 ++ind0; continue;
@@ -922,14 +922,14 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // ind is not the label number, but the displayed number
 // if exist, return 1, output label
 // if doesn't exist, return 0
-Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
+Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
     vecStr32_I labels, vecStr32_I ids)
 {
     Long ind0 = 0;
     Str32 label0, newtab;
 
     while (1) {
-        ind0 = search(idName + num2str(ind), ids, ind0);
+        ind0 = search(type + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
         Long len = labels[ind0].rfind(U'_');
@@ -952,19 +952,19 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     Intvs intvComm;
     find_comments(intvComm, str, U"%");
 
-    vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
+    vecStr32 types = { U"eq", U"fig", U"def", U"lem",
         U"the", U"cor", U"ex", U"exe", U"tab", U"sub" };
     vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
         U"theorem", U"corollary", U"example", U"exercise", U"table"};
 
-    Long idNum = search(idName, idNames);
+    Long idNum = search(type, types);
     if (idNum < 0) {
         throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
     }
     
     // count environment display number starting at ind4
     Intvs intvEnv;
-    if (idName == U"eq") { // add equation labels
+    if (type == U"eq") { // add equation labels
         // count equations
         ind0 = 0;
         Long idN = 0;
@@ -986,7 +986,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             // found one of eq_envs
             ++idN;
             if (idN == ind) {
-                new_label_name(label, idName, entry, str);
+                new_label_name(label, type, entry, str);
                 ind0 = skip_command(str, ind0, 1);
                 str.insert(ind0, U"\\label{" + label + "}");
                 write(str, full_name);
@@ -999,7 +999,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                     if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
                         ++idN;
                         if (idN == ind) {
-                            new_label_name(label, idName, entry, str);
+                            new_label_name(label, type, entry, str);
                             ind0 = skip_command(str, ind0, 1);
                             str.insert(i + 2, U"\n\\label{" + label + "}");
                             write(str, full_name);
@@ -1011,7 +1011,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             ++ind0;
         }
     }
-    else if (idName == U"sub") { // add subsection labels
+    else if (type == U"sub") { // add subsection labels
         Long ind0 = -1;
         for (Long i = 0; i < ind; ++i) {
             ind0 = find_command(str, U"subsection", ind0+1);
@@ -1019,7 +1019,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                 throw Str32(U"被引用对象不存在");
         }
         ind0 = skip_command(str, ind0, 1);
-        new_label_name(label, idName, entry, str);
+        new_label_name(label, type, entry, str);
         str.insert(ind0, U"\\label{" + label + "}");
         write(str, full_name);
         return 0;
@@ -1030,7 +1030,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             throw Str32(U"被引用对象不存在");
         }
 
-        new_label_name(label, idName, entry, str);
+        new_label_name(label, type, entry, str);
         str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
         write(str, full_name);
         return 0;
@@ -1038,14 +1038,14 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
 }
 
 // check only, don't add label
-Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
+Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I type, Long ind,
     vecStr32_I labels, vecStr32_I ids)
 {
     Long ind0 = 0;
     Str32 label0, newtab;
 
     while (1) {
-        ind0 = search(idName + num2str(ind), ids, ind0);
+        ind0 = search(type + num2str(ind), ids, ind0);
         if (ind0 < 0)
             break;
         Long len = labels[ind0].rfind(U'_');
@@ -1068,19 +1068,19 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
     Intvs intvComm;
     find_comments(intvComm, str, U"%");
 
-    vecStr32 idNames = { U"eq", U"fig", U"def", U"lem",
+    vecStr32 types = { U"eq", U"fig", U"def", U"lem",
         U"the", U"cor", U"ex", U"exe", U"tab", U"sub" };
     vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
         U"theorem", U"corollary", U"example", U"exercise", U"table" };
 
-    Long idNum = search(idName, idNames);
+    Long idNum = search(type, types);
     if (idNum < 0) {
         throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
     }
 
     // count environment display number starting at ind4
     Intvs intvEnv;
-    if (idName == U"eq") { // add equation labels
+    if (type == U"eq") { // add equation labels
         // count equations
         ind0 = 0;
         Long idN = 0;
@@ -1102,7 +1102,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             // found one of eq_envs
             ++idN;
             if (idN == ind) {
-                new_label_name(label, idName, entry, str);
+                new_label_name(label, type, entry, str);
                 ind0 = skip_command(str, ind0, 1);
                 str.insert(ind0, U"\\label{" + label + "}");
                 // write(str, full_name);
@@ -1115,7 +1115,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                     if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
                         ++idN;
                         if (idN == ind) {
-                            new_label_name(label, idName, entry, str);
+                            new_label_name(label, type, entry, str);
                             ind0 = skip_command(str, ind0, 1);
                             str.insert(i + 2, U"\n\\label{" + label + "}");
                             // write(str, full_name);
@@ -1127,7 +1127,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             ++ind0;
         }
     }
-    else if (idName == U"sub") { // add subsection labels
+    else if (type == U"sub") { // add subsection labels
         Long ind0 = -1;
         for (Long i = 0; i < ind; ++i) {
             ind0 = find_command(str, U"subsection", ind0 + 1);
@@ -1135,7 +1135,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
                 throw Str32(U"被引用对象不存在");
         }
         ind0 = skip_command(str, ind0, 1);
-        new_label_name(label, idName, entry, str);
+        new_label_name(label, type, entry, str);
         str.insert(ind0, U"\\label{" + label + "}");
         // write(str, full_name);
         return 0;
@@ -1146,7 +1146,7 @@ Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I idName, Long ind,
             throw Str32(U"被引用对象不存在");
         }
 
-        new_label_name(label, idName, entry, str);
+        new_label_name(label, type, entry, str);
         str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
         // write(str, full_name);
         return 0;
