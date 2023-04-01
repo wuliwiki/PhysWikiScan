@@ -953,7 +953,7 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
     for (Long num = 1; ; ++num) {
         Long ind0 = 0;
         while (1) {
-            label = entry + "_" + envName + num2str(num);
+            label = envName + "_" + entry + "_" + num2str(num);
             ind0 = find_command(str, U"label", ind0);
             if (ind0 < 0)
                 return; // label is unique
