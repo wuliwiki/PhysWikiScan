@@ -42,7 +42,7 @@ CREATE TABLE "parts" (
 	"caption"	TEXT NOT NULL UNIQUE, -- 标题
 	"chap_first"	INTEGER UNIQUE NOT NULL, -- 第一章
 	"chap_last"	INTEGER UNIQUE NOT NULL, -- 最后一章
-	PRIMARY KEY("id" AUTOINCREMENT),
+	PRIMARY KEY("id"),
 	FOREIGN KEY("chap_first") REFERENCES "chapters"("id"),
 	FOREIGN KEY("chap_last") REFERENCES "chapters"("id")
 );
@@ -56,7 +56,7 @@ CREATE TABLE "chapters" (
 	"part"	INTEGER NOT NULL, -- 所在部分（不能为 0）
 	"section_first"	INTEGER UNIQUE NOT NULL, -- 第一个词条
 	"section_last"	INTEGER UNIQUE NOT NULL, -- 最后一个词条
-	PRIMARY KEY("id" AUTOINCREMENT),
+	PRIMARY KEY("id"),
 	FOREIGN KEY("section_first") REFERENCES "entries"("section"),
 	FOREIGN KEY("section_last") REFERENCES "entries"("section")
 );
@@ -100,7 +100,6 @@ CREATE TABLE "figure_store" (
 	"time"	TEXT NOT NULL, -- 上传时间
 	"files"	TEXT NOT NULL, -- "hash1 hash2"， 附件（创作该图片的项目文件、源码等）
 	PRIMARY KEY("hash"),
-	FOREIGN KEY("id") REFERENCES "figures"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
@@ -131,6 +130,7 @@ CREATE TABLE "file_store" (
 -- \label{code_xxx} 中 xxx 为 "id"
 CREATE TABLE "code" (
 	"id"	TEXT UNIQUE NOT NULL,
+    "entry" TEXT UNIQUE NOT NULL,
 	"caption"	TEXT UNIQUE NOT NULL, -- 文件名
 	"language"	TEXT NOT NULL, -- [none|matlab|...] 高亮语言
 	"order"	INTEGER NOT NULL, -- 显示编号
@@ -163,7 +163,7 @@ CREATE TABLE "bibliography" (
 CREATE TABLE "history" (
 	"hash"	TEXT UNIQUE NOT NULL, -- SHA1 的前 16 位
 	"time"	TEXT NOT NULL, -- 备份时间， 格式 YYYYMMDDHHMM（下同）
-	"authorID"	INTEGER NOT NULL, -- 作者
+	"author"	INTEGER NOT NULL, -- 作者
 	"entry"	TEXT NOT NULL, -- 词条
 	"add"	INTEGER NOT NULL DEFAULT -1, -- 新增字符数（-1: 未知）
 	"del"	INTEGER NOT NULL DEFAULT -1, -- 减少字符数（-1: 未知）
