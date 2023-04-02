@@ -551,7 +551,7 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
         figName = str.substr(indName1, indName2 - indName1 + 1);
         trim(figName);
 
-        // get format
+        // get format (png or svg)
         Long Nname = figName.size();
         if (figName.substr(Nname - 4, 4) == U".png") {
             format = U"png";
@@ -576,45 +576,40 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
             Long n = search(figName + U"." + format, imgs);
             if (n < 0)
                 throw Str32(U"内部错误： FigureEnvironment()");
-            if (imgs_mark[n] == 0)
-                imgs_mark[n] = 1;
-            else
-                throw Str32(U"图片 \"" + fname_in + U"\" 被重复使用");
+            imgs_mark[n] = 1;
         }
 
         version.clear();
         // last_modified(version, fname_in);
         Str tmp; read(tmp, utf32to8(fname_in)); CRLF_to_LF(tmp);
-        img_hashes.push_back(utf8to32(sha1sum(tmp).substr(0, 16)));
+        Str32 img_hash = utf8to32(sha1sum(tmp).substr(0, 16));
+        img_hashes.push_back(img_hash);
 
         // ===== rename figure files with hash ========
-        Str32 fname_in2 = gv::path_in + U"figures/" + img_hashes.back() + U"." + format;
-        if (file_exist(fname_in))
+        Str32 fname_in2 = gv::path_in + U"figures/" + img_hash + U"." + format;
+        if (file_exist(fname_in) && fname_in != fname_in2)
             file_move(utf32to8(fname_in2), utf32to8(fname_in), true);
         if (format == U"svg") {
             Str32 fname_in_svg = gv::path_in + U"figures/" + figName + U".pdf";
-            if (file_exist(fname_in_svg)) {
-                Str32 fname_in_svg2 = gv::path_in + U"figures/" + img_hashes.back() + U".pdf";
+            Str32 fname_in_svg2 = gv::path_in + U"figures/" + img_hash + U".pdf";
+            if (file_exist(fname_in_svg) && fname_in_svg2 != fname_in_svg)
                 file_move(utf32to8(fname_in_svg2), utf32to8(fname_in_svg), true);
-            }
         }
 
         // ===== modify original .tex file =======
         Str32 str_mod, tex_fname = gv::path_in + "contents/" + entry + U".tex";
         read(str_mod, tex_fname);
         if (format == U"png")
-            replace(str_mod, figName + U".png", img_hashes.back() + U".png");
+            replace(str_mod, figName + U".png", img_hash + U".png");
         else {
-            replace(str_mod, figName + U".pdf", img_hashes.back() + U".pdf");
-            replace(str_mod, figName + U".svg", img_hashes.back() + U".svg");
+            replace(str_mod, figName + U".pdf", img_hash + U".pdf");
+            replace(str_mod, figName + U".svg", img_hash + U".svg");
         }
         write(str_mod, tex_fname);
         // ===========================================
 
-        fname_out = gv::path_out + img_hashes.back() + U"." + format;
+        fname_out = gv::path_out + img_hash + U"." + format;
         file_copy(fname_out, fname_in2, true);
-
-        version = U"?v=" + img_hashes.back().substr(0, 14);
 
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
@@ -626,7 +621,7 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
-        href = gv::url + img_hashes.back() + U"." + format + version;
+        href = gv::url + img_hashes.back() + U"." + format;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
             + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
