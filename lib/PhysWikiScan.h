@@ -1107,12 +1107,14 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
         return 0;
     }
     else { // add environment labels
+        if (type == U"fig")
+            throw Str32(U"每个图片创建时都应该存在 label， 如果没有请手动在 \\caption{} 后面添加。");
         Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
-        if (ind > Nid) {
+        if (ind > Nid)
             throw Str32(U"被引用对象不存在");
-        }
 
         new_label_name(label, type, entry, str);
+        // this doesn't work for figure invironment, since there is an [ht] option
         str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
         write(str, full_name);
         return 0;
@@ -2834,8 +2836,8 @@ inline void db_update_author_history(Str32_I path)
 }
 
 // db table "figures" and "figure_store"
-// 暂时假设他们的行有一一对应的关系
-inline void db_update_figures(vecStr32_I img_fnames, vecStr32_I img_ids, vecLong_I img_orders, vecStr32_I img_hashes)
+inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &img_ids,
+        const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes)
 {
     vecStr32 db_ids, db_entries, db_hashes;
     // vecStr32 new_ids, new_entries, new_hash;
@@ -2861,61 +2863,53 @@ inline void db_update_figures(vecStr32_I img_fnames, vecStr32_I img_ids, vecLong
     cmd = R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)";
     SQLite::Statement stmt_update_figures(db, cmd);
 
-    Str32 entry, id, idNo, ext;
-    for (Long i = 0; i < size(img_fnames); ++i) {
-        auto &img_fname = img_fnames[i];
-        Long ind1 = img_fname.rfind(U'_'), ind2 = img_fname.rfind(U'.');
-        if (ind1 < 1 || ind2 < 3)
-            throw Str32(U"内部错误： 图片命名格式错误（暂时仅支持老格式）： " + img_fname);
-        ext = img_fname.substr(ind2+1);
-        entry = img_fname.substr(0, ind1);
-        idNo = str2int(img_fname.substr(ind1+1,ind2-ind1-1));
-        id = entry + idNo;
-        Long ind = search(id, db_ids);
-        if (ind < 0) {
-            SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
-            try {
-                stmt_insert_figures.bind(1, utf32to8(entry));
-                stmt_insert_figures.bind(2, int(img_orders[i]));
-                stmt_insert_figures.bind(3, utf32to8(img_hashes[i]));
-                stmt_insert_figures.bind(4, utf32to8(id));
-                stmt_insert_figures.executeStep();
-            }
-            catch (std::exception& e) {
-                std::cout << "SQLiteCpp: " << e.what() << std::endl;
-            }
-        }
-        else {
-            bool update = false;
-            if (id != db_ids[ind]) {
-                SLS_WARN("发现数据库中图片 id 改变（将更新）：" + db_ids[ind] + " -> " + id);
-                update = true;
-            }
-            if (entry != db_entries[ind]) {
-                SLS_WARN("发现数据库中图片 entry 改变（将更新）：" + id + ": "
-                    + db_entries[ind] + " -> " + entry);
-                update = true;
-            }
-            if (img_orders[i] != db_orders[ind]) {
-                SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
-                    + to_string(db_orders[ind]) + " -> " + to_string(img_orders[i]));
-                update = true;
-            }
-            if (img_hashes[i] != db_hashes[ind]) {
-                SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
-                         + db_hashes[ind] + " -> " + img_hashes[i]);
-                update = true;
-            }
-            if (update) {
+    Str32 entry, id, hash, ext;
+    Long order;
+    for (Long i = 0; i < size(entries); ++i) {
+        entry = entries[i];
+        for (Long j = 0; j < size(img_ids); ++j) {
+            id = img_ids[i][j]; order = img_orders[i][j]; hash = img_hashes[i][j];
+            Long ind = search(id, db_ids);
+            if (ind < 0) {
+                SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
                 try {
-                    stmt_update_figures.bind(1, utf32to8(entry));
-                    stmt_update_figures.bind(2, int(img_orders[i]));
-                    stmt_update_figures.bind(3, utf32to8(img_hashes[i]));
-                    stmt_update_figures.bind(4, utf32to8(id));
-                    stmt_update_figures.executeStep();
+                    stmt_insert_figures.bind(1, utf32to8(id));
+                    stmt_insert_figures.bind(2, utf32to8(entry));
+                    stmt_insert_figures.bind(3, int(order));
+                    stmt_insert_figures.bind(4, utf32to8(hash));
+                    stmt_insert_figures.executeStep();
                 }
                 catch (std::exception &e) {
                     std::cout << "SQLiteCpp: " << e.what() << std::endl;
+                }
+            } else { // 数据库中有 id, 检查其他信息是否改变
+                bool update = false;
+                if (entry != db_entries[ind]) {
+                    SLS_WARN("发现数据库中图片 entry 改变（将更新）：" + id + ": "
+                             + db_entries[ind] + " -> " + entry);
+                    update = true;
+                }
+                if (order != db_orders[ind]) {
+                    SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
+                             + to_string(db_orders[ind]) + " -> " + to_string(order));
+                    update = true;
+                }
+                if (hash != db_hashes[ind]) {
+                    SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
+                             + db_hashes[ind] + " -> " + hash);
+                    update = true;
+                }
+                if (update) {
+                    try {
+                        stmt_update_figures.bind(1, utf32to8(entry));
+                        stmt_update_figures.bind(2, int(order));
+                        stmt_update_figures.bind(3, utf32to8(hash));
+                        stmt_update_figures.bind(4, utf32to8(id));
+                        stmt_update_figures.executeStep();
+                    }
+                    catch (std::exception &e) {
+                        std::cout << "SQLiteCpp: " << e.what() << std::endl;
+                    }
                 }
             }
         }
@@ -3023,7 +3017,7 @@ inline void PhysWikiOnline()
 
     db_update_parts_chapters(part_name, chap_name, chap_part);
     db_update_entries(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
-    // db_update_figures(img_ids, img_orders, img_hashes, img_fnames);
+    db_update_figures(entries, img_ids, img_orders, img_hashes);
 
     // warn unused figures
     Bool warn_fig = false;
