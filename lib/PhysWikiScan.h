@@ -1,5 +1,7 @@
 ﻿#pragma once
 #include "../SLISC/file/sqlite_ext.h"
+#include <SQLiteCpp/Statement.h>
+#include <SQLiteCpp/Database.h>
 #include "../SLISC/str/unicode.h"
 #include "../SLISC/algo/graph.h"
 #include "../highlight/matlab2html.h"
@@ -510,14 +512,27 @@ inline Long EnvLabel(vecStr32_IO ids, vecStr32_IO labels,
 // path must end with '\\'
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
-inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs)
+inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
+        VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs)
 {
+    img_orders.clear(); img_hashes.clear();
     Long N = 0;
     Intvs intvFig;
     Str32 figName, fname_in, fname_out, href, format, caption, widthPt, figNo, version;
     Long Nfig = find_env(intvFig, str, U"figure", 'o');
     for (Long i = Nfig - 1; i >= 0; --i) {
         num2str(figNo, i + 1);
+        img_orders.push_back(i + 1);
+        // get label and id
+        Str32 tmp1 = U"id = \"fig_";
+        Long ind_label = str.rfind(tmp1, intvFig.L(i));
+        if (ind_label < 0 || (i-1 >= 0 && ind_label < intvFig.R(i-1)))
+            throw Str32(U"图片必须有标签， 请使用上传图片按钮。");
+        ind_label += tmp1.size();
+        Long ind_label_end = str.find(U'\"', ind_label);
+        SLS_ASSERT(ind_label_end > 0);
+        Str32 id = str.substr(ind_label, ind_label_end - ind_label);
+        img_ids.push_back(id);
         // get width of figure
         Long ind0 = str.find(U"width", intvFig.L(i)) + 5;
         ind0 = expect(str, U"=", ind0);
@@ -551,13 +566,12 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
         }
 
         fname_in = gv::path_in + U"figures/" + figName + U"." + format;
-        fname_out = gv::path_out + figName + U"." + format;
+
         Long itmp = figName.find(U'_');
-        if (itmp <= 0 || figName.substr(0, itmp) != entry)
-            throw Str32(U"图片 \"" + fname_in + U"\" 命名格式错误， 建议用上传按钮插入图片");
         if (!file_exist(fname_in)) {
             throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
         }
+
         if (imgs.size() > 0) {
             Long n = search(figName + U"." + format, imgs);
             if (n < 0)
@@ -568,12 +582,39 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
                 throw Str32(U"图片 \"" + fname_in + U"\" 被重复使用");
         }
 
-        file_copy(fname_out, fname_in, true);
         version.clear();
         // last_modified(version, fname_in);
         Str tmp; read(tmp, utf32to8(fname_in)); CRLF_to_LF(tmp);
-        version = utf8to32(sha1sum(tmp).substr(0, 14));
-        version = U"?v=" + version;
+        img_hashes.push_back(utf8to32(sha1sum(tmp).substr(0, 16)));
+
+        // ===== rename figure files with hash ========
+        Str32 fname_in2 = gv::path_in + U"figures/" + img_hashes.back() + U"." + format;
+        if (file_exist(fname_in))
+            file_move(utf32to8(fname_in2), utf32to8(fname_in), true);
+        if (format == U"svg") {
+            Str32 fname_in_svg = gv::path_in + U"figures/" + figName + U".pdf";
+            if (file_exist(fname_in_svg)) {
+                Str32 fname_in_svg2 = gv::path_in + U"figures/" + img_hashes.back() + U".pdf";
+                file_move(utf32to8(fname_in_svg2), utf32to8(fname_in_svg), true);
+            }
+        }
+
+        // ===== modify original .tex file =======
+        Str32 str_mod, tex_fname = gv::path_in + "contents/" + entry + U".tex";
+        read(str_mod, tex_fname);
+        if (format == U"png")
+            replace(str_mod, figName + U".png", img_hashes.back() + U".png");
+        else {
+            replace(str_mod, figName + U".pdf", img_hashes.back() + U".pdf");
+            replace(str_mod, figName + U".svg", img_hashes.back() + U".svg");
+        }
+        write(str_mod, tex_fname);
+        // ===========================================
+
+        fname_out = gv::path_out + img_hashes.back() + U"." + format;
+        file_copy(fname_out, fname_in2, true);
+
+        version = U"?v=" + img_hashes.back().substr(0, 14);
 
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
@@ -585,7 +626,7 @@ inline Long FigureEnvironment(VecChar_IO imgs_mark, Str32_IO str, Str32_I entry,
             throw Str32(U"图片标题中不能添加 \\footnote");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
-        href = gv::url + figName + U"." + format + version;
+        href = gv::url + img_hashes.back() + U"." + format + version;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             U"<div class = \"w3-content\" style = \"max-width:" + widthPt + U"em;\">\n"
             + U"<a href=\"" + href + U"\" target = \"_blank\"><img src = \"" + href
@@ -2120,10 +2161,12 @@ inline Long pay2div(Str32_IO str)
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
 // entryName does not include ".tex"
 // path0 is the parent folder of entryName.tex, ending with '\\'
-inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_O keywords, vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
+inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
+    Bool_O isDraft, vecStr32_O keywords, vecStr32_IO ids, vecStr32_IO labels, vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
     VecChar_IO imgs_mark, vecStr32_I imgs)
 {
+    img_ids.clear(); img_orders.clear(); img_hashes.clear();
     Str32 str;
     read(str, gv::path_in + "contents/" + entries[ind] + ".tex"); // read tex file
     CRLF_to_LF(str);
@@ -2208,7 +2251,9 @@ inline Long PhysWikiOnline1(Bool_O isDraft, vecStr32_O keywords, vecStr32_IO ids
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(imgs_mark, str, entries[ind], imgs);
+    FigureEnvironment(img_ids, img_orders, img_hashes, imgs_mark, str, entries[ind], imgs);
+    Long i_tmp = find_repeat(img_ids);
+    if (i_tmp >= 0) SLS_ERR("图片 id 重复: " + img_ids[i_tmp]);
     // get dependent entries from \pentry{}
     depend_entry(links, str, entries, ind);
     // issues environment
@@ -2793,6 +2838,95 @@ inline void db_update_author_history(Str32_I path)
     cout << "done." << endl;
 }
 
+// db table "figures" and "figure_store"
+// 暂时假设他们的行有一一对应的关系
+inline void db_update_figures(vecStr32_I img_fnames, vecStr32_I img_ids, vecLong_I img_orders, vecStr32_I img_hashes)
+{
+    vecStr32 db_ids, db_entries, db_hashes;
+    // vecStr32 new_ids, new_entries, new_hash;
+    vecLong db_orders;
+    Str cmd = R"(SELECT "id", "entry", "order", "hash" from "figures";)";
+    SQLite::Database db(utf32to8(gv::path_data + "scan.db"));
+    try {
+        SQLite::Statement stmt_select_figures(db, cmd);
+        while (stmt_select_figures.executeStep()) {
+            db_ids.push_back(utf8to32(stmt_select_figures.getColumn(1)));
+            db_entries.push_back(utf8to32(stmt_select_figures.getColumn(2)));
+            db_orders.push_back((Long) int(stmt_select_figures.getColumn(3)));
+            db_hashes.push_back(utf8to32(stmt_select_figures.getColumn(4)));
+        }
+    }
+    catch (std::exception& e) {
+        std::cout << "SQLiteCpp: " << e.what() << std::endl;
+    }
+
+    cmd = R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)";
+    SQLite::Statement stmt_insert_figures(db, cmd);
+
+    cmd = R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)";
+    SQLite::Statement stmt_update_figures(db, cmd);
+
+    Str32 entry, id, idNo, ext;
+    for (Long i = 0; i < size(img_fnames); ++i) {
+        auto &img_fname = img_fnames[i];
+        Long ind1 = img_fname.rfind(U'_'), ind2 = img_fname.rfind(U'.');
+        if (ind1 < 1 || ind2 < 3)
+            throw Str32(U"内部错误： 图片命名格式错误（暂时仅支持老格式）： " + img_fname);
+        ext = img_fname.substr(ind2+1);
+        entry = img_fname.substr(0, ind1);
+        idNo = str2int(img_fname.substr(ind1+1,ind2-ind1-1));
+        id = entry + idNo;
+        Long ind = search(id, db_ids);
+        if (ind < 0) {
+            SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
+            try {
+                stmt_insert_figures.bind(1, utf32to8(entry));
+                stmt_insert_figures.bind(2, int(img_orders[i]));
+                stmt_insert_figures.bind(3, utf32to8(img_hashes[i]));
+                stmt_insert_figures.bind(4, utf32to8(id));
+                stmt_insert_figures.executeStep();
+            }
+            catch (std::exception& e) {
+                std::cout << "SQLiteCpp: " << e.what() << std::endl;
+            }
+        }
+        else {
+            bool update = false;
+            if (id != db_ids[ind]) {
+                SLS_WARN("发现数据库中图片 id 改变（将更新）：" + db_ids[ind] + " -> " + id);
+                update = true;
+            }
+            if (entry != db_entries[ind]) {
+                SLS_WARN("发现数据库中图片 entry 改变（将更新）：" + id + ": "
+                    + db_entries[ind] + " -> " + entry);
+                update = true;
+            }
+            if (img_orders[i] != db_orders[ind]) {
+                SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
+                    + to_string(db_orders[ind]) + " -> " + to_string(img_orders[i]));
+                update = true;
+            }
+            if (img_hashes[i] != db_hashes[ind]) {
+                SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
+                         + db_hashes[ind] + " -> " + img_hashes[i]);
+                update = true;
+            }
+            if (update) {
+                try {
+                    stmt_update_figures.bind(1, utf32to8(entry));
+                    stmt_update_figures.bind(2, int(img_orders[i]));
+                    stmt_update_figures.bind(3, utf32to8(img_hashes[i]));
+                    stmt_update_figures.bind(4, utf32to8(id));
+                    stmt_update_figures.executeStep();
+                }
+                catch (std::exception &e) {
+                    std::cout << "SQLiteCpp: " << e.what() << std::endl;
+                }
+            }
+        }
+    }
+}
+
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline()
 {
@@ -2802,6 +2936,8 @@ inline void PhysWikiOnline()
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
     vecStr32 isDraft;  // if the corresponding entry is a draft ('1' or '0')
+    vector<vecLong> img_orders;
+    vector<vecStr32> img_ids, img_hashes;
     vecStr32 imgs; // all images in figures/ except .pdf
     vecStr32 chap_name, part_name; // list of chapter and part titles in order
     vecLong chap_part; // chap_part[i] is the part num of chap_name[i]
@@ -2840,6 +2976,9 @@ inline void PhysWikiOnline()
     vecStr32 labels, ids;
     vecBool isdraft(entries.size());
     vector<vecStr32> keywords_list(entries.size());
+    img_ids.resize(entries.size());
+    img_orders.resize(entries.size());
+    img_hashes.resize(entries.size());
 
     // 1st loop through tex files
     // files are processed independently
@@ -2851,7 +2990,10 @@ inline void PhysWikiOnline()
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
         Bool tmp;
-        PhysWikiOnline1(tmp, keywords_list[i], ids, labels, links, entries, entry_order, titles, Ntoc, i, rules, imgs_mark, imgs);
+        PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], tmp,
+                        keywords_list[i], ids,
+                        labels, links, entries, entry_order,
+                        titles, Ntoc, i, rules, imgs_mark, imgs);
         isdraft[i] = tmp;
     }
 
@@ -2886,6 +3028,7 @@ inline void PhysWikiOnline()
 
     db_update_parts_chapters(part_name, chap_name, chap_part);
     db_update_entries(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
+    // db_update_figures(img_ids, img_orders, img_hashes, img_fnames);
 
     // warn unused figures
     Bool warn_fig = false;
@@ -2966,7 +3109,8 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2;
         Bool isdraft; vecStr32 keywords;
-        PhysWikiOnline1(isdraft, keywords, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
+        vecStr32 img_ids, img_hashes; vecLong img_orders;
+        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft, keywords, ids, labels, links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
         if (gv::is_wiki)
             isDraft[ind] = isdraft ? U"1" : U"0";
     }
