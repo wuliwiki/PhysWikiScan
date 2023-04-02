@@ -253,10 +253,12 @@ int main(int argc, char *argv[]) {
         is_draft.clear(); is_draft.shrink_to_fit();
         if (gv::is_wiki && entries.size() != isDraft.size()) 
             isDraft.resize(entries.size(), U"1");
-        vecStr32 not_used1, not_used3;
-        vecLong not_used2, not_used4, not_used5;
-        try {table_of_contents(not_used1, not_used5, not_used2, not_used3, not_used4,
-            entries, isDraft);}
+        vecStr32 not_used1, not_used12, not_used13, not_used14;
+        vecLong not_used2, not_used22, not_used23;
+        try {
+            table_of_contents(not_used1, not_used12, not_used13, not_used14,
+                not_used2, not_used22, not_used23, entries, isDraft);
+        }
         catch (Str32_I msg) {
             cerr << utf32to8(msg) << endl; return 0;
         }

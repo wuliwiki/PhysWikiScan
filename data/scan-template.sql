@@ -40,8 +40,8 @@ CREATE TABLE "parts" (
 	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
 	"order"	INTEGER UNIQUE NOT NULL, -- 显示编号
 	"caption"	TEXT NOT NULL UNIQUE, -- 标题
-	"chap_first"	INTEGER UNIQUE NOT NULL, -- 第一章
-	"chap_last"	INTEGER UNIQUE NOT NULL, -- 最后一章
+	"chap_first"	INTEGER UNIQUE, -- NOT NULL, -- 第一章
+	"chap_last"	INTEGER UNIQUE, -- NOT NULL, -- 最后一章
 	PRIMARY KEY("id"),
 	FOREIGN KEY("chap_first") REFERENCES "chapters"("id"),
 	FOREIGN KEY("chap_last") REFERENCES "chapters"("id")
@@ -53,10 +53,11 @@ CREATE TABLE "chapters" (
 	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
 	"order"	INTEGER UNIQUE NOT NULL, -- 显示编号
 	"caption"	TEXT NOT NULL, -- 标题
-	"part"	INTEGER NOT NULL, -- 所在部分（不能为 0）
-	"section_first"	INTEGER UNIQUE NOT NULL, -- 第一个词条
-	"section_last"	INTEGER UNIQUE NOT NULL, -- 最后一个词条
+	"part"	TEXT NOT NULL, -- 所在部分（不能为 0）
+	"section_first"	INTEGER UNIQUE, -- NOT NULL, -- 第一个词条
+	"section_last"	INTEGER UNIQUE, -- NOT NULL, -- 最后一个词条
 	PRIMARY KEY("id"),
+	FOREIGN KEY("part") REFERENCES "parts"("id"),
 	FOREIGN KEY("section_first") REFERENCES "entries"("section"),
 	FOREIGN KEY("section_last") REFERENCES "entries"("section")
 );
@@ -113,7 +114,7 @@ CREATE TABLE "files" (
 	FOREIGN KEY("hash") REFERENCES "files"("id")
 );
 
--- 文件（被 "attachments" 和 "figure_store" 使用的）
+-- 文件（被 "files" 和 "figure_store" 使用的）
 CREATE TABLE "file_store" (
 	"hash"	TEXT UNIQUE NOT NULL, -- MD5
 	"name"	TEXT UNIQUE NOT NULL, -- 文件名（含拓展名）

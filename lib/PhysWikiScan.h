@@ -1604,9 +1604,10 @@ inline Long check_normal_text_escape(Str32_IO str)
 // titles[i] is the chinese title of entries[i]
 // `part_ind[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `chap_ind[i]` is similar to `part_ind[i]`, for chapters
-// if part_ind.size() == 0, `chap_name, chap_ind, part_ind, part_name` will be ignored
-inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong_O chap_ind,
-    vecStr32_O part_name, vecLong_O part_ind, vecStr32_I entries, vecStr32_I isDraft)
+// if part_ind.size() == 0, `chap_names, chap_ind, part_ind, part_names` will be ignored
+inline Long table_of_contents(vecStr32_O part_ids, vecStr32_O part_names,
+    vecStr32_O chap_ids, vecStr32_O chap_names, vecLong_O chap_part,
+    vecLong_O part_ind, vecLong_O chap_ind, vecStr32_I entries, vecStr32_I isDraft)
 {
     Long N{}, ind0{}, ind1{}, ikey{}, chapNo{ -1 }, chapNo_tot{ -1 }, partNo{ -1 };
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
@@ -1624,8 +1625,8 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
     Str32 str, str2, toc, class_draft;
     VecChar mark(entries.size()); copy(mark, 0); // check repeat
 
-    chap_name.clear(); part_name.clear();
-    chap_name.push_back(U"无"); part_name.push_back(U"无"); chap_part.push_back(0);
+    chap_names.clear(); part_names.clear();
+    chap_names.push_back(U"无"); part_names.push_back(U"无"); chap_part.push_back(0);
     chap_ind.clear(); chap_ind.resize(entries.size(), 0);
     part_ind.clear(); part_ind.resize(entries.size(), 0);
 
@@ -1688,12 +1689,19 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
             if (last_command != 'p' && last_command != 'e') 
                 throw Str32(U"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
             last_command = 'c';
+            // get chapter id from label cpt_xxx, where xxx is id
+            Long ind_label = find_command(str, U"label", ind1);
+            Long ind_LF = str.find(U'\n', ind1);
+            if (ind_label < 0 || ind_label > ind_LF)
+                throw Str32(U"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
+            Str32 label; command_arg(label, str, ind_label);
+            chap_ids.push_back(label_id(label));
             // insert chapter into html table of contents
             ++chapNo; ++chapNo_tot;
             if (chapNo > 0)
                 ind0 = insert(toc, U"</p>", ind0);
             if (part_ind.size() > 0) {
-                chap_name.push_back(title);
+                chap_names.push_back(title);
                 chap_part.push_back(partNo + 1);
             }
             ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
@@ -1708,10 +1716,17 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
             if (last_command != 'e' && last_command != 'n')
                 throw Str32(U"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
             last_command = 'p';
+            // get part id from label prt_xxx, where xxx is id
+            Long ind_label = find_command(str, U"label", ind1);
+            Long ind_LF = str.find(U'\n', ind1);
+            if (ind_label < 0 || ind_label > ind_LF)
+                throw Str32(U"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
+            Str32 label; command_arg(label, str, ind_label);
+            part_ids.push_back(label_id(label));
             // insert part into html table of contents
             ++partNo;
             if (part_ind.size() > 0)
-                part_name.push_back(title);
+                part_names.push_back(title);
             
             ind0 = insert(toc,
                 U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
@@ -1736,13 +1751,19 @@ inline Long table_of_contents(vecStr32_O chap_name, vecLong_O chap_part, vecLong
         throw Str32(U"内部错误： PhysWikiPartList not found!");
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"|", ind0);
-    for (Long i = 1; i < size(part_name); ++i) {
+    for (Long i = 1; i < size(part_names); ++i) {
         ind0 = insert(toc, U"   <a href = \"#part" + num2str32(i) + U"\">"
-            + part_name[i] + U"</a> |\n", ind0);
+                           + part_names[i] + U"</a> |\n", ind0);
     }
 
     // write to index.html
     write(toc, gv::path_out + "index.html");
+    Long kk = find_repeat(chap_ids);
+    if (kk >= 0)
+        throw Str32(U"\\chapter{} label 重复定义： " + chap_ids[kk]);
+    kk = find_repeat(part_ids);
+    if (kk >= 0)
+        throw Str32(U"\\part{} label 重复定义： " + part_ids[kk]);
     return N;
 }
 
@@ -2477,50 +2498,45 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
 }
 
 // delete and rewrite "chapters" and "parts" table of sqlite db
-inline void db_update_parts_chapters(vecStr32_I part_name, vecStr32_I chap_name, vecLong_I chap_part)
+inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name,
+    vecStr32_I chap_ids, vecStr32_I chap_name, vecLong_I chap_part)
 {
-    cout << "updating sqlite database (" << part_name.size() << " parts, "
-        << chap_name.size() << " chapters) ..." << endl; cout.flush();
-    sqlite3* db;
-    if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
-        throw Str32(U"内部错误： 无法打开 scan.db");
+    try {
+        cout << "updating sqlite database (" << part_name.size() << " parts, "
+             << chap_name.size() << " chapters) ..." << endl;
+        cout.flush();
+        SQLite::Database db(utf32to8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+        check_foreign_key(db.getHandle(), false);
+        table_clear(db.getHandle(), "parts");
+        table_clear(db.getHandle(), "chapters");
+        check_foreign_key(db.getHandle(), true);
 
-    check_foreign_key(db, false);
-    table_clear(db, "parts"); table_clear(db, "chapters");
-    check_foreign_key(db);
+        // insert parts
+        Str str = R"(INSERT INTO parts ("id", "order", "caption") VALUES (?, ?, ?);)";
+        SQLite::Statement stmt_insert_part(db, str);
+        for (Long i = 0; i < size(part_name); ++i) {
+            stmt_insert_part.bind(1, utf32to8(part_ids[i]));
+            stmt_insert_part.bind(2, int(i));
+            stmt_insert_part.bind(3, utf32to8(part_name[i]));
+            stmt_insert_part.executeStep();
+        }
 
-    // insert parts
-    sqlite3_stmt* stmt_insert_part;
-    Str str = "INSERT INTO parts (id, name) VALUES (?, ?);";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_part, NULL) != SQLITE_OK)
-        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-    
-    for (Long i = 0; i < size(part_name); ++i) {
-        sqlite3_bind_int64(stmt_insert_part, 1, i);
-        sqlite3_bind_text(stmt_insert_part, 2, utf32to8(part_name[i]).c_str(), -1, SQLITE_TRANSIENT);
-        if (sqlite3_step(stmt_insert_part) != SQLITE_DONE)
-            throw Str32(U"内部错误： db_update_parts_chapters():stmt_insert_part: " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt_insert_part);
+        // insert chapters
+        str = R"(INSERT INTO chapters ("id", "order", "caption", "part") VALUES (?, ?, ?, ?);)";
+        SQLite::Statement stmt_insert_chap(db, str);
+
+        for (Long i = 0; i < size(chap_name); ++i) {
+            stmt_insert_chap.bind(1, utf32to8(chap_ids[i]));
+            stmt_insert_chap.bind(2, int(i));
+            stmt_insert_chap.bind(3, utf32to8(chap_name[i]));
+            stmt_insert_chap.bind(4, utf32to8(part_ids[chap_part[i]]));
+            stmt_insert_chap.executeStep();
+        }
     }
-    sqlite3_finalize(stmt_insert_part);
-
-    // insert chapters
-    sqlite3_stmt* stmt_insert_chap;
-    str = "INSERT INTO chapters (id, name, part) VALUES (?, ?, ?);";
-    if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert_chap, NULL) != SQLITE_OK)
-        throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
-
-    for (Long i = 0; i < size(chap_name); ++i) {
-        sqlite3_bind_int64(stmt_insert_chap, 1, i);
-        sqlite3_bind_text(stmt_insert_chap, 2, utf32to8(chap_name[i]).c_str(), -1, SQLITE_TRANSIENT);
-        sqlite3_bind_int64(stmt_insert_chap, 3, chap_part[i]);
-        if (sqlite3_step(stmt_insert_chap) != SQLITE_DONE)
-            throw Str32(U"内部错误： db_update_parts_chapters():stmt_insert_chap: " + utf8to32(sqlite3_errmsg(db)));
-        sqlite3_reset(stmt_insert_chap);
+    catch (std::exception& e) {
+        std::cout << "SQLiteCpp: " << e.what() << std::endl;
     }
-    sqlite3_finalize(stmt_insert_chap);
     cout << "done." << endl;
-    sqlite3_close(db);
 }
 
 // update "entries" table of sqlite db
@@ -2536,13 +2552,13 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     // get a list of entries
     vecStr32 db_entries;
     vecLong db_entries_deleted;
-    get_column(db_entries_deleted, db_entries, db, "entries", "deleted", "entry");
+    get_column(db_entries_deleted, db_entries, db, "entries", "deleted", "id");
     cout << "there are already " << db_entries.size() << " entries in database." << endl;
     SLS_ASSERT(db_entries_deleted.size() == db_entries.size());
 
     // mark deleted entries
     sqlite3_stmt* stmt_delete;
-    Str str = "UPDATE entries SET deleted=1 WHERE entry=?;";
+    Str str = "UPDATE entries SET deleted=1 WHERE id=?;";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_delete, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
     for (Long i = 0; i < size(db_entries); ++i) {
@@ -2560,7 +2576,7 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     // insert a new entry
     sqlite3_stmt* stmt_insert;
     str = "INSERT INTO entries "
-        "(entry, title, keys, part, chapter, section, draft, pentry, labels) "
+        "(id, caption, keys, part, chapter, section, draft, pentry, labels) "
         "VALUES "
         "(    ?,     ?,    ?,    ?,       ?,       ?,     ?,      ?,      ?);";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_insert, NULL) != SQLITE_OK)
@@ -2569,8 +2585,8 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     // update an existing entry
     sqlite3_stmt* stmt_update;
     str = "UPDATE entries SET "
-        "title=?, keys=?, part=?, chapter=?, section=?, draft=?, pentry=?, labels=? "
-        "WHERE entry=?;";
+        "caption=?, keys=?, part=?, chapter=?, section=?, draft=?, pentry=?, labels=? "
+        "WHERE id=?;";
     if (sqlite3_prepare_v2(db, str.c_str(), -1, &stmt_update, NULL) != SQLITE_OK)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
 
@@ -2607,15 +2623,15 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
 
         // does entry already exist (expected)?
         Bool entry_exist;
-        entry_exist = exist(db, "entries", "entry", entry);
+        entry_exist = exist(db, "entries", "id", entry);
         if (entry_exist) {
             // check if there is any change (unexpected)
             vecStr row_str; vecLong row_int;
-            get_row(row_str, db, "entries", "entry", entry, {"title", "keys", "pentry", "labels"});
-            get_row(row_int, db, "entries", "entry", entry, {"part", "chapter", "section", "draft", "deleted"});
+            get_row(row_str, db, "entries", "id", entry, {"caption", "keys", "pentry", "labels"});
+            get_row(row_int, db, "entries", "id", entry, {"part", "chapter", "section", "draft", "deleted"});
             bool changed = false;
             if (utf32to8(titles[i]) != row_str[0]) {
-                SLS_WARN("titles has changed from " + row_str[0] + " to " + utf32to8(titles[i]));
+                SLS_WARN("caption has changed from " + row_str[0] + " to " + utf32to8(titles[i]));
                 changed = true;
             }
             if (str_keys != row_str[1]) {
@@ -2741,7 +2757,7 @@ inline void db_update_author_history(Str32_I path)
         throw Str32(U"内部错误： sqlite3_prepare_v2(): " + utf8to32(sqlite3_errmsg(db)));
 
     vecStr entries0;
-    get_column(entries0, db, "entries", "entry");
+    get_column(entries0, db, "entries", "id");
     unordered_set<Str> entries(entries0.begin(), entries0.end()), entries_deleted_inserted;
     entries0.clear(); entries0.shrink_to_fit();
 
@@ -2928,8 +2944,9 @@ inline void PhysWikiOnline()
     vector<vecLong> img_orders;
     vector<vecStr32> img_ids, img_hashes;
     vecStr32 imgs; // all images in figures/ except .pdf
-    vecStr32 chap_name, part_name; // list of chapter and part titles in order
-    vecLong chap_part; // chap_part[i] is the part num of chap_name[i]
+    vecStr32 part_ids, part_name; // \part{}
+    vecStr32 chap_ids, chap_name; // \chapter{}
+    vecLong chap_part; // chap_part[i] is the part order of chap_name[i]
     Long Ntoc; // number of entries in table of contents
     
     // process bibliography
@@ -2951,8 +2968,8 @@ inline void PhysWikiOnline()
     define_newcommands(rules);
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
-
-    table_of_contents(chap_name, chap_part, chap_ind, part_name, part_ind, entries, isDraft);
+    table_of_contents(part_ids, part_name, chap_ids, chap_name,
+                      chap_part, part_ind, chap_ind, entries, isDraft);
     file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
     file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
     VecChar imgs_mark(imgs.size()); // check if image has been used
@@ -3015,7 +3032,7 @@ inline void PhysWikiOnline()
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
         dep_json(tree, entries, titles, chap_name, chap_ind, part_name, part_ind, links);
 
-    db_update_parts_chapters(part_name, chap_name, chap_part);
+    db_update_parts_chapters(part_ids, part_name, chap_ids, chap_name, chap_part);
     db_update_entries(entries, titles, part_ind, chap_ind, entry_order, isDraft, keywords_list, tree, labels, ids);
     db_update_figures(entries, img_ids, img_orders, img_hashes);
 
