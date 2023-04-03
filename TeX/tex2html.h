@@ -248,8 +248,9 @@ inline Long NormalTextEscape(Str32_IO str)
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
         try {N1 = TextEscape(temp);}
         catch(Str32 str) {
-            if (!warned)
+            if (!warned) {
                 SLS_WARN(str); warned = true;
+            }
         }
         if (N1 < 0)
             continue;
