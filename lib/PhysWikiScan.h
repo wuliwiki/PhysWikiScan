@@ -2705,12 +2705,12 @@ inline void db_update_author_history(Str32_I path)
     
     vecLong db_data20;
     get_matrix(db_data10, db.getHandle(), "history", {"hash","time","entry"});
-    get_column(db_data20, db.getHandle(), "history", "authorID");
+    get_column(db_data20, db.getHandle(), "history", "author");
     Long id_max = db_data20.empty() ? -1 : max(db_data20);
 
     cout << "there are already " << db_data10.size() << " backup (history) records in database." << endl;
 
-    //            hash       time authorID entry
+    //            hash       time author entry
     unordered_map<Str, tuple<Str, Long,    Str>> db_data;
     for (Long i = 0; i < size(db_data10); ++i)
         db_data[db_data10[i][0]] = make_tuple(db_data10[i][1], db_data20[i], db_data10[i][2]);
@@ -2779,14 +2779,14 @@ inline void db_update_author_history(Str32_I path)
         }
 
         if (sha1_exist) {
-            auto &time_id_entry = db_data[sha1];
-            if (get<0>(time_id_entry) != time)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_id_entry));
-            if (db_id_to_author[get<1>(time_id_entry)] != author)
+            auto &time_author_entry = db_data[sha1];
+            if (get<0>(time_author_entry) != time)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
+            if (db_id_to_author[get<1>(time_author_entry)] != author)
                 SLS_WARN("备份 " + fname + " 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
-                    to_string(get<1>(time_id_entry)) + "." + db_id_to_author[get<1>(time_id_entry)]);
-            if (get<2>(time_id_entry) != entry)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_id_entry));
+                         to_string(get<1>(time_author_entry)) + "." + db_id_to_author[get<1>(time_author_entry)]);
+            if (get<2>(time_author_entry) != entry)
+                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
             db_data.erase(sha1);
         }
         else {
