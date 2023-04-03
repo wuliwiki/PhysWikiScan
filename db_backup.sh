@@ -1,1 +1,1 @@
-sqlite3 data/scan.db .dump > ../PhysWiki-backup/scan.sql
+sqlite3 data/scan.db .dump > ../littleshi.cn/root/scan.sql
