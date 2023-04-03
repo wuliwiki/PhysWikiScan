@@ -44,7 +44,7 @@ inline void check_foreign_key(sqlite3* db, bool on = true)
 // check if an entry exists
 inline bool exist(sqlite3* db, Str_I table, Str_I field, Str_I text)
 {
-    Str cmd = "SELECT 1 FROM " + table + " WHERE " + field + " = ?;";
+    Str cmd = "SELECT 1 FROM \"" + table + "\" WHERE \"" + field + "\" = ?;";
     sqlite3_stmt* stmt;
     prepare(db, stmt, cmd);
     bind(stmt, 1, text);
@@ -67,7 +67,7 @@ inline bool exist(sqlite3* db, Str_I table, Str_I field, Str_I text)
 // count 
 inline bool count(sqlite3* db, Str_I table, Str_I field, Str_I text)
 {
-    Str cmd = "SELECT COUNT(*) FROM " + table + " WHERE " + field + " = ?;";
+    Str cmd = "SELECT COUNT(*) FROM \"" + table + "\" WHERE \"" + field + "\" = ?;";
     sqlite3_stmt* stmt;
     prepare(db, stmt, cmd);
     bind(stmt, 1, text);
@@ -89,7 +89,7 @@ inline Str get_text(sqlite3* db, Str_I table, Str_I field, Str_I val, Str_I fiel
 {
     Str ret;
     sqlite3_stmt* stmt;
-    Str str = "SELECT " + field_out + " FROM " + table + " WHERE " + field + " = '" + val + "';";
+    Str str = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
     prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW)
         ret = (char*)sqlite3_column_text(stmt, 0);
@@ -106,7 +106,7 @@ inline Llong get_int(sqlite3* db, Str_I table, Str_I field, Str_I val, Str_I fie
 {
     Llong ret;
     sqlite3_stmt* stmt;
-    Str str = "SELECT " + field_out + " FROM " + table + " WHERE " + field + " = '" + val + "';";
+    Str str = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
     prepare(db, stmt, str);
 	if (sqlite3_step(stmt) == SQLITE_ROW)
         ret = sqlite3_column_int64(stmt, 0);
@@ -124,7 +124,7 @@ inline void get_column(vecStr_O data, sqlite3* db, Str_I table, Str_I field)
 {
 	data.clear();
     sqlite3_stmt* stmt;
-    Str str = "SELECT " + field + " FROM " + table;
+    Str str = "SELECT \"" + field + "\" FROM " + table;
     prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
@@ -141,7 +141,7 @@ inline void get_column(vecStr32_O data, sqlite3* db, Str_I table, Str_I field)
 {
 	data.clear();
     sqlite3_stmt* stmt;
-    Str str = "SELECT " + field + " FROM " + table;
+    Str str = "SELECT \"" + field + "\" FROM " + table;
     prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -163,7 +163,7 @@ inline void get_column(vecLlong_O data, sqlite3* db, Str_I table, Str_I field)
 {
 	data.clear();
     sqlite3_stmt* stmt;
-    Str str = "SELECT " + field + " FROM " + table;
+    Str str = "SELECT \"" + field + "\" FROM " + table;
     prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW)
@@ -202,7 +202,7 @@ inline void get_row(vecStr_O data, sqlite3* db, Str_I table, Str_I field, Str_I 
     sqlite3_stmt* stmt;
     Str str = "SELECT ";
     for (auto &field_out : fields_out)
-        str += field_out + ',';
+        str += '"' + field_out + "\",";
     str.pop_back();
     str += " FROM " + table + " WHERE " + field + " = '" + val + "';";
     prepare(db, stmt, str);
@@ -224,7 +224,7 @@ inline void get_row(vecLlong_O data, sqlite3* db, Str_I table, Str_I field, Str_
     sqlite3_stmt* stmt;
     Str str = "SELECT ";
     for (auto &field_out : fields_out)
-        str += field_out + ',';
+        str += '"' + field_out + "\",";
     str.pop_back();
     str += " FROM " + table + " WHERE " + field + " = '" + val + "';";
     prepare(db, stmt, str);
@@ -249,9 +249,9 @@ inline void get_matrix(vector<vecStr> &data, sqlite3* db, Str_I table, vecStr_I 
     sqlite3_stmt* stmt;
     Str str = "SELECT ";
     for (auto &field : fields)
-        str += field + ',';
+        str += '"' + field + "\",";
     str.pop_back();
-    str += " FROM " + table + ";";
+    str += " FROM \"" + table + "\";";
     prepare(db, stmt, str);
     int ret;
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
@@ -273,7 +273,7 @@ inline void get_matrix(vector<vecStr32> &data, sqlite3* db, Str_I table, vecStr_
     sqlite3_stmt* stmt;
     Str str = "SELECT ";
     for (auto &field : fields)
-        str += field + ',';
+        str += '"' + field + "\",";
     str.pop_back();
     str += " FROM " + table + ";";
     prepare(db, stmt, str);
@@ -299,7 +299,7 @@ inline void get_matrix(vector<vecLlong> &data, sqlite3* db, Str_I table, vecStr_
     sqlite3_stmt* stmt;
     Str str = "SELECT ";
     for (auto &field : fields)
-        str += field + ',';
+        str += '"' + field + "\",";
     str.pop_back();
     str += " FROM " + table + ";";
     prepare(db, stmt, str);

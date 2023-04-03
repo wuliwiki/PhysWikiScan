@@ -87,7 +87,7 @@ CREATE TABLE "equations" (
 -- \label{fig_xxx} 中 xxx 为 "id"
 CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
-	"caption"	TEXT UNIQUE NOT NULL DEFAULT '', -- 标题 \caption{xxx}
+	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
 	"entry"	TEXT NOT NULL, -- 所在词条
 	"order"	INTEGER NOT NULL, -- 显示编号
 	"hash"	TEXT NOT NULL, -- 文件 SHA1 前 16 位， 多个 id 可以使用同一个 hash 共用一个文件（svg 和 pdf 同名的，使用后者）

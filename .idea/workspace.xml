@@ -19,8 +19,8 @@
       <configuration PROFILE_NAME="Debug" ENABLED="true" CONFIG_NAME="Debug" GENERATION_OPTIONS="-D opt_debug=ON" NO_GENERATOR="true">
         <ADDITIONAL_GENERATION_ENVIRONMENT>
           <envs>
-            <env name="CPATH" value="/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mkl64-2022.1.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/sqlite-3.40.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mplapack-2.0.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mpfr-4.1.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-static-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-shared-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-static-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-shared-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gsl-2.7.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gmp-6.1.2/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/flint2-2.9.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/eigen-3.4.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/boost-1.80.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpackpp-2.3.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-static-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-shared-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-static-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-shared-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arb-2.23.0/include" />
-            <env name="LIBRARY_PATH" value="/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mkl64-2022.1.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/sqlite-3.40.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mplapack-2.0.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mpfr-4.1.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-static-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-shared-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-static-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-shared-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gsl-2.7.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gmp-6.1.2/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/flint2-2.9.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/eigen-3.4.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/boost-1.80.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpackpp-2.3.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-static-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-shared-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-static-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-shared-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arb-2.23.0/lib" />
+            <env name="CPATH" value="$USER_HOME$/shared/github/SLISC-libs-x64-ubuntu22.04/mkl64-2022.1.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/sqlite-3.40.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mplapack-2.0.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mpfr-4.1.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-static-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-shared-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-static-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-shared-3.10.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gsl-2.7.1/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gmp-6.1.2/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/flint2-2.9.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/eigen-3.4.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/boost-1.80.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpackpp-2.3.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-static-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-shared-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-static-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-shared-3.8.0/include:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arb-2.23.0/include" />
+            <env name="LIBRARY_PATH" value="$USER_HOME$/shared/github/SLISC-libs-x64-ubuntu22.04/mkl64-2022.1.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/sqlite-3.40.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mplapack-2.0.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/mpfr-4.1.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-static-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack-shared-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-static-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/lapack64-shared-3.10.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gsl-2.7.1/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/gmp-6.1.2/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/flint2-2.9.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/eigen-3.4.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/boost-1.80.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpackpp-2.3.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-static-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng-shared-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-static-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arpack-ng64-shared-3.8.0/lib:/home/addis/shared/github/SLISC-libs-x64-ubuntu22.04/arb-2.23.0/lib" />
           </envs>
         </ADDITIONAL_GENERATION_ENVIRONMENT>
       </configuration>
@@ -29,13 +29,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8018292-1a38-4e70-931a-7d5e75d40aa6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/data/scan.sql" beforeDir="false" afterPath="$PROJECT_DIR$/data/scan.sql" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/SLISC/file/sqlite_ext.h" beforeDir="false" afterPath="$PROJECT_DIR$/SLISC/file/sqlite_ext.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/PhysWikiScan.h" beforeDir="false" afterPath="$PROJECT_DIR$/lib/PhysWikiScan.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/main.cpp" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -109,12 +106,12 @@
     </layout>
   </component>
   <component name="RunManager">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS=". --path 1" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
       <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS=". --path 1" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
+    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -137,6 +134,7 @@
       <workItem from="1679852028477" duration="1124000" />
       <workItem from="1679863691023" duration="2768000" />
       <workItem from="1679866524533" duration="2316000" />
+      <workItem from="1680522427924" duration="4961000" />
     </task>
     <servers />
   </component>
