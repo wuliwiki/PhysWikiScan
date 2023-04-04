@@ -2924,9 +2924,9 @@ inline void db_update_labels(vecStr32_I labels, vecStr32_I ids)
     for (Long i = 0; i < size(labels); ++i) {
         label = labels[i]; id = ids[i];
         type = label_type(label);
-        if (type == U"eq" || type == U"fig" || type == U"code")
+        if (type == U"fig" || type == U"code")
             continue;
-        if (type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
+        if (type != U"eq" && type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
                 type != U"the" && type != U"cor" && type != U"ex" && type != U"exe")
             throw Str32(U"未知标签类型： " + type);
         Long ind2 = find_num(id, 0);

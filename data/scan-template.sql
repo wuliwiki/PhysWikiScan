@@ -71,18 +71,6 @@ CREATE TABLE "chapters" (
 -- 防止 FOREIGN KEY 报错
 INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 不在目录中
 
--- 带标签的公式
--- \label{eq_xxx} 中 xxx 为 "id"
--- 老格式为 \label{xxx_eq#}， 转换时 xxx# 为 "id"（在 html 仍然需要添加老 <id> 保持兼容性），下同
-CREATE TABLE "equations" (
-	"id"	TEXT UNIQUE NOT NULL, -- 重要公式手动起名规则和 entry 一样， 其他的自动编号
-	"entry"	TEXT NOT NULL, -- 所在词条
-	"order"	INTEGER NOT NULL, -- 显示编号
-	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 引用的词条（包括本词条）， 只有为空才能删除该标签， 下同
-	PRIMARY KEY("id"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id")
-);
-
 -- 图片环境（必须带标签）
 -- \label{fig_xxx} 中 xxx 为 "id"
 CREATE TABLE "figures" (
