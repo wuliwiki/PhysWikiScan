@@ -887,9 +887,9 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entry, Str32_IO str)
+inline Long autoref(vector<vecStr32> &ref_by, vecStr32_I ids, vecStr32_I labels, Str32_I entry, Str32_IO str)
 {
-    unsigned i{};
+    unsigned i{}; ref_by.clear();
     Long ind0{}, ind1{}, ind2{}, ind3{}, ind4{}, N{}, ienv{};
     Bool inEq;
     Str32 entry1, label0, type, idNum, kind, newtab, file;
@@ -952,19 +952,17 @@ inline Long autoref(vecStr32_I ids, vecStr32_I labels, Str32_I entry, Str32_IO s
                 SLS_WARN(utf32to8(U"autoref lstlisting 功能未完成！"));
                 ++ind0; continue;
             }
-            else {
+            else
                 throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
-            }
         }
         ind3 = str.find('}', ind3);
         // find id of the label
         label0 = str.substr(ind1, ind3 - ind1); trim(label0);
-        for (i = 0; i < labels.size(); ++i) {
-            if (label0 == labels[i]) break;
-        }
-        if (i == labels.size()) {
+        i = search(label0, labels);
+        if (i < 0)
             throw Str32(U"label \"" + label0 + U"\" 未找到");
-        }
+        if (search(entry, ref_by[i]) < 0)
+            ref_by[i].push_back(entry);
         ind4 = find_num(ids[i], 0);
         idNum = ids[i].substr(ind4);     
         file = gv::url + entry1 + U".html";
@@ -2904,21 +2902,22 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 
 // update labels table of database
 // `ids` are xxx### where xxx is "type", and ### is "order"
-inline void db_update_labels(vecStr32_I labels, vecStr32_I ids)
+inline void db_update_labels(vecStr32_I labels, vecStr32_I ids, const vector<vecStr32> &ref_by)
 {
-    Str32 label, id, type, entry; Long order;
+    Str32 label, id, type, entry, ref_by_str; Long order;
     SQLite::Database db(utf32to8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    SQLite::Statement stmt_select(db, R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
-    SQLite::Statement stmt_insert(db, R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
-    SQLite::Statement stmt_update(db, R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_select(db, R"(SELECT "id", "type", "entry", "order", "ref_by" FROM "labels";)");
+    SQLite::Statement stmt_insert(db, R"(INSERT INTO "labels" ("id", "type", "entry", "order", "ref_by") VALUES (?,?,?,?,?);)");
+    SQLite::Statement stmt_update(db, R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=?, "ref_by"=? WHERE "id"=?;)");
     // db_data[id] = {type, entry, order}
-    std::unordered_map<Str32, tuple<Str32, Str32, Long>> db_data;
+    std::unordered_map<Str32, tuple<Str32, Str32, Long, Str32>> db_data;
     while (stmt_select.executeStep()) {
         label = utf8to32(stmt_select.getColumn(0));
         type = utf8to32(stmt_select.getColumn(1));
         entry = utf8to32(stmt_select.getColumn(2));
         order = (int)stmt_select.getColumn(3);
-        db_data[label] = std::make_tuple(type, entry, order);
+        ref_by_str = utf8to32(stmt_select.getColumn(4));
+        db_data[label] = std::make_tuple(type, entry, order, ref_by_str);
     }
 
     for (Long i = 0; i < size(labels); ++i) {
@@ -2934,6 +2933,10 @@ inline void db_update_labels(vecStr32_I labels, vecStr32_I ids)
             throw Str32(U"内部错误： labels 和 ids 不匹配： " + label + ", " + id);
         entry = label_entry_old(label);
         order = str2int(id.substr(ind2));
+        ref_by_str.clear();
+        for (auto &e : ref_by[i])
+            ref_by_str += e + U" ";
+
         if (db_data.count(label)) { // label exist in db
             auto &db_row = db_data[label];
             bool changed = false;
@@ -2949,20 +2952,26 @@ inline void db_update_labels(vecStr32_I labels, vecStr32_I ids)
                 SLS_WARN(U"order 发生改变（将更新）：" + to_string(get<2>(db_row)) + " -> " + to_string(order));
                 changed = true;
             }
+            if (ref_by_str != get<3>(db_row)) {
+                SLS_WARN(U"ref_by 发生改变（将更新）：" + get<3>(db_row) + " -> " + ref_by_str);
+                changed = true;
+            }
             if (changed) {
                 stmt_update.bind(1, utf32to8(type));
                 stmt_update.bind(2, utf32to8(entry));
                 stmt_update.bind(3, int(order));
                 stmt_update.bind(4, utf32to8(label));
+                stmt_update.bind(5, utf32to8(ref_by_str));
                 stmt_update.exec(); stmt_update.reset();
             }
         }
         else { // label not in db
-            SLS_WARN(U"数据库中不存在 label（将插入）：" + label + ", " + type + ", " + entry + ", " + to_string(order));
+            SLS_WARN(U"数据库中不存在 label（将插入）：" + label + ", " + type + ", " + entry + ", " + to_string(order) + ", " + ref_by_str);
             stmt_insert.bind(1, utf32to8(label));
             stmt_insert.bind(2, utf32to8(type));
             stmt_insert.bind(3, utf32to8(entry));
             stmt_insert.bind(4, int(order));
+            stmt_insert.bind(5, utf32to8(ref_by_str));
             stmt_insert.exec(); stmt_insert.reset();
         }
     }
@@ -3049,6 +3058,7 @@ inline void PhysWikiOnline()
     // need `IdList` and `LabelList` from 1st loop
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str32 html, fname;
+    vector<vecStr32> ref_by(labels.size()); // labels[i] is \autoref{} by entries in ref_by[i]
     for (Long i = 0; i < size(entries); ++i) {
         cout    << std::setw(5)  << std::left << i
                 << std::setw(10)  << std::left << entries[i]
@@ -3056,11 +3066,12 @@ inline void PhysWikiOnline()
         fname = gv::path_out + entries[i] + ".html";
         read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[i], html);
+        autoref(ref_by, ids, labels, entries[i], html);
         write(html, fname); // save html file
         file_remove(utf32to8(fname) + ".tmp");
     }
     cout << endl;
+    for (auto &e : ref_by) sort(e.begin(), e.end());
     
     // generate dep.json
     vector<DGnode> tree;
@@ -3070,7 +3081,7 @@ inline void PhysWikiOnline()
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
     db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree, labels, ids);
     db_update_figures(entries, img_ids, img_orders, img_hashes);
-    db_update_labels(labels, ids);
+    db_update_labels(labels, ids, ref_by);
 
     // warn unused figures
     Bool warn_fig = false;
@@ -3168,6 +3179,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
     Str32 html, fname;
+    vector<vecStr32> not_used(labels.size());
     for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         cout << std::setw(5) << std::left << ind
@@ -3176,7 +3188,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
         fname = gv::path_out + entries[ind] + ".html";
         read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
-        autoref(ids, labels, entries[ind], html);
+        autoref(not_used, ids, labels, entries[ind], html);
         write(html, fname); // save html file
         file_remove(utf32to8(fname) + ".tmp");
     }

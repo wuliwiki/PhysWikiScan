@@ -146,7 +146,7 @@ CREATE TABLE "labels" (
 	"type"	TEXT NOT NULL, -- [sub|tab|def|lem|the|cor|ex|exe] 标签类型
 	"entry"	TEXT NOT NULL, -- 所在词条
 	"order"	INTEGER NOT NULL, -- 显示编号
-	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 被哪些词条引用
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 被哪些词条引用（需要排序）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	UNIQUE("type", "entry", "order")
