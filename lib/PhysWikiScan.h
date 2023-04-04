@@ -2471,9 +2471,9 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     unordered_map<Str, Str> db_data;
     for (auto &row : db_data0)
         db_data[row[0]] = row[1];
-    
-    Str str = R"(INSERT INTO bibliography ("bib", "details") VALUES (?, ?);)";
-    SQLite::Statement stmt_insert_bib(db, str);
+
+    SQLite::Statement stmt_insert_bib(db,
+        R"(INSERT INTO bibliography ("bib", "details") VALUES (?, ?);)");
 
     for (Long i = 0; i < size(bib_labels); i++) {
         Str bib_label = utf32to8(bib_labels[i]), bib_detail = utf32to8(bib_details[i]);
@@ -2506,8 +2506,8 @@ inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, 
         table_clear(db.getHandle(), "chapters");
 
         // insert parts
-        Str str = R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)";
-        SQLite::Statement stmt_insert_part(db, str);
+        SQLite::Statement stmt_insert_part(db,
+            R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
         for (Long i = 0; i < size(part_name); ++i) {
             // cout << "part " << i << ". " << part_ids[i] << ": " << part_name[i] << " chapters: " << chap_first[i] << " -> " << chap_last[i] << endl;
             stmt_insert_part.bind(1, utf32to8(part_ids[i]));
@@ -2520,8 +2520,8 @@ inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, 
         cout << "\n\n\n" << endl;
 
         // insert chapters
-        str = R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)";
-        SQLite::Statement stmt_insert_chap(db, str);
+        SQLite::Statement stmt_insert_chap(db,
+            R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
 
         for (Long i = 0; i < size(chap_name); ++i) {
             // cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
@@ -2557,8 +2557,8 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     SLS_ASSERT(db_entries_deleted.size() == db_entries.size());
 
     // mark deleted entries
-    Str str = R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)";
-    SQLite::Statement stmt_delete(db, str);
+    SQLite::Statement stmt_delete(db,
+        R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
     for (Long i = 0; i < size(db_entries); ++i) {
         Str32 &entry = db_entries[i];
         if ((search(entry, entries) < 0) && (db_entries_deleted[i] == 0)) {
@@ -2569,17 +2569,16 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     }
 
     // insert a new entry
-    str = R"(INSERT INTO "entries" )"
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO "entries" )"
         R"(("id", "caption", "part", "chapter", "order", "keys", "pentry", "draft") )"
-        "VALUES "
-        "(    ?,         ?,      ?,         ?,       ?,      ?,        ?,       ?);";
-    SQLite::Statement stmt_insert(db, str);
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
     
     // update an existing entry
-    str = R"(UPDATE "entries" SET )"
-          R"("caption"=?, "keys"=?, "part"=?, "chapter"=?, "order"=?, "draft"=?, "pentry"=? )"
-          R"(WHERE "id"=?;)";
-    SQLite::Statement stmt_update(db, str);
+    SQLite::Statement stmt_update(db,
+        R"(UPDATE "entries" SET )"
+        R"("caption"=?, "keys"=?, "part"=?, "chapter"=?, "order"=?, "draft"=?, "pentry"=? )"
+        R"(WHERE "id"=?;)");
     Str str_keys, str_pentry, str_labels;
     
     for (Long i = 0; i < size(entries); i++) {
@@ -2729,8 +2728,8 @@ inline void db_update_author_history(Str32_I path)
     db_author_ids0.clear(); db_authors0.clear();
     db_author_ids0.shrink_to_fit(); db_authors0.shrink_to_fit();
 
-    Str str = R"(INSERT INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)";
-    SQLite::Statement stmt_insert(db, str);
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
     get_column(entries0, db.getHandle(), "entries", "id");
@@ -2738,12 +2737,12 @@ inline void db_update_author_history(Str32_I path)
     entries0.clear(); entries0.shrink_to_fit();
 
     // insert a deleted entry (to ensure FOREIGN KEY exist)
-    str = R"(INSERT INTO entries ("id", "deleted") VALUES (?, 1);)";
-    SQLite::Statement stmt_insert_entry(db, str);
+    SQLite::Statement stmt_insert_entry(db,
+        R"(INSERT INTO entries ("id", "deleted") VALUES (?, 1);)");
 
     // insert new_authors to "authors" table
-    str = R"(INSERT INTO authors ("id", "name") VALUES (?, ?);)";
-    SQLite::Statement stmt_insert_auth(db, str);
+    SQLite::Statement stmt_insert_auth(db,
+        R"(INSERT INTO authors ("id", "name") VALUES (?, ?);)");
 
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
@@ -2820,10 +2819,10 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
     vecStr32 db_ids, db_entries, db_hashes;
     // vecStr32 new_ids, new_entries, new_hash;
     vecLong db_orders;
-    Str cmd = R"(SELECT "id", "entry", "order", "hash" from "figures";)";
     SQLite::Database db(utf32to8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     try {
-        SQLite::Statement stmt_select_figures(db, cmd);
+        SQLite::Statement stmt_select_figures(db,
+            R"(SELECT "id", "entry", "order", "hash" from "figures";)");
         while (stmt_select_figures.executeStep()) {
             db_ids.push_back(utf8to32(stmt_select_figures.getColumn(0)));
             db_entries.push_back(utf8to32(stmt_select_figures.getColumn(1)));
@@ -2836,11 +2835,11 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
         throw e;
     }
 
-    cmd = R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)";
-    SQLite::Statement stmt_insert_figures(db, cmd);
+    SQLite::Statement stmt_insert_figures(db,
+        R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
 
-    cmd = R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)";
-    SQLite::Statement stmt_update_figures(db, cmd);
+    SQLite::Statement stmt_update_figures(db,
+        R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
 
     Str32 entry, id, hash, ext;
     Long order;
@@ -2906,9 +2905,12 @@ inline void db_update_labels(vecStr32_I labels, vecStr32_I ids, const vector<vec
 {
     Str32 label, id, type, entry, ref_by_str; Long order;
     SQLite::Database db(utf32to8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    SQLite::Statement stmt_select(db, R"(SELECT "id", "type", "entry", "order", "ref_by" FROM "labels";)");
-    SQLite::Statement stmt_insert(db, R"(INSERT INTO "labels" ("id", "type", "entry", "order", "ref_by") VALUES (?,?,?,?,?);)");
-    SQLite::Statement stmt_update(db, R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=?, "ref_by"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "id", "type", "entry", "order", "ref_by" FROM "labels";)");
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO "labels" ("id", "type", "entry", "order", "ref_by") VALUES (?,?,?,?,?);)");
+    SQLite::Statement stmt_update(db,
+        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=?, "ref_by"=? WHERE "id"=?;)");
     // db_data[id] = {type, entry, order}
     std::unordered_map<Str32, tuple<Str32, Str32, Long, Str32>> db_data;
     while (stmt_select.executeStep()) {
