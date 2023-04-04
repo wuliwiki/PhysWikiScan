@@ -145,21 +145,23 @@ CREATE TABLE "code" (
 	"language"	TEXT NOT NULL, -- [none|matlab|...] 高亮语言
 	"order"	INTEGER NOT NULL, -- 显示编号
 	"right"	TEXT NOT NULL, -- [orig|CC|ask] 版权
-	"source"	TEXT NOT NULL, -- 图片来源（如果非原创）
+	"source"	TEXT NOT NULL, -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 引用的词条
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
 
 -- 词条中的其他标签（除公式图片代码）
+-- \label{yyy_xxxx} 中 yyy_xxxx 为 id, yyy 为 type
 CREATE TABLE "labels" (
 	"id"	TEXT UNIQUE NOT NULL,
-	"type"	TEXT NOT NULL, -- [sub|ex|...]
+	"type"	TEXT NOT NULL, -- [sub|tab|def|lem|the|cor|ex|exe] 标签类型
 	"entry"	TEXT NOT NULL, -- 所在词条
 	"order"	INTEGER NOT NULL, -- 显示编号
-	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 被哪些词条引用
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 被哪些词条引用
 	PRIMARY KEY("id"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id")
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	UNIQUE("type", "entry", "order")
 );
 
 -- 参考文献

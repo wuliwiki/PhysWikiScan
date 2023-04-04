@@ -2902,6 +2902,72 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
     }
 }
 
+// update labels table of database
+// `ids` are xxx### where xxx is "type", and ### is "order"
+inline void db_update_labels(vecStr32_I labels, vecStr32_I ids)
+{
+    Str32 label, id, type, entry; Long order;
+    SQLite::Database db(utf32to8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    SQLite::Statement stmt_select(db, R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
+    SQLite::Statement stmt_insert(db, R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+    SQLite::Statement stmt_update(db, R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+    // db_data[id] = {type, entry, order}
+    std::unordered_map<Str32, tuple<Str32, Str32, Long>> db_data;
+    while (stmt_select.executeStep()) {
+        label = utf8to32(stmt_select.getColumn(0));
+        type = utf8to32(stmt_select.getColumn(1));
+        entry = utf8to32(stmt_select.getColumn(2));
+        order = (int)stmt_select.getColumn(3);
+        db_data[label] = std::make_tuple(type, entry, order);
+    }
+
+    for (Long i = 0; i < size(labels); ++i) {
+        label = labels[i]; id = ids[i];
+        type = label_type(label);
+        if (type == U"eq" || type == U"fig" || type == U"code")
+            continue;
+        if (type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
+                type != U"the" && type != U"cor" && type != U"ex" && type != U"exe")
+            throw Str32(U"未知标签类型： " + type);
+        Long ind2 = find_num(id, 0);
+        if (type != id.substr(0, ind2))
+            throw Str32(U"内部错误： labels 和 ids 不匹配： " + label + ", " + id);
+        entry = label_entry_old(label);
+        order = str2int(id.substr(ind2));
+        if (db_data.count(label)) { // label exist in db
+            auto &db_row = db_data[label];
+            bool changed = false;
+            if (type != get<0>(db_row)) {
+                SLS_WARN(U"type 发生改变（将更新）：" + get<0>(db_row) + " -> " + type);
+                changed = true;
+            }
+            if (entry != get<1>(db_row)) {
+                SLS_WARN(U"entry 发生改变（将更新）：" + get<1>(db_row) + " -> " + entry);
+                changed = true;
+            }
+            if (order != get<2>(db_row)) {
+                SLS_WARN(U"order 发生改变（将更新）：" + to_string(get<2>(db_row)) + " -> " + to_string(order));
+                changed = true;
+            }
+            if (changed) {
+                stmt_update.bind(1, utf32to8(type));
+                stmt_update.bind(2, utf32to8(entry));
+                stmt_update.bind(3, int(order));
+                stmt_update.bind(4, utf32to8(label));
+                stmt_update.exec(); stmt_update.reset();
+            }
+        }
+        else { // label not in db
+            SLS_WARN(U"数据库中不存在 label（将插入）：" + label + ", " + type + ", " + entry + ", " + to_string(order));
+            stmt_insert.bind(1, utf32to8(label));
+            stmt_insert.bind(2, utf32to8(type));
+            stmt_insert.bind(3, utf32to8(entry));
+            stmt_insert.bind(4, int(order));
+            stmt_insert.exec(); stmt_insert.reset();
+        }
+    }
+}
+
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline()
 {
@@ -2967,8 +3033,7 @@ inline void PhysWikiOnline()
         // main process
         Bool tmp;
         PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], tmp,
-                        keywords_list[i], ids,
-                        labels, links, entries, entry_order,
+                        keywords_list[i], ids, labels, links, entries, entry_order,
                         titles, Ntoc, i, rules, imgs_mark, imgs);
         isdraft[i] = tmp;
     }
@@ -3005,6 +3070,7 @@ inline void PhysWikiOnline()
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
     db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree, labels, ids);
     db_update_figures(entries, img_ids, img_orders, img_hashes);
+    db_update_labels(labels, ids);
 
     // warn unused figures
     Bool warn_fig = false;
