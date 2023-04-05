@@ -370,8 +370,6 @@ int main(int argc, char *argv[]) {
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
         }
-        write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
-        write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
     }
     else if (args[0] == U"--history" && args.size() <= 2) {
         Str32 path;

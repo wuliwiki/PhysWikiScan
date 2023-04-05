@@ -1233,25 +1233,27 @@ inline Long upref(Str32_IO str, Str32_I entry)
 }
 
 // replace "\cite{}" with `[?]` cytation linke
-inline Long cite(Str32_IO str)
+inline Long cite(Str32_IO str, SQLite::Database &db)
 {
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "order", "details" from "bibliography" WHERE "id"=?;)");
     Long ind0 = 0, N = 0;
     Str32 bib_label;
-    vecStr32 bib_labels, bib_details;
-    if (file_exist(gv::path_data + U"bib_labels.txt"))
-        read_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
-    // read_vec_str(bib_details, path_data + U"bib_details.txt");
     while (1) {
         ind0 = find_command(str, U"cite", ind0);
         if (ind0 < 0)
             return N;
         ++N;
         command_arg(bib_label, str, ind0);
-        Long ibib = search(bib_label, bib_labels);
-        if (ibib < 0)
+        stmt_select.bind(1, u8(bib_label));
+        if (!stmt_select.executeStep())
             throw Str32(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
+        Long ibib = (int)stmt_select.getColumn(0);
+        // bib_detail = u32(stmt_select.getColumn(1));
+        stmt_select.reset();
         Long ind1 = skip_command(str, ind0, 1);
-        str.replace(ind0, ind1 - ind0, U" <a href=\"" + gv::url + "bibliography.html#" + num2str(ibib+1) + "\">[" + num2str32(ibib+1) + "]</a> ");
+        str.replace(ind0, ind1 - ind0, U" <a href=\"" + gv::url + "bibliography.html#"
+            + num2str(ibib+1) + "\">[" + num2str(ibib+1) + "]</a> ");
     }
 }
 
@@ -2099,7 +2101,7 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     vecStr32_O labels, vecLong_O label_orders,
     vecLong_IO links,
     vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
-    VecChar_IO imgs_mark, vecStr32_I imgs)
+    VecChar_IO imgs_mark, vecStr32_I imgs, SQLite::Database &db)
 {
     Str32 str;
     read(str, gv::path_in + "contents/" + entries[ind] + ".tex"); // read tex file
@@ -2204,7 +2206,7 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     // replace \upref{} with link icon
     upref(str, entries[ind]);
     href(str); // hyperlinks
-    cite(str); // citation
+    cite(str, db); // citation
     
     // footnote
     footnote(str, entries[ind], gv::url);
@@ -2378,13 +2380,13 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     vector<vecStr> db_data0;
     check_foreign_key(db.getHandle());
     
-    get_matrix(db_data0, db.getHandle(), "bibliography", {"bib", "details"});
+    get_matrix(db_data0, db.getHandle(), "bibliography", {"id", "details"});
     unordered_map<Str, Str> db_data;
     for (auto &row : db_data0)
         db_data[row[0]] = row[1];
 
     SQLite::Statement stmt_insert_bib(db,
-        R"(INSERT INTO bibliography ("bib", "details") VALUES (?, ?);)");
+        R"(INSERT INTO bibliography ("id", "order", "details") VALUES (?, ?, ?);)");
 
     for (Long i = 0; i < size(bib_labels); i++) {
         Str bib_label = u8(bib_labels[i]), bib_detail = u8(bib_details[i]);
@@ -2396,9 +2398,10 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
             }
             continue;
         }
-        SLS_WARN("数据库中不存在文献（将添加）： " + bib_label);
+        SLS_WARN("数据库中不存在文献（将添加）： " + num2str(i) + ". " + bib_label);
         stmt_insert_bib.bind(1, bib_label);
-        stmt_insert_bib.bind(2, bib_detail);
+        stmt_insert_bib.bind(2, int(i));
+        stmt_insert_bib.bind(3, bib_detail);
         stmt_insert_bib.exec(); stmt_insert_bib.reset();
     }
 }
@@ -2873,8 +2876,6 @@ inline void PhysWikiOnline()
     // process bibliography
     vecStr32 bib_labels, bib_details;
     bibliography(bib_labels, bib_details);
-    write_vec_str(bib_labels, gv::path_data + U"bib_labels.txt");
-    write_vec_str(bib_details, gv::path_data + U"bib_details.txt");
     db_update_bib(bib_labels, bib_details);
 
     Ntoc = entries_titles(titles, entries, isDraft, entry_order);
@@ -2910,6 +2911,8 @@ inline void PhysWikiOnline()
     vector<vecStr32> v_labels(entries.size());
     vector<vecLong> v_label_orders(entries.size());
 
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+
     // 1st loop through tex files
     // files are processed independently
     // `IdList` and `LabelList` are recorded for 2nd loop
@@ -2922,7 +2925,7 @@ inline void PhysWikiOnline()
         Bool tmp;
         PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], tmp,
                         keywords_list[i], v_labels[i], v_label_orders[i], links, entries, entry_order,
-                        titles, Ntoc, i, rules, imgs_mark, imgs);
+                        titles, Ntoc, i, rules, imgs_mark, imgs, db);
         isdraft[i] = tmp;
     }
 
@@ -2934,7 +2937,6 @@ inline void PhysWikiOnline()
     // need `IdList` and `LabelList` from 1st loop
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str32 html, fname;
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_select(db,
         R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by(db,
@@ -3015,6 +3017,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
 
     vecStr32 rules;  // for newcommand()
     define_newcommands(rules);
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
 
     // 1st loop through tex files
     // files are processed independently
@@ -3036,7 +3039,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
         Bool isdraft; vecStr32 keywords;
         vecStr32 img_ids, img_hashes; vecLong img_orders;
         PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft, keywords, not_used3, not_used4,
-                        links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
+                        links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2, db);
         if (gv::is_wiki)
             isDraft[ind] = isdraft ? U"1" : U"0";
     }
@@ -3050,7 +3053,6 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 
     Str32 html, fname;
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_select(db,
         R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by(db,

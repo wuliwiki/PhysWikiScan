@@ -154,9 +154,10 @@ CREATE TABLE "labels" (
 
 -- 参考文献
 CREATE TABLE "bibliography" (
-	"bib"	TEXT UNIQUE NOT NULL, -- \cite{} 中的标签
-	"details"	TEXT NOT NULL, -- 详细信息（待拆分成若干field）
-	PRIMARY KEY("bib")
+	"id"	TEXT UNIQUE NOT NULL, -- \cite{xxx} 中的 xxx
+	"order"	INTEGER UNIQUE NOT NULL, -- 显示编号
+	"details"	TEXT NOT NULL, -- 详细信息（TODO: 待拆分）
+	PRIMARY KEY("id")
 );
 
 -- 编辑历史（一个记录 5 分钟）
