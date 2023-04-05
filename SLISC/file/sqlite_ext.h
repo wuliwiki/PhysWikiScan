@@ -149,7 +149,7 @@ inline void get_column(vecStr32_O data, sqlite3* db, Str_I table, Str_I field)
         if (!p)
             data.emplace_back();
         else
-		    data.push_back(utf8to32(p));
+		    data.push_back(u32(p));
     }
     if (ret != SQLITE_DONE) {
         Str msg = sqlite3_errmsg(db);
@@ -185,7 +185,7 @@ inline void get_column(vecLlong_O data1, vecStr32_O data2, sqlite3* db, Str_I ta
     int ret;
     while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data1.push_back(sqlite3_column_int64(stmt, 0));
-        data2.push_back(utf8to32((char*)sqlite3_column_text(stmt, 1)));
+        data2.push_back(u32((char*)sqlite3_column_text(stmt, 1)));
     }
     if (ret != SQLITE_DONE) {
         Str msg = sqlite3_errmsg(db);
@@ -281,7 +281,7 @@ inline void get_matrix(vector<vecStr32> &data, sqlite3* db, Str_I table, vecStr_
 	while ((ret = sqlite3_step(stmt)) == SQLITE_ROW) {
         data.emplace_back();
         for (Long i = 0; i < size(fields); ++i)
-		    data.back().push_back(utf8to32((char*)sqlite3_column_text(stmt, i)));
+		    data.back().push_back(u32((char*)sqlite3_column_text(stmt, i)));
     }
     if (ret != SQLITE_DONE) {
         Str msg = sqlite3_errmsg(db);

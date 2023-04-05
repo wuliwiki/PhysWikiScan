@@ -1,7 +1,7 @@
 ﻿// tex parser utilities
 // always remove comments first
 #pragma once
-#include "../SLISC/parser.h"
+#include "../SLISC/str/parser.h"
 #include "../SLISC/algo/search.h"
 
 namespace slisc {

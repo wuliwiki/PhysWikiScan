@@ -18,3 +18,4 @@ cmake-build-physwikiscan/
 CMakeCache.txt
 *.cmake
 CMakeFiles/
+.idea/workspace.xml

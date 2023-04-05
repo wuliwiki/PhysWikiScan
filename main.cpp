@@ -12,7 +12,7 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
         Str temp;
         for (Int i = 1; i < argc; ++i) {
             temp = argv[i];
-            args.push_back(utf8to32(temp));
+            args.push_back(u32(temp));
         }
     }
     else {
@@ -29,11 +29,11 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
             ind1 = temp.find(' ', ind0);
             if (ind1 < 0) {
                 if (size(temp) > ind0)
-                    args.push_back(utf8to32(temp.substr(ind0)));
+                    args.push_back(u32(temp.substr(ind0)));
                 break;
             }
 
-            args.push_back(utf8to32(temp.substr(ind0, ind1 - ind0)));
+            args.push_back(u32(temp.substr(ind0, ind1 - ind0)));
             ind0 = temp.find_first_not_of(' ', ind1);
         }
     }
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
 
     try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
     catch (Str32_I msg) {
-        cerr << utf32to8(msg) << endl; return 0;
+        cerr << u8(msg) << endl; return 0;
     }
     catch (Str_I msg) {
         cerr << msg << endl; return 0;
@@ -199,17 +199,21 @@ int main(int argc, char *argv[]) {
         gv::is_entire = true;
         // remove matlab files
         vecStr fnames;
-        ensure_dir(utf32to8(gv::path_out) + "code/matlab/");
-        file_list_full(fnames, utf32to8(gv::path_out) + "code/matlab/");
+        ensure_dir(u8(gv::path_out) + "code/matlab/");
+        file_list_full(fnames, u8(gv::path_out) + "code/matlab/");
         for (Long i = 0; i < size(fnames); ++i)
             file_remove(fnames[i]);
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline();}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
+        }
+        catch (std::exception &e) {
+            cout << "SQLiteCpp: " << e.what() << endl;
+            throw e;
         }
         if (!illegal_chars.empty()) {
             SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
@@ -225,7 +229,7 @@ int main(int argc, char *argv[]) {
         Long Ntoc; // number of entries in main.tex
         try { Ntoc = entries_titles(titles, entries, isDraft, entry_order); }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -234,8 +238,8 @@ int main(int argc, char *argv[]) {
         write_vec_str(entries, gv::path_data + U"entries.txt");
         if (gv::is_wiki)
             write_vec_str(isDraft, gv::path_data + U"isDraft.txt");
-        file_remove(utf32to8(gv::path_data) + "entry_order.matt");
-        Matt matt(utf32to8(gv::path_data) + "entry_order.matt", "w");
+        file_remove(u8(gv::path_data) + "entry_order.matt");
+        Matt matt(u8(gv::path_data) + "entry_order.matt", "w");
         save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
@@ -243,7 +247,7 @@ int main(int argc, char *argv[]) {
         // read entries.txt and titles.txt, then generate index.html from main.tex
         vecStr32 titles, entries, isDraft;
         sqlite3* db;
-        if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
             throw Str32(U"内部错误： 无法打开 scan.db");
         get_column(entries, db, "entries", "entry");
         get_column(titles, db, "entries", "title");
@@ -261,7 +265,7 @@ int main(int argc, char *argv[]) {
                               entry_part, entry_chap, entries, isDraft);
         }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -273,7 +277,7 @@ int main(int argc, char *argv[]) {
         Str32 str;
         Long N = 0;
         sqlite3* db;
-        if (sqlite3_open(utf32to8(gv::path_data + "scan.db").c_str(), &db))
+        if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
             throw Str32(U"内部错误： 无法打开 scan.db");
         get_column(entries, db, "entries", "entry");
         for (Long i = 0; i < size(entries); ++i) {
@@ -310,9 +314,9 @@ int main(int argc, char *argv[]) {
         Str32 label;
         Long ret;
         try {ret = check_add_label(label, args[1], args[2],
-            atoi(utf32to8(args[3]).c_str()), labels, ids);}
+            atoi(u8(args[3]).c_str()), labels, ids);}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -355,10 +359,10 @@ int main(int argc, char *argv[]) {
         Long ret;
         try {
             ret = check_add_label_dry(label, args[1], args[2],
-                atoi(utf32to8(args[3]).c_str()), labels, ids);
+                atoi(u8(args[3]).c_str()), labels, ids);
         }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -384,7 +388,7 @@ int main(int argc, char *argv[]) {
         }
         try {PhysWikiOnlineN(entryN);}
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -395,7 +399,7 @@ int main(int argc, char *argv[]) {
         vecStr32 bib_labels, bib_details;
         try { bibliography(bib_labels, bib_details); }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
@@ -413,7 +417,7 @@ int main(int argc, char *argv[]) {
         // update db "history" table from backup files
         try { db_update_author_history(path); }
         catch (Str32_I msg) {
-            cerr << utf32to8(msg) << endl; return 0;
+            cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
             cerr << msg << endl; return 0;

@@ -1,8 +1,8 @@
 // general parser utilities
 #pragma once
-#include "../SLISC/arith/scalar_arith.h"
-#include "../SLISC/str/unicode.h"
-#include "../SLISC/algo/interv.h"
+#include "../arith/scalar_arith.h"
+#include "../str/unicode.h"
+#include "../algo/interv.h"
 
 namespace slisc {
 

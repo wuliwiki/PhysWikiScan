@@ -70,7 +70,7 @@ inline Long define_newcommands(vecStr32_O rules)
                 throw Str32(U"内部错误： new_commands.txt 格式错误！");
             if ((ind1 = line.find("\"", ind0+1)) < 0)
                 throw Str32(U"内部错误： new_commands.txt 格式错误！");
-            rules.push_back(utf8to32(line.substr(ind0+1, ind1-ind0-1)));
+            rules.push_back(u32(line.substr(ind0+1, ind1-ind0-1)));
             ind0 = ind1;
         }
     }
