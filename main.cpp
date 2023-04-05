@@ -249,7 +249,7 @@ int main(int argc, char *argv[]) {
         sqlite3* db;
         if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
             throw Str32(U"内部错误： 无法打开 scan.db");
-        get_column(entries, db, "entries", "entry");
+        get_column(entries, db, "entries", "id");
         get_column(titles, db, "entries", "title");
         vecLong is_draft;
         for (bool is : is_draft)
@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
         sqlite3* db;
         if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
             throw Str32(U"内部错误： 无法打开 scan.db");
-        get_column(entries, db, "entries", "entry");
+        get_column(entries, db, "entries", "id");
         for (Long i = 0; i < size(entries); ++i) {
             read(str, gv::path_in + "contents/" + entries[i] + U".tex");
             rm_comments(str);
