@@ -2776,27 +2776,25 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 
 // update labels table of database
 // `ids` are xxx### where xxx is "type", and ### is "order"
-inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders,
-                             unordered_map<Str32, set<Str32>> &ref_by)
+inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders)
 {
     cout << "updating db for labels..." << endl;
-    Str32 label, type, entry, ref_by_str; Long order;
+    Str32 label, type, entry; Long order;
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_select(db,
-        R"(SELECT "id", "type", "entry", "order", "ref_by" FROM "labels";)");
+        R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
     SQLite::Statement stmt_insert(db,
-        R"(INSERT INTO "labels" ("id", "type", "entry", "order", "ref_by") VALUES (?,?,?,?,?);)");
+        R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
     SQLite::Statement stmt_update(db,
-        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=?, "ref_by"=? WHERE "id"=?;)");
+        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
     // db_data[id] = {type, entry, order}
-    std::unordered_map<Str32, tuple<Str32, Str32, Long, Str32>> db_data;
+    std::unordered_map<Str32, tuple<Str32, Str32, Long>> db_data;
     while (stmt_select.executeStep()) {
         label = u32(stmt_select.getColumn(0));
         type = u32(stmt_select.getColumn(1));
         entry = u32(stmt_select.getColumn(2));
         order = (int)stmt_select.getColumn(3);
-        ref_by_str = u32(stmt_select.getColumn(4));
-        db_data[label] = std::make_tuple(type, entry, order, ref_by_str);
+        db_data[label] = std::make_tuple(type, entry, order);
     }
 
     for (Long j = 0; j < size(entries); ++j) {
@@ -2810,10 +2808,6 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
             if (type != U"eq" && type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
                 type != U"the" && type != U"cor" && type != U"ex" && type != U"exe")
                 throw Str32(U"未知标签类型： " + type);
-            ref_by_str.clear();
-            if (ref_by.count(label))
-                for (auto &e: ref_by[label])
-                    ref_by_str += e + U" ";
 
             if (db_data.count(label)) { // label exist in db
                 auto &db_row = db_data[label];
@@ -2830,26 +2824,20 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
                     SLS_WARN(U"order 发生改变（将更新）：" + to_string(get<2>(db_row)) + " -> " + to_string(order));
                     changed = true;
                 }
-                if (ref_by_str != get<3>(db_row)) {
-                    SLS_WARN(U"ref_by 发生改变（将更新）：" + get<3>(db_row) + " -> " + ref_by_str);
-                    changed = true;
-                }
                 if (changed) {
                     stmt_update.bind(1, u8(type));
                     stmt_update.bind(2, u8(entry));
                     stmt_update.bind(3, int(order));
-                    stmt_update.bind(4, u8(ref_by_str));
-                    stmt_update.bind(5, u8(label));
+                    stmt_update.bind(4, u8(label));
                     stmt_update.exec(); stmt_update.reset();
                 }
             } else { // label not in db
                 SLS_WARN(U"数据库中不存在 label（将插入）：" + label + ", " + type + ", " + entry + ", " +
-                         to_string(order) + ", " + ref_by_str);
+                         to_string(order));
                 stmt_insert.bind(1, u8(label));
                 stmt_insert.bind(2, u8(type));
                 stmt_insert.bind(3, u8(entry));
                 stmt_insert.bind(4, int(order));
-                stmt_insert.bind(5, u8(ref_by_str));
                 stmt_insert.exec(); stmt_insert.reset();
             }
         }
@@ -2931,6 +2919,8 @@ inline void PhysWikiOnline()
 
     if (gv::is_wiki)
         write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
+
+    db_update_labels(entries, v_labels, v_label_orders);
 
     // 2nd loop through tex files
     // deal with autoref
