@@ -501,7 +501,7 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
 inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
-        VecChar_IO imgs_mark, Str32_IO str, Str32_I entry, vecStr32_I imgs)
+        Str32_IO str, Str32_I entry)
 {
     img_ids.clear(); img_orders.clear(); img_hashes.clear();
     Long N = 0;
@@ -549,21 +549,13 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
             format = U"svg";
             figName = figName.substr(0, Nname - 4);
         }
-        else {
+        else
             throw Str32(U"图片格式不支持");
-        }
 
         fname_in = gv::path_in + U"figures/" + figName + U"." + format;
 
         if (!file_exist(fname_in))
             throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
-
-        if (imgs.size() > 0) {
-            Long n = search(figName + U"." + format, imgs);
-            if (n < 0)
-                throw Str32(U"内部错误： FigureEnvironment()");
-            imgs_mark[n] = 1;
-        }
 
         version.clear();
         // last_modified(version, fname_in);
@@ -619,10 +611,8 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
     return N;
 }
 
-// get dependent entries from \pentry{}
-// links are file names, not chinese titles
-// links[i][0] --> links[i][1]
-inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, Long_I ind)
+// get dependent entries (id) from \pentry{}
+inline Long depend_entry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
 {
     Long ind0 = 0, N = 0;
     Str32 temp;
@@ -640,19 +630,13 @@ inline Long depend_entry(vecLong_IO links, Str32_I str, vecStr32_I entryNames, L
                 return N;
             command_arg(depEntry, temp, ind1, 0, 't');
             Long i; Bool flag = false;
-            for (i = 0; i < size(entryNames); ++i) {
-                if (depEntry == entryNames[i]) {
-                    flag = true; break;
-                }
-            }
-            if (!flag) {
-                throw Str32(U"\\upref 引用的文件未找到: " + depEntry + ".tex");
-            }
-            links.push_back(i);
-            links.push_back(ind);
+            if (!exist(db.getHandle(), "entries", "id", u8(depEntry)))
+                throw Str32(U"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
+            pentries.push_back(depEntry);
             ++N; ++ind1;
         }
     }
+    return N;
 }
 
 // replace \pentry comman with html round panel
@@ -1513,13 +1497,6 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
 {
     Long ind0 = 0, ind1 = 0, ikey = -500, chapNo = -1, chapNo_tot = 0, partNo = 0;
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
-    vecStr32 chineseNo{U"零", U"一", U"二", U"三", U"四", U"五", U"六", U"七", U"八", U"九",
-                U"十", U"十一", U"十二", U"十三", U"十四", U"十五", U"十六",
-                U"十七", U"十八", U"十九", U"二十", U"二十一", U"二十二", U"二十三", U"二十四",
-                U"二十五", U"二十六", U"二十七", U"二十八", U"二十九", U"三十", U"三十一", 
-                U"三十二", U"三十三", U"三十四", U"三十五", U"三十六", U"三十七", U"三十八", 
-                U"三十九", U"四十", U"四十一", U"四十二", U"四十三", U"四十四", U"四十五", 
-                U"四十六", U"四十七", U"四十八", U"四十九", U"五十", U"五十一", U"五十二" };
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
     Str32 title, title2; // chinese entry name, chapter name, or part name
@@ -1615,7 +1592,7 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
                 ind0 = insert(toc, U"</p>", ind0);
             chap_names.push_back(title);
             chap_part.push_back(partNo);
-            ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo+1] + U"章 " + title
+            ind0 = insert(toc, U"\n\n<h3><b>第" + num2chinese(chapNo+1) + U"章 " + title
                 + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1; last_command = 'c';
         }
@@ -1641,7 +1618,7 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
             ind0 = insert(toc,
                 U"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
                 U"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
-                    + num2str32(partNo) + U"\">第" + chineseNo[partNo] + U"部分 " + title + U"</h3>\n"
+                    + num2str32(partNo) + U"\">第" + num2chinese(partNo) + U"部分 " + title + U"</h3>\n"
                 U"</div>\n\n<div class = \"w3-container\">\n"
                 , ind0);
             ++ind1; last_command = 'p';
@@ -2087,19 +2064,72 @@ inline Long pay2div(Str32_IO str)
     }
 }
 
+inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order, Str32_I entry, Str32_I title)
+{
+    Str32 last_entry, last_title, last_url, next_entry, next_title, next_url;
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "entry", "caption" FROM "entries" WHERE "order"=?;)");
+
+    // find last
+    if (order == 1)
+        last_title = U"没有上一个了~";
+    else {
+        stmt_select.bind(1, (int)order-1);
+        if (!stmt_select.executeStep())
+            last_title = U"没有上一篇了哟~";
+        else {
+            last_entry = u32(stmt_select.getColumn(0));
+            last_title = u32(stmt_select.getColumn(1));
+        }
+        stmt_select.reset();
+    }
+
+    // find next
+    stmt_select.bind(1, (int)order+1);
+    if (!stmt_select.executeStep())
+        next_title = U"没有下一篇了哟~";
+    else {
+        next_entry = u32(stmt_select.getColumn(0));
+        next_title = u32(stmt_select.getColumn(1));
+    }
+    stmt_select.reset();
+
+    // insert into html
+    if (replace(html, U"PhysWikiAuthorList", author_list(entry)) != 1)
+        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
+    if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
+        throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
+    if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
+        throw Str32(U"内部错误： \"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
+    if (replace(html, U"PhysWikiLastTitle", last_title) != 2)
+        throw Str32(U"内部错误： \"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
+    if (replace(html, U"PhysWikiNextTitle", next_title) != 2)
+        throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
+}
+
 // generate html from tex
 // output the chinese title of the file, id-label pairs in the file
 // output dependency info from \pentry{}, links[i][0] --> links[i][1]
 // path0 is the parent folder of entry.tex, ending with '\\'
 inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
-    Bool_O isDraft, vecStr32_O keywords,
+    Bool_O draft, vecStr32_O keywords,
     vecStr32_O labels, vecLong_O label_orders,
-    vecLong_IO links,
-    vecStr32_I entries, VecLong_I entry_order, vecStr32_I titles, Long_I Ntoc, Long_I ind, vecStr32_I rules,
-    VecChar_IO imgs_mark, vecStr32_I imgs, SQLite::Database &db)
+    vecStr32_O pentries, Str32_I entry, vecStr32_I rules,
+    SQLite::Database &db)
 {
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
+    stmt_select.bind(1, u8(entry));
+    if (!stmt_select.executeStep()) {
+        SLS_WARN(U"内部错误： 词条不存在数据库中， 将由 PhysWikiScan 添加： " + entry);
+        SQLite::Statement stmt_select(db,
+            R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
+    }
+    Str32 db_title(u32(stmt_select.getColumn(1)));
+    Long order = (int)stmt_select.getColumn(3);
+
     Str32 str;
-    read(str, gv::path_in + "contents/" + entries[ind] + ".tex"); // read tex file
+    read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
     CRLF_to_LF(str);
     Str32 title;
     // read html template and \newcommand{}
@@ -2109,7 +2139,7 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
 
     // read title from first comment
     get_title(title, str);
-    isDraft = is_draft(str);
+    draft = is_draft(str);
 
     // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
     if ((size(str) > 7 && str.substr(size(str) - 7) == U"\n%%eng\n") ||
@@ -2132,8 +2162,8 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
             throw Str32(U"内部错误： \"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
 
-    if (!titles[ind].empty() && title != titles[ind])
-        throw Str32(U"检测到标题改变（" + titles[ind] + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
+    if (!db_title.empty() && title != db_title)
+        throw Str32(U"检测到标题改变（" + db_title + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
 
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1)
@@ -2149,7 +2179,7 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     limit_env_cmd(str);
     if (!gv::is_eng)
         autoref_space(str, true); // set true to error instead of warning
-    autoref_tilde_upref(str, entries[ind]);
+    autoref_tilde_upref(str, entry);
     if (str.empty()) str = U" ";
     // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
@@ -2170,7 +2200,7 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     // add paragraph tags
     paragraph_tag(str);
     // add html id for links
-    EnvLabel(labels, label_orders, entries[ind], str);
+    EnvLabel(labels, label_orders, entry, str);
     // replace environments with html tags
     equation_tag(str, U"equation"); equation_tag(str, U"align"); equation_tag(str, U"gather");
     // itemize and enumerate
@@ -2182,9 +2212,9 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(img_ids, img_orders, img_hashes, imgs_mark, str, entries[ind], imgs);
+    FigureEnvironment(img_ids, img_orders, img_hashes, str, entry);
     // get dependent entries from \pentry{}
-    depend_entry(links, str, entries, ind);
+    depend_entry(pentries, str, db);
     // issues environment
     issuesEnv(str);
     addTODO(str);
@@ -2199,12 +2229,12 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     Command2Tag(U"textsl", U"<i>", U"</i>", str);
     pay2div(str); // deal with "\pay" "\paid" pseudo command
     // replace \upref{} with link icon
-    upref(str, entries[ind]);
+    upref(str, entry);
     href(str); // hyperlinks
     cite(str, db); // citation
     
     // footnote
-    footnote(str, entries[ind], gv::url);
+    footnote(str, entry, gv::url);
     // delete redundent commands
     replace(str, U"\\dfracH", U"");
     // remove spaces around chinese punctuations
@@ -2221,39 +2251,13 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1)
         throw Str32(U"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiEntry", entries[ind]) != (gv::is_wiki? 8:2))
+    if (replace(html, U"PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
         throw Str32(U"内部错误： \"PhysWikiEntry\" 在 entry_template.html 中数量不对");
-    // insert last and next entry
-    Str32 last_entry = entries[ind], next_entry = last_entry, last_title, next_title;
-    Long order = entry_order[ind];
-    if (order > 0) {
-        Long last_ind = search(order - 1, entry_order);
-        if (last_ind < 0)
-            throw Str32(U"内部错误： 上一个词条序号未找到！");
-        last_entry = entries[last_ind];
-        last_title = titles[last_ind];
-    }
-    if (order < Ntoc-1) {
-        Long next_ind = search(order + 1, entry_order);
-        if (next_ind < 0)
-            throw Str32(U"内部错误： 下一个词条序号未找到！");
-        next_entry = entries[next_ind];
-        next_title = titles[next_ind];
-    }
-    
-    if (replace(html, U"PhysWikiAuthorList", author_list(entries[ind])) != 1)
-        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
-    if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
-        throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
-        throw Str32(U"内部错误： \"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiLastTitle", last_title) != 2)
-        throw Str32(U"内部错误： \"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
-    if (replace(html, U"PhysWikiNextTitle", next_title) != 2)
-        throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
+
+    last_next_buttons(html, db, order, entry, title);
 
     // save html file
-    write(html, gv::path_out + entries[ind] + ".html.tmp");
+    write(html, gv::path_out + entry + ".html.tmp");
     return 0;
 }
 
@@ -2892,6 +2896,7 @@ inline void PhysWikiOnline()
     img_hashes.resize(entries.size());
 
     vector<vecStr32> v_labels(entries.size());
+    vector<vecStr32> pentries(entries.size());
     vector<vecLong> v_label_orders(entries.size());
 
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
@@ -2905,11 +2910,11 @@ inline void PhysWikiOnline()
                 << std::setw(10)  << std::left << entries[i]
                 << std::setw(20) << std::left << titles[i] << endl;
         // main process
-        Bool tmp;
-        PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], tmp,
-                        keywords_list[i], v_labels[i], v_label_orders[i], links, entries, entry_order,
-                        titles, Ntoc, i, rules, imgs_mark, imgs, db);
-        isdraft[i] = tmp;
+        Bool draft;
+        PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], draft,
+                        keywords_list[i], v_labels[i], v_label_orders[i], pentries[i], entries[i],
+                        rules, db);
+        isdraft[i] = draft;
     }
 
     write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
@@ -2987,7 +2992,7 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     if (gv::is_wiki) {
         read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
         isDraft.resize(entries.size(), U"1");
-    } 
+    }
     VecLong entry_order;
     Matt matt(u8(gv::path_data) + "entry_order.matt", "r");
     Long Ntoc; // number of entries in main.tex
