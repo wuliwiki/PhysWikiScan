@@ -343,20 +343,20 @@ int main(int argc, char *argv[]) {
         cout << output[1] << endl;
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
-        // process a single entry
+        // process specified entries
         vecStr32 entryN;
-        Str32 temp;
-        for (Int i = 1; i < size(args); ++i) {
-            temp = args[i];
-            if (temp[0] == '-' && temp[1] == '-')
+        Str32 arg;
+        for (Long i = 1; i < size(args); ++i) {
+            arg = args[i];
+            if (arg[0] == '-' && arg[1] == '-')
                 break;
-            entryN.push_back(temp);
+            entryN.push_back(arg);
         }
-        try {PhysWikiOnlineN(entryN);}
-        catch (Str32_I msg) {
+        try {
+            PhysWikiOnlineN(entryN);
+        } catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
+        } catch (Str_I msg) {
             cerr << msg << endl; return 0;
         }
     }

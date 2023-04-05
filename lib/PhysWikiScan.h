@@ -1242,7 +1242,7 @@ inline Long cite(Str32_IO str, SQLite::Database &db)
 
 // update entries and titles from "contents/*.tex"
 // return the number of entries in main.tex
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isDraft, VecLong_O entry_order)
+inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entry_order)
 {
     entries.clear(); titles.clear();
     file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
@@ -1263,7 +1263,6 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
     Str32 str_entry;
     CRLF_to_LF(str);
     titles.resize(entries.size());
-    isDraft.resize(entries.size());
     Str32 str0 = str;
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
@@ -1289,7 +1288,6 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
             throw Str32(U"main.tex 中词条文件 " + entry + U" 未找到");
         read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
         CRLF_to_LF(str_entry);
-        isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
         if (entry_order[ind] < 0)
             entry_order[ind] = entry_order1;
         else
@@ -1327,7 +1325,6 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
             continue;
         read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
         CRLF_to_LF(str_entry);
-        isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
         titles[ind] = title;
     }
 
@@ -1490,29 +1487,31 @@ inline Long check_normal_text_escape(Str32_IO str)
 // `entry_part[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `entry_chap[i]` is similar to `entry_part[i]`, for chapters
 // if entry_part.size() == 0, `chap_names, entry_chap, entry_part, part_names` will be ignored
-inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr32_O chap_first, vecStr32_O chap_last,
-                              vecStr32_O chap_ids, vecStr32_O chap_names, vecLong_O chap_part, vecStr32_O entry_first, vecStr32_O entry_last,
-                              vecLong_O entry_part, vecLong_O entry_chap, vecStr32_I entries, vecStr32_I is_draft)
+inline void table_of_contents(
+        vecStr32_O part_ids, vecStr32_O part_names, vecStr32_O chap_first, vecStr32_O chap_last,
+        vecStr32_O chap_ids, vecStr32_O chap_names, vecLong_O chap_part, vecStr32_O chap_entry_first, vecStr32_O chap_entry_last,
+        vecStr32_O entries, vecStr32_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, SQLite::Database &db)
 {
+    SQLite::Statement stmt_select(
+            db,
+            R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)"
+            );
+
     Long ind0 = 0, ind1 = 0, ikey = -500, chapNo = -1, chapNo_tot = 0, partNo = 0;
     vecStr32 keys{ U"\\part", U"\\chapter", U"\\entry", U"\\bibli"};
     //keys.push_back(U"\\entry"); keys.push_back(U"\\chapter"); keys.push_back(U"\\part");
     
-    Str32 title, title2; // chinese entry name, chapter name, or part name
+    Str32 title; // chinese entry name, chapter name, or part name
     Str32 entry; // entry label
     Str32 str, str2, toc, class_draft;
-    VecChar mark(entries.size()); copy(mark, 0); // check repeat
 
     part_ids.clear(); part_names.clear(); chap_first.clear(); chap_last.clear();
     chap_ids.clear(); chap_names.clear(); chap_part.clear();
-    entry_first.clear(); entry_last.clear(); entry_chap.clear();
-
+    chap_entry_first.clear(); chap_entry_last.clear(); entry_chap.clear();
 
     part_ids.push_back(U""); part_names.push_back(U"无"); chap_first.push_back(U""); chap_last.push_back(U"");
     chap_ids.push_back(U""); chap_names.push_back(U"无");  chap_part.push_back(0);
-    entry_first.push_back(U""); entry_last.push_back(U"");
-    entry_part.resize(entries.size(), 0);
-    entry_chap.resize(entries.size(), 0);
+    chap_entry_first.push_back(U""); chap_entry_last.push_back(U"");
 
     read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
@@ -1534,37 +1533,39 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
             break;
         if (ikey == 2) {
             // ============ found "\entry" ==============
-            // get chinese title and entry label
+            if (last_command != 'e' && last_command != 'c')
+                throw Str32(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
+            if (last_command == 'c')
+                chap_entry_last.push_back(entry);
+
+            // parse \entry{title}{entry}
             command_arg(title, str, ind1);
+            command_arg(entry, str, ind1, 1);
             replace(title, U"\\ ", U" ");
             if (title.empty())
                 throw Str32(U"main.tex 中词条中文名不能为空");
-            if (last_command != 'e' && last_command != 'c') 
-                throw Str32(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
-            if (last_command == 'c' && !entry.empty())
-                entry_last.push_back(entry);
-            command_arg(entry, str, ind1, 1);
-            Long n = search(entry, entries);
+            if (search(entry, entries) >= 0)
+                throw Str32(U"main.tex 中词条重复： " + entry);
+            if (last_command == 'c')
+                chap_entry_first.push_back(entry);
+
+            // get db info
+            stmt_select.bind(1, u8(entry));
+            if (!stmt_select.executeStep())
+                throw Str32(U"数据库中找不到 main.tex 中词条： " + entry);
+            titles.push_back(u32(stmt_select.getColumn(0)));
+            is_draft.push_back((int)stmt_select.getColumn(1));
+
+            if (title != titles.back())
+                throw Str32(U"目录标题 “" + title + U"” 与数据库中词条标题 “" + titles.back() + U"” 不符！");
+
             // insert entry into html table of contents
-            if (gv::is_wiki)
-                class_draft = (is_draft[n] == U"1") ? U"class=\"draft\" " : U"";
+            class_draft = (is_draft.back()) ? U"class=\"draft\" " : U"";
             ind0 = insert(toc, U"<a " + class_draft + U"href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
                                + title + U"</a>　\n", ind0);
-            // record Chinese title
-            if (n < 0)
-                throw Str32(U"main.tex 中词条文件 " + entry + " 未找到！");
-            if (last_command == 'c')
-                entry_first.push_back(entry);
-            read(str2, gv::path_in + U"contents/" + entry + U".tex"); CRLF_to_LF(str2);
-            get_title(title2, str2);
-            if (title != title2)
-                throw Str32(U"目录标题 “" + title + U"” 与词条标题 “" + title2 + U"” 不符！");
-            if (mark[n] == 0)
-                mark[n] = 1;
-            else
-                throw Str32(U"main.tex 中词条文件 " + entry + " 重复！");
-            entry_part[n] = partNo;
-            entry_chap[n] = chapNo_tot;
+
+            entry_part.push_back(partNo);
+            entry_chap.push_back(chapNo_tot);
             ++ind1; last_command = 'e';
         }
         else if (ikey == 1) {
@@ -1633,7 +1634,7 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
     toc.insert(ind0, U"</p>\n</div>");
 
     chap_last.push_back(chap_ids.back());
-    entry_last.push_back(entry);
+    chap_entry_last.push_back(entry);
 
     // list parts
     ind0 = toc.find(U"PhysWikiPartList", 0);
@@ -2297,8 +2298,8 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(vector<DGnode> &tree, vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name,
-                     vecLong_I chap_ind, vecStr32_I part_name, vecLong_I part_ind, vecLong_I links)
+inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name,
+                     vecLong_I entry_chap, vecStr32_I part_name, vecLong_I entry_part, SQLite::Database &db)
 {
     Str32 str;
     // write part names
@@ -2319,9 +2320,9 @@ inline Long dep_json(vector<DGnode> &tree, vecStr32_I entries, vecStr32_I titles
         if (titles[i].empty())
             continue;
         str += U"    {\"id\": \"" + entries[i] + U"\"" +
-            ", \"part\": " + num2str32(part_ind[i]) +
-            ", \"chap\": " + num2str32(chap_ind[i]) +
-            ", \"title\": \"" + titles[i] + U"\""
+               ", \"part\": " + num2str32(entry_part[i]) +
+               ", \"chap\": " + num2str32(entry_chap[i]) +
+               ", \"title\": \"" + titles[i] + U"\""
             ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
@@ -2440,8 +2441,10 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
 }
 
 // delete and rewrite "chapters" and "parts" table of sqlite db
-inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, vecStr32_I chap_first, vecStr32_I chap_last,
-    vecStr32_I chap_ids, vecStr32_I chap_name, vecLong_I chap_part, vecStr32_I entry_first, vecStr32_I entry_last)
+inline void db_update_parts_chapters(
+        vecStr32_I part_ids, vecStr32_I part_name, vecStr32_I chap_first, vecStr32_I chap_last,
+        vecStr32_I chap_ids, vecStr32_I chap_name, vecLong_I chap_part,
+        vecStr32_I entry_first, vecStr32_I entry_last)
 {
     cout << "updating sqlite database (" << part_name.size() << " parts, "
          << chap_name.size() << " chapters) ..." << endl;
@@ -2483,10 +2486,10 @@ inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, 
 }
 
 // update "entries" table of sqlite db, based on the info from main.tex
-inline void db_update_entries_from_toc
-    (vecStr32_I entries, vecLong_I part_ind, vecStr32_I part_ids,
-     vecLong_I chap_ind, vecStr32_I chap_ids,
-     VecLong_I entry_order)
+inline void db_update_entries_from_toc(
+        vecStr32_I entries, vecLong_I entry_part, vecStr32_I part_ids,
+        vecLong_I entry_chap, vecStr32_I chap_ids,
+        VecLong_I entry_order)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
@@ -2533,12 +2536,12 @@ inline void db_update_entries_from_toc
             get_row(row_str, db.getHandle(), "entries", "id", entry, {"caption", "keys", "pentry", "part", "chapter"});
             get_row(row_int, db.getHandle(), "entries", "id", entry, {"order", "draft", "deleted"});
             bool changed = false;
-            if (part_ids[part_ind[i]] != u32(row_str[3])) {
-                SLS_WARN("part has changed from " + row_str[3]+ " to " + part_ids[part_ind[i]]);
+            if (part_ids[entry_part[i]] != u32(row_str[3])) {
+                SLS_WARN("part has changed from " + row_str[3]+ " to " + part_ids[entry_part[i]]);
                 changed = true;
             }
-            if (chap_ids[chap_ind[i]] != u32(row_str[4])) {
-                SLS_WARN("chapter has changed from " + row_str[4] + " to " + chap_ids[chap_ind[i]]);
+            if (chap_ids[entry_chap[i]] != u32(row_str[4])) {
+                SLS_WARN("chapter has changed from " + row_str[4] + " to " + chap_ids[entry_chap[i]]);
                 changed = true;
             }
             if (entry_order[i] != row_int[0]) {
@@ -2547,9 +2550,9 @@ inline void db_update_entries_from_toc
             }
             if (!changed)
                 continue;
-            // cout << "debug: part_ind[i] = " << part_ind[i] << ",  chap_ind[i] = " << chap_ind[i] << endl;
-            stmt_update.bind(3, u8(part_ids[part_ind[i]]));
-            stmt_update.bind(4, u8(chap_ids[chap_ind[i]]));
+            // cout << "debug: entry_part[i] = " << entry_part[i] << ",  entry_chap[i] = " << entry_chap[i] << endl;
+            stmt_update.bind(3, u8(part_ids[entry_part[i]]));
+            stmt_update.bind(4, u8(chap_ids[entry_chap[i]]));
             stmt_update.bind(5, (int)entry_order[i]);
             stmt_update.bind(8, entry);
             stmt_update.exec(); stmt_update.reset();
@@ -2557,11 +2560,11 @@ inline void db_update_entries_from_toc
         else { // entry_exist == false
             SLS_WARN("数据库的 entries 表格中不存在词条（将添加）：" + entry);
             // "id", "caption", "part", "chapter", "order", "keys", "pentry", "draft"
-            cout << entry << " " << titles[i] << " " << part_ids[part_ind[i]] << " " << chap_ids[chap_ind[i]] << " ";
+            cout << entry << " " << titles[i] << " " << part_ids[entry_part[i]] << " " << chap_ids[entry_chap[i]] << " ";
             cout << entry_order[i] << " " << str_keys << " " << str_pentry << " " << isDraft[i] << endl;
             stmt_insert.bind(1, entry);
-            stmt_insert.bind(3, u8(part_ids[part_ind[i]]));
-            stmt_insert.bind(4, u8(chap_ids[chap_ind[i]]));
+            stmt_insert.bind(3, u8(part_ids[entry_part[i]]));
+            stmt_insert.bind(4, u8(chap_ids[entry_chap[i]]));
             stmt_insert.bind(5, (int)entry_order[i]);
             stmt_insert.bind(6, str_keys);
             stmt_insert.bind(7, str_pentry);
@@ -2844,15 +2847,13 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline()
 {
-    vecStr32 entries; // name in \entry{}, also .tex file name
-    VecLong entry_order; // entries[i] is the entry_order[i] -th entry in main.tex
+    vecStr32 entries; // entries.id
+    VecLong entry_order; // entries.order
     vecLong entry_part, entry_chap, chap_part; // toc part & chapter number of each entries[i]
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
-    vecStr32 isDraft;  // if the corresponding entry is a draft ('1' or '0')
     vector<vecLong> img_orders;
     vector<vecStr32> img_ids, img_hashes;
-    vecStr32 imgs; // all images in figures/ except .pdf
     vecStr32 part_ids, part_name, chap_first, chap_last; // \part{}
     vecStr32 chap_ids, chap_name, entry_first, entry_last; // \chapter{}
     Long Ntoc; // number of entries in table of contents
@@ -2862,28 +2863,16 @@ inline void PhysWikiOnline()
     bibliography(bib_labels, bib_details);
     db_update_bib(bib_labels, bib_details);
 
-    Ntoc = entries_titles(titles, entries, isDraft, entry_order);
+    Ntoc = entries_titles(titles, entries, entry_order);
     write_vec_str(titles, gv::path_data + U"titles.txt");
     write_vec_str(entries, gv::path_data + U"entries.txt");
-    if (gv::is_wiki)
-        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
     file_remove(u8(gv::path_data) + "entry_order.matt");
     Matt matt(u8(gv::path_data) + "entry_order.matt", "w");
     save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     matt.close();
     define_newcommands(rules);
 
-    cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
-    table_of_contents(part_ids, part_name, chap_first, chap_last,
-                      chap_ids, chap_name, chap_part, entry_first, entry_last,
-                      entry_part, entry_chap, entries, isDraft);
-    file_list_ext(imgs, gv::path_in + U"figures/", U"png", true, true);
-    file_list_ext(imgs, gv::path_in + U"figures/", U"svg", true, true);
-    VecChar imgs_mark(imgs.size()); // check if image has been used
-    if (imgs.size() > 0) copy(imgs_mark, 0);
 
-    // dependency info from \pentry, entries[link[2*i]] is in \pentry{} of entries[link[2*i+1]]
-    vecLong links;
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
     vecBool isdraft(entries.size());
@@ -2914,18 +2903,20 @@ inline void PhysWikiOnline()
         isdraft[i] = draft;
     }
 
-    write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
-
+    cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
+    vecBool is_drafts;
+    table_of_contents(part_ids, part_name, chap_first, chap_last,
+                      chap_ids, chap_name, chap_part, entry_first, entry_last,
+                      entries, titles, is_drafts, entry_part, entry_chap, db);
+    db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids, entry_order);
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
-    db_update_figures(entries, img_ids, img_orders, img_hashes);
-    db_update_labels(entries, v_labels, v_label_orders);
+
+    // db_update_figures(entries, img_ids, img_orders, img_hashes);
+    // db_update_labels(entries, v_labels, v_label_orders);
 
     // generate dep.json
-    vector<DGnode> tree;
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
-        dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
-    // db_update_entries(entries, titles, entry_part, part_ids, entry_chap,
-    //    chap_ids, entry_order, isDraft, keywords_list, tree);
+        dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, db);
 
     // 2nd loop through tex files
     // deal with autoref
@@ -2958,37 +2949,23 @@ inline void PhysWikiOnline()
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline Long PhysWikiOnlineN(vecStr32_I entryN)
+// requires ids.txt and labels.txt output from `PhysWikiOnline()`
+inline void PhysWikiOnlineN(vecStr32_I entryN)
 {
-    // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
-    // the number in id is the n-th occurrence of the same type of environment
-    vecStr32 ids, entries, titles, isDraft;
-    if (!file_exist(gv::path_data + U"entries.txt"))
-        throw Str32(U"内部错误： " + gv::path_data + U"entries.txt 不存在");
-    read_vec_str(entries, gv::path_data + U"entries.txt");
-    if (!file_exist(gv::path_data + U"titles.txt"))
-        throw Str32(U"内部错误： " + gv::path_data + U"titles.txt 不存在");
-    read_vec_str(titles, gv::path_data + U"titles.txt");
-    if (!file_exist(gv::path_data + U"entry_order.matt"))
-        throw Str32(U"内部错误： " + gv::path_data + U"entry_order.matt 不存在");
-    if (gv::is_wiki) {
-        read_vec_str(isDraft, gv::path_data + U"is_draft.txt");
-        isDraft.resize(entries.size(), U"1");
-    }
-    VecLong entry_order;
-    Matt matt(u8(gv::path_data) + "entry_order.matt", "r");
-    Long Ntoc; // number of entries in main.tex
-    try { load(entry_order, "entry_order", matt); load(Ntoc, "Ntoc", matt); }
-    catch (...) { throw Str32(U"内部错误： entry_order.matt 读取错误"); }
-    matt.close();
-    if (entries.size() != titles.size())
-        throw Str32(U"内部错误： entries.txt 与 titles.txt 长度不符");
-    if (entry_order.size() < size(entries))
-        resize_cpy(entry_order, entries.size(), -1);
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    SQLite::Statement stmt_select(
+            db,
+            R"(SELECT "caption", "keys", "pentry", "draft", "issues", "issueOther" from "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_insert(
+            db,
+            R"(INSERT INTO "entries" ("id", "caption", "keys", "pentry", "draft", "issues", "issueOther") )"
+            R"(VALUES (?, ?, ?, ?, ?, ?, ?);)");
+    SQLite::Statement stmt_update(
+            db,
+            R"(UPDATE "entries" SET "caption"=?, "keys"=?, "pentry"=?, "draft"=?, "issues"=?, "issueOther"=? WHERE "id"=?;)");
 
     vecStr32 rules;  // for newcommand()
     define_newcommands(rules);
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
 
     // 1st loop through tex files
     // files are processed independently
@@ -2996,59 +2973,46 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 
     // main process
-    vecLong links;
-    for (Long i = 0; i < size(entryN); ++i) {
-        Long ind = search(entryN[i], entries);
-        if (ind < 0)
-            throw Str32(U"entries.txt 中未找到该词条");
+    vecLong links; Str32 db_titles;
+    Bool isdraft; vecStr32 keywords;
+    vecStr32 img_ids, img_hashes, labels, pentries; vecLong img_orders, label_orders;
 
-        cout << std::setw(5) << std::left << ind
-            << std::setw(10) << std::left << entries[ind]
-            << std::setw(20) << std::left << titles[ind] << endl;
-        VecChar not_used1(0); vecStr32 not_used2, not_used3;
-        vecLong not_used4;
-        vecStr32 pentries;
-        Bool isdraft; vecStr32 keywords;
-        vecStr32 img_ids, img_hashes; vecLong img_orders;
+    for (Long i = 0; i < size(entryN); ++i) {
+        // get title
+        stmt_select.bind(1, u8(entryN[i]));
+        if (stmt_select.executeStep())
+            db_titles[i] = u32(stmt_select.getColumn(0));
+        stmt_select.reset();
+
+        cout << std::left << entryN[i]
+             << std::setw(20) << std::left << db_titles[i] << endl;
         PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft,
-                        keywords, not_used3, not_used4, pentries, entries[i],
+                        keywords, labels, label_orders, pentries, entryN[i],
                         rules, db);
-        if (gv::is_wiki)
-            isDraft[ind] = isdraft ? U"1" : U"0";
     }
 
-    if (gv::is_wiki)
-        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
-
-    // 2nd loop through tex files
-    // deal with autoref
-    // need `IdList` and `LabelList` from 1st loop
-    cout << "\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
-
+    cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str32 html, fname;
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+    SQLite::Statement stmt_select2(db,
+                                  R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by(db,
-        R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+                                         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
     SQLite::Statement stmt_select_fig(db,
-        R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+                                      R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by_fig(db,
-        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
     for (Long i = 0; i < size(entryN); ++i) {
-        Long ind = search(entryN[i], entries);
-        cout << std::setw(5) << std::left << ind
-            << std::setw(10) << std::left << entries[ind]
-            << std::setw(20) << std::left << titles[ind] << endl;
-        fname = gv::path_out + entries[ind] + ".html";
+        cout    << std::setw(5)  << std::left << i
+                << std::setw(10)  << std::left << entryN[i]
+                << std::setw(20) << std::left << db_titles[i] << endl;
+        fname = gv::path_out + entryN[i] + ".html";
         read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
-        autoref(entries[ind], html, stmt_select, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by_fig);
+        autoref(html, entryN[i], stmt_select2, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
         write(html, fname); // save html file
         file_remove(u8(fname) + ".tmp");
     }
-
-    cout << "\n\n" << endl;
-    return 0;
+    cout << endl;
 }
 
 // search all commands
