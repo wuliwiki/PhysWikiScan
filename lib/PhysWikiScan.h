@@ -1609,7 +1609,7 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
             Long ind_label = find_command(str, U"label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
             if (ind_label < 0 || ind_label > ind_LF)
-                throw Str32(U"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
+                throw Str32(U"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}");
             Str32 label; command_arg(label, str, ind_label);
             chap_ids.push_back(label_id(label));
             if (last_command == 'p')
