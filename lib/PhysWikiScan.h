@@ -1280,8 +1280,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
     Str32 str_entry;
     CRLF_to_LF(str);
     titles.resize(entries.size());
-    if (gv::is_wiki)
-        isDraft.resize(entries.size());
+    isDraft.resize(entries.size());
     Str32 str0 = str;
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
@@ -1305,11 +1304,9 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
         Long ind = search(entry, entries);
         if (ind < 0)
             throw Str32(U"main.tex 中词条文件 " + entry + U" 未找到");
-        if (gv::is_wiki) {
-            read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
-            CRLF_to_LF(str_entry);
-            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
-        }
+        read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
+        CRLF_to_LF(str_entry);
+        isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
         if (entry_order[ind] < 0)
             entry_order[ind] = entry_order1;
         else
@@ -1345,11 +1342,9 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecStr32_O isD
         Long ind = search(entry, entries);
         if (ind < 0 || !titles[ind].empty())
             continue;
-        if (gv::is_wiki) {
-            read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
-            CRLF_to_LF(str_entry);
-            isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
-        }
+        read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
+        CRLF_to_LF(str_entry);
+        isDraft[ind] = is_draft(str_entry) ? U"1" : U"0";
         titles[ind] = title;
     }
 
@@ -2917,8 +2912,7 @@ inline void PhysWikiOnline()
         isdraft[i] = tmp;
     }
 
-    if (gv::is_wiki)
-        write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
+    write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
     db_update_figures(entries, img_ids, img_orders, img_hashes);
@@ -2928,7 +2922,8 @@ inline void PhysWikiOnline()
     vector<DGnode> tree;
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
         dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
-    db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree);
+    db_update_entries(entries, titles, entry_part, part_ids, entry_chap,
+        chap_ids, entry_order, isDraft, keywords_list, tree);
 
     // 2nd loop through tex files
     // deal with autoref
