@@ -629,7 +629,6 @@ inline Long depend_entry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
             if (ind1 < 0)
                 return N;
             command_arg(depEntry, temp, ind1, 0, 't');
-            Long i; Bool flag = false;
             if (!exist(db.getHandle(), "entries", "id", u8(depEntry)))
                 throw Str32(U"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             pentries.push_back(depEntry);
@@ -2117,29 +2116,47 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     vecStr32_O pentries, Str32_I entry, vecStr32_I rules,
     SQLite::Database &db)
 {
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
-    stmt_select.bind(1, u8(entry));
-    if (!stmt_select.executeStep()) {
-        SLS_WARN(U"内部错误： 词条不存在数据库中， 将由 PhysWikiScan 添加： " + entry);
-        SQLite::Statement stmt_select(db,
-            R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
-    }
-    Str32 db_title(u32(stmt_select.getColumn(1)));
-    Long order = (int)stmt_select.getColumn(3);
+    // insert a new entry (simulate what editor does)
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
 
     Str32 str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
     CRLF_to_LF(str);
+
+    // read title from first comment
     Str32 title;
+    get_title(title, str);
+    draft = is_draft(str);
+    Str32 db_title, authors, db_keys_str, db_pentry_str;
+    Long order, db_draft;
+    SQLite::Statement stmt_select
+            (db,
+             R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
+    stmt_select.bind(1, u8(entry));
+    if (!stmt_select.executeStep()) {
+        SLS_WARN(U"内部错误： 词条不存在数据库中， 将添加： " + entry);
+        stmt_insert.bind(1, u8(entry));
+        stmt_insert.bind(2, u8(title));
+        stmt_insert.exec(); stmt_insert.reset();
+        db_title = title;
+        authors = U"待更新";
+        order = 0; // 0 代表不在目录中
+        db_draft = 2; // 2 代表未知
+    } else {
+        db_title = u32(stmt_select.getColumn(0));
+        authors = u32(stmt_select.getColumn(1));
+        order = (int)stmt_select.getColumn(2);
+        db_keys_str = u32(stmt_select.getColumn(3));
+        db_pentry_str = u32(stmt_select.getColumn(4));
+        db_draft = (int)stmt_select.getColumn(5);
+    }
+
     // read html template and \newcommand{}
     Str32 html;
     read(html, gv::path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
 
-    // read title from first comment
-    get_title(title, str);
-    draft = is_draft(str);
 
     // check language: U"\n%%eng\n" at the end of file means english, otherwise chinese
     if ((size(str) > 7 && str.substr(size(str) - 7) == U"\n%%eng\n") ||
@@ -2162,8 +2179,9 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
             throw Str32(U"内部错误： \"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
 
-    if (!db_title.empty() && title != db_title)
-        throw Str32(U"检测到标题改变（" + db_title + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
+    // TODO: enable this when editor can do the rename in db
+//    if (!db_title.empty() && title != db_title)
+//        throw Str32(U"检测到标题改变（" + db_title + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
 
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1)
@@ -2258,6 +2276,22 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
 
     // save html file
     write(html, gv::path_out + entry + ".html.tmp");
+
+    // update db
+    Str32 key_str; join(key_str, keywords);
+    Str32 pentry_str; join(pentry_str, pentries);
+    if (title != db_title || key_str != db_keys_str
+        || draft != db_draft || pentry_str != db_pentry_str) {
+        SQLite::Statement stmt_update
+                (db,
+                 R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "pentry"=? )"
+                 R"(WHERE "id"=?;)");
+        stmt_update.bind(1, u8(title));
+        stmt_update.bind(2, u8(key_str));
+        stmt_update.bind(3, (int) draft);
+        stmt_update.bind(4, u8(pentry_str));
+        stmt_update.exec(); stmt_update.reset();
+    }
     return 0;
 }
 
@@ -2448,15 +2482,17 @@ inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, 
     cout << "done." << endl;
 }
 
-// update "entries" table of sqlite db
-inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecStr32_I part_ids, vecLong_I chap_ind, vecStr32_I chap_ids,
-    VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
-    const vector<DGnode> &tree)
+// update "entries" table of sqlite db, based on the info from main.tex
+inline void db_update_entries_from_toc
+    (vecStr32_I entries, vecLong_I part_ind, vecStr32_I part_ids,
+     vecLong_I chap_ind, vecStr32_I chap_ids,
+     VecLong_I entry_order)
 {
-    cout << "updating sqlite database (" << entries.size() << " entries) ..." << endl; cout.flush();
+    cout << "updating sqlite database (" <<
+        entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     check_foreign_key(db.getHandle());
-    // get a list of entries
+    // get a list of entries (not deleted) from db
     vecStr32 db_entries;
     vecLong db_entries_deleted;
     get_column(db_entries_deleted, db_entries, db.getHandle(), "entries", "deleted", "id");
@@ -2483,23 +2519,10 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
     
     // update an existing entry
     SQLite::Statement stmt_update(db,
-        R"(UPDATE "entries" SET )"
-        R"("caption"=?, "keys"=?, "part"=?, "chapter"=?, "order"=?, "draft"=?, "pentry"=? )"
-        R"(WHERE "id"=?;)");
-    Str str_keys, str_pentry;
+        R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
         Str entry = u8(entries[i]);
-
-        str_keys.clear();
-        for (auto &key : keywords_list[i]) str_keys += u8(key) + '|';
-        if (!str_keys.empty()) str_keys.pop_back();
-
-        str_pentry.clear();
-        for (auto next : tree[i]) {
-            str_pentry += u8(entries[next]) + " ";
-        }
-        if (!str_pentry.empty()) str_pentry.pop_back();
 
         // does entry already exist (expected)?
         Bool entry_exist;
@@ -2510,14 +2533,6 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
             get_row(row_str, db.getHandle(), "entries", "id", entry, {"caption", "keys", "pentry", "part", "chapter"});
             get_row(row_int, db.getHandle(), "entries", "id", entry, {"order", "draft", "deleted"});
             bool changed = false;
-            if (u8(titles[i]) != row_str[0]) {
-                SLS_WARN("caption has changed from " + row_str[0] + " to " + u8(titles[i]));
-                changed = true;
-            }
-            if (str_keys != row_str[1]) {
-                SLS_WARN("keys has changed from " + row_str[1] + " to " + str_keys);
-                changed = true;
-            }
             if (part_ids[part_ind[i]] != u32(row_str[3])) {
                 SLS_WARN("part has changed from " + row_str[3]+ " to " + part_ids[part_ind[i]]);
                 changed = true;
@@ -2530,28 +2545,12 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
                 SLS_WARN("section has changed from " + to_string(row_int[0]) + " to " + to_string(entry_order[i]));
                 changed = true;
             }
-            Long draft = (isDraft[i] == U"0" ? 0 : 1);
-            if (draft != row_int[1]) {
-                SLS_WARN("draft has changed from " + to_string(row_int[1]) + " to " + to_string(draft));
-                changed = true;
-            }
-            if (str_pentry != row_str[2]) {
-                SLS_WARN("pentry has changed from " + row_str[2] + " to " + str_pentry);
-                changed = true;
-            }
-            if (row_int[2]) {
-                SLS_WARN("deleted has changed from " + to_string(row_int[2]) + " to 1");
-            }
             if (!changed)
                 continue;
-            stmt_update.bind(1, u8(titles[i]));
-            stmt_update.bind(2, str_keys);
             // cout << "debug: part_ind[i] = " << part_ind[i] << ",  chap_ind[i] = " << chap_ind[i] << endl;
             stmt_update.bind(3, u8(part_ids[part_ind[i]]));
             stmt_update.bind(4, u8(chap_ids[chap_ind[i]]));
             stmt_update.bind(5, (int)entry_order[i]);
-            stmt_update.bind(6, (int)draft);
-            stmt_update.bind(7, str_pentry);
             stmt_update.bind(8, entry);
             stmt_update.exec(); stmt_update.reset();
         }
@@ -2561,13 +2560,11 @@ inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I p
             cout << entry << " " << titles[i] << " " << part_ids[part_ind[i]] << " " << chap_ids[chap_ind[i]] << " ";
             cout << entry_order[i] << " " << str_keys << " " << str_pentry << " " << isDraft[i] << endl;
             stmt_insert.bind(1, entry);
-            stmt_insert.bind(2, u8(titles[i]));
             stmt_insert.bind(3, u8(part_ids[part_ind[i]]));
             stmt_insert.bind(4, u8(chap_ids[chap_ind[i]]));
             stmt_insert.bind(5, (int)entry_order[i]);
             stmt_insert.bind(6, str_keys);
             stmt_insert.bind(7, str_pentry);
-            stmt_insert.bind(8, isDraft[i] == U"0" ? 0 : 1);
             stmt_insert.exec(); stmt_insert.reset();
         }
     }
@@ -2927,8 +2924,8 @@ inline void PhysWikiOnline()
     vector<DGnode> tree;
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
         dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
-    db_update_entries(entries, titles, entry_part, part_ids, entry_chap,
-        chap_ids, entry_order, isDraft, keywords_list, tree);
+    // db_update_entries(entries, titles, entry_part, part_ids, entry_chap,
+    //    chap_ids, entry_order, isDraft, keywords_list, tree);
 
     // 2nd loop through tex files
     // deal with autoref
@@ -2957,22 +2954,7 @@ inline void PhysWikiOnline()
     }
     cout << endl;
 
-    // warn unused figures
-    Bool warn_fig = false;
-    for (Long i = 0; i < imgs_mark.size(); ++i) {
-        if (imgs_mark[i] == 0) {
-            if (warn_fig == false) {
-                cout << u8"========== 警告： 以下图片没有被使用 =========" << endl;
-                warn_fig = true;
-            }
-            cout << imgs[i];
-            if (imgs[i].substr(imgs[i].size() - 3, 3) == U"svg")
-                cout << " & pdf";
-            cout << endl;
-        }
-    }
-    if (warn_fig)
-        cout << u8"============================================" << endl;
+    // TODO: warn unused figures, based on "ref_by"
 }
 
 // like PhysWikiOnline, but convert only specified files
@@ -3025,10 +3007,12 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
             << std::setw(20) << std::left << titles[ind] << endl;
         VecChar not_used1(0); vecStr32 not_used2, not_used3;
         vecLong not_used4;
+        vecStr32 pentries;
         Bool isdraft; vecStr32 keywords;
         vecStr32 img_ids, img_hashes; vecLong img_orders;
-        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft, keywords, not_used3, not_used4,
-                        links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2, db);
+        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft,
+                        keywords, not_used3, not_used4, pentries, entries[i],
+                        rules, db);
         if (gv::is_wiki)
             isDraft[ind] = isdraft ? U"1" : U"0";
     }
