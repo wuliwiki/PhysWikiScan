@@ -1615,7 +1615,7 @@ inline void table_of_contents(vecStr32_O part_ids, vecStr32_O part_names, vecStr
                 ind0 = insert(toc, U"</p>", ind0);
             chap_names.push_back(title);
             chap_part.push_back(partNo);
-            ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo] + U"章 " + title
+            ind0 = insert(toc, U"\n\n<h3><b>第" + chineseNo[chapNo+1] + U"章 " + title
                 + U"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1; last_command = 'c';
         }
