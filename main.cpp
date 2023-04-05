@@ -370,6 +370,7 @@ int main(int argc, char *argv[]) {
         catch (Str_I msg) {
             cerr << msg << endl; return 0;
         }
+        db_update_bib(bib_labels, bib_details);
     }
     else if (args[0] == U"--history" && args.size() <= 2) {
         Str32 path;
