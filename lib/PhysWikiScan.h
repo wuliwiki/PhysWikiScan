@@ -2920,7 +2920,15 @@ inline void PhysWikiOnline()
     if (gv::is_wiki)
         write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
+    db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
+    db_update_figures(entries, img_ids, img_orders, img_hashes);
     db_update_labels(entries, v_labels, v_label_orders);
+
+    // generate dep.json
+    vector<DGnode> tree;
+    if (file_exist(gv::path_out + U"../tree/data/dep.json"))
+        dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
+    db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree);
 
     // 2nd loop through tex files
     // deal with autoref
@@ -2948,15 +2956,6 @@ inline void PhysWikiOnline()
         file_remove(u8(fname) + ".tmp");
     }
     cout << endl;
-    
-    // generate dep.json
-    vector<DGnode> tree;
-    if (file_exist(gv::path_out + U"../tree/data/dep.json"))
-        dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
-
-    db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
-    db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree);
-    db_update_figures(entries, img_ids, img_orders, img_hashes);
 
     // warn unused figures
     Bool warn_fig = false;
