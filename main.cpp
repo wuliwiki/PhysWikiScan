@@ -300,22 +300,11 @@ int main(int argc, char *argv[]) {
     else if (args[0] == U"--autoref" && args.size() == 4) {
         // check a label, add one if necessary
         // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
-        vecStr32 labels, ids;
-        if (file_exist(gv::path_data + U"labels.txt")) {
-            read_vec_str(labels, gv::path_data + U"labels.txt");
-            Long ind = find_repeat(labels);
-            if (ind >= 0) {
-                cerr << u8"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
-                return 0;
-            }
-        }
-        if (file_exist(gv::path_data + U"ids.txt"))
-            read_vec_str(ids, gv::path_data + U"ids.txt");
         Str32 label;
         Long ret;
-        try {ret = check_add_label(label, args[1], args[2],
-            atoi(u8(args[3]).c_str()), labels, ids);}
-        catch (Str32_I msg) {
+        try {
+            ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()));
+        } catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
@@ -324,16 +313,6 @@ int main(int argc, char *argv[]) {
         vecStr32 output;
         if (ret == 0) { // added
             Str32 id = args[2] + args[3];
-            Long i = search(label, labels);
-            if (i < 0) {
-                labels.push_back(label);
-                ids.push_back(id);
-            }
-            else {
-                ids[i] = id;
-            }
-            write_vec_str(labels, gv::path_data + U"labels.txt");
-            write_vec_str(ids, gv::path_data + U"ids.txt");
             output = { label, U"added" };
         }
         else // ret == 1, already exist
@@ -344,22 +323,10 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--autoref-dry" && args.size() == 4) {
         // check a label only, without adding
-        vecStr32 labels, ids;
-        if (file_exist(gv::path_data + U"labels.txt")) {
-            read_vec_str(labels, gv::path_data + U"labels.txt");
-            Long ind = find_repeat(labels);
-            if (ind >= 0) {
-                cerr << u8"内部错误： labels.txt 存在重复：" + labels[ind] << endl;
-                return 0;
-            }
-        }
-        if (file_exist(gv::path_data + U"ids.txt"))
-            read_vec_str(ids, gv::path_data + U"ids.txt");
         Str32 label;
         Long ret;
         try {
-            ret = check_add_label_dry(label, args[1], args[2],
-                atoi(u8(args[3]).c_str()), labels, ids);
+            ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()), true);
         }
         catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
@@ -374,7 +341,6 @@ int main(int argc, char *argv[]) {
             output = { label, U"exist" };
         cout << output[0] << endl;
         cout << output[1] << endl;
-        write_vec_str(output, gv::path_data + U"autoref.txt");
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process a single entry

@@ -1007,28 +1007,34 @@ void new_label_name(Str32_O label, Str32_I envName, Str32_I entry, Str32_I str)
 // ind is not the label number, but the displayed number
 // if exist, return 1, output label
 // if doesn't exist, return 0
-Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
-    vecStr32_I labels, vecStr32_I ids)
+// dry_run : don't actually modify tex file
+Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_I dry_run = false)
 {
     Long ind0 = 0;
     Str32 label0, newtab;
 
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+
     while (1) {
-        ind0 = search(type + num2str(ind), ids, ind0);
-        if (ind0 < 0)
+        SQLite::Statement stmt_select(db,
+            R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
+        stmt_select.bind(1, u8(type));
+        stmt_select.bind(2, u8(entry));
+        stmt_select.bind(3, (int)ind);
+        if (!stmt_select.executeStep())
             break;
-        if (label_entry_old(labels[ind0]) != entry) {
-            ++ind0; continue;
-        }
-        label = labels[ind0];
+        label = u32(stmt_select.getColumn(0));
         return 1;
     }
 
     // label does not exist
+    if (type == U"fig")
+        throw Str32(U"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加。");
+
+    // insert \label{} command
     Str32 full_name = gv::path_in + "/contents/" + entry + ".tex";
-    if (!file_exist(full_name)) {
+    if (!file_exist(full_name))
         throw Str32(U"文件不存在： " + entry + ".tex");
-    }
     Str32 str;
     read(str, full_name);
 
@@ -1042,9 +1048,8 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
         U"theorem", U"corollary", U"example", U"exercise", U"table"};
 
     Long idNum = search(type, types);
-    if (idNum < 0) {
+    if (idNum < 0)
         throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
-    }
     
     // count environment display number starting at ind4
     Intvs intvEnv;
@@ -1072,9 +1077,11 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
             if (idN == ind) {
                 new_label_name(label, type, entry, str);
                 ind0 = skip_command(str, ind0, 1);
-                str.insert(ind0, U"\\label{" + label + "}");
-                write(str, full_name);
-                return 0;
+                if (!dry_run) {
+                    str.insert(ind0, U"\\label{" + label + "}");
+                    write(str, full_name);
+                }
+                break;
             }
             if (ienv > 0) {// found gather or align
                 throw Str32(U"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
@@ -1085,15 +1092,18 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
                         if (idN == ind) {
                             new_label_name(label, type, entry, str);
                             ind0 = skip_command(str, ind0, 1);
-                            str.insert(i + 2, U"\n\\label{" + label + "}");
-                            write(str, full_name);
-                            return 0;
+                            if (!dry_run) {
+                                str.insert(i + 2, U"\n\\label{" + label + "}");
+                                write(str, full_name);
+                            }
+                            goto break2;
                         }
                     }        
                 }
             }
             ++ind0;
         }
+        break2: ;
     }
     else if (type == U"sub") { // add subsection labels
         Long ind0 = -1;
@@ -1104,138 +1114,31 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind,
         }
         ind0 = skip_command(str, ind0, 1);
         new_label_name(label, type, entry, str);
-        str.insert(ind0, U"\\label{" + label + "}");
-        write(str, full_name);
-        return 0;
+        if (!dry_run) {
+            str.insert(ind0, U"\\label{" + label + "}");
+            write(str, full_name);
+        }
     }
     else { // add environment labels
-        if (type == U"fig")
-            throw Str32(U"每个图片创建时都应该存在 label， 如果没有请手动在 \\caption{} 后面添加。");
         Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
         if (ind > Nid)
             throw Str32(U"被引用对象不存在");
 
         new_label_name(label, type, entry, str);
         // this doesn't work for figure invironment, since there is an [ht] option
-        str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
-        write(str, full_name);
-        return 0;
-    }
-}
-
-// check only, don't add label
-Long check_add_label_dry(Str32_O label, Str32_I entry, Str32_I type, Long ind,
-    vecStr32_I labels, vecStr32_I ids)
-{
-    Long ind0 = 0;
-    Str32 label0, newtab;
-
-    while (1) {
-        ind0 = search(type + num2str(ind), ids, ind0);
-        if (ind0 < 0)
-            break;
-        if (label_entry_old(labels[ind0]) != entry) {
-            ++ind0; continue;
-        }
-        label = labels[ind0];
-        return 1;
-    }
-
-    // label does not exist
-    Str32 full_name = gv::path_in + "/contents/" + entry + ".tex";
-    if (!file_exist(full_name)) {
-        throw Str32(U"文件不存在： " + entry + ".tex");
-    }
-    Str32 str;
-    read(str, full_name);
-
-    // find comments
-    Intvs intvComm;
-    find_comments(intvComm, str, U"%");
-
-    vecStr32 types = { U"eq", U"fig", U"def", U"lem",
-        U"the", U"cor", U"ex", U"exe", U"tab", U"sub" };
-    vecStr32 envNames = { U"equation", U"figure", U"definition", U"lemma",
-        U"theorem", U"corollary", U"example", U"exercise", U"table" };
-
-    Long idNum = search(type, types);
-    if (idNum < 0) {
-        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
-    }
-
-    // count environment display number starting at ind4
-    Intvs intvEnv;
-    if (type == U"eq") { // add equation labels
-        // count equations
-        ind0 = 0;
-        Long idN = 0;
-        vecStr32 eq_envs = { U"equation", U"gather", U"align" };
-        Str32 env0;
-        while (1) {
-            ind0 = find_command(str, U"begin", ind0);
-            if (ind0 < 0) {
-                throw Str32(U"被引用公式不存在");
-            }
-            if (is_in(ind0, intvComm)) {
-                ++ind0; continue;
-            }
-            command_arg(env0, str, ind0);
-            Long ienv = search(env0, eq_envs);
-            if (ienv < 0) {
-                ++ind0; continue;
-            }
-            // found one of eq_envs
-            ++idN;
-            if (idN == ind) {
-                new_label_name(label, type, entry, str);
-                ind0 = skip_command(str, ind0, 1);
-                str.insert(ind0, U"\\label{" + label + "}");
-                // write(str, full_name);
-                return 0;
-            }
-            if (ienv > 0) {// found gather or align
-                throw Str32(U"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
-                Long ind1 = skip_env(str, ind0);
-                for (Long i = ind0; i < ind1; ++i) {
-                    if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
-                        ++idN;
-                        if (idN == ind) {
-                            new_label_name(label, type, entry, str);
-                            ind0 = skip_command(str, ind0, 1);
-                            str.insert(i + 2, U"\n\\label{" + label + "}");
-                            // write(str, full_name);
-                            return 0;
-                        }
-                    }
-                }
-            }
-            ++ind0;
+        if (!dry_run) {
+            str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
+            write(str, full_name);
         }
     }
-    else if (type == U"sub") { // add subsection labels
-        Long ind0 = -1;
-        for (Long i = 0; i < ind; ++i) {
-            ind0 = find_command(str, U"subsection", ind0 + 1);
-            if (ind0 < 0)
-                throw Str32(U"被引用对象不存在");
-        }
-        ind0 = skip_command(str, ind0, 1);
-        new_label_name(label, type, entry, str);
-        str.insert(ind0, U"\\label{" + label + "}");
-        // write(str, full_name);
-        return 0;
-    }
-    else { // add environment labels
-        Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
-        if (ind > Nid) {
-            throw Str32(U"被引用对象不存在");
-        }
-
-        new_label_name(label, type, entry, str);
-        str.insert(intvEnv.L(ind - 1), U"\\label{" + label + "}");
-        // write(str, full_name);
-        return 0;
-    }
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
+    stmt_insert.bind(1, u8(label));
+    stmt_insert.bind(2, u8(type));
+    stmt_insert.bind(3, u8(entry));
+    stmt_insert.bind(4, int(ind));
+    stmt_insert.exec();
+    return 0;
 }
 
 // add author list
@@ -2546,7 +2449,7 @@ inline void db_update_parts_chapters(vecStr32_I part_ids, vecStr32_I part_name, 
 // update "entries" table of sqlite db
 inline void db_update_entries(vecStr32_I entries, vecStr32_I titles, vecLong_I part_ind, vecStr32_I part_ids, vecLong_I chap_ind, vecStr32_I chap_ids,
     VecLong_I entry_order, vecStr32_I isDraft, const vector<vecStr32> &keywords_list,
-    const vector<DGnode> &tree, vecStr32_I labels)
+    const vector<DGnode> &tree)
 {
     cout << "updating sqlite database (" << entries.size() << " entries) ..." << endl; cout.flush();
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
@@ -2998,7 +2901,6 @@ inline void PhysWikiOnline()
     vecLong links;
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vecStr32 labels; vecLong label_orders;
     vecBool isdraft(entries.size());
     vector<vecStr32> keywords_list(entries.size());
     img_ids.resize(entries.size());
@@ -3021,13 +2923,9 @@ inline void PhysWikiOnline()
         PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], tmp,
                         keywords_list[i], v_labels[i], v_label_orders[i], links, entries, entry_order,
                         titles, Ntoc, i, rules, imgs_mark, imgs);
-        cat(labels, v_labels[i]);
-        cat(label_orders, v_label_orders[i]);
         isdraft[i] = tmp;
     }
 
-    // save id and label data
-    write_vec_str(labels, gv::path_data + U"labels.txt");
     if (gv::is_wiki)
         write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
@@ -3065,7 +2963,7 @@ inline void PhysWikiOnline()
         dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, links);
 
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
-    db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree, labels);
+    db_update_entries(entries, titles, entry_part, part_ids, entry_chap, chap_ids, entry_order, isDraft, keywords_list, tree);
     db_update_figures(entries, img_ids, img_orders, img_hashes);
 
     // warn unused figures
@@ -3087,21 +2985,11 @@ inline void PhysWikiOnline()
 }
 
 // like PhysWikiOnline, but convert only specified files
-// requires ids.txt and labels.txt output from `PhysWikiOnline()`
 inline Long PhysWikiOnlineN(vecStr32_I entryN)
 {
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vecStr32 labels, ids, entries, titles, isDraft;
-    if (!file_exist(gv::path_data + U"labels.txt"))
-        throw Str32(U"内部错误： " + gv::path_data + U"labels.txt 不存在");
-    read_vec_str(labels, gv::path_data + U"labels.txt");
-    Long ind = find_repeat(labels);
-    if (ind >= 0)
-        throw Str32(U"内部错误： labels.txt 存在重复：" + labels[ind]);
-    if (!file_exist(gv::path_data + U"ids.txt"))
-        throw Str32(U"内部错误： " + gv::path_data + U"ids.txt 不存在");
-    read_vec_str(ids, gv::path_data + U"ids.txt");
+    vecStr32 ids, entries, titles, isDraft;
     if (!file_exist(gv::path_data + U"entries.txt"))
         throw Str32(U"内部错误： " + gv::path_data + U"entries.txt 不存在");
     read_vec_str(entries, gv::path_data + U"entries.txt");
@@ -3120,8 +3008,6 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
     try { load(entry_order, "entry_order", matt); load(Ntoc, "Ntoc", matt); }
     catch (...) { throw Str32(U"内部错误： entry_order.matt 读取错误"); }
     matt.close();
-    if (labels.size() != ids.size())
-        throw Str32(U"内部错误： labels.txt 与 ids.txt 长度不符");
     if (entries.size() != titles.size())
         throw Str32(U"内部错误： entries.txt 与 titles.txt 长度不符");
     if (entry_order.size() < size(entries))
@@ -3137,7 +3023,6 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
 
     // main process
     vecLong links;
-    vecLong label_orders(labels.size(), -1);
     for (Long i = 0; i < size(entryN); ++i) {
         Long ind = search(entryN[i], entries);
         if (ind < 0)
@@ -3146,18 +3031,16 @@ inline Long PhysWikiOnlineN(vecStr32_I entryN)
         cout << std::setw(5) << std::left << ind
             << std::setw(10) << std::left << entries[ind]
             << std::setw(20) << std::left << titles[ind] << endl;
-        VecChar not_used1(0); vecStr32 not_used2;
+        VecChar not_used1(0); vecStr32 not_used2, not_used3;
+        vecLong not_used4;
         Bool isdraft; vecStr32 keywords;
         vecStr32 img_ids, img_hashes; vecLong img_orders;
-
-        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft, keywords, labels, label_orders,
+        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft, keywords, not_used3, not_used4,
                         links, entries, entry_order, titles, Ntoc, ind, rules, not_used1, not_used2);
         if (gv::is_wiki)
             isDraft[ind] = isdraft ? U"1" : U"0";
     }
-    
-    write_vec_str(labels, gv::path_data + U"labels.txt");
-    write_vec_str(ids, gv::path_data + U"ids.txt");
+
     if (gv::is_wiki)
         write_vec_str(isDraft, gv::path_data + U"is_draft.txt");
 
