@@ -631,6 +631,8 @@ inline Long depend_entry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
             command_arg(depEntry, temp, ind1, 0, 't');
             if (!exist(db.getHandle(), "entries", "id", u8(depEntry)))
                 throw Str32(U"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
+            if (search(depEntry, pentries) >= 0)
+                throw Str32(U"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
             pentries.push_back(depEntry);
             ++N; ++ind1;
         }
@@ -1242,7 +1244,7 @@ inline Long cite(Str32_IO str, SQLite::Database &db)
 
 // update entries and titles from "contents/*.tex"
 // return the number of entries in main.tex
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, VecLong_O entry_order)
+inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entry_order)
 {
     entries.clear(); titles.clear();
     file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
@@ -2296,52 +2298,72 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     return 0;
 }
 
-// generate json file containing dependency tree
-// empty elements of 'titles' will be ignored
-inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name,
-                     vecLong_I entry_chap, vecStr32_I part_name, vecLong_I entry_part, SQLite::Database &db)
+// get table of content info from db "chapters", in ascending "order"
+inline void db_get_chapters(vecStr32_O ids, vecStr32_O captions, vecStr32_O parts,
+                            SQLite::Database &db)
 {
-    Str32 str;
-    // write part names
-    str += U"{\n  \"parts\": [\n";
-    for (Long i = 0; i < size(part_name); ++i)
-        str += U"    {\"name\": \"" + part_name[i] + "\"},\n";
-    str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
-    // write chapter names
-    str += U"  \"chapters\": [\n";
-    for (Long i = 0; i < size(chap_name); ++i)
-        str += U"    {\"name\": \"" + chap_name[i] + "\"},\n";
-    str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
-    // write entries
-    str += U"  \"nodes\": [\n";
-    for (Long i = 0; i < size(titles); ++i) {
-        if (titles[i].empty())
-            continue;
-        str += U"    {\"id\": \"" + entries[i] + U"\"" +
-               ", \"part\": " + num2str32(entry_part[i]) +
-               ", \"chap\": " + num2str32(entry_chap[i]) +
-               ", \"title\": \"" + titles[i] + U"\""
-            ", \"url\": \"../online/" +
-            entries[i] + ".html\"},\n";
+    SQLite::Statement stmt(db,
+                           R"(SELECT "id", "order", "caption", "part" FROM "chapters" ORDER BY "order" ASC)");
+    vecLong orders;
+    while (stmt.executeStep()) {
+        ids.push_back(u32(stmt.getColumn(0)));
+        orders.push_back((int)stmt.getColumn(1));
+        captions.push_back(u32(stmt.getColumn(2)));
+        parts.push_back(u32(stmt.getColumn(3)));
     }
-    str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
+    for (Long i = 0; i < orders.size(); ++i)
+        if (orders[i] != i)
+            SLS_ERR("something wrong!");
+}
 
-    // report redundency
-    vector<pair<Long,Long>> edges; // learning order
-    for (Long i = 0; i < size(links); i += 2)
-        edges.push_back(make_pair(links[i], links[i+1]));
-    sort(edges.begin(), edges.end());
-    for (Long i = 0; i < size(edges)-1; ++i) {
-        if (edges[i] == edges[i+1]) {
-            Long from, to;  std::tie(from, to) = edges[i];
-            throw Str32(U"预备知识重复： " + titles[from] + " (" + entries[from] + ") -> " + titles[to] + " (" + entries[to] + ")");
-        }
+// get table of content info from db "parts", in ascending "order"
+inline void db_get_parts(vecStr32_O ids, vecStr32_O captions, SQLite::Database &db)
+{
+    SQLite::Statement stmt(db,
+                           R"(SELECT "id", "order", "caption" FROM "parts" ORDER BY "order" ASC)");
+    vecLong orders;
+    while (stmt.executeStep()) {
+        ids.push_back(u32(stmt.getColumn(0)));
+        orders.push_back((int)stmt.getColumn(1));
+        captions.push_back(u32(stmt.getColumn(2)));
+    }
+    for (Long i = 0; i < orders.size(); ++i)
+        if (orders[i] != i)
+            SLS_ERR("something wrong!");
+}
+
+// get dependency tree from database
+// edge direction is the learning direction
+inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
+                        vecStr32_O parts, vecStr32_O chapters, SQLite::Database &db)
+{
+    tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
+    SQLite::Statement stmt_select(
+            db,
+            R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0;)");
+    Str32 pentry_str;
+    vector<vecStr32> pentries;
+
+    while (stmt_select.executeStep()) {
+        entries.push_back(u32(stmt_select.getColumn(0)));
+        titles.push_back(u32(stmt_select.getColumn(1)));
+        parts.push_back(u32(stmt_select.getColumn(2)));
+        chapters.push_back(u32(stmt_select.getColumn(3)));
+        pentry_str = u32(stmt_select.getColumn(2));
+        pentries.emplace_back();
+        parse(pentries.back(), pentry_str);
     }
     tree.resize(entries.size());
-    dg_add_edges(tree, edges);
+    // construct tree
+    for (Long i = 0; i < size(entries); ++i) {
+        for (auto &pentry : pentries[i]) {
+            Long from = search(pentry, entries);
+            if (from < 0) SLS_ERR("unexpected!");
+            tree[from].push_back(i);
+        }
+    }
+
+    // check cyclic
     vecLong cycle;
     if (!dag_check(cycle, tree)) {
         Str32 msg = U"存在循环预备知识: ";
@@ -2350,27 +2372,72 @@ inline Long dep_json(vecStr32_I entries, vecStr32_I titles, vecStr32_I chap_name
         msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
         throw msg;
     }
+
+    // check redundency
+    vector<pair<Long,Long>> edges;
     dag_reduce(edges, tree);
+    std::stringstream ss;
     if (size(edges)) {
-        cout << u8"\n" << endl;
-        cout << u8"==============  多余的预备知识  ==============" << endl;
+        ss << u8"\n" << endl;
+        ss << u8"==============  多余的预备知识  ==============" << endl;
         for (auto &edge : edges) {
-            cout << titles[edge.first] << " (" << entries[edge.first] << ") -> "
-                << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
+            ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
+                 << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
         }
-        cout << u8"=============================================\n" << endl;
+        ss << u8"=============================================\n" << endl;
+        throw ss.str();
     }
+}
+
+// generate json file containing dependency tree
+// empty elements of 'titles' will be ignored
+inline Long dep_json(SQLite::Database &db)
+{
+    vecStr32 entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
+    vector<DGnode> tree;
+    db_get_parts(part_ids, part_names, db);
+    db_get_chapters(chap_ids, chap_names, chap_parts, db);
+
+    Str32 str;
+    // write part names
+    str += U"{\n  \"parts\": [\n";
+    for (Long i = 0; i < size(part_names); ++i)
+        str += U"    {\"name\": \"" + part_names[i] + "\"},\n";
+    str.pop_back(); str.pop_back();
+    str += U"\n  ],\n";
+    // write chapter names
+    str += U"  \"chapters\": [\n";
+    for (Long i = 0; i < size(chap_names); ++i)
+        str += U"    {\"name\": \"" + chap_names[i] + "\"},\n";
+    str.pop_back(); str.pop_back();
+    str += U"\n  ],\n";
+    // write entries
+    str += U"  \"nodes\": [\n";
+    for (Long i = 0; i < size(titles); ++i) {
+        if (titles[i].empty())
+            continue;
+        str += U"    {\"id\": \"" + entries[i] + U"\"" +
+               ", \"part\": " + num2str32(search(entry_part[i], part_ids)) +
+               ", \"chap\": " + num2str32(search(entry_chap[i], chap_ids)) +
+               ", \"title\": \"" + titles[i] + U"\""
+            ", \"url\": \"../online/" +
+            entries[i] + ".html\"},\n";
+    }
+    str.pop_back(); str.pop_back();
+    str += U"\n  ],\n";
 
     // write links
     str += U"  \"links\": [\n";
-    for (Long i = 0; i < size(links)/2; ++i) {
-        if (entries[links[2*i]].empty() || entries[links[2*i+1]].empty())
-            continue;
-        str += U"    {\"source\": \"" + entries[links[2*i]] + "\", ";
-        str += U"\"target\": \"" + entries[links[2*i+1]] + U"\", ";
-        str += U"\"value\": 1},\n";
+    Long Nedge = 0;
+    for (Long i = 0; i < size(tree); ++i) {
+        for (auto &j : tree[i]) {
+            str += U"    {\"source\": \"" + entries[i] + "\", ";
+            str += U"\"target\": \"" + entries[j] + U"\", ";
+            str += U"\"value\": 1},\n";
+            ++Nedge;
+        }
     }
-    if (links.size() > 0) {
+    if (Nedge > 0) {
         str.pop_back(); str.pop_back();
     }
     str += U"\n  ]\n}\n";
@@ -2489,7 +2556,7 @@ inline void db_update_parts_chapters(
 inline void db_update_entries_from_toc(
         vecStr32_I entries, vecLong_I entry_part, vecStr32_I part_ids,
         vecLong_I entry_chap, vecStr32_I chap_ids,
-        VecLong_I entry_order)
+        vecLong_I entry_order)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
@@ -2514,15 +2581,8 @@ inline void db_update_entries_from_toc(
         }
     }
 
-    // insert a new entry
-    SQLite::Statement stmt_insert(db,
-        R"(INSERT INTO "entries" )"
-        R"(("id", "caption", "part", "chapter", "order", "keys", "pentry", "draft") )"
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?);");
-    
-    // update an existing entry
     SQLite::Statement stmt_update(db,
-        R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
+        R"(UPDATE "entries" SET "part"=?, "caption"=?, "order"=? WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
         Str entry = u8(entries[i]);
@@ -2557,19 +2617,8 @@ inline void db_update_entries_from_toc(
             stmt_update.bind(8, entry);
             stmt_update.exec(); stmt_update.reset();
         }
-        else { // entry_exist == false
-            SLS_WARN("数据库的 entries 表格中不存在词条（将添加）：" + entry);
-            // "id", "caption", "part", "chapter", "order", "keys", "pentry", "draft"
-            cout << entry << " " << titles[i] << " " << part_ids[entry_part[i]] << " " << chap_ids[entry_chap[i]] << " ";
-            cout << entry_order[i] << " " << str_keys << " " << str_pentry << " " << isDraft[i] << endl;
-            stmt_insert.bind(1, entry);
-            stmt_insert.bind(3, u8(part_ids[entry_part[i]]));
-            stmt_insert.bind(4, u8(chap_ids[entry_chap[i]]));
-            stmt_insert.bind(5, (int)entry_order[i]);
-            stmt_insert.bind(6, str_keys);
-            stmt_insert.bind(7, str_pentry);
-            stmt_insert.exec(); stmt_insert.reset();
-        }
+        else // entry_exist == false
+            throw Str32(U"main.tex 中的词条在数据库中未找到： " + entry);
     }
     cout << "done." << endl;
 }
@@ -2848,7 +2897,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
 inline void PhysWikiOnline()
 {
     vecStr32 entries; // entries.id
-    VecLong entry_order; // entries.order
+    vecLong entry_order; // entries.order
     vecLong entry_part, entry_chap, chap_part; // toc part & chapter number of each entries[i]
     vecStr32 titles; // Chinese titles in \entry{}
     vecStr32 rules;  // for newcommand()
@@ -2916,7 +2965,7 @@ inline void PhysWikiOnline()
 
     // generate dep.json
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
-        dep_json(tree, entries, titles, chap_name, entry_chap, part_name, entry_part, db);
+        dep_json(db);
 
     // 2nd loop through tex files
     // deal with autoref
@@ -2973,7 +3022,7 @@ inline void PhysWikiOnlineN(vecStr32_I entryN)
     cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 
     // main process
-    vecLong links; Str32 db_titles;
+    vecLong links; vecStr32 db_titles;
     Bool isdraft; vecStr32 keywords;
     vecStr32 img_ids, img_hashes, labels, pentries; vecLong img_orders, label_orders;
 

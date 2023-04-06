@@ -225,9 +225,9 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
-        vecStr32 titles, entries, isDraft; VecLong entry_order;
+        vecStr32 titles, entries, isDraft; vecLong entry_order;
         Long Ntoc; // number of entries in main.tex
-        try { Ntoc = entries_titles(titles, entries, isDraft, entry_order); }
+        try { Ntoc = entries_titles(titles, entries, entry_order); }
         catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
         }
@@ -246,12 +246,8 @@ int main(int argc, char *argv[]) {
         // table of contents
         // read entries.txt and titles.txt, then generate index.html from main.tex
         vecStr32 titles, entries, isDraft;
-        sqlite3* db;
-        if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
-            throw Str32(U"内部错误： 无法打开 scan.db");
-        get_column(entries, db, "entries", "id");
-        get_column(titles, db, "entries", "title");
-        vecLong is_draft;
+        SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+        vecBool is_draft;
         for (bool is : is_draft)
             isDraft.push_back(is ? U"1" : U"0");
         is_draft.clear(); is_draft.shrink_to_fit();
@@ -262,7 +258,7 @@ int main(int argc, char *argv[]) {
             vecLong entry_part, chap_part, entry_chap;
             table_of_contents(part_ids, part_name, chap_first, chap_last,
                               chap_ids, chap_name, chap_part, entry_first, entry_last,
-                              entry_part, entry_chap, entries, isDraft);
+                              entries, titles, is_draft, entry_part, entry_chap, db);
         }
         catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
