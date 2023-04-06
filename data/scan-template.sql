@@ -6,7 +6,7 @@
 CREATE TABLE "entries" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题
-	"authors"	TEXT NOT NULL DEFAULT '待更新', -- "id1 id2 id3" 作者 ID
+	"authors"	TEXT NOT NULL DEFAULT '', -- "id1 id2 id3" 作者 ID
 	
 	"part"	TEXT NOT NULL DEFAULT '', -- 部分
 	"chapter"	TEXT NOT NULL DEFAULT '', -- 章
@@ -28,6 +28,7 @@ CREATE TABLE "entries" (
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
 	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authorID] 是否正在被占用（审核发布后解除）
+	"last_mod"	TEXT NOT NULL DEFAULT '', -- 最后修改时间 YYYYMMDDHHMM
 
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
@@ -207,6 +208,9 @@ CREATE TABLE "authors" (
 	"name"	TEXT NOT NULL, -- 昵称
 	"applied"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 已申请
 	"salary"	INTEGER NOT NULL DEFAULT 0, -- 时薪
+	"banned"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 禁用编辑器
+	"hide"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 不出现在文章作者列表
+	"aka"	TEXT NOT NULL DEFAULT '', -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 

@@ -1134,6 +1134,7 @@ inline Str32 author_list(Str32_I entry, SQLite::Database &db)
 
     vecLong author_ids;
     Str32 str = u32(stmt_select.getColumn(0));
+    stmt_select.reset();
     if (str.empty())
         return U"待更新";
     parse(author_ids, str);
@@ -1142,6 +1143,8 @@ inline Str32 author_list(Str32_I entry, SQLite::Database &db)
     SQLite::Statement stmt_select2(db, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
     for (int id : author_ids) {
         stmt_select2.bind(1, id);
+        if (!stmt_select2.executeStep())
+            throw Str32("词条： " + entry + " 作者 id 不存在： " + num2str(id));
         authors.push_back(u32(stmt_select2.getColumn(0)));
         stmt_select2.reset();
     }
@@ -2474,17 +2477,36 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
 }
 
 // update db entries.authors, based on backup count in "history"
-inline void db_update_authors1(vecLong &author_ids, vecLong &counts, Str32_I entry, SQLite::Database &db)
+// TODO: use more advanced algorithm, counting other factors
+inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I entry, SQLite::Database &db)
 {
-    author_ids.clear(); counts.clear();
+    author_ids.clear(); minutes.clear();
     SQLite::Statement stmt_count(db,
         R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author" ORDER BY record_count DESC;)");
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "hide" FROM "authors" WHERE "id"=?;)");
 
-    stmt_count.bind(1, u8(entry));
-    while (stmt_count.executeStep()) {
-        author_ids.push_back((int) stmt_count.getColumn(0));
-        counts.push_back((int) stmt_count.getColumn(1));
+    try {
+        stmt_count.bind(1, u8(entry));
+    } catch (std::exception &e) {
+        cout << "SQLiteCpp: bind: " << e.what() << endl;
+        throw e;
     }
+    while (stmt_count.executeStep()) {
+        Long id = (int)stmt_count.getColumn(0);
+        Long time = 5*(int)stmt_count.getColumn(1);
+        if (time > 10) { // 十分钟以上才算作者， 忽略隐藏作者
+            // 检查是否隐藏作者
+            stmt_select.bind(1, int(id));
+            SLS_ASSERT(stmt_select.executeStep());
+            Long hidden = (int)stmt_select.getColumn(0);
+            stmt_select.reset();
+            if (hidden) continue;
+            author_ids.push_back(id);
+            minutes.push_back(time);
+        }
+    }
+    stmt_count.reset();
     if (author_ids.empty()) // no author found
         return;
     Str32 str;
@@ -2499,6 +2521,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &counts, Str32_I ent
 // update all authors
 inline void db_update_authors(SQLite::Database &db)
 {
+    cout << "updating database for author lists...." << endl;
     SQLite::Statement stmt_select( db,
         R"(SELECT "id" FROM "entries" WHERE "deleted" = 0;)");
     Str32 entry; vecLong author_ids, counts;
@@ -2506,6 +2529,7 @@ inline void db_update_authors(SQLite::Database &db)
         entry = u32(stmt_select.getColumn(0));
         db_update_authors1(author_ids, counts, entry, db);
     }
+    cout << "done!" << endl;
 }
 
 // update "bibliography" table of sqlite db
