@@ -1742,6 +1742,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                     caption = str.substr(ind0, ind1 - ind0);
                 Long ind3 = 0;
                 trim(caption);
+                if (caption.empty())
+                    throw Str32(U"lstlisting 方括号中标题不能为空（[caption=xxx]）");
                 while (1) {
                     ind3 = caption.find(U'_', ind3);
                     if (ind3 < 0) break;
@@ -1789,7 +1791,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 prism_lang = U" class=\"language-plain\"";
         }
         if (lang == U"matlab" && gv::is_wiki) {
-            if (caption.back() == U'm') {
+            if (!caption.empty() && caption.back() == U'm') {
                 Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
                     throw Str32(U"代码文件名重复： " + fname);
@@ -1797,9 +1799,6 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                     write(code+U'\n', fname);
                 else
                     write(code, fname);
-            }
-            else {
-                SLS_WARN(u8"matlab 代码没有文件名或拓展名错误!");
             }
         }
         replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
@@ -2914,13 +2913,13 @@ inline void PhysWikiOnline()
         cout << u8"======  第 1 轮转换 ======\n" << endl;
         for (Long i = 0; i < size(entries); ++i) {
             cout << std::setw(5) << std::left << i
-                 << std::setw(10) << std::left << entries[i];
+                 << std::setw(10) << std::left << entries[i]; cout.flush();
 
             PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, draft,
                             keywords, labels, label_orders, pentries, entries[i],
                             rules, db);
 
-            cout << std::setw(20) << std::left << titles[i] << endl;
+            cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
         }
     }
 
@@ -2961,7 +2960,7 @@ inline void PhysWikiOnline()
         for (Long i = 0; i < size(entries); ++i) {
             cout << std::setw(5) << std::left << i
                  << std::setw(10) << std::left << entries[i]
-                 << std::setw(20) << std::left << titles[i] << endl;
+                 << std::setw(20) << std::left << titles[i] << endl; cout.flush();
             fname = gv::path_out + entries[i] + ".html";
             read(html, fname + ".tmp"); // read html file
             // process \autoref and \upref
@@ -2997,12 +2996,12 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
         vecStr32 img_ids, img_hashes, labels, pentries;
 
         for (Long i = 0; i < size(entries); ++i) {
-            cout << std::left << entries[i];
+            cout << std::left << entries[i]; cout.flush();
 
             PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, isdraft,
                             keywords, labels, label_orders, pentries, entries[i],
                             rules, db);
-            cout << std::setw(20) << std::left << titles[i] << endl;
+            cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
         }
     }
 
@@ -3020,7 +3019,7 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
         for (Long i = 0; i < size(entries); ++i) {
             cout << std::setw(5) << std::left << i
                  << std::setw(10) << std::left << entries[i]
-                 << std::setw(20) << std::left << titles[i] << endl;
+                 << std::setw(20) << std::left << titles[i] << endl; cout.flush();
             fname = gv::path_out + entries[i] + ".html";
             read(html, fname + ".tmp"); // read html file
             // process \autoref and \upref
@@ -3028,7 +3027,7 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
             write(html, fname); // save html file
             file_remove(u8(fname) + ".tmp");
         }
-        cout << endl;
+        cout << endl; cout.flush();
     }
 }
 
