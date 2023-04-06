@@ -7,7 +7,7 @@
 # compiler [g++|clang++|icpc|icpx]
 opt_compiler = g++
 # debug mode
-opt_debug = true
+opt_debug = false
 # address sanitizer (only for g++ dynamic debug build)
 opt_asan = $(opt_debug)
 # c++ standard [c++11|gnu++11]
@@ -110,5 +110,5 @@ link: # force link
 clean:
 	rm -f *.o *.x
 
-main.o: main.cpp
+main.o: main.cpp lib/PhysWikiScan.h
 	$(opt_compiler) $(flags) -c main.cpp

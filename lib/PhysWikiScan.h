@@ -1542,6 +1542,7 @@ inline void table_of_contents(
                 throw Str32(U"main.tex 中词条中文名不能为空");
             if (search(entry, entries) >= 0)
                 throw Str32(U"main.tex 中词条重复： " + entry);
+            entries.push_back(entry);
             if (last_command == 'c')
                 chap_entry_first.push_back(entry);
 
@@ -2269,7 +2270,7 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     write(html, gv::path_out + entry + ".html.tmp");
 
     // update db
-    Str32 key_str; join(key_str, keywords);
+    Str32 key_str; join(key_str, keywords, U"|");
     Str32 pentry_str; join(pentry_str, pentries);
     if (title != db_title || key_str != db_keys_str
         || draft != db_draft || pentry_str != db_pentry_str) {
@@ -2551,7 +2552,7 @@ inline void db_update_entries_from_toc(
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
 
     SQLite::Statement stmt_update(db,
-        R"(UPDATE "entries" SET "part"=?, "caption"=?, "order"=? WHERE "id"=?;)");
+        R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
         Long entry_order = i + 1;
@@ -2579,12 +2580,11 @@ inline void db_update_entries_from_toc(
                 changed = true;
             }
             if (changed) {
-                stmt_update.bind(3, u8(part_ids[entry_part[i]]));
-                stmt_update.bind(4, u8(chap_ids[entry_chap[i]]));
-                stmt_update.bind(5, (int) entry_order);
-                stmt_update.bind(8, entry);
-                stmt_update.exec();
-                stmt_update.reset();
+                stmt_update.bind(1, u8(part_ids[entry_part[i]]));
+                stmt_update.bind(2, u8(chap_ids[entry_chap[i]]));
+                stmt_update.bind(3, (int) entry_order);
+                stmt_update.bind(4, entry);
+                stmt_update.exec(); stmt_update.reset();
             }
         }
         else // entry_exist == false
