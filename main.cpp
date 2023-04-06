@@ -225,10 +225,10 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--titles") {
         // update entries.txt and titles.txt
-        vecStr32 titles, entries, isDraft; vecLong entry_order;
-        Long Ntoc; // number of entries in main.tex
-        try { Ntoc = entries_titles(titles, entries, entry_order); }
-        catch (Str32_I msg) {
+        vecStr32 titles, entries, isDraft;
+        try {
+            entries_titles(titles, entries);
+        } catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
         }
         catch (Str_I msg) {
@@ -236,29 +236,22 @@ int main(int argc, char *argv[]) {
         }
         write_vec_str(titles, gv::path_data + U"titles.txt");
         write_vec_str(entries, gv::path_data + U"entries.txt");
-        if (gv::is_wiki)
-            write_vec_str(isDraft, gv::path_data + U"isDraft.txt");
-        file_remove(u8(gv::path_data) + "entry_order.matt");
-        Matt matt(u8(gv::path_data) + "entry_order.matt", "w");
-        save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
     }
     else if (args[0] == U"--toc" && args.size() == 1) {
         // table of contents
-        // read entries.txt and titles.txt, then generate index.html from main.tex
-        vecStr32 titles, entries, isDraft;
+        // generate index.html from main.tex
+        vecStr32 titles, entries;
         SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
         vecBool is_draft;
-        for (bool is : is_draft)
-            isDraft.push_back(is ? U"1" : U"0");
-        is_draft.clear(); is_draft.shrink_to_fit();
-        if (gv::is_wiki && entries.size() != isDraft.size()) 
-            isDraft.resize(entries.size(), U"1");
+        vecStr32 part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
+        vecLong entry_part, chap_part, entry_chap;
         try {
-            vecStr32 part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
-            vecLong entry_part, chap_part, entry_chap;
             table_of_contents(part_ids, part_name, chap_first, chap_last,
                               chap_ids, chap_name, chap_part, entry_first, entry_last,
                               entries, titles, is_draft, entry_part, entry_chap, db);
+            db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
+                                     entry_first, entry_last);
+            db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
         }
         catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;

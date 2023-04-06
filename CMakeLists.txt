@@ -7,7 +7,8 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
-# include_directories(SLISC)
+include_directories(/mnt/data/shared/github/SLISC-libs-x64-ubuntu22.04/sqlitecpp-3.2.1/include)
+link_directories(/mnt/data/shared/github/SLISC-libs-x64-ubuntu22.04/sqlitecpp-3.2.1/lib)
 
 # Boost
 # add_definitions(-D SLS_USE_BOOST)
@@ -15,7 +16,7 @@ set(CMAKE_CXX_FLAGS "-std=c++11")
 # list(APPEND LIBS boost_system boost_filesystem)
 
 add_definitions(-D SLS_USE_SQLITE)
-list(APPEND LIBS sqlite3)
+list(APPEND LIBS SQLiteCpp SQLiteCpp-sqlite3)
 
 # Address Sanitizer
 add_definitions(-D SLS_USE_ASAN)

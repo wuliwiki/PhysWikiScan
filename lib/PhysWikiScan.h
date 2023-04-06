@@ -614,9 +614,8 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
 inline Long depend_entry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
 {
     Long ind0 = 0, N = 0;
-    Str32 temp;
-    Str32 depEntry;
-    Str32 link[2];
+    Str32 temp, depEntry;
+    pentries.clear();
     while (1) {
         ind0 = find_command(str, U"pentry", ind0);
         if (ind0 < 0)
@@ -2104,15 +2103,10 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
         throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
-// generate html from tex
-// output the chinese title of the file, id-label pairs in the file
-// output dependency info from \pentry{}, links[i][0] --> links[i][1]
-// path0 is the parent folder of entry.tex, ending with '\\'
-inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
-    Bool_O draft, vecStr32_O keywords,
-    vecStr32_O labels, vecLong_O label_orders,
-    vecStr32_O pentries, Str32_I entry, vecStr32_I rules,
-    SQLite::Database &db)
+// generate html from a single tex
+inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
+    Bool_O draft, vecStr32_O keywords, vecStr32_O labels, vecLong_O label_orders,
+    vecStr32_O pentries, Str32_I entry, vecStr32_I rules, SQLite::Database &db)
 {
     // insert a new entry (simulate what editor does)
     SQLite::Statement stmt_insert(db,
@@ -2123,7 +2117,6 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
     CRLF_to_LF(str);
 
     // read title from first comment
-    Str32 title;
     get_title(title, str);
     draft = is_draft(str);
     Str32 db_title, authors, db_keys_str, db_pentry_str;
@@ -2288,9 +2281,9 @@ inline Long PhysWikiOnline1(vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O
         stmt_update.bind(2, u8(key_str));
         stmt_update.bind(3, (int) draft);
         stmt_update.bind(4, u8(pentry_str));
+        stmt_update.bind(5, u8(entry));
         stmt_update.exec(); stmt_update.reset();
     }
-    return 0;
 }
 
 // get table of content info from db "chapters", in ascending "order"
@@ -2306,7 +2299,7 @@ inline void db_get_chapters(vecStr32_O ids, vecStr32_O captions, vecStr32_O part
         captions.push_back(u32(stmt.getColumn(2)));
         parts.push_back(u32(stmt.getColumn(3)));
     }
-    for (Long i = 0; i < orders.size(); ++i)
+    for (Long i = 0; i < size(orders); ++i)
         if (orders[i] != i)
             SLS_ERR("something wrong!");
 }
@@ -2322,7 +2315,7 @@ inline void db_get_parts(vecStr32_O ids, vecStr32_O captions, SQLite::Database &
         orders.push_back((int)stmt.getColumn(1));
         captions.push_back(u32(stmt.getColumn(2)));
     }
-    for (Long i = 0; i < orders.size(); ++i)
+    for (Long i = 0; i < size(orders); ++i)
         if (orders[i] != i)
             SLS_ERR("something wrong!");
 }
@@ -2873,173 +2866,170 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline()
 {
-    // TODO: delete once wuli.wiki/editor updates
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+
+    // get entries from folder, titles from main.tex
+    vecStr32 entries;
+
     {
-        vecStr32 entries, titles; // entries.id, entries.caption
-        vecLong entry_order; // entries.order
-        entries_titles(titles, entries, entry_order);
+        vecStr32 titles;
+        entries_titles(entries, titles);
         write_vec_str(titles, gv::path_data + U"titles.txt");
         write_vec_str(entries, gv::path_data + U"entries.txt");
+
+        SQLite::Statement stmt_insert(db,
+            R"(INSERT OR IGNORE INTO "entries" ("id") VALUES (?);)");
+        for (Long i = 0; i < size(entries); ++i) {
+            stmt_insert.bind(1, u8(entries[i]));
+            stmt_insert.exec();
+            if (stmt_insert.getChanges() > 0)
+                SLS_WARN(U"已插入数据库中不存在的词条（仅 id）： " + entries[i]);
+            stmt_insert.reset();
+        }
     }
 
-    vector<vecLong> img_orders;
-    vector<vecStr32> img_ids, img_hashes;
-    vecStr32 part_ids, part_name, chap_first, chap_last; // \part{}
-    vecStr32 chap_ids, chap_name, entry_first, entry_last; // \chapter{}
-    
-    // process bibliography
-    vecStr32 bib_labels, bib_details;
-    bibliography(bib_labels, bib_details);
-    db_update_bib(bib_labels, bib_details);
-
-    vecStr32 rules;  // for newcommand()
+    // for newcommand()
+    vecStr32 rules;
     define_newcommands(rules);
 
+    // process bibliography
+    {
+        vecStr32 bib_labels, bib_details;
+        bibliography(bib_labels, bib_details);
+        db_update_bib(bib_labels, bib_details);
+    }
 
     // html tag id and corresponding latex label (e.g. Idlist[i]: "eq5", "fig3")
     // the number in id is the n-th occurrence of the same type of environment
-    vecBool isdraft(entries.size());
-    vector<vecStr32> keywords_list(entries.size());
-    img_ids.resize(entries.size());
-    img_orders.resize(entries.size());
-    img_hashes.resize(entries.size());
 
-    vector<vecStr32> v_labels(entries.size());
-    vector<vecStr32> pentries(entries.size());
-    vector<vecLong> v_label_orders(entries.size());
+    vecStr32 titles; // titles from files directly
+    titles.resize(entries.size());
 
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-
-    // 1st loop through tex files
-    // files are processed independently
-    // `IdList` and `LabelList` are recorded for 2nd loop
-    cout << u8"======  第 1 轮转换 ======\n" << endl;
-    for (Long i = 0; i < size(entries); ++i) {
-        cout    << std::setw(5)  << std::left << i
-                << std::setw(10)  << std::left << entries[i]
-                << std::setw(20) << std::left << titles[i] << endl;
-        // main process
+    {
         Bool draft;
-        PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], draft,
-                        keywords_list[i], v_labels[i], v_label_orders[i], pentries[i], entries[i],
-                        rules, db);
+        vecLong img_orders, label_orders;
+        vecStr32 keywords, labels, img_ids, img_hashes, pentries;
+
+        // 1st loop through tex files
+        cout << u8"======  第 1 轮转换 ======\n" << endl;
+        for (Long i = 0; i < size(entries); ++i) {
+            cout << std::setw(5) << std::left << i
+                 << std::setw(10) << std::left << entries[i];
+
+            PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, draft,
+                            keywords, labels, label_orders, pentries, entries[i],
+                            rules, db);
+
+            cout << std::setw(20) << std::left << titles[i] << endl;
+        }
     }
 
-    cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
+    cout << u8"\n\n\n\n\n正在从 main.tex 生成目录 index.html ...\n" << endl;
     {
-        vecStr32 entries, titles;
         vecBool is_drafts;
         vecLong entry_part, entry_chap, chap_part;
+        vecStr32 entries_toc, titles_toc;
+        vecStr32 part_ids, part_name, chap_first, chap_last; // \part{}
+        vecStr32 chap_ids, chap_name, entry_first, entry_last; // \chapter{}
+
         table_of_contents(part_ids, part_name, chap_first, chap_last,
                           chap_ids, chap_name, chap_part, entry_first, entry_last,
-                          entries, titles, is_drafts, entry_part, entry_chap, db);
-        db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
+                          entries_toc, titles_toc, is_drafts, entry_part, entry_chap, db);
+
+        db_update_entries_from_toc(entries_toc, entry_part, part_ids, entry_chap, chap_ids);
         db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
                                  entry_first, entry_last);
     }
-
-    // db_update_figures(entries, img_ids, img_orders, img_hashes);
-    // db_update_labels(entries, v_labels, v_label_orders);
 
     // generate dep.json
     if (file_exist(gv::path_out + U"../tree/data/dep.json"))
         dep_json(db);
 
-    // 2nd loop through tex files
-    // deal with autoref
-    // need `IdList` and `LabelList` from 1st loop
-    cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
-    Str32 html, fname;
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by(db,
-        R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
-    SQLite::Statement stmt_select_fig(db,
-        R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by_fig(db,
-        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+    // deal with autoref()
+    {
+        cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+        Str32 html, fname;
+        SQLite::Statement stmt_select(db,
+            R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+        SQLite::Statement stmt_update_ref_by(db,
+            R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+        SQLite::Statement stmt_select_fig(db,
+            R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+        SQLite::Statement stmt_update_ref_by_fig(db,
+            R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
 
-    for (Long i = 0; i < size(entries); ++i) {
-        cout    << std::setw(5)  << std::left << i
-                << std::setw(10)  << std::left << entries[i]
-                << std::setw(20) << std::left << titles[i] << endl;
-        fname = gv::path_out + entries[i] + ".html";
-        read(html, fname + ".tmp"); // read html file
-        // process \autoref and \upref
-        autoref(html, entries[i], stmt_select, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
-        write(html, fname); // save html file
-        file_remove(u8(fname) + ".tmp");
+        for (Long i = 0; i < size(entries); ++i) {
+            cout << std::setw(5) << std::left << i
+                 << std::setw(10) << std::left << entries[i]
+                 << std::setw(20) << std::left << titles[i] << endl;
+            fname = gv::path_out + entries[i] + ".html";
+            read(html, fname + ".tmp"); // read html file
+            // process \autoref and \upref
+            autoref(html, entries[i], stmt_select, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
+            write(html, fname); // save html file
+            file_remove(u8(fname) + ".tmp");
+        }
+        cout << endl;
     }
-    cout << endl;
 
     // TODO: warn unused figures, based on "ref_by"
 }
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline void PhysWikiOnlineN(vecStr32_I entryN)
+inline void PhysWikiOnlineN(vecStr32_I entries)
 {
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_select(
             db,
             R"(SELECT "caption", "keys", "pentry", "draft", "issues", "issueOther" from "entries" WHERE "id"=?;)");
-    SQLite::Statement stmt_insert(
-            db,
-            R"(INSERT INTO "entries" ("id", "caption", "keys", "pentry", "draft", "issues", "issueOther") )"
-            R"(VALUES (?, ?, ?, ?, ?, ?, ?);)");
-    SQLite::Statement stmt_update(
-            db,
-            R"(UPDATE "entries" SET "caption"=?, "keys"=?, "pentry"=?, "draft"=?, "issues"=?, "issueOther"=? WHERE "id"=?;)");
 
     vecStr32 rules;  // for newcommand()
     define_newcommands(rules);
 
-    // 1st loop through tex files
-    // files are processed independently
-    // `IdList` and `LabelList` are recorded for 2nd loop
-    cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
+    vecStr32 titles(entries.size());
 
-    // main process
-    vecLong links; vecStr32 db_titles;
-    Bool isdraft; vecStr32 keywords;
-    vecStr32 img_ids, img_hashes, labels, pentries; vecLong img_orders, label_orders;
+    {
+        cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
+        Bool isdraft;
+        vecStr32 keywords;
+        vecLong img_orders, label_orders;
+        vecStr32 img_ids, img_hashes, labels, pentries;
 
-    for (Long i = 0; i < size(entryN); ++i) {
-        // get title
-        stmt_select.bind(1, u8(entryN[i]));
-        if (stmt_select.executeStep())
-            db_titles[i] = u32(stmt_select.getColumn(0));
-        stmt_select.reset();
+        for (Long i = 0; i < size(entries); ++i) {
+            cout << std::left << entries[i];
 
-        cout << std::left << entryN[i]
-             << std::setw(20) << std::left << db_titles[i] << endl;
-        PhysWikiOnline1(img_ids, img_orders, img_hashes, isdraft,
-                        keywords, labels, label_orders, pentries, entryN[i],
-                        rules, db);
+            PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, isdraft,
+                            keywords, labels, label_orders, pentries, entries[i],
+                            rules, db);
+            cout << std::setw(20) << std::left << titles[i] << endl;
+        }
     }
 
-    cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
-    Str32 html, fname;
-    SQLite::Statement stmt_select2(db,
-                                  R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by(db,
-                                         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
-    SQLite::Statement stmt_select_fig(db,
-                                      R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by_fig(db,
-                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
-    for (Long i = 0; i < size(entryN); ++i) {
-        cout    << std::setw(5)  << std::left << i
-                << std::setw(10)  << std::left << entryN[i]
-                << std::setw(20) << std::left << db_titles[i] << endl;
-        fname = gv::path_out + entryN[i] + ".html";
-        read(html, fname + ".tmp"); // read html file
-        // process \autoref and \upref
-        autoref(html, entryN[i], stmt_select2, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
-        write(html, fname); // save html file
-        file_remove(u8(fname) + ".tmp");
+    {
+        cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+        Str32 html, fname;
+        SQLite::Statement stmt_select2(db,
+                                       R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+        SQLite::Statement stmt_update_ref_by(db,
+                                             R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+        SQLite::Statement stmt_select_fig(db,
+                                          R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+        SQLite::Statement stmt_update_ref_by_fig(db,
+                                                 R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+        for (Long i = 0; i < size(entries); ++i) {
+            cout << std::setw(5) << std::left << i
+                 << std::setw(10) << std::left << entries[i]
+                 << std::setw(20) << std::left << titles[i] << endl;
+            fname = gv::path_out + entries[i] + ".html";
+            read(html, fname + ".tmp"); // read html file
+            // process \autoref and \upref
+            autoref(html, entries[i], stmt_select2, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
+            write(html, fname); // save html file
+            file_remove(u8(fname) + ".tmp");
+        }
+        cout << endl;
     }
-    cout << endl;
 }
 
 // search all commands

@@ -19,3 +19,4 @@ CMakeCache.txt
 *.cmake
 CMakeFiles/
 .idea/workspace.xml
+*.o
