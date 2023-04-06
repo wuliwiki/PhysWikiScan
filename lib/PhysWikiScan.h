@@ -2075,16 +2075,14 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
         last_entry = entry;
         last_title = U"没有上一篇了哟~（本文不在目录中）";
     }
-    if (order == 1) {
+    else if (order == 1) {
         last_entry = entry;
         last_title = U"没有上一篇了哟~";
     }
     else {
         stmt_select.bind(1, (int)order-1);
-        if (!stmt_select.executeStep()) {
-            last_entry = entry;
-            last_title = U"没有上一篇了哟~";
-        }
+        if (!stmt_select.executeStep())
+            throw Str32(U"内部错误： 找不到具有以下 order 的词条： " + num2str(order-1));
         else {
             last_entry = u32(stmt_select.getColumn(0));
             last_title = u32(stmt_select.getColumn(1));
@@ -2347,7 +2345,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
     SQLite::Statement stmt_select(
             db,
-            R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0;)");
+            R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
     Str32 pentry_str;
     vector<vecStr32> pentries;
 
@@ -2356,7 +2354,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         titles.push_back(u32(stmt_select.getColumn(1)));
         parts.push_back(u32(stmt_select.getColumn(2)));
         chapters.push_back(u32(stmt_select.getColumn(3)));
-        pentry_str = u32(stmt_select.getColumn(2));
+        pentry_str = u32(stmt_select.getColumn(4));
         pentries.emplace_back();
         parse(pentries.back(), pentry_str);
     }
@@ -2366,8 +2364,9 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
-            if (from < 0)
-                throw Str32(U"unexpected! pentry = " + pentry);
+            if (from < 0) {
+                throw Str32(U"内部错误： 预备知识未找（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+            }
             tree[from].push_back(i);
         }
     }
