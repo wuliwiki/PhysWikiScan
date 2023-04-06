@@ -2359,7 +2359,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         parse(pentries.back(), pentry_str);
     }
     tree.resize(entries.size());
-    cout << entries << endl;
+
     // construct tree
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
