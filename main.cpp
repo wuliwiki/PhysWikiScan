@@ -369,7 +369,11 @@ int main(int argc, char *argv[]) {
         else
             path = U"../PhysWiki-backup/";
         // update db "history" table from backup files
-        try { db_update_author_history(path); }
+        try {
+            SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+            db_update_author_history(path, db);
+            db_update_authors(db);
+        }
         catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
         }

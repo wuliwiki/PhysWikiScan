@@ -1124,41 +1124,29 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
     return 0;
 }
 
-// add author list
-inline Str32 author_list(Str32_I entry)
+// calculate author list of an entry, based on "history" table counts in db
+inline Str32 author_list(Str32_I entry, SQLite::Database &db)
 {
-    Str32 tmp, str;
-    static vecStr32 entries, authors, hours;
-    if (entries.empty()) {
-        read(str, "../PhysWiki-backup/entry_author.txt");
-        CRLF_to_LF(str);
-        Long ind0 = 0;
-        for (Long i = 0; ; ++i) {
-            ind0 = get_line(tmp, str, ind0);
-            if (i < 2)
-                continue;
-            entries.push_back(tmp.substr(0, 6)); trim(entries.back());
-            hours.push_back(tmp.substr(8, 6)); trim(hours.back());
-            authors.push_back(tmp.substr(14)); trim(authors.back());
-            if (ind0 < 0)
-                break;
-        }
-    }
+    SQLite::Statement stmt_select(db, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
+    stmt_select.bind(1, u8(entry));
+    if (!stmt_select.executeStep())
+        throw Str32(U"内部错误： author_list(): 数据库中不存在词条： " + entry);
 
-    Str32 list;
-    Long ind = search(entry, entries);
-    if (ind >= 0) {
-        list += authors[ind];
-        for (Long i = ind+1; i < size(entries); ++i) {
-            if (entries[i] != entries[i - 1])
-                break;
-            list += "; " + authors[i];
-        }
+    vecLong author_ids;
+    Str32 str = u32(stmt_select.getColumn(0));
+    if (str.empty())
+        return U"待更新";
+    parse(author_ids, str);
+
+    vecStr32 authors;
+    SQLite::Statement stmt_select2(db, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
+    for (int id : author_ids) {
+        stmt_select2.bind(1, id);
+        authors.push_back(u32(stmt_select2.getColumn(0)));
+        stmt_select2.reset();
     }
-    else {
-        list = U"待更新";
-    }
-    return list;
+    join(str, authors, U"; ");
+    return str;
 }
 
 // replace "\href{http://example.com}{name}"
@@ -2108,8 +2096,6 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
     }
 
     // insert into html
-    if (replace(html, U"PhysWikiAuthorList", author_list(entry)) != 1)
-        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
     if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
         throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
@@ -2281,6 +2267,9 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
         throw Str32(U"内部错误： \"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
     last_next_buttons(html, db, order, entry, title);
+
+    if (replace(html, U"PhysWikiAuthorList", author_list(entry, db)) != 1)
+        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
 
     // save html file
     write(html, gv::path_out + entry + ".html.tmp");
@@ -2484,6 +2473,41 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
     return N;
 }
 
+// update db entries.authors, based on backup count in "history"
+inline void db_update_authors1(vecLong &author_ids, vecLong &counts, Str32_I entry, SQLite::Database &db)
+{
+    author_ids.clear(); counts.clear();
+    SQLite::Statement stmt_count(db,
+        R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author" ORDER BY record_count DESC;)");
+
+    stmt_count.bind(1, u8(entry));
+    while (stmt_count.executeStep()) {
+        author_ids.push_back((int) stmt_count.getColumn(0));
+        counts.push_back((int) stmt_count.getColumn(1));
+    }
+    if (author_ids.empty()) // no author found
+        return;
+    Str32 str;
+    join(str, author_ids);
+    SQLite::Statement stmt_update(db,
+        R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
+    stmt_update.bind(1, u8(str));
+    stmt_update.bind(2, u8(entry));
+    stmt_update.exec(); stmt_update.reset();
+}
+
+// update all authors
+inline void db_update_authors(SQLite::Database &db)
+{
+    SQLite::Statement stmt_select( db,
+        R"(SELECT "id" FROM "entries" WHERE "deleted" = 0;)");
+    Str32 entry; vecLong author_ids, counts;
+    while (stmt_select.executeStep()) {
+        entry = u32(stmt_select.getColumn(0));
+        db_update_authors1(author_ids, counts, entry, db);
+    }
+}
+
 // update "bibliography" table of sqlite db
 inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
@@ -2614,7 +2638,7 @@ inline void db_update_entries_from_toc(
 }
 
 // updating sqlite database "authors" and "history" table from backup files
-inline void db_update_author_history(Str32_I path)
+inline void db_update_author_history(Str32_I path, SQLite::Database &db)
 {
     vecStr32 fnames;
     unordered_map<Str, Long> new_authors;
@@ -2625,7 +2649,6 @@ inline void db_update_author_history(Str32_I path)
         << " backup) ..." << endl; cout.flush();
 
     // update "history" table
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     check_foreign_key(db.getHandle());
 
     vector<vecStr> db_data10;
