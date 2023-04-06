@@ -2065,15 +2065,26 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
 {
     Str32 last_entry, last_title, last_url, next_entry, next_title, next_url;
     SQLite::Statement stmt_select(db,
-        R"(SELECT "entry", "caption" FROM "entries" WHERE "order"=?;)");
+        R"(SELECT "id", "caption" FROM "entries" WHERE "order"=?;)");
+
+    if (order < 0)
+        throw Str32(U"内部错误： last_next_buttons()");
 
     // find last
-    if (order == 1)
-        last_title = U"没有上一个了~";
+    if (order == 0) {
+        last_entry = entry;
+        last_title = U"没有上一篇了哟~（本文不在目录中）";
+    }
+    if (order == 1) {
+        last_entry = entry;
+        last_title = U"没有上一篇了哟~";
+    }
     else {
         stmt_select.bind(1, (int)order-1);
-        if (!stmt_select.executeStep())
+        if (!stmt_select.executeStep()) {
+            last_entry = entry;
             last_title = U"没有上一篇了哟~";
+        }
         else {
             last_entry = u32(stmt_select.getColumn(0));
             last_title = u32(stmt_select.getColumn(1));
@@ -2082,14 +2093,21 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
     }
 
     // find next
-    stmt_select.bind(1, (int)order+1);
-    if (!stmt_select.executeStep())
-        next_title = U"没有下一篇了哟~";
-    else {
-        next_entry = u32(stmt_select.getColumn(0));
-        next_title = u32(stmt_select.getColumn(1));
+    if (order == 0) {
+        next_entry = entry;
+        next_title = U"没有下一篇了哟~（本文不在目录中）";
     }
-    stmt_select.reset();
+    else {
+        stmt_select.bind(1, (int) order + 1);
+        if (!stmt_select.executeStep()) {
+            next_entry = entry;
+            next_title = U"没有下一篇了哟~";
+        } else {
+            next_entry = u32(stmt_select.getColumn(0));
+            next_title = u32(stmt_select.getColumn(1));
+        }
+        stmt_select.reset();
+    }
 
     // insert into html
     if (replace(html, U"PhysWikiAuthorList", author_list(entry)) != 1)
@@ -2343,11 +2361,13 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         parse(pentries.back(), pentry_str);
     }
     tree.resize(entries.size());
+    cout << entries << endl;
     // construct tree
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
-            if (from < 0) SLS_ERR("unexpected!");
+            if (from < 0)
+                throw Str32(U"unexpected! pentry = " + pentry);
             tree[from].push_back(i);
         }
     }
@@ -2386,6 +2406,7 @@ inline Long dep_json(SQLite::Database &db)
     vector<DGnode> tree;
     db_get_parts(part_ids, part_names, db);
     db_get_chapters(chap_ids, chap_names, chap_parts, db);
+    db_get_tree(tree, entries, titles,entry_part, entry_chap, db);
 
     Str32 str;
     // write part names
@@ -2726,7 +2747,7 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
     const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes,
     SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
 {
-    cout << "updating db for figures environments..." << endl;
+    // cout << "updating db for figures environments..." << endl;
     Str32 db_id, db_entry, db_hash;
     // vecStr32 new_ids, new_entries, new_hash;
     Long db_order;
@@ -2737,9 +2758,8 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
         entry = entries[i];
 
         for (Long j = 0; j < size(img_ids[i]); ++j) {
-            stmt_select.bind(1, u8(entry));
-
             id = img_ids[i][j]; order = img_orders[i][j]; hash = img_hashes[i][j];
+            stmt_select.bind(1, u8(id));
             if (!stmt_select.executeStep()) {
                 stmt_select.reset();
                 SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
@@ -2780,7 +2800,7 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
             }
         }
     }
-    cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 // update labels table of database
@@ -2788,7 +2808,7 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders,
     SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
 {
-    cout << "updating db for labels..." << endl;
+    // cout << "updating db for labels..." << endl;
     Str32 label, type, entry; Long order;
 
     // db_data[id] = {type, entry, order}
@@ -2847,7 +2867,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
             }
         }
     }
-    cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
