@@ -9,7 +9,6 @@
 #include "../SLISC/util/sha1sum.h"
 #include "../SLISC/str/str.h"
 #include "../SLISC/algo/sort.h"
-#include "../SLISC/file/matt.h"
 #include "../SLISC/str/disp.h"
 
 using namespace slisc;
@@ -709,7 +708,7 @@ inline Long addTODO(Str32_IO str)
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
-inline Long RemoveNoEntry(vecStr32_IO names)
+inline Long ignore_entries(vecStr32_IO names)
 {
     Long i{}, j{}, N{}, Nnames{}, Nnames0;
     vecStr32 names0; // names to remove
@@ -1242,60 +1241,62 @@ inline Long cite(Str32_IO str, SQLite::Database &db)
     }
 }
 
-// update entries and titles from "contents/*.tex"
-// return the number of entries in main.tex
-inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entry_order)
+// get `entries` from "contents/*.tex" (ignore some)
+// get `titles` from main.tex
+// warn repeated `titles` or `entries` in main.tex (case insensitive)
+// warn `entries` not in main.tex (including comments)
+inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
 {
+    // 文件夹中的词条文件（忽略不用编译的）
     entries.clear(); titles.clear();
     file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
-    RemoveNoEntry(entries);
+    ignore_entries(entries);
     if (entries.size() == 0)
         throw Str32(U"未找到任何词条");
     sort_case_insens(entries);
-    vecStr32 entries_low; to_lower(entries_low, entries);
-    Long ind = find_repeat(entries_low);
-    if (ind >= 0)
-        throw Str32(U"存在同名词条（不区分大小写）：" + entries[ind]);
 
-    Long ind0 = 0, entry_order1 = 0;
+    { // 检查同名词条文件（不区分大小写）
+        vecStr32 entries_low;
+        to_lower(entries_low, entries);
+        Long ind = find_repeat(entries_low);
+        if (ind >= 0)
+            throw Str32(U"发现同名词条文件（不区分大小写）：" + entries[ind]);
+    }
 
-    Str32 title;
-    Str32 entry; // entry label
-    Str32 str; read(str, gv::path_in + "main.tex");
-    Str32 str_entry;
-    CRLF_to_LF(str);
+    Long ind0 = 0;
     titles.resize(entries.size());
+    vecBool in_toc(entries.size(), false); // in main.tex
+    vecBool in_toc_comment(entries.size(), false); // in main.tex but commented
+
+    Str32 title, entry, str;
+    read(str, gv::path_in + "main.tex");
+    CRLF_to_LF(str);
     Str32 str0 = str;
     rm_comments(str); // remove comments
     if (str.empty()) str = U" ";
-    entry_order.resize(entries.size());
-    copy(entry_order, -1);
+    if (str0.empty()) str = U" ";
 
     // go through uncommented entries in main.tex
     while (1) {
         ind0 = str.find(U"\\entry", ind0);
         if (ind0 < 0)
             break;
+
         // get chinese title and entry label
         command_arg(title, str, ind0);
         replace(title, U"\\ ", U" ");
-        if (title.empty()) {
+        if (title.empty())
             throw Str32(U"main.tex 中词条中文名不能为空");
-        }
         command_arg(entry, str, ind0, 1);
 
-        // record Chinese title
         Long ind = search(entry, entries);
         if (ind < 0)
             throw Str32(U"main.tex 中词条文件 " + entry + U" 未找到");
-        read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
-        CRLF_to_LF(str_entry);
-        if (entry_order[ind] < 0)
-            entry_order[ind] = entry_order1;
-        else
+        if (in_toc[ind])
             throw Str32(U"目录中出现重复词条：" + entry);
+        in_toc[ind] = true;
         titles[ind] = title;
-        ++ind0; ++entry_order1;
+        ++ind0;
     }
     
     // check repeated titles
@@ -1306,7 +1307,7 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entr
             if (titles[i] == titles[j])
                 throw Str32(U"目录中标题重复：" + titles[i]);
         }
-    }    
+    }
 
     // go through commented entries in main.tex
     ind0 = -1;
@@ -1314,27 +1315,22 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entr
         ind0 = str0.find(U"\\entry", ++ind0);
         if (ind0 < 0)
             break;
-        // get chinese title and entry label
-        command_arg(title, str0, ind0);
-        replace(title, U"\\ ", U" ");
+        // get entry label
         if (command_arg(entry, str0, ind0, 1) == -1) continue;
         trim(entry);
         if (entry.empty()) continue;
-
-        // record Chinese title
         Long ind = search(entry, entries);
-        if (ind < 0 || !titles[ind].empty())
+        if (ind < 0 || in_toc[ind])
             continue;
-        read(str_entry, gv::path_in + U"contents/" + entry + ".tex");
-        CRLF_to_LF(str_entry);
-        titles[ind] = title;
+        // found commented \entry{}{}
+        in_toc_comment[ind] = true;
     }
 
     Bool warned = false;
-    for (Long i = 0; i < size(titles); ++i) {
-        if (titles[i].empty()) {
+    for (Long i = 0; i < size(entries); ++i) {
+        if (!in_toc[i] && !in_toc_comment[i]) {
             if (!warned) {
-                cout << u8"\n\n警告: 以下词条没有被 main.tex 提及，但仍会被编译" << endl;
+                cout << u8"\n\n警告: 以下词条没有被 main.tex 提及（注释中也没有），但仍会被编译" << endl;
                 warned = true;
             }
             read(str, gv::path_in + U"contents/" + entries[i] + ".tex");
@@ -1347,8 +1343,8 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entr
     }
 
     warned = false;
-    for (Long i = 0; i < size(titles); ++i) {
-        if (entry_order[i] < 0 && !titles[i].empty()) {
+    for (Long i = 0; i < size(entries); ++i) {
+        if (in_toc_comment[i]) {
             if (!warned) {
                 cout << u8"\n\n警告: 以下词条在 main.tex 中被注释，但仍会被编译" << endl;
                 warned = true;
@@ -1362,7 +1358,6 @@ inline Long entries_titles(vecStr32_O titles, vecStr32_O entries, vecLong_O entr
         }
     }
     cout << endl;
-    return entry_order1;
 }
 
 // delete spaces around chinese punctuations
@@ -2553,38 +2548,20 @@ inline void db_update_parts_chapters(
 }
 
 // update "entries" table of sqlite db, based on the info from main.tex
+// `entries` are a list of entreis from main.tex
 inline void db_update_entries_from_toc(
         vecStr32_I entries, vecLong_I entry_part, vecStr32_I part_ids,
-        vecLong_I entry_chap, vecStr32_I chap_ids,
-        vecLong_I entry_order)
+        vecLong_I entry_chap, vecStr32_I chap_ids)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    check_foreign_key(db.getHandle());
-    // get a list of entries (not deleted) from db
-    vecStr32 db_entries;
-    vecLong db_entries_deleted;
-    get_column(db_entries_deleted, db_entries, db.getHandle(), "entries", "deleted", "id");
-    cout << "there are already " << db_entries.size() << " entries in database." << endl;
-    SLS_ASSERT(db_entries_deleted.size() == db_entries.size());
-
-    // mark deleted entries
-    SQLite::Statement stmt_delete(db,
-        R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
-    for (Long i = 0; i < size(db_entries); ++i) {
-        Str32 &entry = db_entries[i];
-        if ((search(entry, entries) < 0) && (db_entries_deleted[i] == 0)) {
-            SLS_WARN("数据库中存在多余的词条且没有标记为 deleted（将标记为 deleted）： " + entry);
-            stmt_delete.bind(1, u8(entry));
-            stmt_delete.exec(); stmt_delete.reset();
-        }
-    }
 
     SQLite::Statement stmt_update(db,
         R"(UPDATE "entries" SET "part"=?, "caption"=?, "order"=? WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
+        Long entry_order = i + 1;
         Str entry = u8(entries[i]);
 
         // does entry already exist (expected)?
@@ -2597,25 +2574,25 @@ inline void db_update_entries_from_toc(
             get_row(row_int, db.getHandle(), "entries", "id", entry, {"order", "draft", "deleted"});
             bool changed = false;
             if (part_ids[entry_part[i]] != u32(row_str[3])) {
-                SLS_WARN("part has changed from " + row_str[3]+ " to " + part_ids[entry_part[i]]);
+                SLS_WARN(entry + ": part has changed from " + row_str[3]+ " to " + part_ids[entry_part[i]]);
                 changed = true;
             }
             if (chap_ids[entry_chap[i]] != u32(row_str[4])) {
-                SLS_WARN("chapter has changed from " + row_str[4] + " to " + chap_ids[entry_chap[i]]);
+                SLS_WARN(entry + ": chapter has changed from " + row_str[4] + " to " + chap_ids[entry_chap[i]]);
                 changed = true;
             }
-            if (entry_order[i] != row_int[0]) {
-                SLS_WARN("section has changed from " + to_string(row_int[0]) + " to " + to_string(entry_order[i]));
+            if (entry_order != row_int[0]) {
+                SLS_WARN(entry + ": order has changed from " + to_string(row_int[0]) + " to " + to_string(entry_order));
                 changed = true;
             }
-            if (!changed)
-                continue;
-            // cout << "debug: entry_part[i] = " << entry_part[i] << ",  entry_chap[i] = " << entry_chap[i] << endl;
-            stmt_update.bind(3, u8(part_ids[entry_part[i]]));
-            stmt_update.bind(4, u8(chap_ids[entry_chap[i]]));
-            stmt_update.bind(5, (int)entry_order[i]);
-            stmt_update.bind(8, entry);
-            stmt_update.exec(); stmt_update.reset();
+            if (changed) {
+                stmt_update.bind(3, u8(part_ids[entry_part[i]]));
+                stmt_update.bind(4, u8(chap_ids[entry_chap[i]]));
+                stmt_update.bind(5, (int) entry_order);
+                stmt_update.bind(8, entry);
+                stmt_update.exec();
+                stmt_update.reset();
+            }
         }
         else // entry_exist == false
             throw Str32(U"main.tex 中的词条在数据库中未找到： " + entry);
@@ -2896,29 +2873,26 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
 // convert PhysWiki/ folder to wuli.wiki/online folder
 inline void PhysWikiOnline()
 {
-    vecStr32 entries; // entries.id
-    vecLong entry_order; // entries.order
-    vecLong entry_part, entry_chap, chap_part; // toc part & chapter number of each entries[i]
-    vecStr32 titles; // Chinese titles in \entry{}
-    vecStr32 rules;  // for newcommand()
+    // TODO: delete once wuli.wiki/editor updates
+    {
+        vecStr32 entries, titles; // entries.id, entries.caption
+        vecLong entry_order; // entries.order
+        entries_titles(titles, entries, entry_order);
+        write_vec_str(titles, gv::path_data + U"titles.txt");
+        write_vec_str(entries, gv::path_data + U"entries.txt");
+    }
+
     vector<vecLong> img_orders;
     vector<vecStr32> img_ids, img_hashes;
     vecStr32 part_ids, part_name, chap_first, chap_last; // \part{}
     vecStr32 chap_ids, chap_name, entry_first, entry_last; // \chapter{}
-    Long Ntoc; // number of entries in table of contents
     
     // process bibliography
     vecStr32 bib_labels, bib_details;
     bibliography(bib_labels, bib_details);
     db_update_bib(bib_labels, bib_details);
 
-    Ntoc = entries_titles(titles, entries, entry_order);
-    write_vec_str(titles, gv::path_data + U"titles.txt");
-    write_vec_str(entries, gv::path_data + U"entries.txt");
-    file_remove(u8(gv::path_data) + "entry_order.matt");
-    Matt matt(u8(gv::path_data) + "entry_order.matt", "w");
-    save(entry_order, "entry_order", matt); save(Ntoc, "Ntoc", matt);
-    matt.close();
+    vecStr32 rules;  // for newcommand()
     define_newcommands(rules);
 
 
@@ -2949,16 +2923,20 @@ inline void PhysWikiOnline()
         PhysWikiOnline1(img_ids[i], img_orders[i], img_hashes[i], draft,
                         keywords_list[i], v_labels[i], v_label_orders[i], pentries[i], entries[i],
                         rules, db);
-        isdraft[i] = draft;
     }
 
     cout << u8"正在从 main.tex 生成目录 index.html ...\n" << endl;
-    vecBool is_drafts;
-    table_of_contents(part_ids, part_name, chap_first, chap_last,
-                      chap_ids, chap_name, chap_part, entry_first, entry_last,
-                      entries, titles, is_drafts, entry_part, entry_chap, db);
-    db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids, entry_order);
-    db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part, entry_first, entry_last);
+    {
+        vecStr32 entries, titles;
+        vecBool is_drafts;
+        vecLong entry_part, entry_chap, chap_part;
+        table_of_contents(part_ids, part_name, chap_first, chap_last,
+                          chap_ids, chap_name, chap_part, entry_first, entry_last,
+                          entries, titles, is_drafts, entry_part, entry_chap, db);
+        db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
+        db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
+                                 entry_first, entry_last);
+    }
 
     // db_update_figures(entries, img_ids, img_orders, img_hashes);
     // db_update_labels(entries, v_labels, v_label_orders);
