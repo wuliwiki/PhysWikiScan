@@ -3001,6 +3001,19 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
         vecLong img_orders, label_orders;
         vecStr32 img_ids, img_hashes, labels, pentries;
 
+        SQLite::Statement stmt_select(db,
+                                      R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
+        SQLite::Statement stmt_insert(db,
+                                      R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+        SQLite::Statement stmt_update(db,
+                                      R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+        SQLite::Statement stmt_select_fig(db,
+                                          R"(SELECT "entry", "order", "hash" FROM "figures" WHERE "id"=?;)");
+        SQLite::Statement stmt_insert_fig(db,
+                                          R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
+        SQLite::Statement stmt_update_fig(db,
+                                          R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+
         for (Long i = 0; i < size(entries); ++i) {
             cout << std::left << entries[i]; cout.flush();
 
@@ -3008,6 +3021,9 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
                             keywords, labels, label_orders, pentries, entries[i],
                             rules, db);
             cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
+
+            db_update_labels({entries[i]}, {labels}, {label_orders}, stmt_select, stmt_insert, stmt_update);
+            db_update_figures({entries[i]}, {img_ids}, {img_orders}, {img_hashes}, stmt_select_fig, stmt_insert_fig, stmt_update_fig);
         }
     }
 
