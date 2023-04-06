@@ -2723,68 +2723,59 @@ inline void db_update_author_history(Str32_I path)
 
 // db table "figures" and "figure_store"
 inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &img_ids,
-        const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes)
+    const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes,
+    SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
 {
     cout << "updating db for figures environments..." << endl;
-    vecStr32 db_ids, db_entries, db_hashes;
+    Str32 db_id, db_entry, db_hash;
     // vecStr32 new_ids, new_entries, new_hash;
-    vecLong db_orders;
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    SQLite::Statement stmt_select_figures(db,
-        R"(SELECT "id", "entry", "order", "hash" from "figures";)");
-    while (stmt_select_figures.executeStep()) {
-        db_ids.push_back(u32(stmt_select_figures.getColumn(0)));
-        db_entries.push_back(u32(stmt_select_figures.getColumn(1)));
-        db_orders.push_back((Long) int(stmt_select_figures.getColumn(2)));
-        db_hashes.push_back(u32(stmt_select_figures.getColumn(3)));
-    }
-
-    SQLite::Statement stmt_insert_figures(db,
-        R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
-
-    SQLite::Statement stmt_update_figures(db,
-        R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+    Long db_order;
 
     Str32 entry, id, hash, ext;
     Long order;
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
+
         for (Long j = 0; j < size(img_ids[i]); ++j) {
-//            cout << "img_ids[i]: " <<  img_ids[i] << "\n\n" << endl;
-//            cout << "img_orders[i]: " <<  img_orders[i] << "\n\n" << endl;
-//            cout << "img_hashes[i]: " <<  img_hashes[i] << "\n\n" << endl;
+            stmt_select.bind(1, u8(entry));
+
             id = img_ids[i][j]; order = img_orders[i][j]; hash = img_hashes[i][j];
-            Long ind = search(id, db_ids);
-            if (ind < 0) {
+            if (!stmt_select.executeStep()) {
+                stmt_select.reset();
                 SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
-                stmt_insert_figures.bind(1, u8(id));
-                stmt_insert_figures.bind(2, u8(entry));
-                stmt_insert_figures.bind(3, int(order));
-                stmt_insert_figures.bind(4, u8(hash));
-                stmt_insert_figures.executeStep(); stmt_insert_figures.reset();
+                stmt_insert.bind(1, u8(id));
+                stmt_insert.bind(2, u8(entry));
+                stmt_insert.bind(3, int(order));
+                stmt_insert.bind(4, u8(hash));
+                stmt_insert.exec(); stmt_insert.reset();
             } else { // 数据库中有 id, 检查其他信息是否改变
+                db_entry = u32(stmt_select.getColumn(0));
+                db_order = (int)stmt_select.getColumn(1);
+                db_hash = u32(stmt_select.getColumn(2));
+                stmt_select.reset();
+
                 bool update = false;
-                if (entry != db_entries[ind]) {
+                if (entry != db_entry) {
                     SLS_WARN("发现数据库中图片 entry 改变（将更新）：" + id + ": "
-                             + db_entries[ind] + " -> " + entry);
+                             + db_entry + " -> " + entry);
                     update = true;
                 }
-                if (order != db_orders[ind]) {
+                if (order != db_order) {
                     SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
-                             + to_string(db_orders[ind]) + " -> " + to_string(order));
+                             + to_string(db_order) + " -> " + to_string(order));
                     update = true;
                 }
-                if (hash != db_hashes[ind]) {
+                if (hash != db_hash) {
                     SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
-                             + db_hashes[ind] + " -> " + hash);
+                             + db_hash + " -> " + hash);
                     update = true;
                 }
                 if (update) {
-                    stmt_update_figures.bind(1, u8(entry));
-                    stmt_update_figures.bind(2, int(order));
-                    stmt_update_figures.bind(3, u8(hash));
-                    stmt_update_figures.bind(4, u8(id));
-                    stmt_update_figures.executeStep(); stmt_update_figures.reset();
+                    stmt_update.bind(1, u8(entry));
+                    stmt_update.bind(2, int(order));
+                    stmt_update.bind(3, u8(hash));
+                    stmt_update.bind(4, u8(id));
+                    stmt_update.exec(); stmt_update.reset();
                 }
             }
         }
@@ -2794,17 +2785,12 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 
 // update labels table of database
 // `ids` are xxx### where xxx is "type", and ### is "order"
-inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders)
+inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders,
+    SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
 {
     cout << "updating db for labels..." << endl;
     Str32 label, type, entry; Long order;
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
-    SQLite::Statement stmt_insert(db,
-        R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
-    SQLite::Statement stmt_update(db,
-        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+
     // db_data[id] = {type, entry, order}
     std::unordered_map<Str32, tuple<Str32, Str32, Long>> db_data;
     while (stmt_select.executeStep()) {
@@ -2814,6 +2800,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
         order = (int)stmt_select.getColumn(3);
         db_data[label] = std::make_tuple(type, entry, order);
     }
+    stmt_select.reset();
 
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
@@ -2910,6 +2897,21 @@ inline void PhysWikiOnline()
         vecLong img_orders, label_orders;
         vecStr32 keywords, labels, img_ids, img_hashes, pentries;
 
+        SQLite::Statement stmt_select(db,
+                                      R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
+        SQLite::Statement stmt_insert(db,
+                                      R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+        SQLite::Statement stmt_update(db,
+                                      R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+        SQLite::Statement stmt_select_fig(db,
+                                              R"(SELECT "entry", "order", "hash" FROM "figures" WHERE "id"=?;)");
+
+        SQLite::Statement stmt_insert_fig(db,
+                                              R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
+
+        SQLite::Statement stmt_update_fig(db,
+                                              R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+
         // 1st loop through tex files
         cout << u8"\n\n\n\n======  第 1 轮转换 ======\n" << endl;
         for (Long i = 0; i < size(entries); ++i) {
@@ -2921,6 +2923,9 @@ inline void PhysWikiOnline()
                             rules, db);
 
             cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
+
+            db_update_labels({entries[i]}, {labels}, {label_orders}, stmt_select, stmt_insert, stmt_update);
+            db_update_figures({entries[i]}, {img_ids}, {img_orders}, {img_hashes}, stmt_select_fig, stmt_insert_fig, stmt_update_fig);
         }
     }
 
