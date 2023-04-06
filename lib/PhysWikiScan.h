@@ -1551,6 +1551,7 @@ inline void table_of_contents(
                 throw Str32(U"数据库中找不到 main.tex 中词条： " + entry);
             titles.push_back(u32(stmt_select.getColumn(0)));
             is_draft.push_back((int)stmt_select.getColumn(1));
+            stmt_select.reset();
 
             if (title != titles.back())
                 throw Str32(U"目录标题 “" + title + U"” 与数据库中词条标题 “" + titles.back() + U"” 不符！");
@@ -2910,7 +2911,7 @@ inline void PhysWikiOnline()
         vecStr32 keywords, labels, img_ids, img_hashes, pentries;
 
         // 1st loop through tex files
-        cout << u8"======  第 1 轮转换 ======\n" << endl;
+        cout << u8"\n\n\n\n======  第 1 轮转换 ======\n" << endl;
         for (Long i = 0; i < size(entries); ++i) {
             cout << std::setw(5) << std::left << i
                  << std::setw(10) << std::left << entries[i]; cout.flush();
