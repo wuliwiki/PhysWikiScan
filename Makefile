@@ -91,7 +91,7 @@ flags = $(compiler_flag) $(debug_flag) $(release_flag) $(mkl_flag) $(boost_flag)
 ifeq ($(opt_static), true)
     static_flag = -static
 endif
-libs = $(static_flag) $(arpack_lib) $(mplapack_lib) $(gsl_lib) $(mkl_lib) $(lapacke_lib) $(cblas_lib) $(arb_lib) $(boost_lib) $(matfile_lib) $(sqlite_lib) $(sqlitecpp_lib) $(quad_math_lib)
+libs = $(static_flag) $(arpack_lib) $(mplapack_lib) $(gsl_lib) $(mkl_lib) $(lapacke_lib) $(cblas_lib) $(arb_lib) $(boost_lib) $(matfile_lib) $(sqlite_lib) $(sqlitecpp_lib) $(quad_math_lib) -l pthread -l dl
 
 # subfolders of SLISC, including SLISC, e.g. "SLISC/:SLISC/prec/:...:SLISC/lin/"
 in_paths = $(shell find SLISC -maxdepth 1 -type d -printf "../%p/:" | head -c -2)/
