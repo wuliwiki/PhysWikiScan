@@ -2389,6 +2389,73 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
     }
 }
 
+// get dependency tree from database, for 1 entry
+// also check for cycle, and check for any of it's pentries are redundant
+inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
+                        vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db)
+{
+    tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
+    SQLite::Statement stmt_select(
+            db,
+            R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ? AND "authors" != '';)");
+
+    Str32 pentry_str;
+    vector<vecStr32> pentries;
+    vecStr entries1 = {u8(entry)}, entries2;
+
+    // broad first search (BFS)
+    while (!entries1.empty()) {
+        for (auto &e : entries1) {
+            stmt_select.bind(1, e);
+            if(!stmt_select.executeStep()) continue;
+            entries.push_back(u32(stmt_select.getColumn(0)));
+            entries2.push_back(u8(entries.back()));
+            titles.push_back(u32(stmt_select.getColumn(1)));
+            parts.push_back(u32(stmt_select.getColumn(2)));
+            chapters.push_back(u32(stmt_select.getColumn(3)));
+            pentry_str = u32(stmt_select.getColumn(4));
+            pentries.emplace_back();
+            parse(pentries.back(), pentry_str);
+        }
+        entries1.clear(); swap(entries1, entries2);
+    }
+    tree.resize(entries.size());
+
+    // construct tree
+    for (Long i = 0; i < size(entries); ++i) {
+        for (auto &pentry : pentries[i]) {
+            Long from = search(pentry, entries);
+            if (from < 0) {
+                throw Str32(U"内部错误： 预备知识未找（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+            }
+            tree[from].push_back(i);
+        }
+    }
+
+    // check cyclic
+    vecLong cycle;
+    if (!dag_check(cycle, tree)) {
+        Str32 msg = U"存在循环预备知识: ";
+        for (auto ind : cycle)
+            msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
+        msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
+        throw msg;
+    }
+
+    // check redundency
+    vector<pair<Long,Long>> edges;
+    dag_reduce(edges, tree);
+    std::stringstream ss;
+    if (size(edges)) {
+        ss << u8"\n" << endl;
+        for (auto &edge : edges) {
+            ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
+               << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
+        }
+        throw ss.str();
+    }
+}
+
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
 inline Long dep_json(SQLite::Database &db)
@@ -2484,7 +2551,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I en
     SQLite::Statement stmt_count(db,
         R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author" ORDER BY record_count DESC;)");
     SQLite::Statement stmt_select(db,
-        R"(SELECT "hide" FROM "authors" WHERE "id"=?;)");
+        R"(SELECT "hide" FROM "authors" WHERE "id"=? AND "hide"=1;)");
 
     try {
         stmt_count.bind(1, u8(entry));
@@ -2495,27 +2562,26 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I en
     while (stmt_count.executeStep()) {
         Long id = (int)stmt_count.getColumn(0);
         Long time = 5*(int)stmt_count.getColumn(1);
-        if (time > 10) { // 十分钟以上才算作者， 忽略隐藏作者
-            // 检查是否隐藏作者
-            stmt_select.bind(1, int(id));
-            SLS_ASSERT(stmt_select.executeStep());
-            Long hidden = (int)stmt_select.getColumn(0);
-            stmt_select.reset();
-            if (hidden) continue;
-            author_ids.push_back(id);
-            minutes.push_back(time);
-        }
+        // 十分钟以上才算作者
+        if (time <= 10) continue;
+        // 检查是否隐藏作者
+        stmt_select.bind(1, int(id));
+        bool hidden = stmt_select.executeStep();
+        stmt_select.reset();
+        if (hidden) continue;
+        author_ids.push_back(id);
+        minutes.push_back(time);
     }
     stmt_count.reset();
-    if (author_ids.empty()) // no author found
-        return;
     Str32 str;
     join(str, author_ids);
     SQLite::Statement stmt_update(db,
         R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
     stmt_update.bind(1, u8(str));
     stmt_update.bind(2, u8(entry));
-    stmt_update.exec(); stmt_update.reset();
+    stmt_update.exec();
+    SLS_ASSERT(stmt_update.getChanges() > 0);
+    stmt_update.reset();
 }
 
 // update all authors
@@ -2523,12 +2589,13 @@ inline void db_update_authors(SQLite::Database &db)
 {
     cout << "updating database for author lists...." << endl;
     SQLite::Statement stmt_select( db,
-        R"(SELECT "id" FROM "entries" WHERE "deleted" = 0;)");
+        R"(SELECT "id" FROM "entries";)");
     Str32 entry; vecLong author_ids, counts;
     while (stmt_select.executeStep()) {
         entry = u32(stmt_select.getColumn(0));
         db_update_authors1(author_ids, counts, entry, db);
     }
+    stmt_select.reset();
     cout << "done!" << endl;
 }
 
@@ -3090,6 +3157,13 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
 
             db_update_labels({entries[i]}, {labels}, {label_orders}, stmt_select, stmt_insert, stmt_update);
             db_update_figures({entries[i]}, {img_ids}, {img_orders}, {img_hashes}, stmt_select_fig, stmt_insert_fig, stmt_update_fig);
+
+            // check dependency tree
+            {
+                vector<DGnode> tree;
+                vecStr32 _entries, _titles, parts, chapters;
+                db_get_tree1(tree, _entries, _titles, parts, chapters, entries[i], db);
+            }
         }
     }
 

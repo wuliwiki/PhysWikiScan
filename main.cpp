@@ -333,16 +333,16 @@ int main(int argc, char *argv[]) {
     }
     else if (args[0] == U"--entry" && args.size() > 1) {
         // process specified entries
-        vecStr32 entryN;
+        vecStr32 entries;
         Str32 arg;
         for (Long i = 1; i < size(args); ++i) {
             arg = args[i];
             if (arg[0] == '-' && arg[1] == '-')
                 break;
-            entryN.push_back(arg);
+            entries.push_back(arg);
         }
         try {
-            PhysWikiOnlineN(entryN);
+            PhysWikiOnlineN(entries);
         } catch (Str32_I msg) {
             cerr << u8(msg) << endl; return 0;
         } catch (Str_I msg) {
