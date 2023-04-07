@@ -2391,6 +2391,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
 
 // get dependency tree from database, for 1 entry
 // also check for cycle, and check for any of it's pentries are redundant
+// entries[0] (tree[0]) will be `entry`
 inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
                         vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db)
 {
@@ -2400,29 +2401,28 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
             db,
             R"(SELECT "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ?;)");
 
-    Str pentry_str;
+    Str pentry_str, e;
     vector<vecStr> pentries;
-    vecStr entries1 = {u8(entry)}, entries2;
+    deque<Str> q; q.push_back(u8(entry));
 
     // broad first search (BFS)
-    while (!entries1.empty()) {
-        for (auto &e : entries1) {
-            stmt_select.bind(1, e);
-            SLS_ASSERT(stmt_select.executeStep());
-            entries.push_back(u32(e));
-            titles.push_back(u32(stmt_select.getColumn(0)));
-            parts.push_back(u32(stmt_select.getColumn(1)));
-            chapters.push_back(u32(stmt_select.getColumn(2)));
-            pentry_str = (const char*)stmt_select.getColumn(3);
-            stmt_select.reset();
-            pentries.emplace_back();
-            parse(pentries.back(), pentry_str);
-            for (auto &pentry : pentries.back()) {
-                if (search(u32(pentry), entries) < 0)
-                    entries2.push_back(pentry);
-            }
+    while (!q.empty()) {
+        e = q.front(); q.pop_front();
+        stmt_select.bind(1, e);
+        SLS_ASSERT(stmt_select.executeStep());
+        entries.push_back(u32(e));
+        titles.push_back(u32(stmt_select.getColumn(0)));
+        parts.push_back(u32(stmt_select.getColumn(1)));
+        chapters.push_back(u32(stmt_select.getColumn(2)));
+        pentry_str = (const char*)stmt_select.getColumn(3);
+        stmt_select.reset();
+        pentries.emplace_back();
+        parse(pentries.back(), pentry_str);
+        for (auto &pentry : pentries.back()) {
+            if (search(u32(pentry), entries) < 0
+                && find(q.begin(), q.end(), pentry) == q.end())
+                q.push_back(pentry);
         }
-        entries1.clear(); swap(entries1, entries2);
     }
     tree.resize(entries.size());
 
@@ -2430,12 +2430,18 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
             Long from = search(u32(pentry), entries);
-            if (from < 0) {
-                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
-            }
+            if (from < 0)
+                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
+                    + pentry + U" -> " + entries[i]);
             tree[from].push_back(i);
         }
     }
+
+    //    // debug: print edges
+    //    for (Long i = 0; i < size(tree); ++i)
+    //        for (auto &j : tree[i])
+    //            cout << i << "." << titles[i] << "(" << entries[i] << ") => "
+    //                 << j << "." << titles[j] << "(" << entries[j] << ")" << endl;
 
     // check cyclic
     vecLong cycle;
@@ -2447,18 +2453,24 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
         throw msg;
     }
 
-    // check redundency
-    vector<pair<Long,Long>> edges;
-    dag_reduce(edges, tree);
+    // check redundancy
+    dag_inv(tree);
+    vector<vecLong> alt_paths;
+    dag_reduce(alt_paths, tree, 0);
     std::stringstream ss;
-    if (size(edges)) {
-        ss << u8"\n" << endl;
-        for (auto &edge : edges) {
-            ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
-               << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
+    if (size(alt_paths)) {
+        for (Long j = 0; j < size(alt_paths); ++j) {
+            auto &alt_path = alt_paths[j];
+            Long i_beg = alt_path[0], i_bak = alt_path.back();
+            ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << entries[i_bak] << ")" << endl;
+            ss << "   已存在路径： " << endl;
+            ss << "   " << titles[i_beg] << "(" << entries[i_beg] << ")" << endl;
+            for (Long i = 1; i < size(alt_path); ++i)
+                ss << "<- " << titles[alt_path[i]] << "(" << entries[alt_path[i]] << ")" << endl;
         }
         throw ss.str();
     }
+    dag_inv(tree);
 }
 
 // generate json file containing dependency tree
