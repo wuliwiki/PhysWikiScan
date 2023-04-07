@@ -454,4 +454,46 @@ inline Long footnote(Str32_IO str, Str32_I entry, Str32_I url)
     return N;
 }
 
+inline Long subsections(Str32_IO str)
+{
+    Long ind0 = 0, N = 0;
+    Str32 subtitle;
+    while (1) {
+        ind0 = find_command(str, U"subsection", ind0);
+        if (ind0 < 0)
+            return N;
+        ++N;
+        command_arg(subtitle, str, ind0);
+        Long ind1 = skip_command(str, ind0, 1);
+        str.replace(ind0, ind1 - ind0, U"<h2 class = \"w3-text-indigo\"><b>" + num2str32(N) + U". " + subtitle + U"</b></h2>");
+    }
+}
+
+// replace "\href{http://example.com}{name}"
+// with <a href="http://example.com">name</a>
+inline Long href(Str32_IO str)
+{
+    Long ind0 = 0, N = 0, tmp;
+    Str32 name, url;
+    while (1) {
+        ind0 = find_command(str, U"href", ind0);
+        if (ind0 < 0)
+            return N;
+        if (index_in_env(tmp, ind0, { U"equation", U"align", U"gather" }, str)) {
+            ++ind0; continue;
+        }
+        command_arg(url, str, ind0, 0);
+        command_arg(name, str, ind0, 1);
+        if (url.substr(0, 7) != U"http://" &&
+            url.substr(0, 8) != U"https://") {
+            throw Str32(U"链接格式错误: " + url);
+        }
+
+        Long ind1 = skip_command(str, ind0, 2);
+        str.replace(ind0, ind1 - ind0,
+            "<a href=\"" + url + "\" target = \"_blank\">" + name + "</a>");
+        ++N; ++ind0;
+    }
+}
+
 } // namespace slisc
