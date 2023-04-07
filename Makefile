@@ -7,7 +7,7 @@
 # compiler [g++|clang++|icpc|icpx]
 opt_compiler = g++
 # debug mode
-opt_debug = false
+opt_debug = true
 # address sanitizer (only for g++ dynamic debug build)
 opt_asan = $(opt_debug)
 # c++ standard [c++11|gnu++11]

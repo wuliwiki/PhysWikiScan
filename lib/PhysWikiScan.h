@@ -2357,7 +2357,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
             if (from < 0) {
-                throw Str32(U"内部错误： 预备知识未找（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
             }
             tree[from].push_back(i);
         }
@@ -2395,27 +2395,32 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
                         vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db)
 {
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
+
     SQLite::Statement stmt_select(
             db,
-            R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ? AND "authors" != '';)");
+            R"(SELECT "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ?;)");
 
-    Str32 pentry_str;
-    vector<vecStr32> pentries;
+    Str pentry_str;
+    vector<vecStr> pentries;
     vecStr entries1 = {u8(entry)}, entries2;
 
     // broad first search (BFS)
     while (!entries1.empty()) {
         for (auto &e : entries1) {
             stmt_select.bind(1, e);
-            if(!stmt_select.executeStep()) continue;
-            entries.push_back(u32(stmt_select.getColumn(0)));
-            entries2.push_back(u8(entries.back()));
-            titles.push_back(u32(stmt_select.getColumn(1)));
-            parts.push_back(u32(stmt_select.getColumn(2)));
-            chapters.push_back(u32(stmt_select.getColumn(3)));
-            pentry_str = u32(stmt_select.getColumn(4));
+            SLS_ASSERT(stmt_select.executeStep());
+            entries.push_back(u32(e));
+            titles.push_back(u32(stmt_select.getColumn(0)));
+            parts.push_back(u32(stmt_select.getColumn(1)));
+            chapters.push_back(u32(stmt_select.getColumn(2)));
+            pentry_str = (const char*)stmt_select.getColumn(3);
+            stmt_select.reset();
             pentries.emplace_back();
             parse(pentries.back(), pentry_str);
+            for (auto &pentry : pentries.back()) {
+                if (search(u32(pentry), entries) < 0)
+                    entries2.push_back(pentry);
+            }
         }
         entries1.clear(); swap(entries1, entries2);
     }
@@ -2424,9 +2429,9 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
     // construct tree
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
-            Long from = search(pentry, entries);
+            Long from = search(u32(pentry), entries);
             if (from < 0) {
-                throw Str32(U"内部错误： 预备知识未找（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
             }
             tree[from].push_back(i);
         }
@@ -3153,6 +3158,7 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
             PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, isdraft,
                             keywords, labels, label_orders, pentries, entries[i],
                             rules, db);
+            
             cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
 
             db_update_labels({entries[i]}, {labels}, {label_orders}, stmt_select, stmt_insert, stmt_update);
