@@ -185,8 +185,7 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select, SQLite::Statement &stmt_update_ref_by,
-                    SQLite::Statement &stmt_select_fig, SQLite::Statement &stmt_update_ref_by_fig)
+inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Database &db_rw)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
     Bool inEq;
@@ -195,6 +194,17 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
     Str32 db_ref_by_str;
     Str ref_by_str;
     set<Str> ref_by;
+
+    SQLite::Statement stmt_select(db_rw,
+                                   R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+    SQLite::Statement stmt_select_fig(db_rw,
+                                      R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+
+    SQLite::Statement stmt_update_ref_by(db_rw,
+                                         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_update_ref_by_fig(db_rw,
+                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+
     while (1) {
         newtab.clear(); file.clear();
         ind0 = find_command(str, U"autoref", ind0);
@@ -258,27 +268,37 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
         }
         ind3 = str.find('}', ind3);
         label0 = str.substr(ind1, ind3 - ind1); trim(label0);
-        SQLite::Statement *stmt;
+        Long db_label_order;
         if (type == U"fig") {
             stmt_select_fig.bind(1, u8(label_id(label0)));
-            stmt = &stmt_select_fig;
+            if (!stmt_select_fig.executeStep())
+                throw scan_err(U"\\autoref{} 中标签未找到： " + label0);
+            db_label_order = int(stmt_select_fig.getColumn(0));
+            parse(ref_by, stmt_select_fig.getColumn(1));
+            stmt_select_fig.reset();
+
+            if (ref_by.insert(u8(entry)).second) {
+                // inserted, update db
+                join(ref_by_str, ref_by);
+                stmt_update_ref_by_fig.bind(1, ref_by_str);
+                stmt_update_ref_by_fig.bind(2, u8(label0));
+                stmt_update_ref_by_fig.exec(); stmt_update_ref_by.reset();
+            }
         } else {
             stmt_select.bind(1, u8(label0));
-            stmt = &stmt_select;
-        }
+            if (!stmt_select.executeStep())
+                throw scan_err(U"\\autoref{} 中标签未找到： " + label0);
+            db_label_order = int(stmt_select.getColumn(0));
+            parse(ref_by, stmt_select.getColumn(1));
+            stmt_select.reset();
 
-        if (!stmt->executeStep())
-            throw scan_err(U"\\autoref{} 中标签未找到： " + label0);
-        Long db_label_order = int(stmt->getColumn(0));
-        parse(ref_by, stmt->getColumn(1));
-        stmt->reset();
-
-        if (ref_by.insert(u8(entry)).second) {
-            // inserted, update db
-            join(ref_by_str, ref_by);
-            stmt_update_ref_by.bind(1, ref_by_str);
-            stmt_update_ref_by.bind(2,u8(label0));
-            stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+            if (ref_by.insert(u8(entry)).second) {
+                // inserted, update db
+                join(ref_by_str, ref_by);
+                stmt_update_ref_by.bind(1, ref_by_str);
+                stmt_update_ref_by.bind(2, u8(label0));
+                stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+            }
         }
 
         file = gv::url + entry1 + U".html";

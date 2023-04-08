@@ -303,10 +303,10 @@ inline Long pay2div(Str32_IO str)
     }
 }
 
-inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order, Str32_I entry, Str32_I title)
+inline void last_next_buttons(Str32_IO html, SQLite::Database &db_read, Long_I order, Str32_I entry, Str32_I title)
 {
     Str32 last_entry, last_title, last_url, next_entry, next_title, next_url;
-    SQLite::Statement stmt_select(db,
+    SQLite::Statement stmt_select(db_read,
         R"(SELECT "id", "caption" FROM "entries" WHERE "order"=?;)");
 
     if (order < 0)
@@ -363,12 +363,8 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
 // generate html from a single tex
 inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_orders, vecStr32_O img_hashes,
     Bool_O draft, vecStr32_O keywords, vecStr32_O labels, vecLong_O label_orders,
-    vecStr32_O pentries, Str32_I entry, vecStr32_I rules, SQLite::Database &db)
+    vecStr32_O pentries, Str32_I entry, vecStr32_I rules, SQLite::Database &db_read)
 {
-    // insert a new entry (simulate what editor does)
-    SQLite::Statement stmt_insert(db,
-        R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
-
     Str32 str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
     CRLF_to_LF(str);
@@ -379,26 +375,17 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     Str32 db_title, authors, db_keys_str, db_pentry_str;
     Long order, db_draft;
     SQLite::Statement stmt_select
-            (db,
+            (db_read,
              R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, u8(entry));
-    if (!stmt_select.executeStep()) {
-        SLS_WARN(U"词条不存在数据库中， 将添加： " + entry);
-        stmt_insert.bind(1, u8(entry));
-        stmt_insert.bind(2, u8(title));
-        stmt_insert.exec(); stmt_insert.reset();
-        db_title = title;
-        authors = U"待更新";
-        order = 0; // 0 代表不在目录中
-        db_draft = 2; // 2 代表未知
-    } else {
-        db_title = u32(stmt_select.getColumn(0));
-        authors = u32(stmt_select.getColumn(1));
-        order = (int)stmt_select.getColumn(2);
-        db_keys_str = u32(stmt_select.getColumn(3));
-        db_pentry_str = u32(stmt_select.getColumn(4));
-        db_draft = (int)stmt_select.getColumn(5);
-    }
+    if (!stmt_select.executeStep())
+        internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加）： " + entry);
+    db_title = u32(stmt_select.getColumn(0));
+    authors = u32(stmt_select.getColumn(1));
+    order = (int)stmt_select.getColumn(2);
+    db_keys_str = u32(stmt_select.getColumn(3));
+    db_pentry_str = u32(stmt_select.getColumn(4));
+    db_draft = (int)stmt_select.getColumn(5);
 
     // read html template and \newcommand{}
     Str32 html;
@@ -480,7 +467,7 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     // process figure environments
     FigureEnvironment(img_ids, img_orders, img_hashes, str, entry);
     // get dependent entries from \pentry{}
-    get_pentry(pentries, str, db);
+    get_pentry(pentries, str, db_read);
     // issues environment
     issuesEnv(str);
     addTODO(str);
@@ -497,7 +484,7 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     // replace \upref{} with link icon
     upref(str, entry);
     href(str); // hyperlinks
-    cite(str, db); // citation
+    cite(str, db_read); // citation
     
     // footnote
     footnote(str, entry, gv::url);
@@ -520,9 +507,9 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     if (replace(html, U"PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
         throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
-    last_next_buttons(html, db, order, entry, title);
+    last_next_buttons(html, db_read, order, entry, title);
 
-    if (replace(html, U"PhysWikiAuthorList", db_get_author_list(entry, db)) != 1)
+    if (replace(html, U"PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
         throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
     // save html file
@@ -546,80 +533,87 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     }
 }
 
+inline void db_check_add_entry_simulate_editor(Str32_I entry, SQLite::Database &db_read)
+{
+    if (!exist(db_read.getHandle(), "entries", "id", u8(entry))) {
+        SLS_WARN(U"词条不存在数据库中， 将模拟 editor 添加： " + entry);
+        // 从 tex 文件获取标题
+        Str32 str;
+        read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
+        CRLF_to_LF(str);
+        Str32 title; get_title(title, str);
+        // 写入数据库
+        SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+        SQLite::Statement stmt_insert(db,
+            R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
+        stmt_insert.bind(1, u8(entry));
+        stmt_insert.bind(2, u8(title));
+        stmt_insert.exec(); stmt_insert.reset();
+    }
+}
+
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
 inline void PhysWikiOnlineN(vecStr32_I entries)
 {
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    SQLite::Statement stmt_select(
-            db,
-            R"(SELECT "caption", "keys", "pentry", "draft", "issues", "issueOther" from "entries" WHERE "id"=?;)");
-
-    vecStr32 rules;  // for newcommand()
-    define_newcommands(rules);
-
     vecStr32 titles(entries.size());
 
     {
+        SQLite::Database db_read(u8(gv::path_data + "scan.db"), SQLite::OPEN_READONLY);
+        SQLite::Statement stmt_select(
+                db_read,
+                R"(SELECT "caption", "keys", "pentry", "draft", "issues", "issueOther" from "entries" WHERE "id"=?;)");
+
+        vecStr32 rules;  // for newcommand()
+        define_newcommands(rules);
+
         cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
         Bool isdraft;
         vecStr32 keywords;
         vecLong img_orders, label_orders;
         vecStr32 img_ids, img_hashes, labels, pentries;
 
-        SQLite::Statement stmt_select(db,
-                                      R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
-        SQLite::Statement stmt_insert(db,
-                                      R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
-        SQLite::Statement stmt_update(db,
-                                      R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
-        SQLite::Statement stmt_select_fig(db,
-                                          R"(SELECT "entry", "order", "hash" FROM "figures" WHERE "id"=?;)");
-        SQLite::Statement stmt_insert_fig(db,
-                                          R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
-        SQLite::Statement stmt_update_fig(db,
-                                          R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
-
         for (Long i = 0; i < size(entries); ++i) {
-            cout << std::left << entries[i]; cout.flush();
+            auto &entry = entries[i];
 
+            cout << std::left << entries[i] << std::setw(20); cout.flush();
+
+            db_check_add_entry_simulate_editor(entry, db_read);
             PhysWikiOnline1(titles[i], img_ids, img_orders, img_hashes, isdraft,
-                            keywords, labels, label_orders, pentries, entries[i],
-                            rules, db);
+                            keywords, labels, label_orders, pentries, entry,
+                            rules, db_read);
             
-            cout << std::setw(20) << std::left << titles[i] << endl; cout.flush();
+            cout << std::left << titles[i] << endl; cout.flush();
 
-            db_update_labels({entries[i]}, {labels}, {label_orders}, stmt_select, stmt_insert, stmt_update);
-            db_update_figures({entries[i]}, {img_ids}, {img_orders}, {img_hashes}, stmt_select_fig, stmt_insert_fig, stmt_update_fig);
+            {
+                SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+                db_update_labels({entry}, {labels}, {label_orders}, db_rw);
+                db_update_figures({entry}, {img_ids}, {img_orders},
+                                  {img_hashes}, db_rw);
+            }
 
             // check dependency tree
             {
                 vector<DGnode> tree;
                 vecStr32 _entries, _titles, parts, chapters;
-                db_get_tree1(tree, _entries, _titles, parts, chapters, entries[i], db);
+                db_get_tree1(tree, _entries, _titles, parts, chapters, entry, db_read);
             }
         }
     }
 
     {
         cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
+        SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
         Str32 html, fname;
-        SQLite::Statement stmt_select2(db,
-                                       R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
-        SQLite::Statement stmt_update_ref_by(db,
-                                             R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
-        SQLite::Statement stmt_select_fig(db,
-                                          R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
-        SQLite::Statement stmt_update_ref_by_fig(db,
-                                                 R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
         for (Long i = 0; i < size(entries); ++i) {
+            auto &entry = entries[i];
             cout << std::setw(5) << std::left << i
-                 << std::setw(10) << std::left << entries[i]
+                 << std::setw(10) << std::left << entry
                  << std::setw(20) << std::left << titles[i] << endl; cout.flush();
-            fname = gv::path_out + entries[i] + ".html";
+            fname = gv::path_out + entry + ".html";
             read(html, fname + ".tmp"); // read html file
             // process \autoref and \upref
-            autoref(html, entries[i], stmt_select2, stmt_update_ref_by, stmt_select_fig, stmt_update_ref_by);
+            autoref(html, entry, db_rw);
             write(html, fname); // save html file
             file_remove(u8(fname) + ".tmp");
         }
@@ -627,11 +621,65 @@ inline void PhysWikiOnlineN(vecStr32_I entries)
     }
 }
 
+// --titles
+inline void arg_titles()
+{
+    // update entries.txt and titles.txt
+    vecStr32 titles, entries, isDraft;
+    entries_titles(titles, entries);
+    write_vec_str(titles, gv::path_data + U"titles.txt");
+    write_vec_str(entries, gv::path_data + U"entries.txt");
+}
+
+// --toc
+// table of contents
+// generate index.html from main.tex
+inline void arg_toc()
+{
+    vecStr32 titles, entries;
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    vecBool is_draft;
+    vecStr32 part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
+    vecLong entry_part, chap_part, entry_chap;
+    table_of_contents(part_ids, part_name, chap_first, chap_last,
+                      chap_ids, chap_name, chap_part, entry_first, entry_last,
+                      entries, titles, is_draft, entry_part, entry_chap, db);
+    db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
+                             entry_first, entry_last);
+    db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
+}
+
+// --bib
+inline void arg_bib()
+{
+    // process bibliography
+    vecStr32 bib_labels, bib_details;
+    bibliography(bib_labels, bib_details);
+    db_update_bib(bib_labels, bib_details);
+}
+
+// --history
+// update db "history" table from backup files
+inline void arg_history(Str32_I path)
+{
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    db_update_author_history(path, db);
+    db_update_authors(db);
+}
+
 // convert PhysWiki/ folder to wuli.wiki/online folder
 // goal: should not need to be used!
 inline void PhysWikiOnline()
 {
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+
+    gv::is_entire = true;
+    // remove matlab files
+    vecStr fnames;
+    ensure_dir(u8(gv::path_out) + "code/matlab/");
+    file_list_full(fnames, u8(gv::path_out) + "code/matlab/");
+    for (Long i = 0; i < size(fnames); ++i)
+        file_remove(fnames[i]);
 
     // get entries from folder, titles from main.tex
     vecStr32 entries;
@@ -756,4 +804,12 @@ inline void PhysWikiOnline()
     }
 
     // TODO: warn unused figures, based on "ref_by"
+
+    if (!illegal_chars.empty()) {
+        SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
+        ofstream fout("data/illegal_chars.txt");
+        for (auto c: illegal_chars) {
+            fout << Long(c) << endl;
+        }
+    }
 }

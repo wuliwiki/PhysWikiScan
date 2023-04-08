@@ -179,10 +179,7 @@ int main(int argc, char *argv[]) {
     get_args(args, argc, argv);
     timer.tic();
 
-    try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
-    catch (const std::exception &e) {
-        cerr << e.what() << endl; return 0;
-    }
+    get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);
     if (gv::url == U"https://wuli.wiki/online/" || gv::url == U"https://wuli.wiki/changed/")
         gv::is_wiki = true;
     else
@@ -191,197 +188,100 @@ int main(int argc, char *argv[]) {
         gv::is_eng = true;
 
     // === parse arguments ===
-
-    if (args[0] == U"." && args.size() == 1) {
-        gv::is_entire = true;
-        // remove matlab files
-        vecStr fnames;
-        ensure_dir(u8(gv::path_out) + "code/matlab/");
-        file_list_full(fnames, u8(gv::path_out) + "code/matlab/");
-        for (Long i = 0; i < size(fnames); ++i)
-            file_remove(fnames[i]);
-        // interactive full run (ask to try again in error)
-        try {PhysWikiOnline();}
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-        if (!illegal_chars.empty()) {
-            SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
-            ofstream fout("data/illegal_chars.txt");
-            for (auto c : illegal_chars) {
-                fout << Long(c) << endl;
+    try {
+        if (args[0] == U"." && args.size() == 1)
+            PhysWikiOnline();
+        else if (args[0] == U"--titles")
+            arg_titles();
+        else if (args[0] == U"--toc" && args.size() == 1)
+            arg_toc();
+        else if (args[0] == U"--wc" && args.size() == 1)
+            word_count();
+        else if (args[0] == U"--inline-eq-space")
+            // check format and auto correct .tex files
+            add_space_around_inline_eq(gv::path_in);
+        else if (args[0] == U",")
+            // check format and auto correct .tex files
+            replace_eng_punc_to_chinese(gv::path_in);
+        else if (args[0] == U"--autoref" && args.size() == 4) {
+            // check a label, add one if necessary
+            // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
+            Str32 label;
+            Long ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()));
+            vecStr32 output;
+            if (ret == 0) { // added
+                Str32 id = args[2] + args[3];
+                output = {label, U"added"};
+            } else // ret == 1, already exist
+                output = {label, U"exist"};
+            cout << output[0] << endl;
+            cout << output[1] << endl;
+            write_vec_str(output, gv::path_data + U"autoref.txt");
+        } else if (args[0] == U"--autoref-dry" && args.size() == 4) {
+            // check a label only, without adding
+            Str32 label;
+            Long ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()), true);
+            vecStr32 output;
+            if (ret == 0) // added
+                output = {label, U"added"};
+            else // ret == 1, already exist
+                output = {label, U"exist"};
+            cout << output[0] << endl;
+            cout << output[1] << endl;
+        } else if (args[0] == U"--entry" && args.size() > 1) {
+            // process specified entries
+            vecStr32 entries;
+            Str32 arg;
+            for (Long i = 1; i < size(args); ++i) {
+                arg = args[i];
+                if (arg[0] == '-' && arg[1] == '-')
+                    break;
+                entries.push_back(arg);
             }
-        }
-    }
-    else if (args[0] == U"--titles") {
-        // update entries.txt and titles.txt
-        vecStr32 titles, entries, isDraft;
-        try {
-            entries_titles(titles, entries);
-        }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-        write_vec_str(titles, gv::path_data + U"titles.txt");
-        write_vec_str(entries, gv::path_data + U"entries.txt");
-    }
-    else if (args[0] == U"--toc" && args.size() == 1) {
-        // table of contents
-        // generate index.html from main.tex
-        vecStr32 titles, entries;
-        SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-        vecBool is_draft;
-        vecStr32 part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
-        vecLong entry_part, chap_part, entry_chap;
-        try {
-            table_of_contents(part_ids, part_name, chap_first, chap_last,
-                              chap_ids, chap_name, chap_part, entry_first, entry_last,
-                              entries, titles, is_draft, entry_part, entry_chap, db);
-            db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
-                                     entry_first, entry_last);
-            db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
-        }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-    }
-    else if (args[0] == U"--wc" && args.size() == 1) {
-        // count number of Chinese characters (including punc)
-        vecStr32 entries;
-        Str32 str;
-        Long N = 0;
-        sqlite3* db;
-        if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
-            throw Str32(U"内部错误： 无法打开 scan.db");
-        get_column(entries, db, "entries", "id");
-        for (Long i = 0; i < size(entries); ++i) {
-            read(str, gv::path_in + "contents/" + entries[i] + U".tex");
-            rm_comments(str);
-            for (Long j = 0; j < (Long)str.size(); ++j)
-                if (is_chinese(str[j]) || is_chinese_punc(str[j]))
-                    ++N;
-        }
-        cout << u8"中文字符数 (含标点): " << N << endl;
-    }
-    else if (args[0] == U"--inline-eq-space") {
-        // check format and auto correct .tex files
-        add_space_around_inline_eq(gv::path_in);
-    }
-    else if (args[0] == U",") {
-        // check format and auto correct .tex files
-        replace_eng_punc_to_chinese(gv::path_in);
-    }
-    else if (args[0] == U"--autoref" && args.size() == 4) {
-        // check a label, add one if necessary
-        // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
-        Str32 label;
-        Long ret;
-        try {
-            ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()));
-        }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-        vecStr32 output;
-        if (ret == 0) { // added
-            Str32 id = args[2] + args[3];
-            output = { label, U"added" };
-        }
-        else // ret == 1, already exist
-            output = {label, U"exist"};
-        cout << output[0] << endl;
-        cout << output[1] << endl;
-        write_vec_str(output, gv::path_data + U"autoref.txt");
-    }
-    else if (args[0] == U"--autoref-dry" && args.size() == 4) {
-        // check a label only, without adding
-        Str32 label;
-        Long ret;
-        try {
-            ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()), true);
-        }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-        vecStr32 output;
-        if (ret == 0) // added
-            output = { label, U"added" };
-        else // ret == 1, already exist
-            output = { label, U"exist" };
-        cout << output[0] << endl;
-        cout << output[1] << endl;
-    }
-    else if (args[0] == U"--entry" && args.size() > 1) {
-        // process specified entries
-        vecStr32 entries;
-        Str32 arg;
-        for (Long i = 1; i < size(args); ++i) {
-            arg = args[i];
-            if (arg[0] == '-' && arg[1] == '-')
-                break;
-            entries.push_back(arg);
-        }
-        try {
             PhysWikiOnlineN(entries);
+        } else if (args[0] == U"--bib")
+            arg_bib();
+        else if (args[0] == U"--history" && args.size() <= 2) {
+            Str32 path;
+            if (args.size() == 2) {
+                path = args[1];
+                assert(path[path.size() - 1] == '/');
+            } else
+                path = U"../PhysWiki-backup/";
+            arg_history(path);
+        } else if (args[0] == U"--hide" && args.size() > 1) {
+            Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+            read(str, fname);
+            CRLF_to_LF(str);
+            hide_eq_verb(str);
+            write(str, fname);
+        } else if (args[0] == U"--unhide" && args.size() > 1) {
+            Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+            read(str, fname);
+            CRLF_to_LF(str);
+            unhide_eq_verb(str);
+            write(str, fname);
+        } else if (args[0] == U"--all-commands") {
+            vecStr32 commands;
+            all_commands(commands, gv::path_in + U"contents/");
+            write_vec_str(commands, gv::path_data + U"commands.txt");
+        } else {
+            cerr << u8"内部错误： 命令不合法" << endl;
+            return 0;
         }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
+
+        // PhysWikiCheck(U"../PhysWiki/contents/");
+        cout.precision(3);
+        cout << u8"done! time (s): " << timer.toc() << endl;
+        if (argc <= 1) {
+            cout << u8"按任意键退出..." << endl;
+            Char c = getchar();
+            ++c;
         }
     }
-    else if (args[0] == U"--bib") {
-        // process bibliography
-        vecStr32 bib_labels, bib_details;
-        try { bibliography(bib_labels, bib_details); }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-        db_update_bib(bib_labels, bib_details);
-    }
-    else if (args[0] == U"--history" && args.size() <= 2) {
-        Str32 path;
-        if (args.size() == 2) {
-            path = args[1]; assert(path[path.size()-1] == '/');
-        }
-        else
-            path = U"../PhysWiki-backup/";
-        // update db "history" table from backup files
-        try {
-            SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-            db_update_author_history(path, db);
-            db_update_authors(db);
-        }
-        catch (const std::exception &e) {
-            cerr << e.what() << endl; return 0;
-        }
-    }
-    else if (args[0] == U"--hide" && args.size() > 1) {
-        Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
-        read(str, fname); CRLF_to_LF(str);
-        hide_eq_verb(str);
-        write(str, fname);
-    }
-    else if (args[0] == U"--unhide" && args.size() > 1) {
-        Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
-        read(str, fname); CRLF_to_LF(str);
-        unhide_eq_verb(str);
-        write(str, fname);
-    }
-    else if (args[0] == U"--all-commands") {
-        vecStr32 commands;
-        all_commands(commands, gv::path_in + U"contents/");
-        write_vec_str(commands, gv::path_data + U"commands.txt");
-    }
-    else {
-        cerr << u8"内部错误： 命令不合法" << endl;
+    catch (const std::exception &e) {
+        cerr << e.what() << endl;
         return 0;
-    }
-    
-    // PhysWikiCheck(U"../PhysWiki/contents/");
-    cout.precision(3);
-    cout << u8"done! time (s): " << timer.toc() << endl;
-    if (argc <= 1) {
-        cout << u8"按任意键退出..." << endl;
-        Char c = getchar(); ++c;
     }
 
     return 0;

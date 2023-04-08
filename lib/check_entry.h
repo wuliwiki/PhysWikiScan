@@ -37,7 +37,7 @@ inline Bool is_draft(Str32_I str)
 }
 
 // get dependent entries (id) from \pentry{}
-inline void get_pentry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
+inline void get_pentry(vecStr32_O pentries, Str32_I str, SQLite::Database &db_read)
 {
     Long ind0 = 0;
     Str32 temp, depEntry;
@@ -53,7 +53,7 @@ inline void get_pentry(vecStr32_O pentries, Str32_I str, SQLite::Database &db)
             if (ind1 < 0)
                 return;
             command_arg(depEntry, temp, ind1, 0, 't');
-            if (!exist(db.getHandle(), "entries", "id", u8(depEntry)))
+            if (!exist(db_read.getHandle(), "entries", "id", u8(depEntry)))
                 throw scan_err("\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             if (search(depEntry, pentries) >= 0)
                 throw scan_err("\\pentry{} 中预备知识重复： " + depEntry + ".tex");

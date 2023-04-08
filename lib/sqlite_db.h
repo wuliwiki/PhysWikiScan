@@ -99,12 +99,12 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
 // also check for cycle, and check for any of it's pentries are redundant
 // entries[0] (tree[0]) will be `entry`
 inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
-                        vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db)
+                        vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db_read)
 {
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
 
     SQLite::Statement stmt_select(
-            db,
+            db_read,
             R"(SELECT "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ?;)");
 
     Str pentry_str, e;
@@ -179,10 +179,10 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
     dag_inv(tree);
 }
 
-// calculate author list of an entry, based on "history" table counts in db
-inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db)
+// calculate author list of an entry, based on "history" table counts in db_read
+inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db_read)
 {
-    SQLite::Statement stmt_select(db, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_select(db_read, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, u8(entry));
     if (!stmt_select.executeStep())
         throw internal_err(U"author_list(): 数据库中不存在词条： " + entry);
@@ -198,7 +198,7 @@ inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db)
     parse(author_ids, str);
 
     vecStr32 authors;
-    SQLite::Statement stmt_select2(db, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
+    SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
     for (int id : author_ids) {
         stmt_select2.bind(1, id);
         if (!stmt_select2.executeStep())
@@ -525,7 +525,7 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
 // db table "figures" and "figure_store"
 inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &img_ids,
     const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes,
-    SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
+    SQLite::Database &db)
 {
     // cout << "updating db for figures environments..." << endl;
     Str32 db_id, db_entry, db_hash;
@@ -534,6 +534,14 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 
     Str32 entry, id, hash, ext;
     Long order;
+
+    SQLite::Statement stmt_select(db,
+                                      R"(SELECT "entry", "order", "hash" FROM "figures" WHERE "id"=?;)");
+    SQLite::Statement stmt_insert(db,
+                                      R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
+    SQLite::Statement stmt_update(db,
+                                      R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
 
@@ -586,8 +594,15 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 // update labels table of database
 // `ids` are xxx### where xxx is "type", and ### is "order"
 inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders,
-    SQLite::Statement &stmt_select, SQLite::Statement &stmt_insert, SQLite::Statement &stmt_update)
+    SQLite::Database &db)
 {
+    SQLite::Statement stmt_select(db,
+                                  R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
+    SQLite::Statement stmt_insert(db,
+                                  R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+    SQLite::Statement stmt_update(db,
+                                  R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+
     // cout << "updating db for labels..." << endl;
     Str32 label, type, entry; Long order;
 

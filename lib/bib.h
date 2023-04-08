@@ -1,10 +1,10 @@
 #pragma once
 
 // replace "\cite{}" with `[?]` cytation linke
-inline Long cite(Str32_IO str, SQLite::Database &db)
+inline Long cite(Str32_IO str, SQLite::Database &db_read)
 {
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "order", "details" from "bibliography" WHERE "id"=?;)");
+    SQLite::Statement stmt_select(db_read,
+                                  R"(SELECT "order", "details" from "bibliography" WHERE "id"=?;)");
     Long ind0 = 0, N = 0;
     Str32 bib_label;
     while (1) {
