@@ -110,5 +110,5 @@ link: # force link
 clean:
 	rm -f *.o *.x
 
-main.o: main.cpp lib/PhysWikiScan.h
+main.o: main.cpp lib/*.h
 	$(opt_compiler) $(flags) -c main.cpp

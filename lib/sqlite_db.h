@@ -192,6 +192,9 @@ inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db)
     stmt_select.reset();
     if (str.empty())
         return U"待更新";
+    for (auto c : str)
+        if ((c < '0' || c > '9') && c != ' ')
+            return U"待更新";
     parse(author_ids, str);
 
     vecStr32 authors;
