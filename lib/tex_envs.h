@@ -21,7 +21,7 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
         Str32 tmp1 = U"id = \"fig_";
         Long ind_label = str.rfind(tmp1, intvFig.L(i));
         if (ind_label < 0 || (i-1 >= 0 && ind_label < intvFig.R(i-1)))
-            throw Str32(U"图片必须有标签， 请使用上传图片按钮。");
+            throw scan_err(u8"图片必须有标签， 请使用上传图片按钮。");
         ind_label += tmp1.size();
         Long ind_label_end = str.find(U'\"', ind_label);
         SLS_ASSERT(ind_label_end > 0);
@@ -34,13 +34,13 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
         Doub width; // figure width in cm
         str2double(width, str, ind0);
         if (width > 14.25)
-            throw Str32(U"图" + figNo + U"尺寸不能超过 14.25cm");
+            throw scan_err(U"图" + figNo + U"尺寸不能超过 14.25cm");
 
         // get file name of figure
         Long indName1 = str.find(U"figures/", ind0) + 8;
         Long indName2 = str.find(U"}", ind0) - 1;
         if (indName1 < 0 || indName2 < 0) {
-            throw Str32(U"读取图片名错误");
+            throw scan_err(u8"读取图片名错误");
         }
         figName = str.substr(indName1, indName2 - indName1 + 1);
         trim(figName);
@@ -56,12 +56,12 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
             figName = figName.substr(0, Nname - 4);
         }
         else
-            throw Str32(U"图片格式不支持");
+            throw internal_err(U"图片格式不支持：" + figName);
 
         fname_in = gv::path_in + U"figures/" + figName + U"." + format;
 
         if (!file_exist(fname_in))
-            throw Str32(U"图片 \"" + fname_in + U"\" 未找到");
+            throw internal_err(U"图片 \"" + fname_in + U"\" 未找到");
 
         version.clear();
         // last_modified(version, fname_in);
@@ -98,11 +98,11 @@ inline Long FigureEnvironment(vecStr32_O img_ids, vecLong_O img_orders, vecStr32
         // get caption of figure
         ind0 = find_command(str, U"caption", ind0);
         if (ind0 < 0) {
-            throw Str32(U"图片标题未找到");
+            throw scan_err(u8"图片标题未找到， 请使用上传图片按钮！");
         }
         command_arg(caption, str, ind0);
         if ((Long)caption.find(U"\\footnote") >= 0)
-            throw Str32(U"图片标题中不能添加 \\footnote");
+            throw scan_err(u8"图片标题中不能添加 \\footnote{}");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
         href = gv::url + img_hashes.back() + U"." + format;
@@ -168,7 +168,7 @@ inline Long issuesEnv(Str32_IO str)
 {
     Long Nenv = Env2Tag(U"issues", U"<div class = \"w3-panel w3-round-large w3-sand\"><ul>", U"</ul></div>", str);
     if (Nenv > 1)
-        throw Str32(U"不支持多个 issues 环境， issues 必须放到最开始");
+        throw scan_err(u8"不支持多个 issues 环境， issues 必须放到最开始");
     else if (Nenv == 0)
         return 0;
 

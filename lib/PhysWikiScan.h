@@ -22,6 +22,27 @@ namespace gv {
     Bool is_entire = false; // running one tex or the entire wiki
 }
 
+class scan_err : std::exception
+{
+private:
+    Str m_msg;
+public:
+    explicit scan_err(Str_I msg): m_msg(msg) {}
+    explicit scan_err(Str32_I msg): m_msg(u8(msg)) {}
+
+    const char* what() const noexcept {
+        return m_msg.c_str();
+    }
+};
+
+// 内部错误
+class internal_err : public scan_err
+{
+public:
+    explicit internal_err(Str_I msg): scan_err(u8"内部错误（请联系管理员）： " + msg) {}
+    explicit internal_err(Str32_I msg): internal_err(u8(msg)) {}
+};
+
 #include "../TeX/tex2html.h"
 #include "check_entry.h"
 #include "labels.h"
@@ -239,7 +260,8 @@ inline Long wikipedia_link(Str32_IO str)
         command_arg(link, str, ind0);
         ind0 = skip_command(str, ind0);
         ind0 = expect(str, U"{", ind0);
-        if (ind0 < 0) throw Str32(U"\\href{网址}{文字} 命令格式错误！");
+        if (ind0 < 0)
+            throw scan_err(u8"\\href{网址}{文字} 命令格式错误！");
         Long ind1 = pair_brace(str, ind0 - 1);
         if (Long(link.find(U"wikipedia.org")) > 0) {
             replace(link, U"wikipedia.org", alter_domain);
@@ -261,7 +283,7 @@ inline Bool ind_in_pay(Str32_I str, Long_I ind)
     else if (ikey == 0)
         return true;
     else
-        throw Str32(U"ind_in_pay(): unknown!");
+        throw scan_err("ind_in_pay(): unknown!");
 }
 
 // deal with "\pay"..."\paid"
@@ -276,7 +298,7 @@ inline Long pay2div(Str32_IO str)
         str.replace(ind0, 4, U"<div id=\"pay\" style=\"display:inline\">");
         ind0 = find_command(str, U"paid", ind0);
         if (ind0 < 0)
-            throw Str32(U"\\pay 命令没有匹配的 \\paid 命令");
+            throw scan_err(u8"\\pay 命令没有匹配的 \\paid 命令");
         str.replace(ind0, 5, U"</div>");
     }
 }
@@ -288,7 +310,7 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
         R"(SELECT "id", "caption" FROM "entries" WHERE "order"=?;)");
 
     if (order < 0)
-        throw Str32(U"内部错误： last_next_buttons()");
+        throw internal_err(u8"last_next_buttons()");
 
     // find last
     if (order == 0) {
@@ -302,7 +324,7 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
     else {
         stmt_select.bind(1, (int)order-1);
         if (!stmt_select.executeStep())
-            throw Str32(U"内部错误： 找不到具有以下 order 的词条： " + num2str(order-1));
+            throw internal_err(u8"找不到具有以下 order 的词条： " + num2str(order-1));
         else {
             last_entry = u32(stmt_select.getColumn(0));
             last_title = u32(stmt_select.getColumn(1));
@@ -329,13 +351,13 @@ inline void last_next_buttons(Str32_IO html, SQLite::Database &db, Long_I order,
 
     // insert into html
     if (replace(html, U"PhysWikiLastEntryURL", gv::url+last_entry+U".html") != 2)
-        throw Str32(U"内部错误： \"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiNextEntryURL", gv::url+next_entry+U".html") != 2)
-        throw Str32(U"内部错误： \"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiLastTitle", last_title) != 2)
-        throw Str32(U"内部错误： \"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiNextTitle", next_title) != 2)
-        throw Str32(U"内部错误： \"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
 // generate html from a single tex
@@ -361,7 +383,7 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
              R"(SELECT "caption", "authors", "order", "keys", "pentry", "draft" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, u8(entry));
     if (!stmt_select.executeStep()) {
-        SLS_WARN(U"内部错误： 词条不存在数据库中， 将添加： " + entry);
+        SLS_WARN(U"词条不存在数据库中， 将添加： " + entry);
         stmt_insert.bind(1, u8(entry));
         stmt_insert.bind(2, u8(title));
         stmt_insert.exec(); stmt_insert.reset();
@@ -398,20 +420,20 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
             keywords_str += U"," + keywords[i];
         }
         if (replace(html, U"PhysWikiHTMLKeywords", keywords_str) != 1)
-            throw Str32(U"内部错误： \"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
+            throw internal_err(u8"\"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
     else {
         if (replace(html, U"PhysWikiHTMLKeywords", U"高中物理, 物理竞赛, 大学物理, 高等数学") != 1)
-            throw Str32(U"内部错误： \"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
+            throw internal_err(u8"\"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
 
     // TODO: enable this when editor can do the rename in db
 //    if (!db_title.empty() && title != db_title)
-//        throw Str32(U"检测到标题改变（" + db_title + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
+//        throw scan_err(U"检测到标题改变（" + db_title + U" ⇒ " + title + U"）， 请使用重命名按钮修改标题");
 
     // insert HTML title
     if (replace(html, U"PhysWikiHTMLtitle", title) != 1)
-        throw Str32(U"内部错误： \"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 
     // check globally forbidden char
     global_forbid_char(str);
@@ -491,17 +513,17 @@ inline void PhysWikiOnline1(Str32_O title, vecStr32_O img_ids, vecLong_O img_ord
     Command2Tag(U"x", U"<code>", U"</code>", str);
     // insert body Title
     if (replace(html, U"PhysWikiTitle", title) != 1)
-        throw Str32(U"内部错误： \"PhysWikiTitle\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiTitle\" 在 entry_template.html 中数量不对");
     // insert HTML body
     if (replace(html, U"PhysWikiHTMLbody", str) != 1)
-        throw Str32(U"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
     if (replace(html, U"PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
-        throw Str32(U"内部错误： \"PhysWikiEntry\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
     last_next_buttons(html, db, order, entry, title);
 
     if (replace(html, U"PhysWikiAuthorList", db_get_author_list(entry, db)) != 1)
-        throw Str32(U"内部错误： \"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");;
+        throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
     // save html file
     write(html, gv::path_out + entry + ".html.tmp");

@@ -62,7 +62,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
             if (from < 0) {
-                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+                throw internal_err(U"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
             }
             tree[from].push_back(i);
         }
@@ -137,7 +137,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
         for (auto &pentry : pentries[i]) {
             Long from = search(u32(pentry), entries);
             if (from < 0)
-                throw Str32(U"内部错误： 预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
+                throw internal_err(U"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
                     + pentry + U" -> " + entries[i]);
             tree[from].push_back(i);
         }
@@ -185,7 +185,7 @@ inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db)
     SQLite::Statement stmt_select(db, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, u8(entry));
     if (!stmt_select.executeStep())
-        throw Str32(U"内部错误： author_list(): 数据库中不存在词条： " + entry);
+        throw internal_err(U"author_list(): 数据库中不存在词条： " + entry);
 
     vecLong author_ids;
     Str32 str = u32(stmt_select.getColumn(0));
@@ -202,7 +202,7 @@ inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db)
     for (int id : author_ids) {
         stmt_select2.bind(1, id);
         if (!stmt_select2.executeStep())
-            throw Str32("词条： " + entry + " 作者 id 不存在： " + num2str(id));
+            throw internal_err("词条： " + entry + " 作者 id 不存在： " + num2str(id));
         authors.push_back(u32(stmt_select2.getColumn(0)));
         stmt_select2.reset();
     }
@@ -390,7 +390,7 @@ inline void db_update_entries_from_toc(
             }
         }
         else // entry_exist == false
-            throw Str32(U"main.tex 中的词条在数据库中未找到： " + entry);
+            throw scan_err(U"main.tex 中的词条在数据库中未找到： " + entry);
     }
     cout << "done." << endl;
 }
@@ -612,7 +612,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
                 continue;
             if (type != U"eq" && type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
                 type != U"the" && type != U"cor" && type != U"ex" && type != U"exe")
-                throw Str32(U"未知标签类型： " + type);
+                throw scan_err(U"未知标签类型： " + type);
 
             if (db_data.count(label)) { // label exist in db
                 auto &db_row = db_data[label];

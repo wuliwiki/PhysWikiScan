@@ -15,15 +15,15 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str32(U"\\verb 没有开始");
+            throw scan_err(u8"\\verb 没有开始");
         dlm = str[ind1];
         if (dlm == U'{')
-            throw Str32(U"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
+            throw scan_err(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\verb 没有闭合");
+            throw scan_err(u8"\\verb 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str32(U"\\verb 不能为空");
+            throw scan_err(u8"\\verb 不能为空");
         tmp = str.substr(ind0, ind2 + 1 - ind0);
         replace(tmp, U"\n", U"PhysWikiScanLF");
         str_verb.push_back(tmp);
@@ -39,15 +39,15 @@ inline Long hide_verbatim(vecStr32_O str_verb, Str32_IO str)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str32(U"\\lstinline 没有开始");
+            throw scan_err(u8"\\lstinline 没有开始");
         dlm = str[ind1];
         if (dlm == U'{')
-            throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
+            throw scan_err(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\lstinline 没有闭合");
+            throw scan_err(u8"\\lstinline 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str32(U"\\lstinline 不能为空");
+            throw scan_err(u8"\\lstinline 不能为空");
         tmp = str.substr(ind0, ind2 + 1 - ind0);
         replace(tmp, U"\n", U"PhysWikiScanLF");
         str_verb.push_back(tmp);

@@ -55,7 +55,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             if (ind0 > 0 && ind0 < ind1) {
                 ind0 = expect(str, U"=", ind0 + 8);
                 if (ind0 < 0)
-                    throw Str32(U"lstlisting 方括号中指定语言格式错误（[language=xxx]）");
+                    throw scan_err(u8"lstlisting 方括号中指定语言格式错误（[language=xxx]）");
                 Long ind2 = str.find(U',', ind0);
                 if (ind2 >= 0 && ind2 <= ind1)
                     lang = str.substr(ind0, ind2 - ind0);
@@ -65,7 +65,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             }
         }
         else {
-            throw Str32(U"lstlisting 需要在方括号中指定语言，格式：[language=xxx]。 建议使用菜单中的按钮插入该环境。");
+            throw scan_err(u8"lstlisting 需要在方括号中指定语言，格式：[language=xxx]。 建议使用菜单中的按钮插入该环境。");
         }
 
         // get caption
@@ -78,7 +78,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             if (ind0 > 0 && ind0 < ind1) {
                 ind0 = expect(str, U"=", ind0 + 7);
                 if (ind0 < 0)
-                    throw Str32(U"lstlisting 方括号中标题格式错误（[caption=xxx]）");
+                    throw scan_err(u8"lstlisting 方括号中标题格式错误（[caption=xxx]）");
                 Long ind2 = str.find(U',', ind0);
                 if (ind2 >= 0 && ind2 <= ind1)
                     caption = str.substr(ind0, ind2 - ind0);
@@ -87,12 +87,12 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 Long ind3 = 0;
                 trim(caption);
                 if (caption.empty())
-                    throw Str32(U"lstlisting 方括号中标题不能为空（[caption=xxx]）");
+                    throw scan_err(u8"lstlisting 方括号中标题不能为空（[caption=xxx]）");
                 while (1) {
                     ind3 = caption.find(U'_', ind3);
                     if (ind3 < 0) break;
                     if (ind3 > 0 && caption[ind3-1] != U'\\')
-                        throw Str32(U"lstlisting 标题中下划线前面要加 \\");
+                        throw scan_err(u8"lstlisting 标题中下划线前面要加 \\");
                     ++ind3;
                 }
                 replace(caption, U"\\_", U"_");
@@ -114,7 +114,8 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
         trim(ind_str, U"\n ");
         code = str_verb[str2int(ind_str)];
         if (line_size_lim(code, 78) >= 0)
-            throw Str32(U"单行代码过长");
+            throw scan_err(u8"单行代码过长（防止 pdf 中代码超出长度）");
+        // TODO: 即使是 pdf 的 lstlisting 应该也可以自动换行吧！
         
         // highlight
         Str32 prism_lang, prism_line_num;
@@ -138,7 +139,7 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
             if (!caption.empty() && caption.back() == U'm') {
                 Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
-                    throw Str32(U"代码文件名重复： " + fname);
+                    throw scan_err("代码文件名重复： " + fname);
                 if (code.back() != U'\n')
                     write(code+U'\n', fname);
                 else

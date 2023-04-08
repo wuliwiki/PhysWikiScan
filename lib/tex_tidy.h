@@ -43,7 +43,7 @@ inline void global_forbid_char(Str32_I str)
             ind = find_repeat(forbidden, ind);
             if (ind < 0) break;
             cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
-            throw Str32(U"found repeated char in `forbidden`");
+            throw internal_err(U"found repeated char in `forbidden`");
             ++ind;
         };
     }
@@ -72,21 +72,21 @@ inline void limit_env_cmd(Str32_I str)
 {
     // commands not supported
     if (find_command(str, U"documentclass") >= 0)
-        throw Str32(U"\"documentclass\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
+        throw scan_err(u8"\"documentclass\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
     if (find_command(str, U"newcommand") >= 0)
-        throw Str32(U"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
+        throw scan_err(u8"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
     if (find_command(str, U"renewcommand") >= 0)
-        throw Str32(U"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
+        throw scan_err(u8"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
     if (find_command(str, U"usepackage") >= 0)
-        throw Str32(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section，请先阅读说明");
+        throw scan_err(U"不支持 \"usepackage\" 命令， 每个词条文件是一个 section，请先阅读说明");
     if (find_command(str, U"newpage") >= 0)
-        throw Str32(U"暂不支持 \"newpage\" 命令");
+        throw scan_err(u8"暂不支持 \"newpage\" 命令");
     if (find_command(str, U"title") >= 0)
-        throw Str32(U"\"title\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
+        throw scan_err(u8"\"title\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
     if (find_command(str, U"author") >= 0)
-        throw Str32(U"不支持 \"author\" 命令， 每个词条文件是一个 section，请先阅读说明");
+        throw scan_err(u8"不支持 \"author\" 命令， 每个词条文件是一个 section，请先阅读说明");
     if (find_command(str, U"maketitle") >= 0)
-        throw Str32(U"不支持 \"maketitle\" 命令， 每个词条文件是一个 section，请先阅读说明");
+        throw scan_err(u8"不支持 \"maketitle\" 命令， 每个词条文件是一个 section，请先阅读说明");
 
     // allowed environments
     // there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
@@ -127,7 +127,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
             return N;
         try {ind0 = skip_command(str, ind0, 1);}
         catch (...) {
-            throw Str32(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
+            throw scan_err(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
         }
         if (ind0 >= size(str))
             return N;
@@ -143,7 +143,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
             continue;
         msg = U"\\autoref{} 后面需要空格: “" + str.substr(start, ind0 + 20 - start) + U"”";
         if (error)
-            throw Str32(msg);
+            throw scan_err(msg);
         else
             SLS_WARN(u8(msg));
         ++N;
@@ -170,24 +170,24 @@ inline Long autoref_tilde_upref(Str32_IO str, Str32_I entry)
         Long ind1 = expect(str, U"~", ind0);
         if (ind1 < 0) {
             if (expect(str, U"\\upref", ind0) > 0)
-                throw Str32(U"\\autoref{} 和 \\upref{} 中间应该有 ~");
+                throw scan_err(u8"\\autoref{} 和 \\upref{} 中间应该有 ~");
             Long ind2 = label.find(U'_');
             if (ind2 < 0)
-                throw Str32(U"\\autoref{" + label + U"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
+                throw scan_err(U"\\autoref{" + label + U"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
             ind5 = str.rfind(U"\\upref", ind5-1); entry2.clear();
             if (ind5 > 0 && ExpectKeyReverse(str, U"~", ind5 - 1) < 0)
                 command_arg(entry2, str, ind5);
             Str32 tmp = label_entry_old(label);
             if (tmp != entry && tmp != entry2)
-                throw Str32(U"\\autoref{" + label + U"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
+                throw scan_err(U"\\autoref{" + label + U"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
             continue;
         }
         Long ind2 = expect(str, U"\\upref", ind1);
         if (ind2 < 0)
-            throw Str32(U"\\autoref{} 后面不应该有单独的 ~");
+            throw scan_err(U"\\autoref{} 后面不应该有单独的 ~");
         command_arg(entry1, str, ind2 - 6);
         if (label_entry_old(label) != entry1)
-            throw Str32(U"\\autoref{" + label + U"}~\\upref{" + entry1 + U"} 不一致， 请使用“外部引用”按钮");
+            throw scan_err(U"\\autoref{" + label + U"}~\\upref{" + entry1 + U"} 不一致， 请使用“外部引用”按钮");
         str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
     }
@@ -256,7 +256,7 @@ inline Long check_normal_text_punc(Str32_IO str, Bool_I error, Bool_I replace = 
                 }
                 else {
                     if (error)
-                        throw Str32(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
+                        throw scan_err(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”");
                     else
                         SLS_WARN(u8(U"正文中使用英文标点：“" + str.substr(ind0, 40) + U"”\n"));
                 }
@@ -279,7 +279,7 @@ inline Long check_normal_text_escape(Str32_IO str)
 //            break;
 //        if (is_in(ind0, intvNorm))
 //            if (ind0 > 0 && str[ind0-1] != '\\')
-//                throw Str32(U"正文中出现非法字符： " + str.substr(ind0, 20));
+//                throw scan_err(U"正文中出现非法字符： " + str.substr(ind0, 20));
 //    }
 //    return N;
     return 0;

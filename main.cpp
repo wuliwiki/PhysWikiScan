@@ -180,11 +180,8 @@ int main(int argc, char *argv[]) {
     timer.tic();
 
     try {get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);}
-    catch (Str32_I msg) {
-        cerr << u8(msg) << endl; return 0;
-    }
-    catch (Str_I msg) {
-        cerr << msg << endl; return 0;
+    catch (const std::exception &e) {
+        cerr << e.what() << endl; return 0;
     }
     if (gv::url == U"https://wuli.wiki/online/" || gv::url == U"https://wuli.wiki/changed/")
         gv::is_wiki = true;
@@ -205,15 +202,8 @@ int main(int argc, char *argv[]) {
             file_remove(fnames[i]);
         // interactive full run (ask to try again in error)
         try {PhysWikiOnline();}
-        catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
-        }
-        catch (std::exception &e) {
-            cout << "SQLiteCpp: " << e.what() << endl;
-            throw e;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
         if (!illegal_chars.empty()) {
             SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
@@ -228,11 +218,9 @@ int main(int argc, char *argv[]) {
         vecStr32 titles, entries, isDraft;
         try {
             entries_titles(titles, entries);
-        } catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
         }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
         write_vec_str(titles, gv::path_data + U"titles.txt");
         write_vec_str(entries, gv::path_data + U"entries.txt");
@@ -253,11 +241,8 @@ int main(int argc, char *argv[]) {
                                      entry_first, entry_last);
             db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids);
         }
-        catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
     }
     else if (args[0] == U"--wc" && args.size() == 1) {
@@ -293,11 +278,9 @@ int main(int argc, char *argv[]) {
         Long ret;
         try {
             ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()));
-        } catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
         }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
         vecStr32 output;
         if (ret == 0) { // added
@@ -317,11 +300,8 @@ int main(int argc, char *argv[]) {
         try {
             ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()), true);
         }
-        catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
         vecStr32 output;
         if (ret == 0) // added
@@ -343,21 +323,17 @@ int main(int argc, char *argv[]) {
         }
         try {
             PhysWikiOnlineN(entries);
-        } catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        } catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        }
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
     }
     else if (args[0] == U"--bib") {
         // process bibliography
         vecStr32 bib_labels, bib_details;
         try { bibliography(bib_labels, bib_details); }
-        catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
         db_update_bib(bib_labels, bib_details);
     }
@@ -374,11 +350,8 @@ int main(int argc, char *argv[]) {
             db_update_author_history(path, db);
             db_update_authors(db);
         }
-        catch (Str32_I msg) {
-            cerr << u8(msg) << endl; return 0;
-        }
-        catch (Str_I msg) {
-            cerr << msg << endl; return 0;
+        catch (const std::exception &e) {
+            cerr << e.what() << endl; return 0;
         }
     }
     else if (args[0] == U"--hide" && args.size() > 1) {

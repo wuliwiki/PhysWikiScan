@@ -35,7 +35,7 @@ inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
     file_list_ext(entries, gv::path_in + "contents/", Str32(U"tex"), false);
     ignore_entries(entries);
     if (entries.size() == 0)
-        throw Str32(U"未找到任何词条");
+        throw internal_err(u8"未找到任何词条");
     sort_case_insens(entries);
 
     { // 检查同名词条文件（不区分大小写）
@@ -43,7 +43,7 @@ inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
         to_lower(entries_low, entries);
         Long ind = find_repeat(entries_low);
         if (ind >= 0)
-            throw Str32(U"发现同名词条文件（不区分大小写）：" + entries[ind]);
+            throw internal_err(u8"发现同名词条文件（不区分大小写）：" + entries[ind]);
     }
 
     Long ind0 = 0;
@@ -69,14 +69,14 @@ inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
         command_arg(title, str, ind0);
         replace(title, U"\\ ", U" ");
         if (title.empty())
-            throw Str32(U"main.tex 中词条中文名不能为空");
+            throw scan_err(u8"main.tex 中词条标题不能为空");
         command_arg(entry, str, ind0, 1);
 
         Long ind = search(entry, entries);
         if (ind < 0)
-            throw Str32(U"main.tex 中词条文件 " + entry + U" 未找到");
+            throw scan_err(U"main.tex 中词条文件 " + entry + U" 未找到");
         if (in_toc[ind])
-            throw Str32(U"目录中出现重复词条：" + entry);
+            throw scan_err(U"目录中出现重复词条：" + entry);
         in_toc[ind] = true;
         titles[ind] = title;
         ++ind0;
@@ -88,7 +88,7 @@ inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
             continue;
         for (Long j = i + 1; j < size(titles); ++j) {
             if (titles[i] == titles[j])
-                throw Str32(U"目录中标题重复：" + titles[i]);
+                throw scan_err(U"目录中标题重复：" + titles[i]);
         }
     }
 
@@ -183,7 +183,7 @@ inline void table_of_contents(
     CRLF_to_LF(toc);
     ind0 = toc.find(U"PhysWikiHTMLbody", ind0);
     if (ind0 < 0)
-        throw Str32(U"内部错误： index_template.html 中没有找到 PhysWikiHTMLbody");
+        throw internal_err(u8"index_template.html 中没有找到 PhysWikiHTMLbody");
     toc.erase(ind0, 16);
 
     rm_comments(str); // remove comments
@@ -198,7 +198,7 @@ inline void table_of_contents(
         if (ikey == 2) {
             // ============ found "\entry" ==============
             if (last_command != 'e' && last_command != 'c')
-                throw Str32(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
+                throw scan_err(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
             if (last_command == 'c')
                 chap_entry_last.push_back(entry);
 
@@ -207,9 +207,9 @@ inline void table_of_contents(
             command_arg(entry, str, ind1, 1);
             replace(title, U"\\ ", U" ");
             if (title.empty())
-                throw Str32(U"main.tex 中词条中文名不能为空");
+                throw scan_err(U"main.tex 中词条中文名不能为空");
             if (search(entry, entries) >= 0)
-                throw Str32(U"main.tex 中词条重复： " + entry);
+                throw scan_err(U"main.tex 中词条重复： " + entry);
             entries.push_back(entry);
             if (last_command == 'c')
                 chap_entry_first.push_back(entry);
@@ -217,13 +217,13 @@ inline void table_of_contents(
             // get db info
             stmt_select.bind(1, u8(entry));
             if (!stmt_select.executeStep())
-                throw Str32(U"数据库中找不到 main.tex 中词条： " + entry);
+                throw scan_err(U"数据库中找不到 main.tex 中词条： " + entry);
             titles.push_back(u32(stmt_select.getColumn(0)));
             is_draft.push_back((int)stmt_select.getColumn(1));
             stmt_select.reset();
 
             if (title != titles.back())
-                throw Str32(U"目录标题 “" + title + U"” 与数据库中词条标题 “" + titles.back() + U"” 不符！");
+                throw scan_err(U"目录标题 “" + title + U"” 与数据库中词条标题 “" + titles.back() + U"” 不符！");
 
             // insert entry into html table of contents
             class_draft = (is_draft.back()) ? U"class=\"draft\" " : U"";
@@ -240,14 +240,14 @@ inline void table_of_contents(
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
             if (last_command != 'p' && last_command != 'e') 
-                throw Str32(U"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
+                throw scan_err(U"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
             if (last_command == 'p' && chap_ids.size() > 1)
                 chap_last.push_back(chap_ids.back());
             // get chapter id from label cpt_xxx, where xxx is id
             Long ind_label = find_command(str, U"label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
             if (ind_label < 0 || ind_label > ind_LF)
-                throw Str32(U"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}");
+                throw scan_err(U"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}");
             Str32 label; command_arg(label, str, ind_label);
             chap_ids.push_back(label_id(label));
             if (last_command == 'p')
@@ -269,12 +269,12 @@ inline void table_of_contents(
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
             if (last_command != 'e' && last_command != 'n')
-                throw Str32(U"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
+                throw scan_err(U"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
             // get part id from label prt_xxx, where xxx is id
             Long ind_label = find_command(str, U"label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
             if (ind_label < 0 || ind_label > ind_LF)
-                throw Str32(U"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
+                throw scan_err(U"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
             Str32 label; command_arg(label, str, ind_label);
             part_ids.push_back(label_id(label));
             // insert part into html table of contents
@@ -305,7 +305,7 @@ inline void table_of_contents(
     // list parts
     ind0 = toc.find(U"PhysWikiPartList", 0);
     if (ind0 < 0)
-        throw Str32(U"内部错误： PhysWikiPartList not found!");
+        throw internal_err(u8"html 模板中 PhysWikiPartList 不存在！");
     toc.erase(ind0, 16);
     ind0 = insert(toc, U"|", ind0);
     for (Long i = 1; i < size(part_names); ++i) {
@@ -317,8 +317,8 @@ inline void table_of_contents(
     write(toc, gv::path_out + "index.html");
     Long kk = find_repeat(chap_ids);
     if (kk >= 0)
-        throw Str32(U"\\chapter{} label 重复定义： " + chap_ids[kk]);
+        throw scan_err(U"\\chapter{} label 重复定义： " + chap_ids[kk]);
     kk = find_repeat(part_ids);
     if (kk >= 0)
-        throw Str32(U"\\part{} label 重复定义： " + part_ids[kk]);
+        throw scan_err(U"\\part{} label 重复定义： " + part_ids[kk]);
 }

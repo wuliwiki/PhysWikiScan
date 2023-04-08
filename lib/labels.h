@@ -109,7 +109,7 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
                 type = U"eq"; envName = U"align";
             }
             else {
-                throw Str32(U"该环境不支持 label");
+                throw scan_err(u8"该环境不支持 label");
             }
         }
         
@@ -117,7 +117,7 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
         ind0 = expect(str, U"{", ind5 + 6);
         ind3 = expect(str, type + U'_' + entry, ind0);
         if (ind3 < 0) {
-            throw Str32(U"label " + str.substr(ind0, 20) + U"... 格式错误， 是否为 \"" + type + U'_' + entry + U"\"？");
+            throw scan_err(U"label " + str.substr(ind0, 20) + U"... 格式错误， 是否为 \"" + type + U'_' + entry + U"\"？");
         }
         ind3 = str.find(U"}", ind3);
         
@@ -127,7 +127,7 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
         if (ind < 0)
             labels.push_back(label);
         else
-            throw Str32(U"标签多次定义： " + labels[ind]);
+            throw scan_err(U"标签多次定义： " + labels[ind]);
         
         // count idNum, insert html id tag, delete label
         Intvs intvEnv;
@@ -206,14 +206,14 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
         inEq = index_in_env(ienv, ind0, envNames, str);
         ind1 = expect(str, U"{", ind0 + 8);
         if (ind1 < 0)
-            throw Str32(U"\\autoref 变量不能为空");
+            throw scan_err(u8"\\autoref 变量不能为空");
         ind1 = NextNoSpace(entry1, str, ind1);
         ind2 = str.find('_', ind1);
         if (ind2 < 0)
-            throw Str32(U"\\autoref 格式错误");
+            throw scan_err(u8"\\autoref 格式错误");
         ind3 = find_num(str, ind2);
         if (ind3 < 0)
-            throw Str32(U"autoref 格式错误");
+            throw scan_err(u8"autoref 格式错误");
         Long ind30 = str.find('_', ind2 + 1);
         entry1 = str.substr(ind2 + 1, ind30 - ind2 - 1);
         type = str.substr(ind1, ind2 - ind1);
@@ -234,7 +234,7 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
                 ++ind0; continue;
             }
             else {
-                throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+                throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
             }
         }
         else {
@@ -254,7 +254,7 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
                 ++ind0; continue;
             }
             else
-                throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+                throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
         }
         ind3 = str.find('}', ind3);
         label0 = str.substr(ind1, ind3 - ind1); trim(label0);
@@ -268,7 +268,7 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Statement &stmt_select,
         }
 
         if (!stmt->executeStep())
-            throw Str32(U"\\autoref{} 中标签未找到： " + label0);
+            throw scan_err(U"\\autoref{} 中标签未找到： " + label0);
         Long db_label_order = int(stmt->getColumn(0));
         parse(ref_by, stmt->getColumn(1));
         stmt->reset();
@@ -339,12 +339,12 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
 
     // label does not exist
     if (type == U"fig")
-        throw Str32(U"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加。");
+        throw scan_err(u8"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加。");
 
     // insert \label{} command
     Str32 full_name = gv::path_in + "/contents/" + entry + ".tex";
     if (!file_exist(full_name))
-        throw Str32(U"文件不存在： " + entry + ".tex");
+        throw scan_err(U"文件不存在： " + entry + ".tex");
     Str32 str;
     read(str, full_name);
 
@@ -359,7 +359,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
 
     Long idNum = search(type, types);
     if (idNum < 0)
-        throw Str32(U"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
+        throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
     
     // count environment display number starting at ind4
     Intvs intvEnv;
@@ -372,7 +372,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
         while (1) {
             ind0 = find_command(str, U"begin", ind0);
             if (ind0 < 0) {
-                throw Str32(U"被引用公式不存在");
+                throw scan_err(u8"被引用公式不存在");
             }
             if (is_in(ind0, intvComm)) {
                 ++ind0; continue;
@@ -394,7 +394,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
                 break;
             }
             if (ienv > 0) {// found gather or align
-                throw Str32(U"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
+                throw scan_err(u8"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
                 Long ind1 = skip_env(str, ind0);
                 for (Long i = ind0; i < ind1; ++i) {
                     if (str.substr(i, 2) == U"\\\\" && current_env(i, str) == eq_envs[ienv]) {
@@ -420,7 +420,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
         for (Long i = 0; i < ind; ++i) {
             ind0 = find_command(str, U"subsection", ind0+1);
             if (ind0 < 0)
-                throw Str32(U"被引用对象不存在");
+                throw scan_err(u8"被引用对象不存在");
         }
         ind0 = skip_command(str, ind0, 1);
         new_label_name(label, type, entry, str);
@@ -432,7 +432,7 @@ Long check_add_label(Str32_O label, Str32_I entry, Str32_I type, Long ind, Bool_
     else { // add environment labels
         Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
         if (ind > Nid)
-            throw Str32(U"被引用对象不存在");
+            throw scan_err(u8"被引用对象不存在");
 
         new_label_name(label, type, entry, str);
         // this doesn't work for figure invironment, since there is an [ht] option
@@ -463,10 +463,10 @@ inline Long upref(Str32_IO str, Str32_I entry)
             return N;
         command_arg(entry1, str, ind0);
         if (entry1 == entry)
-            throw Str32(U"不允许 \\upref{" + entry1 + U"} 本词条");
+            throw scan_err(U"不允许 \\upref{" + entry1 + U"} 本词条");
         trim(entry1);
         if (!file_exist(gv::path_in + U"contents/" + entry1 + U".tex")) {
-            throw Str32(U"\\upref 引用的文件未找到： " + entry1 + U".tex");
+            throw scan_err(U"\\upref 引用的文件未找到： " + entry1 + U".tex");
         }
         right = skip_command(str, ind0, 1);
         str.replace(ind0, right - ind0,

@@ -15,7 +15,7 @@ inline Long cite(Str32_IO str, SQLite::Database &db)
         command_arg(bib_label, str, ind0);
         stmt_select.bind(1, u8(bib_label));
         if (!stmt_select.executeStep())
-            throw Str32(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
+            throw scan_err(U"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
         Long ibib = (int)stmt_select.getColumn(0);
         // bib_detail = u32(stmt_select.getColumn(1));
         stmt_select.reset();
@@ -47,7 +47,7 @@ inline Long bibliography(vecStr32_O bib_labels, vecStr32_O bib_details)
     }
     Long ret = find_repeat(bib_labels);
     if (ret > 0)
-        throw Str32(U"文献 label 重复：" + bib_labels[ret]);
+        throw scan_err(U"文献 label 重复：" + bib_labels[ret]);
     Str32 html;
     read(html, gv::path_out + U"templates/bib_template.html");
     replace(html, U"PhysWikiBibList", bib_list);

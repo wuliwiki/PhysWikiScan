@@ -108,7 +108,7 @@ link: # force link
 	$(opt_compiler) $(flags) -o PhysWikiScan main.o $(libs)
 
 clean:
-	rm -f *.o *.x
+	rm -f *.o PhysWikiScan
 
 main.o: main.cpp lib/*.h
 	$(opt_compiler) $(flags) -c main.cpp
