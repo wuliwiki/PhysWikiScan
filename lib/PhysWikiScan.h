@@ -638,6 +638,8 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
     }
     cout << endl; cout.flush();
 
+    // updating labels and figures ref_by
+    cout << "updating labels and figures ref_by..." << endl;
     SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_update_ref_by(db_rw,
                                          R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
@@ -648,19 +650,22 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
         auto &entry = entries[i];
         for (auto &label_id : entry_new_ref_label_ids[i]) {
             ref_by_str = get_text("labels", "id", u8(label_id), "ref_by", db_rw);
-            ref_by_str += " " + u8(entry);
+            if (!ref_by_str.empty()) ref_by_str += ' ';
+            ref_by_str += u8(entry);
             stmt_update_ref_by.bind(1, ref_by_str);
             stmt_update_ref_by.bind(2, u8(label_id));
             stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
         }
         for (auto &fig_id : entry_new_ref_fig_ids[i]) {
             ref_by_str = get_text("figures", "id", u8(fig_id), "ref_by", db_rw);
-            ref_by_str += " " + u8(entry);
+            if (!ref_by_str.empty()) ref_by_str += ' ';
+            ref_by_str += u8(entry);
             stmt_update_ref_by_fig.bind(1, ref_by_str);
             stmt_update_ref_by_fig.bind(2, u8(fig_id));
             stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
         }
     }
+    cout << "done!" << endl;
 }
 
 // like PhysWikiOnline, but convert only specified files
