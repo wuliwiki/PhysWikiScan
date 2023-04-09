@@ -127,7 +127,7 @@ inline Long autoref_space(Str32_I str, Bool_I error)
             return N;
         try {ind0 = skip_command(str, ind0, 1);}
         catch (...) {
-            throw scan_err(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
+            SLS_WARN(U"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
         }
         if (ind0 >= size(str))
             return N;

@@ -185,7 +185,9 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Database &db_rw)
+// new_ref_label_ids: in database, these labels should append `entry` to "ref_by"
+// new_ref_fig_ids: in database, these figures should append `entry` to "ref_by"
+inline Long autoref(vecStr32 &new_ref_label_ids, vecStr32 &new_ref_fig_ids, Str32_IO str, Str32_I entry, SQLite::Database &db_read)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
     Bool inEq;
@@ -195,15 +197,10 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Database &db_rw)
     Str ref_by_str;
     set<Str> ref_by;
 
-    SQLite::Statement stmt_select(db_rw,
+    SQLite::Statement stmt_select(db_read,
                                    R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
-    SQLite::Statement stmt_select_fig(db_rw,
+    SQLite::Statement stmt_select_fig(db_read,
                                       R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
-
-    SQLite::Statement stmt_update_ref_by(db_rw,
-                                         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by_fig(db_rw,
-                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
 
     while (1) {
         newtab.clear(); file.clear();
@@ -277,13 +274,8 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Database &db_rw)
             parse(ref_by, stmt_select_fig.getColumn(1));
             stmt_select_fig.reset();
 
-            if (ref_by.insert(u8(entry)).second) {
-                // inserted, update db
-                join(ref_by_str, ref_by);
-                stmt_update_ref_by_fig.bind(1, ref_by_str);
-                stmt_update_ref_by_fig.bind(2, u8(label0));
-                stmt_update_ref_by_fig.exec(); stmt_update_ref_by.reset();
-            }
+            if (!ref_by.count(u8(entry)))
+                new_ref_fig_ids.push_back(label0);
         } else {
             stmt_select.bind(1, u8(label0));
             if (!stmt_select.executeStep())
@@ -292,13 +284,8 @@ inline Long autoref(Str32_IO str, Str32_I entry, SQLite::Database &db_rw)
             parse(ref_by, stmt_select.getColumn(1));
             stmt_select.reset();
 
-            if (ref_by.insert(u8(entry)).second) {
-                // inserted, update db
-                join(ref_by_str, ref_by);
-                stmt_update_ref_by.bind(1, ref_by_str);
-                stmt_update_ref_by.bind(2, u8(label0));
-                stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
-            }
+            if (!ref_by.count(u8(entry)))
+                new_ref_label_ids.push_back(label0);
         }
 
         file = gv::url + entry1 + U".html";

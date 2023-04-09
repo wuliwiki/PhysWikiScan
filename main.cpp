@@ -191,8 +191,13 @@ int main(int argc, char *argv[]) {
     try {
         if (args[0] == U"." && args.size() == 1)
             PhysWikiOnline();
-        else if (args[0] == U"--titles")
-            arg_titles();
+        else if (args[0] == U"--titles") {
+            // update entries.txt and titles.txt
+            vecStr32 titles, entries, isDraft;
+            entries_titles(titles, entries);
+            write_vec_str(titles, gv::path_data + U"titles.txt");
+            write_vec_str(entries, gv::path_data + U"entries.txt");
+        }
         else if (args[0] == U"--toc" && args.size() == 1)
             arg_toc();
         else if (args[0] == U"--wc" && args.size() == 1)

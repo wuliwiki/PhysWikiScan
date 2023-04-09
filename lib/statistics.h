@@ -27,10 +27,8 @@ inline void word_count()
     vecStr32 entries;
     Str32 str;
     Long N = 0;
-    sqlite3 *db;
-    if (sqlite3_open(u8(gv::path_data + "scan.db").c_str(), &db))
-        throw Str32(U"内部错误： 无法打开 scan.db");
-    get_column(entries, db, "entries", "id");
+    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    get_column(entries, "entries", "id", db);
     for (Long i = 0; i < size(entries); ++i) {
         read(str, gv::path_in + "contents/" + entries[i] + U".tex");
         rm_comments(str);

@@ -210,6 +210,28 @@ inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db_read)
     return str;
 }
 
+inline void db_check_add_entry_simulate_editor(vecStr32_I entries, SQLite::Database &db_rw)
+{
+    SQLite::Statement stmt_insert(db_rw,
+        R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
+    for (auto &entry : entries) {
+        if (!exist("entries", "id", u8(entry), db_rw)) {
+            SLS_WARN(U"词条不存在数据库中， 将模拟 editor 添加： " + entry);
+            // 从 tex 文件获取标题
+            Str32 str;
+            read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
+            CRLF_to_LF(str);
+            Str32 title;
+            get_title(title, str);
+            // 写入数据库
+            stmt_insert.bind(1, u8(entry));
+            stmt_insert.bind(2, u8(title));
+            stmt_insert.exec();
+            stmt_insert.reset();
+        }
+    }
+}
+
 // update db entries.authors, based on backup count in "history"
 // TODO: use more advanced algorithm, counting other factors
 inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I entry, SQLite::Database &db)
@@ -220,12 +242,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I en
     SQLite::Statement stmt_select(db,
         R"(SELECT "hide" FROM "authors" WHERE "id"=? AND "hide"=1;)");
 
-    try {
-        stmt_count.bind(1, u8(entry));
-    } catch (std::exception &e) {
-        cout << "SQLiteCpp: bind: " << e.what() << endl;
-        throw e;
-    }
+    stmt_count.bind(1, u8(entry));
     while (stmt_count.executeStep()) {
         Long id = (int)stmt_count.getColumn(0);
         Long time = 5*(int)stmt_count.getColumn(1);
@@ -267,15 +284,13 @@ inline void db_update_authors(SQLite::Database &db)
 }
 
 // update "bibliography" table of sqlite db
-inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details) {
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-    vector<vecStr> db_data0;
-    check_foreign_key(db.getHandle());
-    
-    get_matrix(db_data0, db.getHandle(), "bibliography", {"id", "details"});
+inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details, SQLite::Database &db) {
+    check_foreign_key(db);
+
+    SQLite::Statement stmt(db, R"(SELECT "id", "details" FROM "bibliography";)");
     unordered_map<Str, Str> db_data;
-    for (auto &row : db_data0)
-        db_data[row[0]] = row[1];
+    while (stmt.executeStep())
+        db_data[stmt.getColumn(0)] = (const char*)stmt.getColumn(1);
 
     SQLite::Statement stmt_insert_bib(db,
         R"(INSERT INTO bibliography ("id", "order", "details") VALUES (?, ?, ?);)");
@@ -309,10 +324,10 @@ inline void db_update_parts_chapters(
     cout.flush();
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     cout << "clear parts and chatpers tables" << endl;
-    table_clear(db.getHandle(), "parts");
-    table_clear(db.getHandle(), "chapters");
+    table_clear("parts", db); table_clear("chapters", db);
 
     // insert parts
+    cout << "inserting parts to db..." << endl;
     SQLite::Statement stmt_insert_part(db,
         R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
     for (Long i = 0; i < size(part_name); ++i) {
@@ -327,6 +342,7 @@ inline void db_update_parts_chapters(
     cout << "\n\n\n" << endl;
 
     // insert chapters
+    cout << "inserting chapters to db..." << endl;
     SQLite::Statement stmt_insert_chap(db,
         R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
 
@@ -347,13 +363,12 @@ inline void db_update_parts_chapters(
 // `entries` are a list of entreis from main.tex
 inline void db_update_entries_from_toc(
         vecStr32_I entries, vecLong_I entry_part, vecStr32_I part_ids,
-        vecLong_I entry_chap, vecStr32_I chap_ids)
+        vecLong_I entry_chap, vecStr32_I chap_ids, SQLite::Database &db_rw)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
 
-    SQLite::Statement stmt_update(db,
+    SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
@@ -362,12 +377,12 @@ inline void db_update_entries_from_toc(
 
         // does entry already exist (expected)?
         Bool entry_exist;
-        entry_exist = exist(db.getHandle(), "entries", "id", entry);
+        entry_exist = exist("entries", "id", entry, db_rw);
         if (entry_exist) {
             // check if there is any change (unexpected)
             vecStr row_str; vecLong row_int;
-            get_row(row_str, db.getHandle(), "entries", "id", entry, {"caption", "keys", "pentry", "part", "chapter"});
-            get_row(row_int, db.getHandle(), "entries", "id", entry, {"order", "draft", "deleted"});
+            get_row(row_str, "entries", "id", entry, {"caption", "keys", "pentry", "part", "chapter"}, db_rw);
+            get_row(row_int, "entries", "id", entry, {"order", "draft", "deleted"}, db_rw);
             bool changed = false;
             if (part_ids[entry_part[i]] != u32(row_str[3])) {
                 SLS_WARN(entry + ": part has changed from " + row_str[3]+ " to " + part_ids[entry_part[i]]);
@@ -407,27 +422,26 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
         << " backup) ..." << endl; cout.flush();
 
     // update "history" table
-    check_foreign_key(db.getHandle());
+    check_foreign_key(db);
 
-    vector<vecStr> db_data10;
-    
-    vecLong db_data20;
-    get_matrix(db_data10, db.getHandle(), "history", {"hash","time","entry"});
-    get_column(db_data20, db.getHandle(), "history", "author");
-    Long id_max = db_data20.empty() ? -1 : max(db_data20);
+    SQLite::Statement stmt_select(db, R"(SELECT "hash", "time", "author", "entry" FROM "history")");
+    Long author_id_max = -1;
 
-    cout << "there are already " << db_data10.size() << " backup (history) records in database." << endl;
+    //            hash        time author entry
+    unordered_map<Str,  tuple<Str, Long,  Str>> db_data;
+    while (stmt_select.executeStep()) {
+        Long author_id = (int) stmt_select.getColumn(2);
+        author_id_max = max(author_id_max, author_id);
+        db_data[stmt_select.getColumn(0)] =
+            tuple<Str, Long, Str>(stmt_select.getColumn(1),
+                author_id , stmt_select.getColumn(3));
+    }
 
-    //            hash       time author entry
-    unordered_map<Str, tuple<Str, Long,    Str>> db_data;
-    for (Long i = 0; i < size(db_data10); ++i)
-        db_data[db_data10[i][0]] = make_tuple(db_data10[i][1], db_data20[i], db_data10[i][2]);
-    db_data10.clear(); db_data20.clear();
-    db_data10.shrink_to_fit(); db_data20.shrink_to_fit();
+    cout << "there are already " << db_data.size() << " backup (history) records in database." << endl;
 
     vecStr db_authors0; vecLong db_author_ids0;
-    get_column(db_author_ids0, db.getHandle(), "authors", "id");
-    get_column(db_authors0, db.getHandle(), "authors", "name");
+    get_column(db_author_ids0, "authors", "id", db);
+    get_column(db_authors0, "authors", "name", db);
     cout << "there are already " << db_author_ids0.size() << " author records in database." << endl;
     unordered_map<Long, Str> db_id_to_author;
     unordered_map<Str, Long> db_author_to_id;
@@ -443,7 +457,7 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
         R"(INSERT INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
-    get_column(entries0, db.getHandle(), "entries", "id");
+    get_column(entries0, "entries", "id", db);
     unordered_set<Str> entries(entries0.begin(), entries0.end()), entries_deleted_inserted;
     entries0.clear(); entries0.shrink_to_fit();
 
@@ -469,10 +483,10 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
         else if (new_authors.count(author))
             authorID = new_authors[author];
         else {
-            authorID = ++id_max;
-            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(id_max));
-            new_authors[author] = id_max;
-            stmt_insert_auth.bind(1, int(id_max));
+            authorID = ++author_id_max;
+            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
+            new_authors[author] = author_id_max;
+            stmt_insert_auth.bind(1, int(author_id_max));
             stmt_insert_auth.bind(2, author);
             stmt_insert_auth.exec(); stmt_insert_auth.reset();
         }
@@ -550,7 +564,7 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
             stmt_select.bind(1, u8(id));
             if (!stmt_select.executeStep()) {
                 stmt_select.reset();
-                SLS_WARN("发现数据库中没有的图片环境（将添加）：" + id);
+                SLS_WARN("发现数据库中没有的图片环境（将模拟 editor 添加）：" + id);
                 stmt_insert.bind(1, u8(id));
                 stmt_insert.bind(2, u8(entry));
                 stmt_insert.bind(3, int(order));
@@ -652,7 +666,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
                     stmt_update.exec(); stmt_update.reset();
                 }
             } else { // label not in db
-                SLS_WARN(U"数据库中不存在 label（将插入）：" + label + ", " + type + ", " + entry + ", " +
+                SLS_WARN(U"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
                          to_string(order));
                 stmt_insert.bind(1, u8(label));
                 stmt_insert.bind(2, u8(type));

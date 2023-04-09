@@ -53,7 +53,7 @@ inline void get_pentry(vecStr32_O pentries, Str32_I str, SQLite::Database &db_re
             if (ind1 < 0)
                 return;
             command_arg(depEntry, temp, ind1, 0, 't');
-            if (!exist(db_read.getHandle(), "entries", "id", u8(depEntry)))
+            if (!exist("entries", "id", u8(depEntry), db_read))
                 throw scan_err("\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             if (search(depEntry, pentries) >= 0)
                 throw scan_err("\\pentry{} 中预备知识重复： " + depEntry + ".tex");
