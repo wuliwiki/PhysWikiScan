@@ -609,7 +609,7 @@ inline void PhysWikiOnlineN_round1(vecStr32_O titles, vecStr32_IO entries, SQLit
             }
 
             // update db labels, figures
-            db_update_figures({entry}, {img_ids}, {img_orders},
+            db_update_figures(update_entries, {entry}, {img_ids}, {img_orders},
                               {img_hashes}, db_rw);
             db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
 
@@ -653,12 +653,10 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
     cout << endl; cout.flush();
 
     // updating labels and figures ref_by
-    cout << "updating labels and figures ref_by..." << endl;
+    cout << "updating labels ref_by..." << endl;
     SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_update_ref_by(db_rw,
         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
-    SQLite::Statement stmt_update_ref_by_fig(db_rw,
-        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
     set<Str> ref_by;
     for (auto &label_id : label_ref_by) {
@@ -672,9 +670,19 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
         stmt_update_ref_by.bind(2, u8(label_id.first));
         stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
     }
+
+    cout << "updating figures ref_by..." << endl;
+    SQLite::Statement stmt_select_ref_by_fig(db_rw,
+        R"(SELECT "ref_by" FROM "figures" WHERE "id"=?;)");
+    SQLite::Statement stmt_update_ref_by_fig(db_rw,
+        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
     for (auto &fig_id : fig_ref_by) {
         ref_by.clear();
-        ref_by_str = get_text("figures", "id", u8(fig_id.first), "ref_by", db_rw);
+        stmt_select_ref_by_fig.bind(1, u8(fig_id.first));
+        if (!stmt_select_ref_by_fig.executeStep())
+            throw internal_err("找不到 figures.id： " + fig_id.first);
+        ref_by_str = (const char*)stmt_select_ref_by_fig.getColumn(0);
+        stmt_select_ref_by_fig.reset();
         parse(ref_by, ref_by_str);
         for (auto &by_entry : fig_id.second)
             ref_by.insert(u8(by_entry));

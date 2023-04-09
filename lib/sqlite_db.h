@@ -546,7 +546,7 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
 }
 
 // db table "figures" and "figure_store"
-inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &img_ids,
+inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I entries, const vector<vecStr32> &img_ids,
     const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes,
     SQLite::Database &db)
 {
@@ -554,12 +554,12 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
     Str32 db_id, db_entry, db_hash;
     // vecStr32 new_ids, new_entries, new_hash;
     Long db_order;
-
+    vecStr32 db_ref_by;
     Str32 entry, id, hash, ext;
     Long order;
 
     SQLite::Statement stmt_select(db,
-                                      R"(SELECT "entry", "order", "hash" FROM "figures" WHERE "id"=?;)");
+                                      R"(SELECT "entry", "order", "hash", "ref_by" FROM "figures" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db,
                                       R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
     SQLite::Statement stmt_update(db,
@@ -595,6 +595,14 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
                     SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
                              + to_string(db_order) + " -> " + to_string(order));
                     update = true;
+
+                    // order change means other ref_by entries needs to be updated with autoref() as well.
+                    if (!gv::is_entire) {
+                        parse(db_ref_by, u32(stmt_select.getColumn(3)));
+                        for (auto &by_entry: db_ref_by)
+                            if (search(by_entry, entries) < 0)
+                                update_entries.insert(by_entry);
+                    }
                 }
                 if (hash != db_hash) {
                     SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
@@ -629,7 +637,7 @@ inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I en
         R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
 
     Long order, db_order;
-    vecStr db_ref_by;
+    vecStr32 db_ref_by;
     Str32 label, type, db_type, entry, db_entry;
 
 
@@ -657,10 +665,10 @@ inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I en
                     changed = true;
                     // order change means other ref_by entries needs to be updated with autoref() as well.
                     if (!gv::is_entire) {
-                        parse(db_ref_by, stmt_select.getColumn(2));
+                        parse(db_ref_by, u32(stmt_select.getColumn(2)));
                         for (auto &by_entry: db_ref_by)
-                            if (search(u32(by_entry), entries) < 0)
-                                update_entries.insert(u32(by_entry));
+                            if (search(by_entry, entries) < 0)
+                                update_entries.insert(by_entry);
                     }
                 }
                 if (changed) {

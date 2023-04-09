@@ -193,7 +193,7 @@ inline Long autoref(unordered_map<Str32, set<Str32>> &new_label_ref_by,
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
     Bool inEq;
-    Str32 entry1, label0, type, kind, newtab, file;
+    Str32 entry1, label0, fig_id, type, kind, newtab, file;
     vecStr32 envNames{U"equation", U"align", U"gather"};
     Str32 db_ref_by_str;
     Str ref_by_str;
@@ -269,7 +269,8 @@ inline Long autoref(unordered_map<Str32, set<Str32>> &new_label_ref_by,
         label0 = str.substr(ind1, ind3 - ind1); trim(label0);
         Long db_label_order;
         if (type == U"fig") {
-            stmt_select_fig.bind(1, u8(label_id(label0)));
+            fig_id = label_id(label0);
+            stmt_select_fig.bind(1, u8(fig_id));
             if (!stmt_select_fig.executeStep())
                 throw scan_err(U"\\autoref{} 中标签未找到： " + label0);
             db_label_order = int(stmt_select_fig.getColumn(0));
@@ -277,7 +278,7 @@ inline Long autoref(unordered_map<Str32, set<Str32>> &new_label_ref_by,
             stmt_select_fig.reset();
 
             if (!ref_by.count(u8(entry)))
-                new_fig_ref_by[label0].insert(entry);
+                new_fig_ref_by[fig_id].insert(entry);
         } else {
             stmt_select.bind(1, u8(label0));
             if (!stmt_select.executeStep())
