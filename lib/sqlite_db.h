@@ -382,7 +382,6 @@ inline void db_update_entries_from_toc(
         entry_exist = exist("entries", "id", entry, db_rw);
         if (entry_exist) {
             // check if there is any change (unexpected)
-            vecStr row_str; vecLong row_int;
             stmt_select.bind(1, entry);
             SLS_ASSERT(stmt_select.executeStep());
             Str db_title = (const char*) stmt_select.getColumn(0);
@@ -399,11 +398,11 @@ inline void db_update_entries_from_toc(
                 changed = true;
             }
             if (chap_ids[entry_chap[i]] != u32(db_chapter)) {
-                SLS_WARN(entry + ": chapter has changed from " + row_str[4] + " to " + chap_ids[entry_chap[i]]);
+                SLS_WARN(entry + ": chapter has changed from " + db_chapter + " to " + chap_ids[entry_chap[i]]);
                 changed = true;
             }
             if (entry_order != db_order) {
-                SLS_WARN(entry + ": order has changed from " + to_string(row_int[0]) + " to " + to_string(entry_order));
+                SLS_WARN(entry + ": order has changed from " + db_order + " to " + to_string(entry_order));
                 changed = true;
             }
             if (changed) {
