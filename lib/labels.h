@@ -116,9 +116,9 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
         // check label format and save label
         ind0 = expect(str, U"{", ind5 + 6);
         ind3 = expect(str, type + U'_' + entry, ind0);
-        if (ind3 < 0) {
-            throw scan_err(U"label " + str.substr(ind0, 20) + U"... 格式错误， 是否为 \"" + type + U'_' + entry + U"\"？");
-        }
+        if (ind3 < 0)
+            throw scan_err(U"label " + str.substr(ind0, 20)
+                + U"... 格式错误， 是否为 \"" + type + U'_' + entry + U"\"？");
         ind3 = str.find(U"}", ind3);
         
         label = str.substr(ind0, ind3 - ind0);

@@ -615,30 +615,23 @@ inline void db_update_figures(const vecStr32_I entries, const vector<vecStr32> &
 }
 
 // update labels table of database
-// `ids` are xxx### where xxx is "type", and ### is "order"
-inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_labels, const vector<vecLong> v_label_orders,
-    SQLite::Database &db)
+// order change means `update_entries` needs to be updated with autoref() as well.
+inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I entries,
+    const vector<vecStr32> &v_labels, const vector<vecLong> &v_label_orders,
+    SQLite::Database &db_rw)
 {
-    SQLite::Statement stmt_select(db,
-                                  R"(SELECT "id", "type", "entry", "order" FROM "labels";)");
-    SQLite::Statement stmt_insert(db,
-                                  R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
-    SQLite::Statement stmt_update(db,
-                                  R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+    update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
+    SQLite::Statement stmt_select(db_rw,
+        R"(SELECT "entry", "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+    SQLite::Statement stmt_insert(db_rw,
+        R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+    SQLite::Statement stmt_update(db_rw,
+        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
 
-    // cout << "updating db for labels..." << endl;
-    Str32 label, type, entry; Long order;
+    Long order, db_order;
+    vecStr db_ref_by;
+    Str32 label, type, db_type, entry, db_entry;
 
-    // db_data[id] = {type, entry, order}
-    std::unordered_map<Str32, tuple<Str32, Str32, Long>> db_data;
-    while (stmt_select.executeStep()) {
-        label = u32(stmt_select.getColumn(0));
-        type = u32(stmt_select.getColumn(1));
-        entry = u32(stmt_select.getColumn(2));
-        order = (int)stmt_select.getColumn(3);
-        db_data[label] = std::make_tuple(type, entry, order);
-    }
-    stmt_select.reset();
 
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
@@ -648,24 +641,27 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
             type = label_type(label);
             if (type == U"fig" || type == U"code")
                 continue;
-            if (type != U"eq" && type != U"sub" && type != U"tab" && type != U"def" && type != U"lem" &&
-                type != U"the" && type != U"cor" && type != U"ex" && type != U"exe")
-                throw scan_err(U"未知标签类型： " + type);
 
-            if (db_data.count(label)) { // label exist in db
-                auto &db_row = db_data[label];
+            stmt_select.bind(1, u8(label));
+
+            if (stmt_select.executeStep()) { // label exist in db_rw
+                db_entry = u32(stmt_select.getColumn(0));
+                db_order = (int)stmt_select.getColumn(1);
                 bool changed = false;
-                if (type != get<0>(db_row)) {
-                    SLS_WARN(U"type 发生改变（将更新）：" + get<0>(db_row) + " -> " + type);
+                if (entry != db_entry) {
+                    SLS_WARN(U"label " + label + U" 的 entry 发生改变（将更新）：" + db_entry + " -> " + entry);
                     changed = true;
                 }
-                if (entry != get<1>(db_row)) {
-                    SLS_WARN(U"entry 发生改变（将更新）：" + get<1>(db_row) + " -> " + entry);
+                if (order != db_order) {
+                    SLS_WARN(U"label " + label + U" 的 order 发生改变（将更新）：" + to_string(db_order) + " -> " + to_string(order));
                     changed = true;
-                }
-                if (order != get<2>(db_row)) {
-                    SLS_WARN(U"order 发生改变（将更新）：" + to_string(get<2>(db_row)) + " -> " + to_string(order));
-                    changed = true;
+                    // order change means other ref_by entries needs to be updated with autoref() as well.
+                    if (!gv::is_entire) {
+                        parse(db_ref_by, stmt_select.getColumn(2));
+                        for (auto &by_entry: db_ref_by)
+                            if (search(u32(by_entry), entries) < 0)
+                                update_entries.insert(u32(by_entry));
+                    }
                 }
                 if (changed) {
                     stmt_update.bind(1, u8(type));
@@ -674,7 +670,7 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
                     stmt_update.bind(4, u8(label));
                     stmt_update.exec(); stmt_update.reset();
                 }
-            } else { // label not in db
+            } else { // label not in db_rw
                 SLS_WARN(U"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
                          to_string(order));
                 stmt_insert.bind(1, u8(label));
@@ -683,9 +679,9 @@ inline void db_update_labels(vecStr32_I entries, const vector<vecStr32> &v_label
                 stmt_insert.bind(4, int(order));
                 stmt_insert.exec(); stmt_insert.reset();
             }
+            stmt_select.reset();
         }
     }
-    // cout << "done!" << endl;
 }
 
 // generate json file containing dependency tree

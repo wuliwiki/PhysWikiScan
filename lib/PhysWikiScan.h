@@ -563,7 +563,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str32_O title, vecStr32_O img_ids,
         update_db = true;
 }
 
-inline void PhysWikiOnlineN_round1(vecStr32_O titles, vecStr32_I entries, SQLite::Database &db_read)
+inline void PhysWikiOnlineN_round1(vecStr32_O titles, vecStr32_IO entries, SQLite::Database &db_read)
 {
     vecStr32 rules;  // for newcommand()
     define_newcommands(rules);
@@ -572,28 +572,27 @@ inline void PhysWikiOnlineN_round1(vecStr32_O titles, vecStr32_I entries, SQLite
     cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
     Bool update_db, isdraft;
     Str32 key_str, pentry_str;
+    unordered_set<Str32> update_entries;
     vecLong img_orders, label_orders;
     vecStr32 keywords, img_ids, img_hashes, labels, pentries;
+    Long N0 = entries.size();
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
+        if (i == N0)
+            cout << "\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
 
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
 
-        // TODO: 如果标签的序号改变了， 那么所有引用该标签的词条都要重新编译 所以 entries 应该是一个 set， 要一边循环一边添加
         PhysWikiOnline1(update_db, titles[i], img_ids, img_orders, img_hashes, isdraft,
             keywords, labels, label_orders, pentries, entry, rules, db_read);
 
         cout << titles[i] << endl; cout.flush();
 
         {
-            SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
-            db_update_labels({entry}, {labels}, {label_orders}, db_rw);
-            db_update_figures({entry}, {img_ids}, {img_orders},
-                              {img_hashes}, db_rw);
-
             // update db "entries"
+            SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
             if (update_db) {
                 SQLite::Statement stmt_update
                         (db_rw,
@@ -607,6 +606,21 @@ inline void PhysWikiOnlineN_round1(vecStr32_O titles, vecStr32_I entries, SQLite
                 stmt_update.bind(4, u8(pentry_str));
                 stmt_update.bind(5, u8(entries[i]));
                 stmt_update.exec(); stmt_update.reset();
+            }
+
+            // update db labels, figures
+            db_update_figures({entry}, {img_ids}, {img_orders},
+                              {img_hashes}, db_rw);
+            db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
+
+            // order change means `update_entries` needs to be updated with autoref() as well.
+            // but just in case, we also run 1st round again for them
+            if (!gv::is_entire && !update_entries.empty()) {
+                for (auto &new_entry: update_entries)
+                    if (search(new_entry, entries) < 0)
+                        entries.push_back(new_entry);
+                update_entries.clear();
+                titles.resize(entries.size());
             }
         }
 
@@ -674,7 +688,7 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
 
 // like PhysWikiOnline, but convert only specified files
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
-inline void PhysWikiOnlineN(vecStr32_I entries)
+inline void PhysWikiOnlineN(vecStr32_IO entries)
 {
     SQLite::Database db_read(u8(gv::path_data + "scan.db"), SQLite::OPEN_READONLY);
     vecStr32 titles(entries.size());
@@ -689,7 +703,8 @@ inline void PhysWikiOnline()
     SQLite::Database db_read(u8(gv::path_data + "scan.db"), SQLite::OPEN_READONLY);
     SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
 
-    gv::is_entire = true;
+    gv::is_entire = true; // compiling the whole wiki
+
     // remove matlab files
     vecStr fnames;
     ensure_dir(u8(gv::path_out) + "code/matlab/");
