@@ -402,7 +402,7 @@ inline void db_update_entries_from_toc(
                 changed = true;
             }
             if (entry_order != db_order) {
-                SLS_WARN(entry + ": order has changed from " + db_order + " to " + to_string(entry_order));
+                SLS_WARN(entry + ": order has changed from " + to_string(db_order) + " to " + to_string(entry_order));
                 changed = true;
             }
             if (changed) {
