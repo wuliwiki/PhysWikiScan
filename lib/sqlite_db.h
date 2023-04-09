@@ -370,6 +370,8 @@ inline void db_update_entries_from_toc(
 
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_select(db_rw,
+        R"(SELECT "caption", "keys", "pentry", "part", "chapter", "order" FROM "entries" WHERE "id"=?;)");
     
     for (Long i = 0; i < size(entries); i++) {
         Long entry_order = i + 1;
@@ -381,18 +383,26 @@ inline void db_update_entries_from_toc(
         if (entry_exist) {
             // check if there is any change (unexpected)
             vecStr row_str; vecLong row_int;
-            get_row(row_str, "entries", "id", entry, {"caption", "keys", "pentry", "part", "chapter"}, db_rw);
-            get_row(row_int, "entries", "id", entry, {"order", "draft", "deleted"}, db_rw);
+            stmt_select.bind(1, entry);
+            SLS_ASSERT(stmt_select.executeStep());
+            Str db_title = (const char*) stmt_select.getColumn(0);
+            Str db_key_str = (const char*) stmt_select.getColumn(1);
+            Str db_pentry_str = (const char*) stmt_select.getColumn(2);
+            Str db_part = (const char*) stmt_select.getColumn(3);
+            Str db_chapter = (const char*) stmt_select.getColumn(4);
+            int db_order = (int) stmt_select.getColumn(5);
+            stmt_select.reset();
+
             bool changed = false;
-            if (part_ids[entry_part[i]] != u32(row_str[3])) {
-                SLS_WARN(entry + ": part has changed from " + row_str[3]+ " to " + part_ids[entry_part[i]]);
+            if (part_ids[entry_part[i]] != u32(db_part)) {
+                SLS_WARN(entry + ": part has changed from " + db_part + " to " + part_ids[entry_part[i]]);
                 changed = true;
             }
-            if (chap_ids[entry_chap[i]] != u32(row_str[4])) {
+            if (chap_ids[entry_chap[i]] != u32(db_chapter)) {
                 SLS_WARN(entry + ": chapter has changed from " + row_str[4] + " to " + chap_ids[entry_chap[i]]);
                 changed = true;
             }
-            if (entry_order != row_int[0]) {
+            if (entry_order != db_order) {
                 SLS_WARN(entry + ": order has changed from " + to_string(row_int[0]) + " to " + to_string(entry_order));
                 changed = true;
             }
