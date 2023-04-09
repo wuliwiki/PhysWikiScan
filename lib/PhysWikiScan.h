@@ -623,7 +623,7 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
 {
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str32 html, fname;
-    vector<vecStr32> entry_new_ref_label_ids(entries.size()), entry_new_ref_fig_ids(entries.size());
+    unordered_map<Str32, set<Str32>> label_ref_by, fig_ref_by;
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
         cout << std::setw(5) << std::left << i
@@ -632,7 +632,7 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
         fname = gv::path_out + entry + ".html";
         read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
-        autoref(entry_new_ref_label_ids[i], entry_new_ref_fig_ids[i], html, entry, db_read);
+        autoref(label_ref_by, fig_ref_by, html, entry, db_read);
         write(html, fname); // save html file
         file_remove(u8(fname) + ".tmp");
     }
@@ -642,28 +642,32 @@ inline void PhysWikiOnlineN_round2(vecStr32_I entries, vecStr32_I titles, SQLite
     cout << "updating labels and figures ref_by..." << endl;
     SQLite::Database db_rw(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
     SQLite::Statement stmt_update_ref_by(db_rw,
-                                         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+        R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by_fig(db_rw,
-                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
-    for (Long i = 0; i < size(entries); ++i) {
-        auto &entry = entries[i];
-        for (auto &label_id : entry_new_ref_label_ids[i]) {
-            ref_by_str = get_text("labels", "id", u8(label_id), "ref_by", db_rw);
-            if (!ref_by_str.empty()) ref_by_str += ' ';
-            ref_by_str += u8(entry);
-            stmt_update_ref_by.bind(1, ref_by_str);
-            stmt_update_ref_by.bind(2, u8(label_id));
-            stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
-        }
-        for (auto &fig_id : entry_new_ref_fig_ids[i]) {
-            ref_by_str = get_text("figures", "id", u8(fig_id), "ref_by", db_rw);
-            if (!ref_by_str.empty()) ref_by_str += ' ';
-            ref_by_str += u8(entry);
-            stmt_update_ref_by_fig.bind(1, ref_by_str);
-            stmt_update_ref_by_fig.bind(2, u8(fig_id));
-            stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
-        }
+    set<Str> ref_by;
+    for (auto &label_id : label_ref_by) {
+        ref_by.clear();
+        ref_by_str = get_text("labels", "id", u8(label_id.first), "ref_by", db_rw);
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : label_id.second)
+            ref_by.insert(u8(by_entry));
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by.bind(1, ref_by_str);
+        stmt_update_ref_by.bind(2, u8(label_id.first));
+        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+    }
+    for (auto &fig_id : fig_ref_by) {
+        ref_by.clear();
+        ref_by_str = get_text("figures", "id", u8(fig_id.first), "ref_by", db_rw);
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : fig_id.second)
+            ref_by.insert(u8(by_entry));
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by_fig.bind(1, ref_by_str);
+        stmt_update_ref_by_fig.bind(2, u8(fig_id.first));
+        stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
     }
     cout << "done!" << endl;
 }

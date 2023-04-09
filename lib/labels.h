@@ -187,7 +187,9 @@ inline Long EnvLabel(vecStr32_O labels, vecLong_O label_orders, Str32_I entry, S
 // return number of autoref replaced, or -1 if failed
 // new_ref_label_ids: in database, these labels should append `entry` to "ref_by"
 // new_ref_fig_ids: in database, these figures should append `entry` to "ref_by"
-inline Long autoref(vecStr32 &new_ref_label_ids, vecStr32 &new_ref_fig_ids, Str32_IO str, Str32_I entry, SQLite::Database &db_read)
+inline Long autoref(unordered_map<Str32, set<Str32>> &new_label_ref_by,
+                    unordered_map<Str32, set<Str32>> &new_fig_ref_by,
+                    Str32_IO str, Str32_I entry, SQLite::Database &db_read)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
     Bool inEq;
@@ -275,7 +277,7 @@ inline Long autoref(vecStr32 &new_ref_label_ids, vecStr32 &new_ref_fig_ids, Str3
             stmt_select_fig.reset();
 
             if (!ref_by.count(u8(entry)))
-                new_ref_fig_ids.push_back(label0);
+                new_fig_ref_by[label0].insert(entry);
         } else {
             stmt_select.bind(1, u8(label0));
             if (!stmt_select.executeStep())
@@ -285,7 +287,7 @@ inline Long autoref(vecStr32 &new_ref_label_ids, vecStr32 &new_ref_fig_ids, Str3
             stmt_select.reset();
 
             if (!ref_by.count(u8(entry)))
-                new_ref_label_ids.push_back(label0);
+                new_label_ref_by[label0].insert(entry);
         }
 
         file = gv::url + entry1 + U".html";
