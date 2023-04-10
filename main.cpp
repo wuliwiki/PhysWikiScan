@@ -4,7 +4,7 @@
 #include "lib/PhysWikiScan.h"
 
 // get arguments
-void get_args(vecStr32_O args, Int_I argc, Char *argv[])
+void get_args(vecStr_O args, Int_I argc, Char *argv[])
 {
     args.clear();
     if (argc > 1) {
@@ -12,7 +12,7 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
         Str temp;
         for (Int i = 1; i < argc; ++i) {
             temp = argv[i];
-            args.push_back(u32(temp));
+            args.push_back(temp);
         }
     }
     else {
@@ -29,11 +29,11 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
             ind1 = temp.find(' ', ind0);
             if (ind1 < 0) {
                 if (size(temp) > ind0)
-                    args.push_back(u32(temp.substr(ind0)));
+                    args.push_back(temp.substr(ind0));
                 break;
             }
 
-            args.push_back(u32(temp.substr(ind0, ind1 - ind0)));
+            args.push_back(temp.substr(ind0, ind1 - ind0));
             ind0 = temp.find_first_not_of(' ', ind1);
         }
     }
@@ -41,9 +41,9 @@ void get_args(vecStr32_O args, Int_I argc, Char *argv[])
 
 // read set_path.txt
 // return paths_in.size()
-Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_data, vecStr32_O urls)
+Long read_path_file(vecStr_O paths_in, vecStr_O paths_out, vecStr_O paths_data, vecStr_O urls)
 {
-    Str32 temp, line;
+    Str temp, line;
     if (!file_exist("set_path.txt")) {
         throw internal_err(u8"set_path.txt 不存在!");
     }
@@ -93,7 +93,7 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_
 }
 
 // get path and remove --path options from args
-void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url, vecStr32_IO args)
+void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_IO args)
 {
     Long N = args.size();
 
@@ -118,7 +118,7 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
     }
 
     // use path number in set_path.txt
-    vecStr32 paths_in, paths_out, paths_data, urls;
+    vecStr paths_in, paths_out, paths_data, urls;
     read_path_file(paths_in, paths_out, paths_data, urls);
 
     if (args.size() > 1 && args[N - 2] == U"--path") {
@@ -137,10 +137,10 @@ void get_path(Str32_O path_in, Str32_O path_out, Str32_O path_data, Str32_O url,
     }
 }
 
-inline void replace_eng_punc_to_chinese(Str32_I path_in)
+inline void replace_eng_punc_to_chinese(Str_I path_in)
 {
-    vecStr32 names, str_verb;
-    Str32 fname, str;
+    vecStr names, str_verb;
+    Str fname, str;
     Intvs intv;
     file_list_ext(names, path_in + "contents/", U"tex", false);
 
@@ -148,7 +148,7 @@ inline void replace_eng_punc_to_chinese(Str32_I path_in)
     if (names.size() <= 0) return;
     //names.resize(0); names.push_back(U"Sample"));
 
-    vecStr32 skip_list = { U"Sample", U"edTODO" };
+    vecStr skip_list = { U"Sample", U"edTODO" };
     for (unsigned i{}; i < names.size(); ++i) {
         cout << i << " ";
         cout << names[i] << "...";
@@ -175,7 +175,7 @@ inline void replace_eng_punc_to_chinese(Str32_I path_in)
 int main(int argc, char *argv[]) {
     using namespace slisc;
     Timer timer;
-    vecStr32 args;
+    vecStr args;
     get_args(args, argc, argv);
     timer.tic();
 
@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
             PhysWikiOnline();
         else if (args[0] == U"--titles") {
             // update entries.txt and titles.txt
-            vecStr32 titles, entries, isDraft;
+            vecStr titles, entries, isDraft;
             entries_titles(titles, entries);
             write_vec_str(titles, gv::path_data + U"titles.txt");
             write_vec_str(entries, gv::path_data + U"entries.txt");
@@ -211,11 +211,11 @@ int main(int argc, char *argv[]) {
         else if (args[0] == U"--autoref" && args.size() == 4) {
             // check a label, add one if necessary
             // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
-            Str32 label;
-            Long ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()));
-            vecStr32 output;
+            Str label;
+            Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()));
+            vecStr output;
             if (ret == 0) { // added
-                Str32 id = args[2] + args[3];
+                Str id = args[2] + args[3];
                 output = {label, U"added"};
             } else // ret == 1, already exist
                 output = {label, U"exist"};
@@ -224,9 +224,9 @@ int main(int argc, char *argv[]) {
             write_vec_str(output, gv::path_data + U"autoref.txt");
         } else if (args[0] == U"--autoref-dry" && args.size() == 4) {
             // check a label only, without adding
-            Str32 label;
-            Long ret = check_add_label(label, args[1], args[2], atoi(u8(args[3]).c_str()), true);
-            vecStr32 output;
+            Str label;
+            Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()), true);
+            vecStr output;
             if (ret == 0) // added
                 output = {label, U"added"};
             else // ret == 1, already exist
@@ -235,8 +235,8 @@ int main(int argc, char *argv[]) {
             cout << output[1] << endl;
         } else if (args[0] == U"--entry" && args.size() > 1) {
             // process specified entries
-            vecStr32 entries;
-            Str32 arg;
+            vecStr entries;
+            Str arg;
             for (Long i = 1; i < size(args); ++i) {
                 arg = args[i];
                 if (arg[0] == '-' && arg[1] == '-')
@@ -247,7 +247,7 @@ int main(int argc, char *argv[]) {
         } else if (args[0] == U"--bib")
             arg_bib();
         else if (args[0] == U"--history" && args.size() <= 2) {
-            Str32 path;
+            Str path;
             if (args.size() == 2) {
                 path = args[1];
                 assert(path[path.size() - 1] == '/');
@@ -255,19 +255,19 @@ int main(int argc, char *argv[]) {
                 path = U"../PhysWiki-backup/";
             arg_history(path);
         } else if (args[0] == U"--hide" && args.size() > 1) {
-            Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+            Str str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
             read(str, fname);
             CRLF_to_LF(str);
             hide_eq_verb(str);
             write(str, fname);
         } else if (args[0] == U"--unhide" && args.size() > 1) {
-            Str32 str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
+            Str str, fname = gv::path_in + U"contents/" + args[1] + U".tex";
             read(str, fname);
             CRLF_to_LF(str);
             unhide_eq_verb(str);
             write(str, fname);
         } else if (args[0] == U"--all-commands") {
-            vecStr32 commands;
+            vecStr commands;
             all_commands(commands, gv::path_in + U"contents/");
             write_vec_str(commands, gv::path_data + U"commands.txt");
         } else {

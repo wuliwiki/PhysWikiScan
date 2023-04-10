@@ -3,11 +3,11 @@
 // check if each line size is less than limit
 // return the line number if limit exceeded
 // return -1 if ok
-inline Long line_size_lim(Str32_I str, Long_I lim)
+inline Long line_size_lim(Str_I str, Long_I lim)
 {
     Long ind0 = 0, line = 0, ind_old = 0;
     while (true) {
-        ind0 = str.find(U"\n", ind0);
+        ind0 = str.find(u8"\n", ind0);
         ++line;
         if (ind0 < 0) {
             if (size(str) - ind_old > lim)
@@ -24,22 +24,22 @@ inline Long line_size_lim(Str32_I str, Long_I lim)
 
 // process all lstlisting environments
 // return the number of \Command{} processed
-inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
+inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 {
     Long ind0 = 0, ind1 = 0;
     Intvs intvIn, intvOut;
-    Str32 code, ind_str;
-    find_env(intvIn, str, U"lstlisting", 'i');
-    Long N = find_env(intvOut, str, U"lstlisting", 'o');
-    Str32 lang, caption, capption_str; // language, caption
-    Str32 code_tab_str;
+    Str code, ind_str;
+    find_env(intvIn, str, u8"lstlisting", 'i');
+    Long N = find_env(intvOut, str, u8"lstlisting", 'o');
+    Str lang, caption, capption_str; // language, caption
+    Str code_tab_str;
     Long Ncaption = 0;
     // get number of captions
     for (Long i = 0; i < N; ++i) {
-        ind0 = expect(str, U"[", intvIn.L(i));
+        ind0 = expect(str, u8"[", intvIn.L(i));
         if (ind0 > 0) {
             ind1 = pair_brace(str, ind0 - 1);
-            ind0 = str.find(U"caption", ind0);
+            ind0 = str.find(u8"caption", ind0);
             if (ind0 > 0 && ind0 < ind1)
                 ++Ncaption;
         }
@@ -47,16 +47,16 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
     // main loop
     for (Long i = N-1; i >= 0; --i) {
         // get language
-        ind0 = expect(str, U"[", intvIn.L(i));
+        ind0 = expect(str, u8"[", intvIn.L(i));
         ind1 = -1;
         if (ind0 > 0) {
             ind1 = pair_brace(str, ind0-1);
-            ind0 = str.find(U"language", ind0);
+            ind0 = str.find(u8"language", ind0);
             if (ind0 > 0 && ind0 < ind1) {
-                ind0 = expect(str, U"=", ind0 + 8);
+                ind0 = expect(str, u8"=", ind0 + 8);
                 if (ind0 < 0)
                     throw scan_err(u8"lstlisting 方括号中指定语言格式错误（[language=xxx]）");
-                Long ind2 = str.find(U',', ind0);
+                Long ind2 = str.find(',', ind0);
                 if (ind2 >= 0 && ind2 <= ind1)
                     lang = str.substr(ind0, ind2 - ind0);
                 else
@@ -70,16 +70,16 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
 
         // get caption
         caption.clear();
-        ind0 = expect(str, U"[", intvIn.L(i));
+        ind0 = expect(str, u8"[", intvIn.L(i));
         capption_str.clear();
         if (ind0 > 0) {
             ind1 = pair_brace(str, ind0 - 1);
-            ind0 = str.find(U"caption", ind0);
+            ind0 = str.find(u8"caption", ind0);
             if (ind0 > 0 && ind0 < ind1) {
-                ind0 = expect(str, U"=", ind0 + 7);
+                ind0 = expect(str, u8"=", ind0 + 7);
                 if (ind0 < 0)
                     throw scan_err(u8"lstlisting 方括号中标题格式错误（[caption=xxx]）");
-                Long ind2 = str.find(U',', ind0);
+                Long ind2 = str.find(',', ind0);
                 if (ind2 >= 0 && ind2 <= ind1)
                     caption = str.substr(ind0, ind2 - ind0);
                 else
@@ -89,14 +89,14 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
                 if (caption.empty())
                     throw scan_err(u8"lstlisting 方括号中标题不能为空（[caption=xxx]）");
                 while (1) {
-                    ind3 = caption.find(U'_', ind3);
+                    ind3 = caption.find('_', ind3);
                     if (ind3 < 0) break;
-                    if (ind3 > 0 && caption[ind3-1] != U'\\')
+                    if (ind3 > 0 && caption[ind3-1] != '\\')
                         throw scan_err(u8"lstlisting 标题中下划线前面要加 \\");
                     ++ind3;
                 }
-                replace(caption, U"\\_", U"_");
-                capption_str = U"<div align = \"center\">代码 " + num2str32(Ncaption) + U"：" + caption + U"</div>\n";
+                replace(caption, u8"\\_", u8"_");
+                capption_str = u8"<div align = \"center\">代码 " + num2str(Ncaption) + u8"：" + caption + u8"</div>\n";
                 --Ncaption;
             }
         }
@@ -111,44 +111,44 @@ inline Long lstlisting(Str32_IO str, vecStr32_I str_verb)
 
         // recover code from verbatim index
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
-        trim(ind_str, U"\n ");
+        trim(ind_str, u8"\n ");
         code = str_verb[str2int(ind_str)];
         if (line_size_lim(code, 78) >= 0)
             throw scan_err(u8"单行代码过长（防止 pdf 中代码超出长度）");
         // TODO: 即使是 pdf 的 lstlisting 应该也可以自动换行吧！
         
         // highlight
-        Str32 prism_lang, prism_line_num;
-        if (lang == U"matlabC") {
-            prism_lang = U" class=\"language-matlab\"";
+        Str prism_lang, prism_line_num;
+        if (lang == u8"matlabC") {
+            prism_lang = u8" class=\"language-matlab\"";
         }
-        else if (lang == U"matlab" || lang == U"cpp" || lang == U"python" || lang == U"bash" || lang == U"makefile" || lang == U"julia" || lang == U"latex") {
-            prism_lang = U" class=\"language-" + lang + U"\"";
-            prism_line_num = U"class=\"line-numbers\"";
+        else if (lang == u8"matlab" || lang == u8"cpp" || lang == u8"python" || lang == u8"bash" || lang == u8"makefile" || lang == u8"julia" || lang == u8"latex") {
+            prism_lang = u8" class=\"language-" + lang + u8"\"";
+            prism_line_num = u8"class=\"line-numbers\"";
         }
         else {
-            prism_line_num = U"class=\"line-numbers\"";
+            prism_line_num = u8"class=\"line-numbers\"";
             if (!lang.empty()) {
-                prism_lang = U" class=\"language-" + lang + U"\"";
-                SLS_WARN(u8"lstlisting 环境不支持 " + u8(lang) + u8" 语言， 可能未添加高亮！");
+                prism_lang = u8" class=\"language-" + lang + u8"\"";
+                SLS_WARN(u8"lstlisting 环境不支持 " + lang + u8" 语言， 可能未添加高亮！");
             }
             else
-                prism_lang = U" class=\"language-plain\"";
+                prism_lang = u8" class=\"language-plain\"";
         }
-        if (lang == U"matlab" && gv::is_wiki) {
-            if (!caption.empty() && caption.back() == U'm') {
-                Str32 fname = gv::path_out + U"code/" + lang + "/" + caption;
+        if (lang == u8"matlab" && gv::is_wiki) {
+            if (!caption.empty() && caption.back() == 'm') {
+                Str fname = gv::path_out + u8"code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
                     throw scan_err("代码文件名重复： " + fname);
-                if (code.back() != U'\n')
-                    write(code+U'\n', fname);
+                if (code.back() != '\n')
+                    write(code+'\n', fname);
                 else
                     write(code, fname);
             }
         }
-        replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
+        replace(code, u8"<", u8"&lt;"); replace(code, u8">", u8"&gt;");
         str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
-            U"<pre " + prism_line_num + U"><code" + prism_lang + U">" + code + U"\n</code></pre>\n");
+            u8"<pre " + prism_line_num + u8"><code" + prism_lang + u8">" + code + u8"\n</code></pre>\n");
     }
     return N;
 }

@@ -8,11 +8,11 @@ namespace slisc {
 
 // find text command '\name', return the index of '\'
 // return the index of "name.back()", return -1 if not found
-inline Long find_command(Str32_I str, Str32_I name, Long_I start = 0)
+inline Long find_command(Str_I str, Str_I name, Long_I start = 0)
 {
     Long ind0 = start;
     while (true) {
-        ind0 = str.find(U"\\" + name, ind0);
+        ind0 = str.find(u8"\\" + name, ind0);
         if (ind0 < 0)
             return -1;
 
@@ -26,12 +26,12 @@ inline Long find_command(Str32_I str, Str32_I name, Long_I start = 0)
 // remove comments
 // if a comment is preceeded by '\n' and spaces, then they are deleted too
 // will not remove '\n' after the comment
-inline Long rm_comments(Str32_IO str)
+inline Long rm_comments(Str_IO str)
 {
     Intvs intvComm;
-    find_comments(intvComm, str, U"%");
+    find_comments(intvComm, str, u8"%");
     for (Long i = intvComm.size() - 1; i >= 0; --i) {
-        Long ind = ExpectKeyReverse(str, U"\n", intvComm.L(i) - 1) + 1;
+        Long ind = ExpectKeyReverse(str, u8"\n", intvComm.L(i) - 1) + 1;
         if (ind < 0) {
             if (intvComm.R(i) < size(str) && str[intvComm.R(i)] == U'\n' &&
                 str[intvComm.R(i) + 1] != U'\n')
@@ -46,7 +46,7 @@ inline Long rm_comments(Str32_IO str)
 
 // find one of multiple commands
 // return -1 if not found
-inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I start)
+inline Long find_command(Long_O ikey, Str_I str, vecStr_I names, Long_I start)
 {
     Long i_min = 100000000;
     ikey = -1;
@@ -70,7 +70,7 @@ inline Long find_command(Long_O ikey, Str32_I str, vecStr32_I names, Long_I star
 // '*' after command will be omitted and skipped
 // 'omit_skip_opt' will omit and skip optional argument in [], else [] will be counted into 'Narg'
 // use `arg_no_brace` to skip args without `{}`, e.g. `b` in `\frac{a} b` (only a single char)
-inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true, Bool_I arg_no_brace = false, Bool_I skip_star = true)
+inline Long skip_command(Str_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_skip_opt = true, Bool_I arg_no_brace = false, Bool_I skip_star = true)
 {
     Long i, Narg1 = Narg;
     // skip the command name itself
@@ -84,16 +84,16 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
         if (Narg1 == 0)
             return str.size();
         else
-            throw Str32(U"skip_command() failed!");
+            throw Str(u8"skip_command() failed!");
     }
     // skip *
     Long ind0 = -1;
     if (skip_star)
-        ind0 = expect(str, U"*", i);
+        ind0 = expect(str, u8"*", i);
     if (ind0 < 0)
         ind0 = i;
     // skip optional argument
-    Long ind1 = expect(str, U"[", ind0), ind2;
+    Long ind1 = expect(str, u8"[", ind0), ind2;
     if (ind1 >= 0) {
         ind2 = pair_brace(str, ind1-1);
         if (omit_skip_opt) {
@@ -106,16 +106,16 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
     }
     // skip arguments
     for (Long i = 0; i < Narg1; ++i) {
-        ind0 = expect(str, U"{", ind0);
+        ind0 = expect(str, u8"{", ind0);
         if (ind0 > 0) {
             ind0 = pair_brace(str, ind0-1) + 1;
             continue;
         }
         if (!arg_no_brace)
-            throw Str32(U"skip_command(): '{' not found!");
-        ind0 = str.find_first_not_of(U' ', ind0);
+            throw Str(u8"skip_command(): '{' not found!");
+        ind0 = str.find_first_not_of(' ', ind0);
         if (ind0 < 0)
-            throw Str32(U"skip_command(): end of file!");
+            throw Str(u8"skip_command(): end of file!");
         ++ind0;
     }
     return ind0;
@@ -123,10 +123,10 @@ inline Long skip_command(Str32_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_s
 
 // get the name of the command starting at str[ind]
 // does not include '\\'
-inline void command_name(Str32_O name, Str32_I str, Long_I ind)
+inline void command_name(Str_O name, Str_I str, Long_I ind)
 {
-    if (str[ind] != U'\\')
-        throw Str32(U"not a command!");
+    if (str[ind] != '\\')
+        throw Str(u8"not a command!");
     // skip the command name
     Bool found = false;
     Long i;
@@ -141,25 +141,25 @@ inline void command_name(Str32_O name, Str32_I str, Long_I ind)
 }
 
 // determin if a command has a following star
-inline Bool command_star(Str32_I str, Long_I ind)
+inline Bool command_star(Str_I str, Long_I ind)
 {
-    if (str[ind] != U'\\')
-        throw Str32(U"command_star(): not a command!");
+    if (str[ind] != '\\')
+        throw Str(u8"command_star(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    if (str[ind0 - 1] == U'*')
+    if (str[ind0 - 1] == '*')
         return true;
     return false;
 }
 
 // check if an index is in a command \name{...}
-inline Bool is_in_cmd(Str32_I str, Str32_I name, Long_I ind)
+inline Bool is_in_cmd(Str_I str, Str_I name, Long_I ind)
 {
     if (ind < 0 || ind >= size(str))
-        throw Str32(U"内部错误： is_in_cmd() index out of bound");
-    Long ind0 = str.rfind(U"\\" + name, ind);
+        throw Str(u8"内部错误： is_in_cmd() index out of bound");
+    Long ind0 = str.rfind(u8"\\" + name, ind);
     if (ind0 < 0)
         return false;
-    ind0 = expect(str, U"{", ind0 + name.size() + 1);
+    ind0 = expect(str, u8"{", ind0 + name.size() + 1);
     if (ind0 < 0)
         return false;
     Long ind1 = pair_brace(str, ind0 - 1);
@@ -169,13 +169,13 @@ inline Bool is_in_cmd(Str32_I str, Str32_I name, Long_I ind)
 }
 
 // check if command has optional argument in []
-inline Bool command_has_opt(Str32_I str, Long_I ind, Bool_I trim = true)
+inline Bool command_has_opt(Str_I str, Long_I ind, Bool_I trim = true)
 {
-    Str32 arg;
-    if (str[ind] != U'\\')
-        throw Str32(U"has_opt(): not a command!");
+    Str arg;
+    if (str[ind] != '\\')
+        throw Str(u8"has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, U"[", ind0);
+    ind0 = expect(str, u8"[", ind0);
     if (ind0 < 0)
         return false;
     return true;
@@ -183,13 +183,13 @@ inline Bool command_has_opt(Str32_I str, Long_I ind, Bool_I trim = true)
 
 // get optional argument of command in [], trim result by default
 // return empty string if not found
-inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
+inline Str command_opt(Str_I str, Long_I ind, Bool_I trim = true)
 {
-    Str32 arg;
-    if (str[ind] != U'\\')
-        throw Str32(U"has_opt(): not a command!");
+    Str arg;
+    if (str[ind] != '\\')
+        throw Str(u8"has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, U"[", ind0);
+    ind0 = expect(str, u8"[", ind0);
     if (ind0 < 0)
         return arg;
     Long ind1 = pair_brace(str, ind0-1);
@@ -203,23 +203,23 @@ inline Str32 command_opt(Str32_I str, Long_I ind, Bool_I trim = true)
 // return # of [] or {}
 // or return -1: \cmd() or \cmd*()
 // or return -2: \cmd[]() or \cmd*[]()
-inline Long command_Narg(Str32_I str, Long_I ind)
+inline Long command_Narg(Str_I str, Long_I ind)
 {
-    if (str[ind] != U'\\')
-        throw Str32(U"not a command!");
+    if (str[ind] != '\\')
+        throw Str(u8"not a command!");
     Long Narg = 0, ind0 = skip_command(str, ind, 0, false);
     // skip optional argument
-    Long ind1 = expect(str, U"[", ind0) - 1;
+    Long ind1 = expect(str, u8"[", ind0) - 1;
     if (ind1 > 0) {
         ind0 = pair_brace(str, ind1) + 1;
         ++Narg;
     }
-    if (expect(str, U"(", ind0) > 0) {
+    if (expect(str, u8"(", ind0) > 0) {
         Narg = -Narg - 1;
     }
     else {
         while (true) {
-            ind0 = expect(str, U"{", ind0) - 1;
+            ind0 = expect(str, u8"{", ind0) - 1;
             if (ind0 > 0) {
                 ind0 = pair_brace(str, ind0) + 1;
                 ++Narg;
@@ -236,7 +236,7 @@ inline Long command_Narg(Str32_I str, Long_I ind)
 // return the index after '}' of the argument if successful
 // return -1 if requested argument does not exist
 // use `arg_no_brace` to get args without `{}`, e.g. `b` in `\frac{a} b` (single char/command), will return one index after arg
-inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false, Bool_I arg_no_brace = false)
+inline Long command_arg(Str_O arg, Str_I str, Long_I ind, Long_I i = 0, Bool_I trim = true, Bool_I ignore_opt = false, Bool_I arg_no_brace = false)
 {
     Long ind0 = ind, ind1;
     if (ignore_opt)
@@ -251,19 +251,19 @@ inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool
         ind0 = skip_command(str, ind0, i, false, arg_no_brace);
     }
     else {
-        throw Str32(U"command_arg(): i < 0 not allowed!");
+        throw Str(u8"command_arg(): i < 0 not allowed!");
     }
     
-    ind1 = expect(str, U"{", ind0);
+    ind1 = expect(str, u8"{", ind0);
     if (ind1 < 0) {
         if (!arg_no_brace)
             return -1;
-        ind0 = str.find_first_not_of(U' ', ind0);
+        ind0 = str.find_first_not_of(' ', ind0);
         if (ind0 < 0)
-            throw Str32(U"command_arg(): end of file!");
-        if (str[ind0] == U'\\') {
+            throw Str(u8"command_arg(): end of file!");
+        if (str[ind0] == '\\') {
             command_name(arg, str, ind0);
-            arg = U'\\' + arg;
+            arg = '\\' + arg;
             ind0 += arg.size();
         }
         else {
@@ -282,10 +282,10 @@ inline Long command_arg(Str32_O arg, Str32_I str, Long_I ind, Long_I i = 0, Bool
 // find command with a specific 1st arguments
 // i.e. \begin{equation}
 // return the index of '\', return -1 if not found
-inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I start)
+inline Long find_command_spec(Str_I str, Str_I name, Str_I arg1, Long_I start)
 {
     Long ind0 = start;
-    Str32 arg1_;
+    Str arg1_;
     while (true) {
         ind0 = find_command(str, name, ind0);
         if (ind0 < 0)
@@ -301,20 +301,20 @@ inline Long find_command_spec(Str32_I str, Str32_I name, Str32_I arg1, Long_I st
 
 // skip an environment
 // might return str.size()
-inline Long skip_env(Str32_I str, Long_I ind)
+inline Long skip_env(Str_I str, Long_I ind)
 {
-    Str32 name;
+    Str name;
     command_arg(name, str, ind);
-    Long ind0 = find_command_spec(str, U"end", name, ind);
+    Long ind0 = find_command_spec(str, u8"end", name, ind);
     if (ind0 < 0)
-        throw Str32(U"环境 " + name + U" 没有 end");
+        throw Str(u8"环境 " + name + u8" 没有 end");
     return skip_command(str, ind0, 1);
 }
 
 // find the intervals of all commands with 1 argument
 // intervals are from '\' to '}'
 // return the number of commands found
-inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
+inline Long find_all_command_intv(Intvs_O intv, Str_I name, Str_I str)
 {
     Long ind0 = 0;
     intv.clear();
@@ -332,28 +332,28 @@ inline Long find_all_command_intv(Intvs_O intv, Str32_I name, Str32_I str)
 // return number of environments found
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
-inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
+inline Long find_env(Intvs_O intv, Str_I str, Str_I env, Char option = 'i')
 {
     Long ind0{};
     if (option != 'i' && option != 'o')
-        throw Str32(U"内部错误： illegal option in find_env()!");
+        throw Str(u8"内部错误： illegal option in find_env()!");
     intv.clear();
     // find comments
     while (true) {
-        ind0 = find_command_spec(str, U"begin", env, ind0);
+        ind0 = find_command_spec(str, u8"begin", env, ind0);
         if (ind0 < 0)
             return intv.size();
         if (option == 'i') {
-            if (env == U"example" || env == U"exercise" || env == U"definition" || env == U"lemma" || env == U"theorem" || env == U"corollary")
+            if (env == u8"example" || env == u8"exercise" || env == u8"definition" || env == u8"lemma" || env == u8"theorem" || env == u8"corollary")
                 ind0 = skip_command(str, ind0, 2);
             else
                 ind0 = skip_command(str, ind0, 1);
         }
         intv.pushL(ind0);
 
-        ind0 = find_command_spec(str, U"end", env, ind0);
+        ind0 = find_command_spec(str, u8"end", env, ind0);
         if (ind0 < 0)
-            throw Str32(U"find_env() failed!");
+            throw Str(u8"find_env() failed!");
         if (option == 'o')
             ind0 = skip_command(str, ind0, 1);
         if (ind0 < 0) {
@@ -368,22 +368,22 @@ inline Long find_env(Intvs_O intv, Str32_I str, Str32_I env, Char option = 'i')
 // get to the inside of the environment
 // return the first index inside environment
 // output first index of "\end"
-inline Long inside_env(Long_O right, Str32_I str, Long_I ind, Long_I Narg = 1)
+inline Long inside_env(Long_O right, Str_I str, Long_I ind, Long_I Narg = 1)
 {
-    if (expect(str, U"\\begin", ind) < 0)
-        throw Str32(U"inside_env() failed (1)!");
-    Str32 env;
+    if (expect(str, u8"\\begin", ind) < 0)
+        throw Str(u8"inside_env() failed (1)!");
+    Str env;
     command_arg(env, str, ind, 0);
     Long left = skip_command(str, ind, Narg);
-    right = find_command_spec(str, U"end", env, left);
+    right = find_command_spec(str, u8"end", env, left);
     if (right < 0)
-        throw Str32(U"inside_env() failed (2)!");
+        throw Str(u8"inside_env() failed (2)!");
     return left;
 }
 
 // check if an index ind is in any of the evironments \begin{names[j]}...\end{names[j]}
 // output iname of names[iname], -1 if return false
-inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
+inline Bool index_in_env(Long& iname, Long ind, vecStr_I names, Str_I str)
 {
     Intvs intv;
     for (Long i = 0; i < size(names); ++i) {
@@ -401,56 +401,56 @@ inline Bool index_in_env(Long& iname, Long ind, vecStr32_I names, Str32_I str)
 
 // find the current environment an index is in
 // commands that is an alias of environment will also count
-inline Str32 current_env(Long_I ind, Str32_I str)
+inline Str current_env(Long_I ind, Str_I str)
 {
     // check if in a qualified command
-    vecStr32 cmd_env = {
-        U"ali", U"aligned",
-        U"leftgroup", U"aligned",
-        U"pmat", U"pmatrix",
-        U"vmat", U"vmatrix",
-        U"bmat", U"bmatrix",
-        U"Bmat", U"matrix",
-        U"pentry", U"mdframed",
-        U"issues", U"mdframed",
-        U"addTODO", U"mdframed"
+    vecStr cmd_env = {
+        u8"ali", u8"aligned",
+        u8"leftgroup", u8"aligned",
+        u8"pmat", u8"pmatrix",
+        u8"vmat", u8"vmatrix",
+        u8"bmat", u8"bmatrix",
+        u8"Bmat", u8"matrix",
+        u8"pentry", u8"mdframed",
+        u8"issues", u8"mdframed",
+        u8"addTODO", u8"mdframed"
     };
     for (Long i = 0; i < size(cmd_env); i += 2)
         if (is_in_cmd(str, cmd_env[i], ind))
             return cmd_env[i + 1];
 
     // check environment
-    Long ind0 = find_command(str, U"end");
+    Long ind0 = find_command(str, u8"end");
     if (ind < 0)
-        return U"document";
-    Str32 arg;
+        return u8"document";
+    Str arg;
     command_arg(arg, str, ind0);
     return arg;
 }
 
-inline Bool index_in_env(Long_I ind, Str32_I name, Str32_I str)
+inline Bool index_in_env(Long_I ind, Str_I name, Str_I str)
 {
     Long iname;
     return index_in_env(iname, ind, { name.c_str() }, str);
 }
 
 // find interval of all "\lstinline *...*"
-inline Long lstinline_intv(Intvs_O intv, Str32_I str)
+inline Long lstinline_intv(Intvs_O intv, Str_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
-    Char32 dlm;
+    Char dlm;
     intv.clear();
     while (true) {
-        ind0 = find_command(str, U"lstinline", ind0);
+        ind0 = find_command(str, u8"lstinline", ind0);
         if (ind0 < 0)
             break;
-        ind1 = str.find_first_not_of(U' ', ind0 + 10);
+        ind1 = str.find_first_not_of(' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str32(U"lstinline_intv() failed (1)!");
+            throw Str(u8"lstinline_intv() failed (1)!");
         dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"lstinline_intv() failed (2)!");
+            throw Str(u8"lstinline_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
         ind0 = ind2 + 1;
         ++N;
@@ -459,22 +459,22 @@ inline Long lstinline_intv(Intvs_O intv, Str32_I str)
 }
 
 // find interval of all "\verb *...*"
-inline Long verb_intv(Intvs_O intv, Str32_I str)
+inline Long verb_intv(Intvs_O intv, Str_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
-    Char32 dlm;
+    Char dlm;
     intv.clear();
     while (true) {
-        ind0 = find_command(str, U"verb", ind0);
+        ind0 = find_command(str, u8"verb", ind0);
         if (ind0 < 0)
             break;
-        ind1 = str.find_first_not_of(U' ', ind0 + 5);
+        ind1 = str.find_first_not_of(' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str32(U"verb_intv() failed (1)!");
+            throw Str(u8"verb_intv() failed (1)!");
         dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"verb_intv() failed (2)!");
+            throw Str(u8"verb_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
         ind0 = ind2 + 1;
         ++N;
@@ -486,26 +486,26 @@ inline Long verb_intv(Intvs_O intv, Str32_I str)
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $...$ environments found.
 // "$$" with nothing inside will be ignored
-inline Long find_single_dollar_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
 {
     intv.clear();
     Long N{}; // number of $$
     Long ind0{};
     while (true) {
-        ind0 = str.find(U"$", ind0);
+        ind0 = str.find(u8"$", ind0);
         if (ind0 < 0)
             break;
-        if (ind0 > 0 && str[ind0 - 1] == U'\\') { // escaped
+        if (ind0 > 0 && str[ind0 - 1] == '\\') { // escaped
             ++ind0; continue;
         }
-        if (ind0 < size(str) - 1 && str[ind0 + 1] == U'$') { // ignore $$
+        if (ind0 < size(str) - 1 && str[ind0 + 1] == '$') { // ignore $$
             ind0 += 2; continue;
         }
         intv.push_back(ind0);
         ++ind0; ++N;
     }
     if (N % 2 != 0) {
-        throw Str32(U"行内公式 $ 符号不匹配");
+        throw Str(u8"行内公式 $ 符号不匹配");
     }
     N /= 2;
     if (option == 'i' && N > 0)
@@ -518,25 +518,25 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 // find the range of inline equations using \(...\)
 // if option = 'i', intervals does not include \( and \), if 'o', it does.
 // return the number of \(...\) environments found.
-inline Long find_paren_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long find_paren_eq(Intvs_O intv, Str_I str, Char option = 'i')
 {
     intv.clear();
     Long N = 0; // number of \(...\)
     Long ind0 = -1;
     while (true) {
         // find \(
-        ind0 = str.find(U"\\(", ++ind0);
+        ind0 = str.find(u8"\\(", ++ind0);
         if (ind0 < 0) break;
         // `\\(` means a line break and (, 
         //     whether inside or outside equation env
-        if (ind0 > 0 && str[ind0-1] == U'\\') continue;
+        if (ind0 > 0 && str[ind0-1] == '\\') continue;
         intv.pushL(ind0);
         // find `\)`, ignore `\\)`
         while (true) {
-            ind0 = str.find(U"\\)", ++ind0);
+            ind0 = str.find(u8"\\)", ++ind0);
             if (ind0 < 0)
-                throw Str32(U"\\( 没有找到匹配的 \\)");
-            if (ind0 > 0 && str[ind0-1] == U'\\') continue;
+                throw Str(u8"\\( 没有找到匹配的 \\)");
+            if (ind0 > 0 && str[ind0-1] == '\\') continue;
             intv.pushR(ind0+1); break;
         }
     }
@@ -548,7 +548,7 @@ inline Long find_paren_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 }
 
 // combine find_single_dollar_eq() and find_paren_eq()
-inline void find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+inline void find_inline_eq(Intvs_O intv, Str_I str, Char option = 'i')
 {
     Intvs intv1;
     find_single_dollar_eq(intv, str, option);
@@ -565,24 +565,24 @@ inline void find_inline_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 // output interval from '\' to '}'
 // return number found
 // use FindAllBegin
-inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
+inline Long FindAllBegin(Intvs_O intv, Str_I env, Str_I str, Char option)
 {
     intv.clear();
     Long N{}, ind0{}, ind1;
     while (true) {
-        ind1 = str.find(U"\\begin", ind0);
+        ind1 = str.find(u8"\\begin", ind0);
         if (ind1 < 0)
             return N;
-        ind0 = expect(str, U"{", ind1 + 6);
+        ind0 = expect(str, u8"{", ind1 + 6);
         if (expect(str, env, ind0) < 0)
             continue;
         ++N; intv.pushL(ind1);
         ind0 = pair_brace(str, ind0 - 1);
         if (option == '1')
             intv.pushR(ind0);
-        ind0 = expect(str, U"{", ind0 + 1);
+        ind0 = expect(str, u8"{", ind0 + 1);
         if (ind0 < 0) {
-            throw Str32(U"内部错误： FindAllBegin(): expecting {}{}!");
+            throw Str(u8"内部错误： FindAllBegin(): expecting {}{}!");
         }
         ind0 = pair_brace(str, ind0 - 1);
         intv.pushR(ind0);
@@ -593,13 +593,13 @@ inline Long FindAllBegin(Intvs_O intv, Str32_I env, Str32_I str, Char option)
 // Find "\end{env}"
 // output ranges to intv, from '\' to '}'
 // return number found
-inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
+inline Long FindEnd(Intvs_O intv, Str_I env, Str_I str)
 {
     intv.clear();
     Long N{}, ind0{};
-    Str32 env1;
+    Str env1;
     while (true) {
-        ind0 = find_command(str, U"end", ind0+1);
+        ind0 = find_command(str, u8"end", ind0+1);
         if (ind0 < 0)
             return N;
         command_arg(env1, str, ind0);
@@ -615,21 +615,21 @@ inline Long FindEnd(Intvs_O intv, Str32_I env, Str32_I str)
 // find $$...$$ equation environments
 // assuming comments and verbatims are removed
 // if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
-inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option = 'i')
+inline void find_double_dollar_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
 {
     intv.clear();
     Long ind0 = 0;
     while (true) {
-        ind0 = str.find(U"$$", ind0);
+        ind0 = str.find(u8"$$", ind0);
         if (ind0 < 0)
             return;
         if (option == 'i')
             intv.pushL(ind0+2);
         else
             intv.pushL(ind0);
-        ind0 = str.find(U"$$", ind0+2);
+        ind0 = str.find(u8"$$", ind0+2);
         if (ind0 < 0)
-            throw Str32(U"$$...$$ 公式环境不闭合");
+            throw Str(u8"$$...$$ 公式环境不闭合");
         if (option == 'i')
             intv.pushR(ind0 - 1);
         else
@@ -641,24 +641,24 @@ inline void find_double_dollar_eq(Intvs_O intv, Str32_I str, Char_I option = 'i'
 // find the range of display equations using \[...\]
 // if option = 'i', intervals does not include \[ and \], if 'o', it does.
 // return the number of \[...\] environments found.
-inline Long find_sqr_bracket_eq(Intvs_O intv, Str32_I str, Char option = 'i')
+inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, Char option = 'i')
 {
     intv.clear();
     Long N = 0; // number of \[...\]
     Long ind0 = -1;
     while (true) {
         // find \[
-        ind0 = str.find(U"\\[", ++ind0);
+        ind0 = str.find(u8"\\[", ++ind0);
         if (ind0 < 0) break;
-        if (ind0 > 0 && str[ind0-1] == U'\\')
+        if (ind0 > 0 && str[ind0-1] == '\\')
             continue; // `\\[3pt]` might be used in split environment
         intv.pushL(ind0);
         // find \]
-        ind0 = str.find(U"\\]", ++ind0);
+        ind0 = str.find(u8"\\]", ++ind0);
         if (ind0 < 0)
-            throw Str32(U"\\[ 没有找到匹配的 \\]");
-        if (ind0 > 0 && str[ind0-1] == U'\\')
-            throw Str32(U"非法命令： \\\\]");
+            throw Str(u8"\\[ 没有找到匹配的 \\]");
+        if (ind0 > 0 && str[ind0-1] == '\\')
+            throw Str(u8"非法命令： \\\\]");
         intv.pushR(ind0+1);
     }
     N /= 2;
@@ -669,65 +669,65 @@ inline Long find_sqr_bracket_eq(Intvs_O intv, Str32_I str, Char option = 'i')
 }
 
 // find display equations
-inline void find_display_eq(Intvs_O intv, Str32_I str, Char_I option = 'i')
+inline void find_display_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
 {
     Intvs intv1;
     intv.clear();
     find_double_dollar_eq(intv, str, option);
     find_sqr_bracket_eq(intv1, str, option);
     combine(intv, intv1);
-    find_env(intv1, str, U"equation", option);
+    find_env(intv1, str, u8"equation", option);
     combine(intv, intv1);
-    find_env(intv1, str, U"align", option);
+    find_env(intv1, str, u8"align", option);
     combine(intv, intv1);
-    find_env(intv1, str, U"gather", option);
+    find_env(intv1, str, u8"gather", option);
     combine(intv, intv1);
 }
 
 // forbid empty line in equations
-inline void check_eq_empty_line(Str32_I str)
+inline void check_eq_empty_line(Str_I str)
 {
     Intvs intv, intv1;
     find_inline_eq(intv, str);
     find_display_eq(intv1, str);
     combine(intv, intv1);
-    Str32 tmp;
+    Str tmp;
     for (Long i = intv.size() - 1; i >= 0; --i) {
         for (Long j = intv.L(i); j < intv.R(i); ++j) {
-            if (str[j] == U'\n' && str[j+1] == U'\n')
-                throw Str32(U"公式中禁止空行：" + str.substr(j, 40));
+            if (str[j] == '\n' && str[j+1] == '\n')
+                throw Str(u8"公式中禁止空行：" + str.substr(j, 40));
         }
     }
 }
 
 // forbid non-ascii char in equations (except in \text)
-inline void check_eq_ascii(Str32_I str)
+inline void check_eq_ascii(Str_I str)
 {
     Intvs intv, intv1;
     find_inline_eq(intv, str);
     find_display_eq(intv1, str);
     combine(intv, intv1);
-    Str32 tmp;
+    Str tmp;
     for (Long i = intv.size() - 1; i >= 0; --i) {
         for (Long j = intv.L(i); j <= intv.R(i); ++j) {
-            if (!is_ascii(str[j]) && !is_in_cmd(str, U"text", j))
-                throw Str32(U"公式中只能包含 ascii 字符： 不能有全角标点，汉字，希腊字母等， \\text{...} 命令内除外：" + str.substr(j, 40));
+            if (!is_ascii(str[j]) && !is_in_cmd(str, u8"text", j))
+                throw Str(u8"公式中只能包含 ascii 字符： 不能有全角标点，汉字，希腊字母等， \\text{...} 命令内除外：" + str.substr(j, 40));
         }
     }
 }
 
 // Find normal text range
-inline Long FindNormalText(Intvs_O intvNorm, Str32_I str)
+inline Long FindNormalText(Intvs_O intvNorm, Str_I str)
 {
     Intvs intv, intv1;
     // verbatim
     lstinline_intv(intv, str);
     verb_intv(intv1, str);
     combine(intv, intv1);
-    find_env(intv1, str, U"lstlisting", 'o');
+    find_env(intv1, str, u8"lstlisting", 'o');
     combine(intv, intv1);
     // comments
-    find_comments(intv1, str, U"%");
+    find_comments(intv1, str, u8"%");
     combine(intv, intv1);
     // inline equations
     find_inline_eq(intv1, str, 'o');
@@ -736,53 +736,53 @@ inline Long FindNormalText(Intvs_O intvNorm, Str32_I str)
     find_display_eq(intv1, str, 'o');
     combine(intv, intv1);
     // command environments
-    find_env(intv1, str, U"Command", 'o');
+    find_env(intv1, str, u8"Command", 'o');
     combine(intv, intv1);
     // texttt command
-    find_all_command_intv(intv1, U"texttt", str);
+    find_all_command_intv(intv1, u8"texttt", str);
     combine(intv, intv1);
     // input command
-    find_all_command_intv(intv1, U"input", str);
+    find_all_command_intv(intv1, u8"input", str);
     combine(intv, intv1);
     // Figure environments
-    find_env(intv1, str, U"figure", 'o');
+    find_env(intv1, str, u8"figure", 'o');
     combine(intv, intv1);
     // Table environments
-    find_env(intv1, str, U"table", 'o');
+    find_env(intv1, str, u8"table", 'o');
     combine(intv, intv1);
     // subsubsection command
-    // find_all_command_intv(intv1, U"subsubsection", str);
+    // find_all_command_intv(intv1, u8"subsubsection", str);
     // combine(intv, intv1);
 
     //  \begin{example}{} and \end{example}
-    FindAllBegin(intv1, U"example", str, '2');
+    FindAllBegin(intv1, u8"example", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"example", str);
+    FindEnd(intv1, u8"example", str);
     combine(intv, intv1);
     //  exer\begin{exercise}{} and \end{exercise}
-    FindAllBegin(intv1, U"exercise", str, '2');
+    FindAllBegin(intv1, u8"exercise", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"exercise", str);
+    FindEnd(intv1, u8"exercise", str);
     combine(intv, intv1);
     //  exer\begin{theorem}{} and \end{theorem}
-    FindAllBegin(intv1, U"theorem", str, '2');
+    FindAllBegin(intv1, u8"theorem", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"theorem", str);
+    FindEnd(intv1, u8"theorem", str);
     combine(intv, intv1);
     //  exer\begin{definition}{} and \end{definition}
-    FindAllBegin(intv1, U"definition", str, '2');
+    FindAllBegin(intv1, u8"definition", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"definition", str);
+    FindEnd(intv1, u8"definition", str);
     combine(intv, intv1);
     //  exer\begin{lemma}{} and \end{lemma}
-    FindAllBegin(intv1, U"lemma", str, '2');
+    FindAllBegin(intv1, u8"lemma", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"lemma", str);
+    FindEnd(intv1, u8"lemma", str);
     combine(intv, intv1);
     //  exer\begin{corollary}{} and \end{corollary}
-    FindAllBegin(intv1, U"corollary", str, '2');
+    FindAllBegin(intv1, u8"corollary", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, U"corollary", str);
+    FindEnd(intv1, u8"corollary", str);
     combine(intv, intv1);
     // invert range
     return invert(intvNorm, intv, str.size());
@@ -791,7 +791,7 @@ inline Long FindNormalText(Intvs_O intvNorm, Str32_I str)
 // detect unnecessary braces and add "删除标记"
 // return the number of braces pairs removed
 inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
-    vecLong_I ind_RmatchL, Str32_IO str)
+    vecLong_I ind_RmatchL, Str_IO str)
 {
     unsigned i, N{};
     vecLong ind; // redundent right brace index
@@ -808,7 +808,7 @@ inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
     if (N > 0) {
         sort(ind.begin(), ind.end());
         for (Long i = ind.size() - 1; i >= 0; --i) {
-            str.insert(ind[i], U"删除标记");
+            str.insert(ind[i], u8"删除标记");
         }
     }
     return N;
@@ -818,14 +818,14 @@ inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
 // {} cannot be omitted
 // must remove comments first
 // return the number replaced
-inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str32_IO str)
+inline Long Command2Tag(Str_I nameComm, Str_I strLeft, Str_I strRight, Str_IO str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
     while (true) {
-        ind0 = str.find(U"\\" + nameComm, ind0);
+        ind0 = str.find(u8"\\" + nameComm, ind0);
         if (ind0 < 0) break;
         ind1 = ind0 + nameComm.size() + 1;
-        ind1 = expect(str, U"{", ind1); --ind1;
+        ind1 = expect(str, u8"{", ind1); --ind1;
         if (ind1 < 0) {
             ++ind0; continue;
         }
@@ -843,37 +843,37 @@ inline Long Command2Tag(Str32_I nameComm, Str32_I strLeft, Str32_I strRight, Str
 // will ignore \lstinline and \verb in lstlisting environment
 // doesn't matter if \lstinline is in latex comment
 // TODO: it does matter if \begin{lstlisting} is in comment!
-inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
+inline Long verbatim(vecStr_O str_verb, Str_IO str)
 {
     Long ind0 = 0, ind1, ind2;
-    Char32 dlm;
-    Str32 tmp;
+    Char dlm;
+    Str tmp;
 
     // verb
     while (true) {
-        ind0 = find_command(str, U"verb", ind0);
+        ind0 = find_command(str, u8"verb", ind0);
         if (ind0 < 0)
             break;
-        ind1 = str.find_first_not_of(U' ', ind0 + 5);
+        ind1 = str.find_first_not_of(' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str32(U"\\verb 没有开始");
+            throw Str(u8"\\verb 没有开始");
         dlm = str[ind1];
-        if (dlm == U'{')
-            throw Str32(U"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
+        if (dlm == '{')
+            throw Str(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\verb 没有闭合");
+            throw Str(u8"\\verb 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str32(U"\\verb 不能为空");
+            throw Str(u8"\\verb 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
         if (is_chinese(str[ind0 - 1]))
-            tmp = U' ';
+            tmp = ' ';
         else
             tmp.clear();
-        tmp += U"\\verb|" + num2str32(size(str_verb) - 1) + U"|";
+        tmp += u8"\\verb|" + num2str(size(str_verb) - 1) + u8"|";
         if (is_chinese(str[ind2 + 1]))
-            tmp += U' ';
+            tmp += ' ';
         str.replace(ind0, ind2 + 1 - ind0, tmp);
         ind0 += 3;
     }
@@ -881,30 +881,30 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
     // lstinline
     ind0 = 0;
     while (true) {
-        ind0 = find_command(str, U"lstinline", ind0);
+        ind0 = find_command(str, u8"lstinline", ind0);
         if (ind0 < 0)
             break;
-        ind1 = str.find_first_not_of(U' ', ind0 + 10);
+        ind1 = str.find_first_not_of(' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str32(U"\\lstinline 没有开始");
+            throw Str(u8"\\lstinline 没有开始");
         dlm = str[ind1];
-        if (dlm == U'{')
-            throw Str32(U"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
+        if (dlm == '{')
+            throw Str(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str32(U"\\lstinline 没有闭合");
+            throw Str(u8"\\lstinline 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str32(U"\\lstinline 不能为空");
+            throw Str(u8"\\lstinline 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
 
         if (is_chinese(str[ind0 - 1]))
-            tmp = U' ';
+            tmp = ' ';
         else
             tmp.clear();
-        tmp += U"\\lstinline|" + num2str32(size(str_verb) - 1) + U"|";
+        tmp += u8"\\lstinline|" + num2str(size(str_verb) - 1) + u8"|";
         if (is_chinese(str[ind2 + 1]))
-            tmp += U' ';
+            tmp += ' ';
         str.replace(ind0, ind2 + 1 - ind0, tmp);
         ind0 += 3;
     }
@@ -912,13 +912,13 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
     // lstlisting
     ind0 = 0;
     Intvs intvIn, intvOut;
-    Str32 code;
-    find_env(intvIn, str, U"lstlisting", 'i');
-    Long N = find_env(intvOut, str, U"lstlisting", 'o');
-    Str32 lang = U""; // language
+    Str code;
+    find_env(intvIn, str, u8"lstlisting", 'i');
+    Long N = find_env(intvOut, str, u8"lstlisting", 'o');
+    Str lang = u8""; // language
     for (Long i = N - 1; i >= 0; --i) {
         // get language
-        ind0 = expect(str, U"[", intvIn.L(i));
+        ind0 = expect(str, u8"[", intvIn.L(i));
         if (ind0 > 0) {
             ind0 = pair_brace(str, ind0-1) + 1;
         }
@@ -926,51 +926,51 @@ inline Long verbatim(vecStr32_O str_verb, Str32_IO str)
             ind0 = intvIn.L(i);
         }
         str_verb.push_back(str.substr(ind0, intvIn.R(i) + 1 - ind0));
-        trim(str_verb.back(), U"\n ");
-        str.replace(ind0, intvIn.R(i) - ind0 + 1, U"\n" + num2str32(size(str_verb)-1) + U"\n");
+        trim(str_verb.back(), u8"\n ");
+        str.replace(ind0, intvIn.R(i) - ind0 + 1, u8"\n" + num2str(size(str_verb)-1) + u8"\n");
     }
 
     return str_verb.size();
 }
 
 // reverse process of verbatim()
-inline Long verb_recover(Str32_IO str, vecStr32_IO str_verb)
+inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 {
     SLS_ERR("unfinished!");
     Long N = 0, ind0 = 0;
-    Str32 ind_str, tmp;
+    Str ind_str, tmp;
 
     // verb
     while (true) {
-        ind0 = str.find(U"\\verb|", ind0);
+        ind0 = str.find(u8"\\verb|", ind0);
         if (ind0 < 0)
             break;
         ind0 += 6; // one char after |
-        Long ind1 = str.find(U'|', ind0 + 1);
+        Long ind1 = str.find('|', ind0 + 1);
         if (ind1 < 0)
-            throw Str32(U"内部错误： verb_recover: \\verb|数字| 格式错误");
+            throw Str(u8"内部错误： verb_recover: \\verb|数字| 格式错误");
 
         Long verb_ind = str2int(str.substr(ind0, ind1 - ind0));
 
         // determin delimiter
-        Char32 dlm;
-        if (Long(str_verb[verb_ind].find(U'|')) >= 0) {
-            if (Long(str_verb[verb_ind].find(U'+')) >= 0) {
-                if (Long(str_verb[verb_ind].find(U'-')) >= 0) {
-                    if (Long(str_verb[verb_ind].find(U'*')) >= 0) {
-                        dlm = U'^';
+        Char dlm;
+        if (Long(str_verb[verb_ind].find('|')) >= 0) {
+            if (Long(str_verb[verb_ind].find('+')) >= 0) {
+                if (Long(str_verb[verb_ind].find('-')) >= 0) {
+                    if (Long(str_verb[verb_ind].find('*')) >= 0) {
+                        dlm = '^';
                     }
                     else
-                        dlm = U'*';
+                        dlm = '*';
                 }
                 else
-                    dlm = U'-';
+                    dlm = '-';
             }
             else
-                dlm = U'+';
+                dlm = '+';
         }
         else
-            dlm = U'|';
+            dlm = '|';
 
         str.replace(ind0, ind1 - ind0, dlm + str_verb[verb_ind] + dlm);
     }
@@ -979,26 +979,26 @@ inline Long verb_recover(Str32_IO str, vecStr32_IO str_verb)
 
 // replace `\lstinline|ind|` with `<code>str_verb[ind]</code>`
 // return the number replaced
-inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
+inline Long lstinline(Str_IO str, vecStr_IO str_verb)
 {
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
-    Str32 ind_str, tmp;
+    Str ind_str, tmp;
     while (true) {
-        ind0 = find_command(str, U"lstinline", ind0);
+        ind0 = find_command(str, u8"lstinline", ind0);
         if (ind0 < 0)
             break;
-        if (index_in_env(ind0, U"lstlisting", str)) {
+        if (index_in_env(ind0, u8"lstlisting", str)) {
             ++ind0; continue;
         }
-        ind1 = expect(str, U"|", ind0 + 10); --ind1;
+        ind1 = expect(str, u8"|", ind0 + 10); --ind1;
         if (ind1 < 0)
-            throw Str32(U"内部错误： expect `|index|` after `lstinline`");
-        ind2 = str.find(U"|", ind1 + 1);
+            throw Str(u8"内部错误： expect `|index|` after `lstinline`");
+        ind2 = str.find(u8"|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], U"<", U"&lt;");
-        replace(str_verb[ind], U">", U"&gt;");
-        tmp = U"<code>" + str_verb[ind] + U"</code>";
+        replace(str_verb[ind], u8"<", u8"&lt;");
+        replace(str_verb[ind], u8">", u8"&gt;");
+        tmp = u8"<code>" + str_verb[ind] + u8"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
@@ -1008,26 +1008,26 @@ inline Long lstinline(Str32_IO str, vecStr32_IO str_verb)
 
 // replace `\verb|ind|` with `<code>str_verb[ind]</code>`
 // return the number replaced
-inline Long verb(Str32_IO str, vecStr32_IO str_verb)
+inline Long verb(Str_IO str, vecStr_IO str_verb)
 {
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
-    Str32 ind_str, tmp;
+    Str ind_str, tmp;
     while (true) {
-        ind0 = find_command(str, U"verb", ind0);
+        ind0 = find_command(str, u8"verb", ind0);
         if (ind0 < 0)
             break;
-        if (index_in_env(ind0, U"lstlisting", str)) {
+        if (index_in_env(ind0, u8"lstlisting", str)) {
             ++ind0; continue;
         }
-        ind1 = expect(str, U"|", ind0 + 5); --ind1;
+        ind1 = expect(str, u8"|", ind0 + 5); --ind1;
         if (ind1 < 0)
-            throw Str32(U"内部错误： expect `|index|` after `verb`");
-        ind2 = str.find(U"|", ind1 + 1);
+            throw Str(u8"内部错误： expect `|index|` after `verb`");
+        ind2 = str.find(u8"|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], U"<", U"&lt;");
-        replace(str_verb[ind], U">", U"&gt;");
-        tmp = U"<code>" + str_verb[ind] + U"</code>";
+        replace(str_verb[ind], u8"<", u8"&lt;");
+        replace(str_verb[ind], u8">", u8"&gt;");
+        tmp = u8"<code>" + str_verb[ind] + u8"</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
@@ -1038,13 +1038,13 @@ inline Long verb(Str32_IO str, vecStr32_IO str_verb)
 // replace one nameEnv environment with strLeft...strRight
 // must remove comments first
 // return the increase in str.size()
-inline Long Env2Tag(Str32_IO str, Long_I ind, Str32_I strLeft, Str32_I strRight, Long_I NargBegin = 1)
+inline Long Env2Tag(Str_IO str, Long_I ind, Str_I strLeft, Str_I strRight, Long_I NargBegin = 1)
 {
     Long ind1 = skip_command(str, ind, NargBegin);
-    Str32 envName;
+    Str envName;
     command_arg(envName, str, ind);
 
-    Long ind2 = find_command_spec(str, U"end", envName, ind);
+    Long ind2 = find_command_spec(str, u8"end", envName, ind);
     Long ind3 = skip_command(str, ind2, 1);
     Long Nbegin = ind1 - ind;
     Long Nend = ind3 - ind2;
@@ -1056,7 +1056,7 @@ inline Long Env2Tag(Str32_IO str, Long_I ind, Str32_I strLeft, Str32_I strRight,
 
 // replace all nameEnv environments with strLeft...strRight
 // must remove comments first
-inline Long Env2Tag(Str32_I nameEnv, Str32_I strLeft, Str32_I strRight, Str32_IO str)
+inline Long Env2Tag(Str_I nameEnv, Str_I strLeft, Str_I strRight, Str_IO str)
 {
     Long i{}, N{}, Nenv;
     Intvs intvEnvOut, intvEnvIn;

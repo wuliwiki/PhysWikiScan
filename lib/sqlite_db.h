@@ -1,17 +1,17 @@
 #pragma once
 
 // get table of content info from db "chapters", in ascending "order"
-inline void db_get_chapters(vecStr32_O ids, vecStr32_O captions, vecStr32_O parts,
+inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
                             SQLite::Database &db)
 {
     SQLite::Statement stmt(db,
                            R"(SELECT "id", "order", "caption", "part" FROM "chapters" ORDER BY "order" ASC)");
     vecLong orders;
     while (stmt.executeStep()) {
-        ids.push_back(u32(stmt.getColumn(0)));
+        ids.push_back(stmt.getColumn(0));
         orders.push_back((int)stmt.getColumn(1));
-        captions.push_back(u32(stmt.getColumn(2)));
-        parts.push_back(u32(stmt.getColumn(3)));
+        captions.push_back(stmt.getColumn(2));
+        parts.push_back(stmt.getColumn(3));
     }
     for (Long i = 0; i < size(orders); ++i)
         if (orders[i] != i)
@@ -19,15 +19,15 @@ inline void db_get_chapters(vecStr32_O ids, vecStr32_O captions, vecStr32_O part
 }
 
 // get table of content info from db "parts", in ascending "order"
-inline void db_get_parts(vecStr32_O ids, vecStr32_O captions, SQLite::Database &db)
+inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 {
     SQLite::Statement stmt(db,
                            R"(SELECT "id", "order", "caption" FROM "parts" ORDER BY "order" ASC)");
     vecLong orders;
     while (stmt.executeStep()) {
-        ids.push_back(u32(stmt.getColumn(0)));
+        ids.push_back(stmt.getColumn(0));
         orders.push_back((int)stmt.getColumn(1));
-        captions.push_back(u32(stmt.getColumn(2)));
+        captions.push_back(stmt.getColumn(2));
     }
     for (Long i = 0; i < size(orders); ++i)
         if (orders[i] != i)
@@ -36,22 +36,22 @@ inline void db_get_parts(vecStr32_O ids, vecStr32_O captions, SQLite::Database &
 
 // get dependency tree from database
 // edge direction is the learning direction
-inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
-                        vecStr32_O parts, vecStr32_O chapters, SQLite::Database &db)
+inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
+                        vecStr_O parts, vecStr_O chapters, SQLite::Database &db)
 {
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
     SQLite::Statement stmt_select(
             db,
             R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
-    Str32 pentry_str;
-    vector<vecStr32> pentries;
+    Str pentry_str;
+    vector<vecStr> pentries;
 
     while (stmt_select.executeStep()) {
-        entries.push_back(u32(stmt_select.getColumn(0)));
-        titles.push_back(u32(stmt_select.getColumn(1)));
-        parts.push_back(u32(stmt_select.getColumn(2)));
-        chapters.push_back(u32(stmt_select.getColumn(3)));
-        pentry_str = u32(stmt_select.getColumn(4));
+        entries.push_back(stmt_select.getColumn(0));
+        titles.push_back(stmt_select.getColumn(1));
+        parts.push_back(stmt_select.getColumn(2));
+        chapters.push_back(stmt_select.getColumn(3));
+        pentry_str = (const char*)stmt_select.getColumn(4);
         pentries.emplace_back();
         parse(pentries.back(), pentry_str);
     }
@@ -62,7 +62,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
             if (from < 0) {
-                throw internal_err(U"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + U" -> " + entries[i]);
+                throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + u8" -> " + entries[i]);
             }
             tree[from].push_back(i);
         }
@@ -71,7 +71,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
     // check cyclic
     vecLong cycle;
     if (!dag_check(cycle, tree)) {
-        Str32 msg = U"存在循环预备知识: ";
+        Str msg = u8"存在循环预备知识: ";
         for (auto ind : cycle)
             msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
         msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
@@ -98,8 +98,8 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
 // get dependency tree from database, for 1 entry
 // also check for cycle, and check for any of it's pentries are redundant
 // entries[0] (tree[0]) will be `entry`
-inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O titles,
-                        vecStr32_O parts, vecStr32_O chapters, Str32_I entry, SQLite::Database &db_read)
+inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
+                        vecStr_O parts, vecStr_O chapters, Str_I entry, SQLite::Database &db_read)
 {
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
 
@@ -109,23 +109,23 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
 
     Str pentry_str, e;
     vector<vecStr> pentries;
-    deque<Str> q; q.push_back(u8(entry));
+    deque<Str> q; q.push_back(entry);
 
     // broad first search (BFS)
     while (!q.empty()) {
         e = q.front(); q.pop_front();
         stmt_select.bind(1, e);
         SLS_ASSERT(stmt_select.executeStep());
-        entries.push_back(u32(e));
-        titles.push_back(u32(stmt_select.getColumn(0)));
-        parts.push_back(u32(stmt_select.getColumn(1)));
-        chapters.push_back(u32(stmt_select.getColumn(2)));
+        entries.push_back(e);
+        titles.push_back(stmt_select.getColumn(0));
+        parts.push_back(stmt_select.getColumn(1));
+        chapters.push_back(stmt_select.getColumn(2));
         pentry_str = (const char*)stmt_select.getColumn(3);
         stmt_select.reset();
         pentries.emplace_back();
         parse(pentries.back(), pentry_str);
         for (auto &pentry : pentries.back()) {
-            if (search(u32(pentry), entries) < 0
+            if (search(pentry, entries) < 0
                 && find(q.begin(), q.end(), pentry) == q.end())
                 q.push_back(pentry);
         }
@@ -135,10 +135,10 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
     // construct tree
     for (Long i = 0; i < size(entries); ++i) {
         for (auto &pentry : pentries[i]) {
-            Long from = search(u32(pentry), entries);
+            Long from = search(pentry, entries);
             if (from < 0)
-                throw internal_err(U"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
-                    + pentry + U" -> " + entries[i]);
+                throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
+                    + pentry + u8" -> " + entries[i]);
             tree[from].push_back(i);
         }
     }
@@ -152,7 +152,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
     // check cyclic
     vecLong cycle;
     if (!dag_check(cycle, tree)) {
-        Str32 msg = U"存在循环预备知识: ";
+        Str msg = u8"存在循环预备知识: ";
         for (auto ind : cycle)
             msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
         msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
@@ -180,52 +180,52 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
 }
 
 // calculate author list of an entry, based on "history" table counts in db_read
-inline Str32 db_get_author_list(Str32_I entry, SQLite::Database &db_read)
+inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
     SQLite::Statement stmt_select(db_read, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
-    stmt_select.bind(1, u8(entry));
+    stmt_select.bind(1, entry);
     if (!stmt_select.executeStep())
-        throw internal_err(U"author_list(): 数据库中不存在词条： " + entry);
+        throw internal_err(u8"author_list(): 数据库中不存在词条： " + entry);
 
     vecLong author_ids;
-    Str32 str = u32(stmt_select.getColumn(0));
+    Str str = stmt_select.getColumn(0);
     stmt_select.reset();
     if (str.empty())
-        return U"待更新";
+        return u8"待更新";
     for (auto c : str)
         if ((c < '0' || c > '9') && c != ' ')
-            return U"待更新";
+            return u8"待更新";
     parse(author_ids, str);
 
-    vecStr32 authors;
+    vecStr authors;
     SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
     for (int id : author_ids) {
         stmt_select2.bind(1, id);
         if (!stmt_select2.executeStep())
             throw internal_err("词条： " + entry + " 作者 id 不存在： " + num2str(id));
-        authors.push_back(u32(stmt_select2.getColumn(0)));
+        authors.push_back(stmt_select2.getColumn(0));
         stmt_select2.reset();
     }
-    join(str, authors, U"; ");
+    join(str, authors, u8"; ");
     return str;
 }
 
-inline void db_check_add_entry_simulate_editor(vecStr32_I entries, SQLite::Database &db_rw)
+inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Database &db_rw)
 {
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
     for (auto &entry : entries) {
-        if (!exist("entries", "id", u8(entry), db_rw)) {
-            SLS_WARN(U"词条不存在数据库中， 将模拟 editor 添加： " + entry);
+        if (!exist("entries", "id", entry, db_rw)) {
+            SLS_WARN(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
             // 从 tex 文件获取标题
-            Str32 str;
+            Str str;
             read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
             CRLF_to_LF(str);
-            Str32 title;
+            Str title;
             get_title(title, str);
             // 写入数据库
-            stmt_insert.bind(1, u8(entry));
-            stmt_insert.bind(2, u8(title));
+            stmt_insert.bind(1, entry);
+            stmt_insert.bind(2, title);
             stmt_insert.exec();
             stmt_insert.reset();
         }
@@ -234,7 +234,7 @@ inline void db_check_add_entry_simulate_editor(vecStr32_I entries, SQLite::Datab
 
 // update db entries.authors, based on backup count in "history"
 // TODO: use more advanced algorithm, counting other factors
-inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I entry, SQLite::Database &db)
+inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entry, SQLite::Database &db)
 {
     author_ids.clear(); minutes.clear();
     SQLite::Statement stmt_count(db,
@@ -242,7 +242,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I en
     SQLite::Statement stmt_select(db,
         R"(SELECT "hide" FROM "authors" WHERE "id"=? AND "hide"=1;)");
 
-    stmt_count.bind(1, u8(entry));
+    stmt_count.bind(1, entry);
     while (stmt_count.executeStep()) {
         Long id = (int)stmt_count.getColumn(0);
         Long time = 5*(int)stmt_count.getColumn(1);
@@ -257,12 +257,12 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str32_I en
         minutes.push_back(time);
     }
     stmt_count.reset();
-    Str32 str;
+    Str str;
     join(str, author_ids);
     SQLite::Statement stmt_update(db,
         R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
-    stmt_update.bind(1, u8(str));
-    stmt_update.bind(2, u8(entry));
+    stmt_update.bind(1, str);
+    stmt_update.bind(2, entry);
     stmt_update.exec();
     SLS_ASSERT(stmt_update.getChanges() > 0);
     stmt_update.reset();
@@ -274,9 +274,9 @@ inline void db_update_authors(SQLite::Database &db)
     cout << "updating database for author lists...." << endl;
     SQLite::Statement stmt_select( db,
         R"(SELECT "id" FROM "entries";)");
-    Str32 entry; vecLong author_ids, counts;
+    Str entry; vecLong author_ids, counts;
     while (stmt_select.executeStep()) {
-        entry = u32(stmt_select.getColumn(0));
+        entry = (const char*)stmt_select.getColumn(0);
         db_update_authors1(author_ids, counts, entry, db);
     }
     stmt_select.reset();
@@ -284,7 +284,7 @@ inline void db_update_authors(SQLite::Database &db)
 }
 
 // update "bibliography" table of sqlite db
-inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details, SQLite::Database &db) {
+inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Database &db) {
     check_foreign_key(db);
 
     SQLite::Statement stmt(db, R"(SELECT "id", "details" FROM "bibliography";)");
@@ -296,7 +296,7 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details, SQLite:
         R"(INSERT INTO bibliography ("id", "order", "details") VALUES (?, ?, ?);)");
 
     for (Long i = 0; i < size(bib_labels); i++) {
-        Str bib_label = u8(bib_labels[i]), bib_detail = u8(bib_details[i]);
+        Str bib_label = bib_labels[i], bib_detail = bib_details[i];
         if (db_data.count(bib_label)) {
             if (db_data[bib_label] != bib_detail) {
                 SLS_WARN("数据库文献详情 bib_detail 发生变化需要更新！ 该功能未实现，将不更新： " + bib_label);
@@ -315,14 +315,14 @@ inline void db_update_bib(vecStr32_I bib_labels, vecStr32_I bib_details, SQLite:
 
 // delete and rewrite "chapters" and "parts" table of sqlite db
 inline void db_update_parts_chapters(
-        vecStr32_I part_ids, vecStr32_I part_name, vecStr32_I chap_first, vecStr32_I chap_last,
-        vecStr32_I chap_ids, vecStr32_I chap_name, vecLong_I chap_part,
-        vecStr32_I entry_first, vecStr32_I entry_last)
+        vecStr_I part_ids, vecStr_I part_name, vecStr_I chap_first, vecStr_I chap_last,
+        vecStr_I chap_ids, vecStr_I chap_name, vecLong_I chap_part,
+        vecStr_I entry_first, vecStr_I entry_last)
 {
     cout << "updating sqlite database (" << part_name.size() << " parts, "
          << chap_name.size() << " chapters) ..." << endl;
     cout.flush();
-    SQLite::Database db(u8(gv::path_data + "scan.db"), SQLite::OPEN_READWRITE);
+    SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     cout << "clear parts and chatpers tables" << endl;
     table_clear("parts", db); table_clear("chapters", db);
 
@@ -332,11 +332,11 @@ inline void db_update_parts_chapters(
         R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
     for (Long i = 0; i < size(part_name); ++i) {
         // cout << "part " << i << ". " << part_ids[i] << ": " << part_name[i] << " chapters: " << chap_first[i] << " -> " << chap_last[i] << endl;
-        stmt_insert_part.bind(1, u8(part_ids[i]));
+        stmt_insert_part.bind(1, part_ids[i]);
         stmt_insert_part.bind(2, int(i));
-        stmt_insert_part.bind(3, u8(part_name[i]));
-        stmt_insert_part.bind(4, u8(chap_first[i]));
-        stmt_insert_part.bind(5, u8(chap_last[i]));
+        stmt_insert_part.bind(3, part_name[i]);
+        stmt_insert_part.bind(4, chap_first[i]);
+        stmt_insert_part.bind(5, chap_last[i]);
         stmt_insert_part.exec(); stmt_insert_part.reset();
     }
     cout << "\n\n\n" << endl;
@@ -348,12 +348,12 @@ inline void db_update_parts_chapters(
 
     for (Long i = 0; i < size(chap_name); ++i) {
         // cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
-        stmt_insert_chap.bind(1, u8(chap_ids[i]));
+        stmt_insert_chap.bind(1, chap_ids[i]);
         stmt_insert_chap.bind(2, int(i));
-        stmt_insert_chap.bind(3, u8(chap_name[i]));
-        stmt_insert_chap.bind(4, u8(part_ids[chap_part[i]]));
-        stmt_insert_chap.bind(5, u8(entry_first[i]));
-        stmt_insert_chap.bind(6, u8(entry_last[i]));
+        stmt_insert_chap.bind(3, chap_name[i]);
+        stmt_insert_chap.bind(4, part_ids[chap_part[i]]);
+        stmt_insert_chap.bind(5, entry_first[i]);
+        stmt_insert_chap.bind(6, entry_last[i]);
         stmt_insert_chap.exec(); stmt_insert_chap.reset();
     }
     cout << "done." << endl;
@@ -362,8 +362,8 @@ inline void db_update_parts_chapters(
 // update "entries" table of sqlite db, based on the info from main.tex
 // `entries` are a list of entreis from main.tex
 inline void db_update_entries_from_toc(
-        vecStr32_I entries, vecLong_I entry_part, vecStr32_I part_ids,
-        vecLong_I entry_chap, vecStr32_I chap_ids, SQLite::Database &db_rw)
+        vecStr_I entries, vecLong_I entry_part, vecStr_I part_ids,
+        vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
@@ -375,7 +375,7 @@ inline void db_update_entries_from_toc(
     
     for (Long i = 0; i < size(entries); i++) {
         Long entry_order = i + 1;
-        Str entry = u8(entries[i]);
+        Str entry = entries[i];
 
         // does entry already exist (expected)?
         Bool entry_exist;
@@ -393,11 +393,11 @@ inline void db_update_entries_from_toc(
             stmt_select.reset();
 
             bool changed = false;
-            if (part_ids[entry_part[i]] != u32(db_part)) {
+            if (part_ids[entry_part[i]] != db_part) {
                 SLS_WARN(entry + ": part has changed from " + db_part + " to " + part_ids[entry_part[i]]);
                 changed = true;
             }
-            if (chap_ids[entry_chap[i]] != u32(db_chapter)) {
+            if (chap_ids[entry_chap[i]] != db_chapter) {
                 SLS_WARN(entry + ": chapter has changed from " + db_chapter + " to " + chap_ids[entry_chap[i]]);
                 changed = true;
             }
@@ -406,28 +406,28 @@ inline void db_update_entries_from_toc(
                 changed = true;
             }
             if (changed) {
-                stmt_update.bind(1, u8(part_ids[entry_part[i]]));
-                stmt_update.bind(2, u8(chap_ids[entry_chap[i]]));
+                stmt_update.bind(1, part_ids[entry_part[i]]);
+                stmt_update.bind(2, chap_ids[entry_chap[i]]);
                 stmt_update.bind(3, (int) entry_order);
                 stmt_update.bind(4, entry);
                 stmt_update.exec(); stmt_update.reset();
             }
         }
         else // entry_exist == false
-            throw scan_err(U"main.tex 中的词条在数据库中未找到： " + entry);
+            throw scan_err(u8"main.tex 中的词条在数据库中未找到： " + entry);
     }
     cout << "done." << endl;
 }
 
 // updating sqlite database "authors" and "history" table from backup files
-inline void db_update_author_history(Str32_I path, SQLite::Database &db_rw)
+inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 {
-    vecStr32 fnames;
+    vecStr fnames;
     unordered_map<Str, Long> new_authors;
     unordered_map<Long, Long> author_contrib;
     Str author;
     Str sha1, time, entry;
-    file_list_ext(fnames, path, U"tex", false);
+    file_list_ext(fnames, path, u8"tex", false);
     cout << "updating sqlite database \"history\" table (" << fnames.size()
         << " backup) ..." << endl; cout.flush();
 
@@ -481,12 +481,12 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db_rw)
 
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
-        sha1 = sha1sum_f(u8(path + fname) + ".tex").substr(0, 16);
+        sha1 = sha1sum_f(path + fname + ".tex").substr(0, 16);
         bool sha1_exist = db_data.count(sha1);
 
-        time = u8(fname.substr(0, 12));
+        time = fname.substr(0, 12);
         Long ind = fname.rfind('_');
-        author = u8(fname.substr(13, ind-13));
+        author = fname.substr(13, ind-13);
         Long authorID;
         if (db_author_to_id.count(author))
             authorID = db_author_to_id[author];
@@ -501,7 +501,7 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db_rw)
             stmt_insert_auth.exec(); stmt_insert_auth.reset();
         }
         author_contrib[authorID] += 5;
-        entry = u8(fname.substr(ind+1));
+        entry = fname.substr(ind+1);
         if (entries.count(entry) == 0 &&
                             entries_deleted_inserted.count(entry) == 0) {
             SLS_WARN("备份文件中的词条不在数据库中（将添加）： " + entry);
@@ -556,16 +556,16 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db_rw)
 }
 
 // db table "figures" and "figure_store"
-inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I entries, const vector<vecStr32> &img_ids,
-    const vector<vecLong> &img_orders, const vector<vecStr32> &img_hashes,
+inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries, const vector<vecStr> &img_ids,
+    const vector<vecLong> &img_orders, const vector<vecStr> &img_hashes,
     SQLite::Database &db)
 {
     // cout << "updating db for figures environments..." << endl;
-    Str32 db_id, db_entry, db_hash;
-    // vecStr32 new_ids, new_entries, new_hash;
+    Str db_id, db_entry, db_hash;
+    // vecStr new_ids, new_entries, new_hash;
     Long db_order;
-    vecStr32 db_ref_by;
-    Str32 entry, id, hash, ext;
+    vecStr db_ref_by;
+    Str entry, id, hash, ext;
     Long order;
 
     SQLite::Statement stmt_select(db,
@@ -580,19 +580,19 @@ inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I e
 
         for (Long j = 0; j < size(img_ids[i]); ++j) {
             id = img_ids[i][j]; order = img_orders[i][j]; hash = img_hashes[i][j];
-            stmt_select.bind(1, u8(id));
+            stmt_select.bind(1, id);
             if (!stmt_select.executeStep()) {
                 stmt_select.reset();
                 SLS_WARN("发现数据库中没有的图片环境（将模拟 editor 添加）：" + id);
-                stmt_insert.bind(1, u8(id));
-                stmt_insert.bind(2, u8(entry));
+                stmt_insert.bind(1, id);
+                stmt_insert.bind(2, entry);
                 stmt_insert.bind(3, int(order));
-                stmt_insert.bind(4, u8(hash));
+                stmt_insert.bind(4, hash);
                 stmt_insert.exec(); stmt_insert.reset();
             } else { // 数据库中有 id, 检查其他信息是否改变
-                db_entry = u32(stmt_select.getColumn(0));
+                db_entry = (const char*)stmt_select.getColumn(0);
                 db_order = (int)stmt_select.getColumn(1);
-                db_hash = u32(stmt_select.getColumn(2));
+                db_hash = (const char*)stmt_select.getColumn(2);
                 stmt_select.reset();
 
                 bool update = false;
@@ -608,7 +608,7 @@ inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I e
 
                     // order change means other ref_by entries needs to be updated with autoref() as well.
                     if (!gv::is_entire) {
-                        parse(db_ref_by, u32(stmt_select.getColumn(3)));
+                        parse(db_ref_by, stmt_select.getColumn(3));
                         for (auto &by_entry: db_ref_by)
                             if (search(by_entry, entries) < 0)
                                 update_entries.insert(by_entry);
@@ -620,10 +620,10 @@ inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I e
                     update = true;
                 }
                 if (update) {
-                    stmt_update.bind(1, u8(entry));
+                    stmt_update.bind(1, entry);
                     stmt_update.bind(2, int(order));
-                    stmt_update.bind(3, u8(hash));
-                    stmt_update.bind(4, u8(id));
+                    stmt_update.bind(3, hash);
+                    stmt_update.bind(4, id);
                     stmt_update.exec(); stmt_update.reset();
                 }
             }
@@ -634,8 +634,8 @@ inline void db_update_figures(unordered_set<Str32> &update_entries, vecStr32_I e
 
 // update labels table of database
 // order change means `update_entries` needs to be updated with autoref() as well.
-inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I entries,
-    const vector<vecStr32> &v_labels, const vector<vecLong> &v_label_orders,
+inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entries,
+    const vector<vecStr> &v_labels, const vector<vecLong> &v_label_orders,
     SQLite::Database &db_rw)
 {
     update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
@@ -647,8 +647,8 @@ inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I en
         R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
 
     Long order, db_order;
-    vecStr32 db_ref_by;
-    Str32 label, type, db_type, entry, db_entry;
+    vecStr db_ref_by;
+    Str label, type, db_type, entry, db_entry;
 
 
     for (Long j = 0; j < size(entries); ++j) {
@@ -657,43 +657,43 @@ inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I en
             label = v_labels[j][i];
             order = v_label_orders[j][i];
             type = label_type(label);
-            if (type == U"fig" || type == U"code")
+            if (type == u8"fig" || type == u8"code")
                 continue;
 
-            stmt_select.bind(1, u8(label));
+            stmt_select.bind(1, label);
 
             if (stmt_select.executeStep()) { // label exist in db_rw
-                db_entry = u32(stmt_select.getColumn(0));
+                db_entry = (const char*)stmt_select.getColumn(0);
                 db_order = (int)stmt_select.getColumn(1);
                 bool changed = false;
                 if (entry != db_entry) {
-                    SLS_WARN(U"label " + label + U" 的 entry 发生改变（将更新）：" + db_entry + " -> " + entry);
+                    SLS_WARN(u8"label " + label + u8" 的 entry 发生改变（将更新）：" + db_entry + " -> " + entry);
                     changed = true;
                 }
                 if (order != db_order) {
-                    SLS_WARN(U"label " + label + U" 的 order 发生改变（将更新）：" + to_string(db_order) + " -> " + to_string(order));
+                    SLS_WARN(u8"label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_order) + " -> " + to_string(order));
                     changed = true;
                     // order change means other ref_by entries needs to be updated with autoref() as well.
                     if (!gv::is_entire) {
-                        parse(db_ref_by, u32(stmt_select.getColumn(2)));
+                        parse(db_ref_by, (const char*)stmt_select.getColumn(2));
                         for (auto &by_entry: db_ref_by)
                             if (search(by_entry, entries) < 0)
                                 update_entries.insert(by_entry);
                     }
                 }
                 if (changed) {
-                    stmt_update.bind(1, u8(type));
-                    stmt_update.bind(2, u8(entry));
+                    stmt_update.bind(1, type);
+                    stmt_update.bind(2, entry);
                     stmt_update.bind(3, int(order));
-                    stmt_update.bind(4, u8(label));
+                    stmt_update.bind(4, label);
                     stmt_update.exec(); stmt_update.reset();
                 }
             } else { // label not in db_rw
-                SLS_WARN(U"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
+                SLS_WARN(u8"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
                          to_string(order));
-                stmt_insert.bind(1, u8(label));
-                stmt_insert.bind(2, u8(type));
-                stmt_insert.bind(3, u8(entry));
+                stmt_insert.bind(1, label);
+                stmt_insert.bind(2, type);
+                stmt_insert.bind(3, entry);
                 stmt_insert.bind(4, int(order));
                 stmt_insert.exec(); stmt_insert.reset();
             }
@@ -706,55 +706,55 @@ inline void db_update_labels(unordered_set<Str32> &update_entries, vecStr32_I en
 // empty elements of 'titles' will be ignored
 inline Long dep_json(SQLite::Database &db)
 {
-    vecStr32 entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
+    vecStr entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
     vector<DGnode> tree;
     db_get_parts(part_ids, part_names, db);
     db_get_chapters(chap_ids, chap_names, chap_parts, db);
     db_get_tree(tree, entries, titles,entry_part, entry_chap, db);
 
-    Str32 str;
+    Str str;
     // write part names
-    str += U"{\n  \"parts\": [\n";
+    str += u8"{\n  \"parts\": [\n";
     for (Long i = 0; i < size(part_names); ++i)
-        str += U"    {\"name\": \"" + part_names[i] + "\"},\n";
+        str += u8"    {\"name\": \"" + part_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
+    str += u8"\n  ],\n";
     // write chapter names
-    str += U"  \"chapters\": [\n";
+    str += u8"  \"chapters\": [\n";
     for (Long i = 0; i < size(chap_names); ++i)
-        str += U"    {\"name\": \"" + chap_names[i] + "\"},\n";
+        str += u8"    {\"name\": \"" + chap_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
+    str += u8"\n  ],\n";
     // write entries
-    str += U"  \"nodes\": [\n";
+    str += u8"  \"nodes\": [\n";
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        str += U"    {\"id\": \"" + entries[i] + U"\"" +
-               ", \"part\": " + num2str32(search(entry_part[i], part_ids)) +
-               ", \"chap\": " + num2str32(search(entry_chap[i], chap_ids)) +
-               ", \"title\": \"" + titles[i] + U"\""
+        str += u8"    {\"id\": \"" + entries[i] + u8"\"" +
+               ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
+               ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
+               ", \"title\": \"" + titles[i] + u8"\""
             ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
     str.pop_back(); str.pop_back();
-    str += U"\n  ],\n";
+    str += u8"\n  ],\n";
 
     // write links
-    str += U"  \"links\": [\n";
+    str += u8"  \"links\": [\n";
     Long Nedge = 0;
     for (Long i = 0; i < size(tree); ++i) {
         for (auto &j : tree[i]) {
-            str += U"    {\"source\": \"" + entries[i] + "\", ";
-            str += U"\"target\": \"" + entries[j] + U"\", ";
-            str += U"\"value\": 1},\n";
+            str += u8"    {\"source\": \"" + entries[i] + "\", ";
+            str += u8"\"target\": \"" + entries[j] + u8"\", ";
+            str += u8"\"value\": 1},\n";
             ++Nedge;
         }
     }
     if (Nedge > 0) {
         str.pop_back(); str.pop_back();
     }
-    str += U"\n  ]\n}\n";
-    write(str, gv::path_out + U"../tree/data/dep.json");
+    str += u8"\n  ]\n}\n";
+    write(str, gv::path_out + u8"../tree/data/dep.json");
     return 0;
 }
