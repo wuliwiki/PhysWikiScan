@@ -152,7 +152,7 @@ inline void entries_titles(vecStr32_O entries, vecStr32_O titles)
 // `entry_chap[i]` is similar to `entry_part[i]`, for chapters
 // if entry_part.size() == 0, `chap_names, entry_chap, entry_part, part_names` will be ignored
 inline void table_of_contents(
-        vecStr32_O part_ids, vecStr32_O part_names, vecStr32_O chap_first, vecStr32_O chap_last,
+        vecStr32_O part_ids, vecStr32_O part_names, vecStr32_O part_chap_first, vecStr32_O part_chap_last,
         vecStr32_O chap_ids, vecStr32_O chap_names, vecLong_O chap_part, vecStr32_O chap_entry_first, vecStr32_O chap_entry_last,
         vecStr32_O entries, vecStr32_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, SQLite::Database &db)
 {
@@ -169,11 +169,11 @@ inline void table_of_contents(
     Str32 entry; // entry label
     Str32 str, str2, toc, class_draft;
 
-    part_ids.clear(); part_names.clear(); chap_first.clear(); chap_last.clear();
+    part_ids.clear(); part_names.clear(); part_chap_first.clear(); part_chap_last.clear();
     chap_ids.clear(); chap_names.clear(); chap_part.clear();
     chap_entry_first.clear(); chap_entry_last.clear(); entry_chap.clear();
 
-    part_ids.push_back(U""); part_names.push_back(U"无"); chap_first.push_back(U""); chap_last.push_back(U"");
+    part_ids.push_back(U""); part_names.push_back(U"无"); part_chap_first.push_back(U""); part_chap_last.push_back(U"");
     chap_ids.push_back(U""); chap_names.push_back(U"无");  chap_part.push_back(0);
     chap_entry_first.push_back(U""); chap_entry_last.push_back(U"");
 
@@ -199,8 +199,6 @@ inline void table_of_contents(
             // ============ found "\entry" ==============
             if (last_command != 'e' && last_command != 'c')
                 throw scan_err(U"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
-            if (last_command == 'c')
-                chap_entry_last.push_back(entry);
 
             // parse \entry{title}{entry}
             command_arg(title, str, ind1);
@@ -241,8 +239,8 @@ inline void table_of_contents(
             replace(title, U"\\ ", U" ");
             if (last_command != 'p' && last_command != 'e') 
                 throw scan_err(U"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
-            if (last_command == 'p' && chap_ids.size() > 1)
-                chap_last.push_back(chap_ids.back());
+            if (chap_ids.size() > 1)
+                chap_entry_last.push_back(entries.back());
             // get chapter id from label cpt_xxx, where xxx is id
             Long ind_label = find_command(str, U"label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
@@ -251,7 +249,7 @@ inline void table_of_contents(
             Str32 label; command_arg(label, str, ind_label);
             chap_ids.push_back(label_id(label));
             if (last_command == 'p')
-                chap_first.push_back(chap_ids.back());
+                part_chap_first.push_back(chap_ids.back());
             // insert chapter into html table of contents
             ++chapNo; ++chapNo_tot;
             if (chapNo > 0)
@@ -268,6 +266,8 @@ inline void table_of_contents(
             chapNo = -1;
             command_arg(title, str, ind1);
             replace(title, U"\\ ", U" ");
+            if (part_ids.size() > 1)
+                part_chap_last.push_back(chap_ids.back());
             if (last_command != 'e' && last_command != 'n')
                 throw scan_err(U"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
             // get part id from label prt_xxx, where xxx is id
@@ -299,7 +299,7 @@ inline void table_of_contents(
     }
     toc.insert(ind0, U"</p>\n</div>");
 
-    chap_last.push_back(chap_ids.back());
+    part_chap_last.push_back(chap_ids.back());
     chap_entry_last.push_back(entry);
 
     // list parts
