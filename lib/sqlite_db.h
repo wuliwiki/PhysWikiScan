@@ -420,10 +420,11 @@ inline void db_update_entries_from_toc(
 }
 
 // updating sqlite database "authors" and "history" table from backup files
-inline void db_update_author_history(Str32_I path, SQLite::Database &db)
+inline void db_update_author_history(Str32_I path, SQLite::Database &db_rw)
 {
     vecStr32 fnames;
     unordered_map<Str, Long> new_authors;
+    unordered_map<Long, Long> author_contrib;
     Str author;
     Str sha1, time, entry;
     file_list_ext(fnames, path, U"tex", false);
@@ -431,9 +432,9 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
         << " backup) ..." << endl; cout.flush();
 
     // update "history" table
-    check_foreign_key(db);
+    check_foreign_key(db_rw);
 
-    SQLite::Statement stmt_select(db, R"(SELECT "hash", "time", "author", "entry" FROM "history")");
+    SQLite::Statement stmt_select(db_rw, R"(SELECT "hash", "time", "author", "entry" FROM "history")");
     Long author_id_max = -1;
 
     //            hash        time author entry
@@ -449,8 +450,8 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
     cout << "there are already " << db_data.size() << " backup (history) records in database." << endl;
 
     vecStr db_authors0; vecLong db_author_ids0;
-    get_column(db_author_ids0, "authors", "id", db);
-    get_column(db_authors0, "authors", "name", db);
+    get_column(db_author_ids0, "authors", "id", db_rw);
+    get_column(db_authors0, "authors", "name", db_rw);
     cout << "there are already " << db_author_ids0.size() << " author records in database." << endl;
     unordered_map<Long, Str> db_id_to_author;
     unordered_map<Str, Long> db_author_to_id;
@@ -462,20 +463,20 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
     db_author_ids0.clear(); db_authors0.clear();
     db_author_ids0.shrink_to_fit(); db_authors0.shrink_to_fit();
 
-    SQLite::Statement stmt_insert(db,
+    SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
-    get_column(entries0, "entries", "id", db);
+    get_column(entries0, "entries", "id", db_rw);
     unordered_set<Str> entries(entries0.begin(), entries0.end()), entries_deleted_inserted;
     entries0.clear(); entries0.shrink_to_fit();
 
     // insert a deleted entry (to ensure FOREIGN KEY exist)
-    SQLite::Statement stmt_insert_entry(db,
+    SQLite::Statement stmt_insert_entry(db_rw,
         R"(INSERT INTO entries ("id", "deleted") VALUES (?, 1);)");
 
     // insert new_authors to "authors" table
-    SQLite::Statement stmt_insert_auth(db,
+    SQLite::Statement stmt_insert_auth(db_rw,
         R"(INSERT INTO authors ("id", "name") VALUES (?, ?);)");
 
     for (Long i = 0; i < size(fnames); ++i) {
@@ -499,6 +500,7 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
             stmt_insert_auth.bind(2, author);
             stmt_insert_auth.exec(); stmt_insert_auth.reset();
         }
+        author_contrib[authorID] += 5;
         entry = u8(fname.substr(ind+1));
         if (entries.count(entry) == 0 &&
                             entries_deleted_inserted.count(entry) == 0) {
@@ -541,6 +543,14 @@ inline void db_update_author_history(Str32_I path, SQLite::Database &db)
 
     for (auto &author : new_authors)
         cout << "新作者： " << author.second << ". " << author.first << endl;
+
+    cout << "\nupdating author contribution..." << endl;
+    SQLite::Statement stmt_contrib(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
+    for (auto &e : author_contrib) {
+        stmt_contrib.bind(2, (int)e.first);
+        stmt_contrib.bind(1, (int)e.second);
+        stmt_contrib.exec(); stmt_contrib.reset();
+    }
 
     cout << "done." << endl;
 }
