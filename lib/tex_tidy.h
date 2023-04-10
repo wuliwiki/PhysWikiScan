@@ -106,9 +106,9 @@ inline void limit_env_cmd(Str32_I str)
         command_arg(env, str, ind0);
         if (search(env, envs_allow) < 0) {
             if (env == U"document")
-                throw Str32(U"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明。");
+                throw scan_err(U"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明。");
             else
-                throw Str32(U"暂不支持 " + env + U" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
+                throw scan_err(U"暂不支持 " + env + U" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
         }
     }
 }

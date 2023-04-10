@@ -75,7 +75,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
         for (auto ind : cycle)
             msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
         msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
-        throw msg;
+        throw scan_err(msg);
     }
 
     // check redundency
@@ -90,7 +90,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O tit
                  << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
         }
         ss << u8"=============================================\n" << endl;
-        throw ss.str();
+        throw scan_err(ss.str());
     }
 }
 
@@ -156,7 +156,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
         for (auto ind : cycle)
             msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
         msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
-        throw msg;
+        throw scan_err(msg);
     }
 
     // check redundancy
@@ -174,7 +174,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr32_O entries, vecStr32_O ti
             for (Long i = 1; i < size(alt_path); ++i)
                 ss << "<- " << titles[alt_path[i]] << "(" << entries[alt_path[i]] << ")" << endl;
         }
-        throw ss.str();
+        throw scan_err(ss.str());
     }
     dag_inv(tree);
 }

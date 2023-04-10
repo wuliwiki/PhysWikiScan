@@ -45,7 +45,7 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_
 {
     Str32 temp, line;
     if (!file_exist("set_path.txt")) {
-        throw Str32(U"内部错误： set_path.txt 不存在!");
+        throw internal_err(u8"set_path.txt 不存在!");
     }
     read(temp, "set_path.txt");
     CRLF_to_LF(temp);
@@ -55,34 +55,34 @@ Long read_path_file(vecStr32_O paths_in, vecStr32_O paths_out, vecStr32_O paths_
         // paths_in
         ind0 = skip_line(temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (1)");
+            throw internal_err(u8"path.txt 格式 (1)");
         ind0 = get_line(line, temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (2)");
+            throw internal_err(u8"path.txt 格式 (2)");
         paths_in.push_back(line); trim(paths_in.back());
 
         // paths_out
         ind0 = skip_line(temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (3)");
+            throw internal_err(u8"path.txt 格式 (3)");
         ind0 = get_line(line, temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (4)");
+            throw internal_err(u8"path.txt 格式 (4)");
         paths_out.push_back(line); trim(paths_out.back());
 
         // paths_data
         ind0 = skip_line(temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (5)");
+            throw internal_err(u8"path.txt 格式 (5)");
         ind0 = get_line(line, temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (6)");
+            throw internal_err(u8"path.txt 格式 (6)");
         paths_data.push_back(line); trim(paths_out.back());
 
         // urls
         ind0 = skip_line(temp, ind0);
         if (ind0 < 0)
-            throw Str32(U"内部错误： path.txt 格式 (7)");
+            throw internal_err(u8"path.txt 格式 (7)");
         ind0 = get_line(line, temp, ind0);
         urls.push_back(line); trim(paths_out.back());
 
@@ -287,6 +287,9 @@ int main(int argc, char *argv[]) {
     catch (const std::exception &e) {
         cerr << e.what() << endl;
         return 0;
+    }
+    catch (...) {
+        cerr << U"内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！" << endl;
     }
 
     return 0;
