@@ -211,6 +211,7 @@ CREATE TABLE "authors" (
 	"banned"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 禁用编辑器
 	"hide"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 不出现在文章作者列表
 	"aka"	TEXT NOT NULL DEFAULT '', -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
+	"contrib"	INTEGER NOT NULL DEFAULT 0, -- 贡献的分钟数（折算）
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
