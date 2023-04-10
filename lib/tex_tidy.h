@@ -3,22 +3,23 @@
 std::unordered_set<Char32> illegal_chars;
 
 // ensure space around a char
-inline Long ensure_space_around(Str_IO str, Char32_I c)
+inline Long ensure_space_around(Str_IO str, Str_I c)
 {
-    Long N = 0;
-    for (Long i = size(str) - 1; i >= 0; --i) {
-        if (str[i] == c) {
-            // check right
-            if (i == size(str) - 1) {
-                str += u8" "; ++N;
-            }
-            else if (str[i + 1] != ' ') {
-                str.insert(i + 1, u8" "); ++N;
-            }
-            // check left
-            if (i == 0 || str[i - 1] != ' ') {
-                str.insert(i, u8" "); ++N;
-            }
+    Long N = 0, ind0 = 0;
+    while (1) {
+        ind0 = str.find(c, ind0);
+        if (ind0 < 0) break;
+        Long ind1 = ind0 + c.size();
+        // check right
+        if (ind1 == size(str)) {
+            str += ' '; ++N;
+        }
+        else if (str[ind1] != ' ') {
+            str.insert(ind0+1, " "); ++N;
+        }
+        // check left
+        if (ind0 == 0 || str[ind0-1] != ' ') {
+            str.insert(ind0, " "); ++N;
         }
     }
     return N;

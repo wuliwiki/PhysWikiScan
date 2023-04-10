@@ -236,7 +236,7 @@ inline Long rep_eq_lt_gt(Str_IO str)
     for (Long i = intv.size() - 1; i >= 0; --i) {
         Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
         tmp = str.substr(ind0, Nstr);
-        N += ensure_space_around(tmp, U'<') + ensure_space_around(tmp, U'>');
+        N += ensure_space_around(tmp, "<") + ensure_space_around(tmp, ">");
         str.replace(ind0, Nstr, tmp);
     }
     return N;
