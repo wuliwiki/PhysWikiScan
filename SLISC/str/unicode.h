@@ -150,13 +150,167 @@ inline Str utf32to16(Str32_I str32)
 	return str;
 }
 
+// check if is the start of a utf-8 character
+inline bool is_char8_start(Str_I str, Long_I index) {
+	if (index >= size(str)) {
+		return false;
+	}
+
+	unsigned char byte = str[index];
+	if ((byte & 0b10000000) == 0) { // ASCII character (most significant bit is 0)
+		return true;
+	}
+
+	// Multi-byte character starts with a sequence of 1's followed by a 0
+	return (byte & 0b11000000) == 0b11000000;
+}
+
+// bytes of a utf-8 character
+inline Long char8_len(Str_I s, Long_I ind) {
+	unsigned char byte = s[ind];
+	Long char_size;
+	if (byte <= 0x7F) {
+		char_size = 1;
+	} else if ((byte >> 5) == 0x06) {
+		char_size = 2;
+	} else if ((byte >> 4) == 0x0E) {
+		char_size = 3;
+	} else if ((byte >> 3) == 0x1E) {
+		char_size = 4;
+	} else {
+		throw std::runtime_error("Invalid UTF-8 encoding");
+	}
+	if (ind + char_size > size(s))
+		throw std::out_of_range("Invalid UTF-8 encoding (out of range)");
+	return char_size;
+}
+
+// get a utf-8 char from a utf-8 string
+inline Str u8char(Str_I str, Long_I ind)
+{
+    Long char_size = char8_len(str, ind);
+	return str.substr(ind, char_size);
+}
+
+// skip N utf-8 characters (supports N < 0 and N == s.size())
+inline Long skip_char8(Str_I s, Long_I ind, Long_I N)
+{
+	if (N == 0)
+		return ind;
+	else if (N > 0) {
+		Long utf8_len = s.size();
+		Long i = ind;
+		Long skipped = 0;
+		while (i < utf8_len && skipped < N) {
+			Long char_size = char8_len(s, i);
+			i += char_size;
+			skipped++;
+		}
+		if (skipped < N)
+			throw std::out_of_range("Not enough characters to skip");
+		return i;
+	}
+	else if (N < 0) {
+        Long remaining = -N;
+        Long i = ind;
+
+        while (i > 0 && remaining > 0) {
+            i--;
+
+            if ((s[i] & 0xC0) != 0x80) {
+                remaining--;
+            }
+        }
+        if (remaining > 0)
+            throw std::out_of_range("Not enough characters to skip");
+        return i;
+    }
+}
+
+// an iterator for utf-8
+class u8_iter
+{
+private:
+	Long ind;
+	Str_I s;
+public:
+	// use i == -1 to point to the last character
+	u8_iter(Str_I str, Long_I i = 0): ind(i), s(str) {
+		if (i == -1)
+			ind = skip_char8(str, size(str), -1);
+		if (!is_char8_start(str, i))
+			throw std::runtime_error("u8_iter(str, i): not the start of a utf-8 char!");
+	};
+
+	Long operator=(Long_I i) {
+		if (!is_char8_start(str, i))
+			throw std::runtime_error("u8_iter(str, i): not the start of a utf-8 char!");
+		return i;
+	}
+
+	Str operator*() {
+		return u8char(s, ind);
+	}
+
+	u8_iter operator+(Int_I N) {
+		return u8_iter(s, skip_char8(s, ind, N));
+	}
+
+	u8_iter operator+(Long_I N) {
+		return u8_iter(s, skip_char8(s, ind, N));
+	}
+
+	u8_iter operator-(Int_I N) {
+		return u8_iter(s, skip_char8(s, ind, -N));
+	}
+
+	u8_iter operator-(Long_I N) {
+		return u8_iter(s, skip_char8(s, ind, -N));
+	}
+
+	void operator++() {
+		ind = skip_char8(s, ind, 1);
+	}
+
+	void operator--() {
+		ind = skip_char8(s, ind, -1);
+	}
+
+	void operator+=(Long_I N) {
+		ind = skip_char8(s, ind, N);
+	}
+
+	void operator-=(Long_I N) {
+		ind = skip_char8(s, ind, -N);
+	}
+
+	operator Long() {
+		return ind;
+	}
+};
+
+// get a substring of utf-8, with N characters
+inline Str substr8(Str_I s, Long_I ind, Long_I N)
+{
+	Long ind1 = skip_char8(s, ind, N);
+	return s.substr(ind, ind1-ind);
+}
+
+// get a Char32 from a utf-8 string
+inline Char32 char32(Str_I str, Long_I ind)
+{
+    Str c = u8char(str, ind);
+	return u32(c)[0];
+}
+
 // check if is a chinese character
 // does not include punctuations
 // ref [1]: https://www.qqxiuzi.cn/zh/hanzi-unicode-bianma.php
 // ref [2]: https://www.qqxiuzi.cn/bianma/zifuji.php
 // see also: chinese_unicode.m (Matlab code)
-inline Bool is_chinese(Char32_I c)
+inline Bool is_chinese(Str_I str, Long_I ind)
 {
+	Char32 c = char32(str, ind);
 	// not sorted
 	static const Char32 range[] = {
 		0x4E00, 0x9FA5, // '基本汉字'
@@ -229,21 +383,6 @@ inline Str u8(Char32_I c) {
 	return utf8;
 }
 
-// check if is the start of a utf-8 character
-inline bool is_char8_start(Str_I str, Long_I index) {
-	if (index >= size(str)) {
-		return false;
-	}
-
-	unsigned char byte = str[index];
-	if ((byte & 0b10000000) == 0) { // ASCII character (most significant bit is 0)
-		return true;
-	}
-
-	// Multi-byte character starts with a sequence of 1's followed by a 0
-	return (byte & 0b11000000) == 0b11000000;
-}
-
 // recycle
 // ref: https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
 // inline Bool is_chinese(Char32_I c)
@@ -260,18 +399,10 @@ inline bool is_char8_start(Str_I str, Long_I index) {
 
 // check if is a chinese character
 // include punctuations
-inline Bool is_chinese_punc(Char32_I c)
+inline Bool is_chinese_punc(Str_I str, Long_I ind)
 {
+	Char32 c = char32(str, ind);
 	static const Str32 s = U"，。？！、：；“”‘’（）【】…—《》￥·";
-
-	static Bool check = false;
-	if (!check) {
-		check = true;
-		for (auto c1 : s)
-			if (is_chinese(c1))
-				SLS_ERR("I didn't expect is_chinese() to contain punc, modify that function.");
-	}
-
 	if ((Long)s.find(c) >= 0)
 		return true;
 	return false;

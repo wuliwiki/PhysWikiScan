@@ -32,9 +32,11 @@ inline void word_count()
     for (Long i = 0; i < size(entries); ++i) {
         read(str, gv::path_in + "contents/" + entries[i] + u8".tex");
         rm_comments(str);
-        for (Long j = 0; j < (Long) str.size(); ++j)
-            if (is_chinese(str[j]) || is_chinese_punc(str[j]))
+        for (Long j = 0; j < (Long) str.size(); ++j) {
+            if (!is_char8_start(str, j)) continue;
+            if (is_chinese(str, j) || is_chinese_punc(str, j))
                 ++N;
+        }
     }
     cout << u8"中文字符数 (含标点): " << N << endl;
 }

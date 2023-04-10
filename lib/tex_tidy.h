@@ -21,6 +21,7 @@ inline Long ensure_space_around(Str_IO str, Str_I c)
         if (ind0 == 0 || str[ind0-1] != ' ') {
             str.insert(ind0, " "); ++N;
         }
+        ++ind0;
     }
     return N;
 }
@@ -30,24 +31,24 @@ inline Long ensure_space_around(Str_IO str, Str_I c)
 inline void global_forbid_char(Str_I str)
 {
     // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
-    Str forbidden = u8"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
+    static const Str forbidden = u8"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
         u8"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
         u8"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖"
         u8"⓪①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
 
     // check repetition
-    static bool checked = false;
-    if (!checked) {
-        checked = true;
-        Long ind = 0;
-        while (ind < size(forbidden)) {
-            ind = find_repeat(forbidden, ind);
-            if (ind < 0) break;
-            cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
-            throw internal_err(u8"found repeated char in `forbidden`");
-            ++ind;
-        };
-    }
+//    static bool checked = false;
+//    if (!checked) {
+//        checked = true;
+//        Long ind = 0;
+//        while (ind < size(forbidden)) {
+//            ind = find_repeat(forbidden, ind);
+//            if (ind < 0) break;
+//            cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
+//            throw internal_err("found repeated char in `forbidden`");
+//            ++ind;
+//        };
+//    }
 
     Long ind = str.find_first_of(forbidden);
     if (ind >= 0) {
@@ -229,7 +230,7 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
 
         if (is_in(ind0, intvNorm)) {
             Long ind1 = str.find_last_not_of(u8" ", ind0-1);
-            if (ind1 >= 0 && is_chinese(str[ind1])) {
+            if (ind1 >= 0 && is_chinese(str, ind1)) {
                 str.find_first_not_of(u8" ", ind0+1);
                 // --- exceptions ---
                 if (ikey == 1 && is_alphanum(str[ind0 + 1]))
@@ -290,13 +291,16 @@ inline Long check_normal_text_escape(Str_IO str)
 inline Long chinese_alpha_num_space(Str_IO str)
 {
     Long N = 0;
-    for (Long i = size(str) - 1; i >= 1; --i) {
-        if (is_chinese(str[i - 1]) && is_alphanum(str[i])) {
-            str.insert(str.begin() + i, ' ');
+    u8_iter it(str, -1);
+    for (; it >= 1; --it) {
+        if (!is_char8_start(str, it)) continue;
+        Long ind = it-1;
+        if (is_chinese(str, ind) && is_alphanum(str[it])) {
+            str.insert(str.begin() + it, ' ');
             ++N;
         }
-        if (is_alphanum(str[i - 1]) && is_chinese(str[i])) {
-            str.insert(str.begin() + i, ' ');
+        if (is_alphanum(str[ind]) && is_chinese(str, it)) {
+            str.insert(str.begin() + it, ' ');
             ++N;
         }
     }
@@ -307,32 +311,32 @@ inline Long chinese_alpha_num_space(Str_IO str)
 // return the number of spaces added
 inline Long chinese_double_quote_space(Str_IO str)
 {
-    Str32 str32 = u32(str);
-    Str32 quotes = { Char32(8220) , Char32(8221) }; // chinese left and right quotes
+    // chinese left and right quotes
+    vecStr quotes = { u8(Char32(8220)) , u8(Char32(8221)) };
     Intvs intNorm;
     FindNormalText(intNorm, str);
     vecLong inds; // locations to insert space
-    Long ind = -1;
+    Long ind = -1, ikey;
     while (1) {
-        ind = str32.find_first_of(quotes, ind + 1);
+        ind = find(ikey, str, quotes, ind + 1);
         if (ind < 0)
             break;
         if (is_in(ind, intNorm)) {
-            if (str32[ind] == quotes[0]) { // left quote
+            if (u8char(str, ind) == quotes[0]) { // left quote
                 if (ind > 0) {
-                    Char32 c = str32[ind - 1];
+                    Long ind10 = skip_char8(str, ind, -1);
                     /*if (search(c, u8" \n，。．！？…：()（）：【】") >= 0)
                         continue;*/
-                    if (is_chinese(c) || is_alphanum(c))
+                    if (is_chinese(str, ind10) || is_alphanum(str[ind10]))
                         inds.push_back(ind);
                 }
             }
             else { // right quote
-                if (ind < size(str32) - 1) {
-                    Char32 c = str32[ind + 1];
+                if (ind < size(str) - 1) {
+                    Long ind10 = skip_char8(str, ind, 1);
                     /*if (search(c, u8" \n，。．！？…：()（）：【】") >= 0)
                         continue;*/
-                    if (is_chinese(c) || is_alphanum(c))
+                    if (is_chinese(str, ind10) || is_alphanum(str[ind10]))
                         inds.push_back(ind + 1);
                 }
                     
@@ -340,8 +344,7 @@ inline Long chinese_double_quote_space(Str_IO str)
         }
     }
     for (Long i = inds.size() - 1; i >= 0; --i)
-        str32.insert(str32.begin() + inds[i], ' ');
-    str = u8(str32);
+        str.insert(str.begin() + inds[i], ' ');
     return inds.size();
 }
 
@@ -351,14 +354,15 @@ inline Long inline_eq_space(Str_IO str)
     Intvs intv;
     find_inline_eq(intv, str, 'o');
     for (Long i = intv.size() - 1; i >= 0; --i) {
-        Long ind0 = intv.R(i) + 1;
-        if (is_chinese(str[ind0])) {
+        Long ind0 = skip_char8(str, intv.R(i), 1);
+        if (is_chinese(str, ind0)) {
             str.insert(str.begin() + ind0, ' ');
             ++N;
         }
-        ind0 = intv.L(i) - 1;
-        if (is_chinese(str[ind0])) {
+        ind0 = skip_char8(str, intv.L(i), -1);
+        if (is_chinese(str, ind0)) {
             str.insert(str.begin() + ind0 + 1, ' ');
+            ++N;
         }
     }
     return N;

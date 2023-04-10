@@ -508,10 +508,12 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
         throw Str(u8"行内公式 $ 符号不匹配");
     }
     N /= 2;
-    if (option == 'i' && N > 0)
+    if (option == 'i' && N > 0) {
         for (Long i = 0; i < N; ++i) {
-            ++intv.L(i); --intv.R(i);
+            ++intv.L(i);
+            intv.R(i) = skip_char8(str, intv.R(i), -1);
         }
+    }
     return N;
 }
 
@@ -867,12 +869,14 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
             throw Str(u8"\\verb 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
-        if (is_chinese(str[ind0 - 1]))
+        Long ind10 = skip_char8(str, ind0, -1);
+        if (is_chinese(str, ind10))
             tmp = ' ';
         else
             tmp.clear();
         tmp += u8"\\verb|" + num2str(size(str_verb) - 1) + u8"|";
-        if (is_chinese(str[ind2 + 1]))
+        ind10 = skip_char8(str, ind2, 1);
+        if (is_chinese(str, ind10))
             tmp += ' ';
         str.replace(ind0, ind2 + 1 - ind0, tmp);
         ind0 += 3;
@@ -898,12 +902,14 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
 
-        if (is_chinese(str[ind0 - 1]))
+        Long ind10 = skip_char8(str, ind0, -1);
+        if (is_chinese(str, ind10))
             tmp = ' ';
         else
             tmp.clear();
         tmp += u8"\\lstinline|" + num2str(size(str_verb) - 1) + u8"|";
-        if (is_chinese(str[ind2 + 1]))
+        ind10 = skip_char8(str, ind2, 1);
+        if (is_chinese(str, ind10))
             tmp += ' ';
         str.replace(ind0, ind2 + 1 - ind0, tmp);
         ind0 += 3;

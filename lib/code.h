@@ -6,11 +6,12 @@
 inline Long line_size_lim(Str_I str, Long_I lim)
 {
     Long ind0 = 0, line = 0, ind_old = 0;
+    Str32 str32 = u32(str);
     while (true) {
-        ind0 = str.find(u8"\n", ind0);
+        ind0 = str32.find(U"\n", ind0);
         ++line;
         if (ind0 < 0) {
-            if (size(str) - ind_old > lim)
+            if (size(str32) - ind_old > lim)
                 return line;
             else
                 return -1;
