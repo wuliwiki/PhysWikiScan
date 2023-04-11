@@ -17,7 +17,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
         if (!in_string) {
             // first quote in comment
             Long ikey;
-            rfind(ikey, str, { U"\n", U"%" }, ind0 - 1);
+            rfind(ikey, str, { "\n", "%" }, ind0 - 1);
             if (ikey == 1) {
                 ++ind0; continue;
             }
@@ -75,7 +75,7 @@ inline Long Matlab_keywords(Str32_IO str, vecStr32_I keywords, Str32_I keyword_c
         }
         // found keyword
         str.replace(ind0, keywords[ikey].size(),
-            U"<span class = \"" + keyword_class + "\">" + keywords[ikey] + U"</span>");
+            "<span class = \"" + keyword_class + "\">" + keywords[ikey] + "</span>");
         ++N;
     }
     return N;
@@ -94,8 +94,8 @@ inline Long Matlab_string(Str32_IO code, Str32_I str_class)
 
     // highlight backwards
     for (Long i = intv_str.size()-1; i >= 0; --i) {
-        code.insert(intv_str.R(i) + 1, U"</span>");
-        code.insert(intv_str.L(i), U"<span class = \"" + str_class + "\">");
+        code.insert(intv_str.R(i) + 1, "</span>");
+        code.insert(intv_str.L(i), "<span class = \"" + str_class + "\">");
         ++N;
     }
     return N;
@@ -115,8 +115,8 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
     
     // highlight backwards
     for (Long i = intv_comm.size() - 1; i >= 0; --i) {
-        code.insert(intv_comm.R(i) + 1, U"</span>");
-        code.insert(intv_comm.L(i), U"<span class = \"" + comm_class + "\">");
+        code.insert(intv_comm.R(i) + 1, "</span>");
+        code.insert(intv_comm.L(i), "<span class = \"" + comm_class + "\">");
         ++N;
     }
     return N;
@@ -128,22 +128,22 @@ inline Long Matlab_comment(Str32_IO code, Str32_I comm_class)
 inline Long Matlab_highlight(Str32_IO code)
 {
     // ======= settings ========
-    vecStr32 keywords = { U"break", U"case", U"catch", U"classdef",
-        U"continue", U"else", U"elseif", U"end", U"for", U"function",
-        U"global", U"if", U"otherwie", U"parfor", U"persistent",
-        U"return", U"spmd", U"switch", U"try", U"while"};
+    vecStr32 keywords = { "break", "case", "catch", "classdef",
+        "continue", "else", "elseif", "end", "for", "function",
+        "global", "if", "otherwie", "parfor", "persistent",
+        "return", "spmd", "switch", "try", "while"};
     
-    Str32 keyword_class = U"keyword";
-    Str32 str_class = U"string";
-    Str32 comm_class = U"comment";
+    Str32 keyword_class = "keyword";
+    Str32 str_class = "string";
+    Str32 comm_class = "comment";
     // ==========================
 
     Long N = 0;
     // replace "<" and ">"
-    replace(code, U"<", U"&lt;"); replace(code, U">", U"&gt;");
-    Long ind = code.find(U"\n\t");
+    replace(code, "<", "&lt;"); replace(code, ">", "&gt;");
+    Long ind = code.find("\n\t");
     if (ind >= 0)
-        throw Str32(U"Matlab 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + U"...");
+        throw scan_err(u8"Matlab 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + "...");
     // highlight keywords
     N += Matlab_keywords(code, keywords, keyword_class);
     // highlight comments

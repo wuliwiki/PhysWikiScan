@@ -10,18 +10,18 @@ namespace slisc {
 #ifdef _MSC_VER
         return 0;
 #endif
-        Long ind = code.find(U"\n\t");
+        Long ind = code.find("\n\t");
         if (ind >= 0)
-            throw Str32(U"cpp 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + U"...");
-        write(code, U"tmp.cpp");
+            throw scan_err(u8"cpp 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + "...");
+        write(code, "tmp.cpp");
         remove("tmp.cpp.html");
         system("source-highlight --src-lang cpp --out-format html "
             "--input tmp.cpp --output tmp.cpp.html");
         if (!file_exist("tmp.cpp.html")) {
             return -1;
         }
-        read(code, U"tmp.cpp.html");
-        Long ind0 = code.find(U"<pre>", 0) + 5;
+        read(code, "tmp.cpp.html");
+        Long ind0 = code.find("<pre>", 0) + 5;
         code = code.substr(ind0, code.size() - 7 - ind0);
         remove("tmp.cpp"); remove("tmp.cpp.html");
         return 0;

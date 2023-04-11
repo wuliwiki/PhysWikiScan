@@ -140,7 +140,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
             if (!caption.empty() && caption.back() == 'm') {
                 Str fname = gv::path_out + "code/" + lang + "/" + caption;
                 if (gv::is_entire && file_exist(fname))
-                    throw scan_err("代码文件名重复： " + fname);
+                    throw scan_err(u8"代码文件名重复： " + fname);
                 if (code.back() != '\n')
                     write(code+'\n', fname);
                 else

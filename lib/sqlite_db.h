@@ -169,7 +169,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
             auto &alt_path = alt_paths[j];
             Long i_beg = alt_path[0], i_bak = alt_path.back();
             ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << entries[i_bak] << ")" << endl;
-            ss << "   已存在路径： " << endl;
+            ss << u8"   已存在路径： " << endl;
             ss << "   " << titles[i_beg] << "(" << entries[i_beg] << ")" << endl;
             for (Long i = 1; i < size(alt_path); ++i)
                 ss << "<- " << titles[alt_path[i]] << "(" << entries[alt_path[i]] << ")" << endl;
@@ -202,7 +202,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
     for (int id : author_ids) {
         stmt_select2.bind(1, id);
         if (!stmt_select2.executeStep())
-            throw internal_err("词条： " + entry + " 作者 id 不存在： " + num2str(id));
+            throw internal_err(u8"词条： " + entry + u8" 作者 id 不存在： " + num2str(id));
         authors.push_back(stmt_select2.getColumn(0));
         stmt_select2.reset();
     }
@@ -299,13 +299,13 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
         Str bib_label = bib_labels[i], bib_detail = bib_details[i];
         if (db_data.count(bib_label)) {
             if (db_data[bib_label] != bib_detail) {
-                SLS_WARN("数据库文献详情 bib_detail 发生变化需要更新！ 该功能未实现，将不更新： " + bib_label);
-                cout << "数据库的 bib_detail： " << db_data[bib_label] << endl;
-                cout << "当前的   bib_detail： " << bib_detail << endl;
+                SLS_WARN(u8"数据库文献详情 bib_detail 发生变化需要更新！ 该功能未实现，将不更新： " + bib_label);
+                cout << u8"数据库的 bib_detail： " << db_data[bib_label] << endl;
+                cout << u8"当前的   bib_detail： " << bib_detail << endl;
             }
             continue;
         }
-        SLS_WARN("数据库中不存在文献（将添加）： " + num2str(i) + ". " + bib_label);
+        SLS_WARN(u8"数据库中不存在文献（将添加）： " + num2str(i) + ". " + bib_label);
         stmt_insert_bib.bind(1, bib_label);
         stmt_insert_bib.bind(2, int(i));
         stmt_insert_bib.bind(3, bib_detail);
@@ -494,7 +494,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
             authorID = new_authors[author];
         else {
             authorID = ++author_id_max;
-            SLS_WARN("备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
+            SLS_WARN(u8"备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
             new_authors[author] = author_id_max;
             stmt_insert_auth.bind(1, int(author_id_max));
             stmt_insert_auth.bind(2, author);
@@ -504,7 +504,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         entry = fname.substr(ind+1);
         if (entries.count(entry) == 0 &&
                             entries_deleted_inserted.count(entry) == 0) {
-            SLS_WARN("备份文件中的词条不在数据库中（将添加）： " + entry);
+            SLS_WARN(u8"备份文件中的词条不在数据库中（将添加）： " + entry);
             stmt_insert_entry.bind(1, entry);
             stmt_insert_entry.exec(); stmt_insert_entry.reset();
 
@@ -514,16 +514,16 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         if (sha1_exist) {
             auto &time_author_entry = db_data[sha1];
             if (get<0>(time_author_entry) != time)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
+                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
             if (db_id_to_author[get<1>(time_author_entry)] != author)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
+                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
                          to_string(get<1>(time_author_entry)) + "." + db_id_to_author[get<1>(time_author_entry)]);
             if (get<2>(time_author_entry) != entry)
-                SLS_WARN("备份 " + fname + " 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
+                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
             db_data.erase(sha1);
         }
         else {
-            SLS_WARN("数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
+            SLS_WARN(u8"数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
             stmt_insert.bind(1, sha1);
             stmt_insert.bind(2, time);
             stmt_insert.bind(3, int(authorID));
@@ -533,7 +533,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     }
 
     if (!db_data.empty()) {
-        SLS_WARN("以下数据库中记录的备份无法找到对应文件： ");
+        SLS_WARN(u8"以下数据库中记录的备份无法找到对应文件： ");
         for (auto &row : db_data) {
             cout << row.first << ", " << get<0>(row.second) << ", " <<
                 get<1>(row.second) << ", " << get<2>(row.second) << endl;
@@ -542,7 +542,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     cout << "\ndone." << endl;
 
     for (auto &author : new_authors)
-        cout << "新作者： " << author.second << ". " << author.first << endl;
+        cout << u8"新作者： " << author.second << ". " << author.first << endl;
 
     cout << "\nupdating author contribution..." << endl;
     SQLite::Statement stmt_contrib(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
@@ -583,7 +583,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             stmt_select.bind(1, id);
             if (!stmt_select.executeStep()) {
                 stmt_select.reset();
-                SLS_WARN("发现数据库中没有的图片环境（将模拟 editor 添加）：" + id);
+                SLS_WARN(u8"发现数据库中没有的图片环境（将模拟 editor 添加）：" + id);
                 stmt_insert.bind(1, id);
                 stmt_insert.bind(2, entry);
                 stmt_insert.bind(3, int(order));
@@ -597,12 +597,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 
                 bool update = false;
                 if (entry != db_entry) {
-                    SLS_WARN("发现数据库中图片 entry 改变（将更新）：" + id + ": "
+                    SLS_WARN(u8"发现数据库中图片 entry 改变（将更新）：" + id + ": "
                              + db_entry + " -> " + entry);
                     update = true;
                 }
                 if (order != db_order) {
-                    SLS_WARN("发现数据库中图片 order 改变（将更新）：" + id + ": "
+                    SLS_WARN(u8"发现数据库中图片 order 改变（将更新）：" + id + ": "
                              + to_string(db_order) + " -> " + to_string(order));
                     update = true;
 
@@ -615,7 +615,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                     }
                 }
                 if (hash != db_hash) {
-                    SLS_WARN("发现数据库中图片 hash 改变（将更新）：" + id + ": "
+                    SLS_WARN(u8"发现数据库中图片 hash 改变（将更新）：" + id + ": "
                              + db_hash + " -> " + hash);
                     update = true;
                 }
@@ -723,7 +723,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_delete_label;
             else {
                 join(ref_by_str, db_ref_bys[i], ", ");
-                throw scan_err("检测到 label 被删除： " + db_labels[i] + "\n但是被这些词条引用： " + ref_by_str);
+                throw scan_err(u8"检测到 label 被删除： " + db_labels[i] + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
     }

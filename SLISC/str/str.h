@@ -572,7 +572,7 @@ inline Long expect(Str_I str, Str_I key, Long_I start)
 {
 #ifdef SLS_CHECK_BOUNDS
 	if (start < 0 || start >= size(str))
-		throw std::runtime_error("内部错误： expect(): out of bound");
+		throw std::runtime_error(u8"内部错误： expect(): out of bound");
 #endif
 	Long ind = start;
 	Long ind0 = 0;
@@ -820,7 +820,7 @@ inline Long pair_brace(Str_I str, Long ind)
 		}
 		c0 = c;
 	}
-	throw std::runtime_error("pair_brace() failed：" + str.substr(ind, 20));
+	throw std::runtime_error("pair_brace() failed: " + str.substr(ind, 20));
 }
 
 // match braces
@@ -1035,7 +1035,7 @@ inline Long expect(Str32_I str, Str32_I key, Long_I start)
 {
 #ifdef SLS_CHECK_BOUNDS
 	if (start < 0 || start >= size(str))
-		throw std::runtime_error("内部错误： expect(): out of bound");
+		throw std::runtime_error(u8"内部错误： expect(): out of bound");
 #endif
 	Long ind = start;
 	Long ind0 = 0;
@@ -1283,7 +1283,7 @@ inline Long pair_brace(Str32_I str, Long ind)
 		}
 		c0 = c;
 	}
-	throw std::runtime_error("pair_brace() failed：" + str.substr(ind, 20));
+	throw std::runtime_error("pair_brace() failed:" + str.substr(ind, 20));
 }
 
 // match braces

@@ -54,9 +54,9 @@ inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
                 return;
             command_arg(depEntry, temp, ind1, 0, 't');
             if (!exist("entries", "id", depEntry, db_read))
-                throw scan_err("\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
+                throw scan_err(u8"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             if (search(depEntry, pentries) >= 0)
-                throw scan_err("\\pentry{} 中预备知识重复： " + depEntry + ".tex");
+                throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
             pentries.push_back(depEntry);
             ++ind1;
         }

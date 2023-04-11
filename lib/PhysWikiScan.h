@@ -32,7 +32,7 @@ public:
     }
 };
 
-// 内部错误
+// internal error to throw
 class internal_err : public scan_err
 {
 public:
@@ -53,7 +53,7 @@ public:
 
 // trim "\n" and " " on both sides
 // remove unnecessary "\n"
-// replace “\n\n" with "\n</p>\n<p>　　\n"
+// replace "\n\n" with "\n</p>\n<p>　　\n"
 inline Long paragraph_tag1(Str_IO str)
 {
     Long ind0 = 0, N = 0;
@@ -216,7 +216,7 @@ inline Long pentry(Str_IO str)
 {
     if (!gv::is_eng)
         return Command2Tag("pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", "</div>", str);
-    return Command2Tag("pentry", "<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", "</div>", str);
+    return Command2Tag("pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", "</div>", str);
 }
 
 // mark incomplete
@@ -406,7 +406,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
     if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
+        throw std::runtime_error(u8"内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
     CRLF_to_LF(str);
 
     // read title from first comment
@@ -460,7 +460,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
 
     // insert HTML title
     if (replace(html, "PhysWikiHTMLtitle", title) != 1)
-        throw internal_err("\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
+        throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 
     // check globally forbidden char
     global_forbid_char(str);
@@ -580,7 +580,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
         if (i == N0)
-            cout << "\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
+            cout << u8"\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
 
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
@@ -680,7 +680,7 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
         ref_by.clear();
         stmt_select_ref_by_fig.bind(1, fig_id.first);
         if (!stmt_select_ref_by_fig.executeStep())
-            throw internal_err("找不到 figures.id： " + fig_id.first);
+            throw internal_err(u8"找不到 figures.id： " + fig_id.first);
         ref_by_str = (const char*)stmt_select_ref_by_fig.getColumn(0);
         stmt_select_ref_by_fig.reset();
         parse(ref_by, ref_by_str);
@@ -749,7 +749,7 @@ inline void PhysWikiOnline()
     // TODO: warn unused figures, based on "ref_by"
 
     if (!illegal_chars.empty()) {
-        SLS_WARN("非法字符的 code point 已经保存到 data/illegal_chars.txt");
+        SLS_WARN(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
         ofstream fout("data/illegal_chars.txt");
         for (auto c: illegal_chars) {
             fout << Long(c) << endl;
