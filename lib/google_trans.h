@@ -10,7 +10,7 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
 
     // verb
     while (1) {
-        ind0 = find_command(str, u8"verb", ind0);
+        ind0 = find_command(str, "verb", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 5);
@@ -25,16 +25,16 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
         if (ind2 - ind1 == 1)
             throw scan_err(u8"\\verb 不能为空");
         tmp = str.substr(ind0, ind2 + 1 - ind0);
-        replace(tmp, u8"\n", u8"PhysWikiScanLF");
+        replace(tmp, "\n", "PhysWikiScanLF");
         str_verb.push_back(tmp);
-        str.replace(ind0, ind2 + 1 - ind0, u8"\\verb|" + num2str(size(str_verb)-1, 4) + u8"|");
+        str.replace(ind0, ind2 + 1 - ind0, "\\verb|" + num2str(size(str_verb)-1, 4) + "|");
         ind0 += 3;
     }
 
     // lstinline
     ind0 = 0;
     while (1) {
-        ind0 = find_command(str, u8"lstinline", ind0);
+        ind0 = find_command(str, "lstinline", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(U' ', ind0 + 10);
@@ -49,10 +49,10 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
         if (ind2 - ind1 == 1)
             throw scan_err(u8"\\lstinline 不能为空");
         tmp = str.substr(ind0, ind2 + 1 - ind0);
-        replace(tmp, u8"\n", u8"PhysWikiScanLF");
+        replace(tmp, "\n", "PhysWikiScanLF");
         str_verb.push_back(tmp);
 
-        str.replace(ind0, ind2 + 1 - ind0, u8"\\verb|" + num2str(size(str_verb)-1, 4) + u8"|");
+        str.replace(ind0, ind2 + 1 - ind0, "\\verb|" + num2str(size(str_verb)-1, 4) + "|");
         ind0 += 3;
     }
 
@@ -61,13 +61,13 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
     ind0 = 0;
     Intvs intv;
     Str code;
-    Long N = find_env(intv, str, u8"lstlisting", 'o');
-    Str lang = u8""; // language
+    Long N = find_env(intv, str, "lstlisting", 'o');
+    Str lang; // language
     for (Long i = N - 1; i >= 0; --i) {
         tmp = str.substr(intv.L(i), intv.R(i) + 1 - intv.L(i));
-        replace(tmp, u8"\n", u8"PhysWikiScanLF");
+        replace(tmp, "\n", "PhysWikiScanLF");
         str_verb1.push_back(tmp);
-        str.replace(intv.L(i), intv.R(i) + 1 - intv.L(i), u8"\\verb|" + num2str(size(str_verb)+i, 4) + u8"|");
+        str.replace(intv.L(i), intv.R(i) + 1 - intv.L(i), "\\verb|" + num2str(size(str_verb)+i, 4) + "|");
     }
     for (Long i = 0; i < N; ++i) {
         str_verb.push_back(str_verb1.back());
@@ -88,40 +88,40 @@ inline void hide_eq_verb(Str_IO str)
 
     for (Long i = intv.size() - 1; i >= 0; --i) {
         tmp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-        replace(tmp, u8"\n", u8"PhysWikiScanLF");
+        replace(tmp, "\n", "PhysWikiScanLF");
         eq_list.push_back(tmp);
-        str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, u8"$" + num2str(size(eq_list)-1, 4) + u8"$");
+        str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, "$" + num2str(size(eq_list)-1, 4) + "$");
     }
     hide_verbatim(verb_list, str);
     // save to files
-    write_vec_str(eq_list, gv::path_data + u8"eq_list.txt");
-    write_vec_str(verb_list, gv::path_data + u8"verb_list.txt");
+    write_vec_str(eq_list, gv::path_data + "eq_list.txt");
+    write_vec_str(verb_list, gv::path_data + "verb_list.txt");
 }
 
 inline void unhide_eq_verb(Str_IO str)
 {
     Str tmp, label;
     vecStr eq_list, verb_list;
-    read_vec_str(eq_list, gv::path_data + u8"eq_list.txt");
-    read_vec_str(verb_list, gv::path_data + u8"verb_list.txt");
+    read_vec_str(eq_list, gv::path_data + "eq_list.txt");
+    read_vec_str(verb_list, gv::path_data + "verb_list.txt");
     for (Long i = 0; i < size(eq_list); ++i) {
-        label = u8"$" + num2str(i, 4) + u8"$";
+        label = "$" + num2str(i, 4) + "$";
         Long ind = str.find(label);
         tmp = eq_list[i];
-        replace(tmp, u8"PhysWikiScanLF", u8"\n");
+        replace(tmp, "PhysWikiScanLF", "\n");
         if (ind < 0)
-            SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + u8"\n");
+            SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + "\n");
         else
             str.replace(ind, label.size(), tmp);
     }
 
     for (Long i = 0; i < size(verb_list); ++i) {
-        label = u8"\\verb|" + num2str(i, 4) + u8"|";
+        label = "\\verb|" + num2str(i, 4) + "|";
         Long ind = str.find(label);
         tmp = verb_list[i];
-        replace(tmp, u8"PhysWikiScanLF", u8"\n");
+        replace(tmp, "PhysWikiScanLF", "\n");
         if (ind < 0)
-            SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + u8"\n");
+            SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + "\n");
         else
             str.replace(ind, label.size(), tmp);
     }

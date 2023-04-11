@@ -57,17 +57,17 @@ public:
 inline Long paragraph_tag1(Str_IO str)
 {
     Long ind0 = 0, N = 0;
-    trim(str, u8" \n");
+    trim(str, " \n");
     // delete extra '\n' (more than two continuous)
     while (1) {
-        ind0 = str.find(u8"\n\n\n", ind0);
+        ind0 = str.find("\n\n\n", ind0);
         if (ind0 < 0)
             break;
-        eatR(str, ind0 + 2, u8"\n");
+        eatR(str, ind0 + 2, "\n");
     }
 
     // replace "\n\n" with "\n</p>\n<p>　　\n"
-    N = replace(str, u8"\n\n", u8"\n</p>\n<p>　　\n");
+    N = replace(str, "\n\n", u8"\n</p>\n<p>　　\n");
     return N;
 }
 
@@ -77,13 +77,13 @@ inline Long paragraph_tag(Str_IO str)
     Str temp, env, end, begin = u8"<p>　　\n";
 
     // "begin", and commands that cannot be in a paragraph
-    vecStr commands = {u8"begin", u8"subsection", u8"subsubsection", u8"pentry"};
+    vecStr commands = {"begin", "subsection", "subsubsection", "pentry"};
 
     // environments that must be in a paragraph (use "<p>" instead of "<p>　　" when at the start of the paragraph)
-    vecStr envs_eq = {u8"equation", u8"align", u8"gather", u8"lstlisting"};
+    vecStr envs_eq = {"equation", "align", "gather", "lstlisting"};
 
     // environments that needs paragraph tags inside
-    vecStr envs_p = { u8"example", u8"exercise", u8"definition", u8"theorem", u8"lemma", u8"corollary"};
+    vecStr envs_p = { "example", "exercise", "definition", "theorem", "lemma", "corollary"};
 
     // 'n' (for normal); 'e' (for env_eq); 'p' (for env_p); 'f' (end of file)
     char next, last = 'n';
@@ -128,18 +128,18 @@ inline Long paragraph_tag(Str_IO str)
 
         // decide ending tag
         if (next == 'n' || next == 'p') {
-            end = u8"\n</p>\n";
+            end = "\n</p>\n";
         }
         else if (next == 'e') {
             // equations can be inside paragraph
-            if (ExpectKeyReverse(str, u8"\n\n", ind0 - 1) >= 0) {
-                end = u8"\n</p>\n<p>\n";
+            if (ExpectKeyReverse(str, "\n\n", ind0 - 1) >= 0) {
+                end = "\n</p>\n<p>\n";
             }
             else
-                end = u8"\n";
+                end = "\n";
         }
         else if (next == 'f') {
-            end = u8"\n</p>\n";
+            end = "\n</p>\n";
         }
 
         // add tags
@@ -148,13 +148,13 @@ inline Long paragraph_tag(Str_IO str)
         N += paragraph_tag1(temp);
         if (temp.empty()) {
             if (next == 'e' && last != 'e') {
-                temp = u8"\n<p>\n";
+                temp = "\n<p>\n";
             }
             else if (last == 'e' && next != 'e') {
-                temp = u8"\n</p>\n";
+                temp = "\n</p>\n";
             }
             else {
-                temp = u8"\n";
+                temp = "\n";
             }
         }
         else {
@@ -185,7 +185,7 @@ inline Long paragraph_tag(Str_IO str)
         else {
             ind0 = skip_command(str, ind0, 1);
             if (ind0 < size(str)) {
-                Long ind1 = expect(str, u8"\\label", ind0);
+                Long ind1 = expect(str, "\\label", ind0);
                 if (ind1 > 0)
                     ind0 = skip_command(str, ind1 - 6, 1);
             }
@@ -202,11 +202,11 @@ inline Long paragraph_tag(Str_IO str)
         if (last == 'n' || last == 'p')
             begin = u8"\n<p>　　\n";
         else if (last == 'e') {
-            if (expect(str, u8"\n\n", ind0) >= 0) {
+            if (expect(str, "\n\n", ind0) >= 0) {
                 begin = u8"\n</p>\n<p>　　\n";
             }
             else
-                begin = u8"\n";
+                begin = "\n";
         }    
     }
 }
@@ -215,14 +215,14 @@ inline Long paragraph_tag(Str_IO str)
 inline Long pentry(Str_IO str)
 {
     if (!gv::is_eng)
-        return Command2Tag(u8"pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", u8"</div>", str);
-    return Command2Tag(u8"pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", u8"</div>", str);
+        return Command2Tag("pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", "</div>", str);
+    return Command2Tag("pentry", "<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", "</div>", str);
 }
 
 // mark incomplete
 inline Long addTODO(Str_IO str)
 {
-    return Command2Tag(u8"addTODO", u8"<div class = \"w3-panel w3-round-large w3-sand\">未完成：", u8"</div>", str);
+    return Command2Tag("addTODO", u8"<div class = \"w3-panel w3-round-large w3-sand\">未完成：", "</div>", str);
 }
 
 // replace "<" and ">" in equations
@@ -246,21 +246,21 @@ inline Long rep_eq_lt_gt(Str_IO str)
 // return the number replaced
 inline Long wikipedia_link(Str_IO str)
 {
-    Str alter_domain = u8"jinzhao.wiki";
+    Str alter_domain = "jinzhao.wiki";
     Long ind0 = 0, N = 0;
     Str link;
     while (1) {
-        ind0 = find_command(str, u8"href", ind0);
+        ind0 = find_command(str, "href", ind0);
         if (ind0 < 0)
             return N;
         command_arg(link, str, ind0);
         ind0 = skip_command(str, ind0);
-        ind0 = expect(str, u8"{", ind0);
+        ind0 = expect(str, "{", ind0);
         if (ind0 < 0)
             throw scan_err(u8"\\href{网址}{文字} 命令格式错误！");
         Long ind1 = pair_brace(str, ind0 - 1);
-        if (Long(link.find(u8"wikipedia.org")) > 0) {
-            replace(link, u8"wikipedia.org", alter_domain);
+        if (Long(link.find("wikipedia.org")) > 0) {
+            replace(link, "wikipedia.org", alter_domain);
             str.replace(ind0, ind1 - ind0, link);
         }
         ++N;
@@ -271,7 +271,7 @@ inline Long wikipedia_link(Str_IO str)
 inline Bool ind_in_pay(Str_I str, Long_I ind)
 {
     Long ikey;
-    Long ind0 = rfind(ikey, str, { u8"\\pay", u8"\\paid" }, ind);
+    Long ind0 = rfind(ikey, str, { "\\pay", "\\paid" }, ind);
     if (ind0 < 0)
         return false;
     else if (ikey == 1)
@@ -287,15 +287,15 @@ inline Long pay2div(Str_IO str)
 {
     Long ind0 = 0, N = 0;
     while (1) {
-        ind0 = find_command(str, u8"pay", ind0);
+        ind0 = find_command(str, "pay", ind0);
         if (ind0 < 0)
             return N;
         ++N;
-        str.replace(ind0, 4, u8"<div id=\"pay\" style=\"display:inline\">");
-        ind0 = find_command(str, u8"paid", ind0);
+        str.replace(ind0, 4, "<div id=\"pay\" style=\"display:inline\">");
+        ind0 = find_command(str, "paid", ind0);
         if (ind0 < 0)
             throw scan_err(u8"\\pay 命令没有匹配的 \\paid 命令");
-        str.replace(ind0, 5, u8"</div>");
+        str.replace(ind0, 5, "</div>");
     }
 }
 
@@ -306,7 +306,7 @@ inline void last_next_buttons(Str_IO html, SQLite::Database &db_read, Long_I ord
         R"(SELECT "id", "caption" FROM "entries" WHERE "order"=?;)");
 
     if (order < 0)
-        throw internal_err(u8"last_next_buttons()");
+        throw internal_err("last_next_buttons()");
 
     // find last
     if (order == 0) {
@@ -346,13 +346,13 @@ inline void last_next_buttons(Str_IO html, SQLite::Database &db_read, Long_I ord
     }
 
     // insert into html
-    if (replace(html, u8"PhysWikiLastEntryURL", gv::url+last_entry+u8".html") != 2)
+    if (replace(html, "PhysWikiLastEntryURL", gv::url+last_entry+".html") != 2)
         throw internal_err(u8"\"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, u8"PhysWikiNextEntryURL", gv::url+next_entry+u8".html") != 2)
+    if (replace(html, "PhysWikiNextEntryURL", gv::url+next_entry+".html") != 2)
         throw internal_err(u8"\"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, u8"PhysWikiLastTitle", last_title) != 2)
+    if (replace(html, "PhysWikiLastTitle", last_title) != 2)
         throw internal_err(u8"\"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
-    if (replace(html, u8"PhysWikiNextTitle", next_title) != 2)
+    if (replace(html, "PhysWikiNextTitle", next_title) != 2)
         throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
@@ -433,9 +433,9 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     CRLF_to_LF(html);
 
 
-    // check language: u8"\n%%eng\n" at the end of file means english, otherwise chinese
-    if ((size(str) > 7 && str.substr(size(str) - 7) == u8"\n%%eng\n") ||
-            gv::path_in.substr(gv::path_in.size()-4) == u8"/en/")
+    // check language: "\n%%eng\n" at the end of file means english, otherwise chinese
+    if ((size(str) > 7 && str.substr(size(str) - 7) == "\n%%eng\n") ||
+            gv::path_in.substr(gv::path_in.size()-4) == "/en/")
         gv::is_eng = true;
     else
         gv::is_eng = false;
@@ -444,13 +444,13 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     if (get_keywords(keywords, str) > 0) {
         Str keywords_str = keywords[0];
         for (Long i = 1; i < size(keywords); ++i) {
-            keywords_str += u8"," + keywords[i];
+            keywords_str += "," + keywords[i];
         }
-        if (replace(html, u8"PhysWikiHTMLKeywords", keywords_str) != 1)
+        if (replace(html, "PhysWikiHTMLKeywords", keywords_str) != 1)
             throw internal_err(u8"\"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
     else {
-        if (replace(html, u8"PhysWikiHTMLKeywords", u8"高中物理, 物理竞赛, 大学物理, 高等数学") != 1)
+        if (replace(html, "PhysWikiHTMLKeywords", u8"高中物理, 物理竞赛, 大学物理, 高等数学") != 1)
             throw internal_err(u8"\"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
 
@@ -459,8 +459,8 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
 //        throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题");
 
     // insert HTML title
-    if (replace(html, u8"PhysWikiHTMLtitle", title) != 1)
-        throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
+    if (replace(html, "PhysWikiHTMLtitle", title) != 1)
+        throw internal_err("\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 
     // check globally forbidden char
     global_forbid_char(str);
@@ -473,7 +473,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     if (!gv::is_eng)
         autoref_space(str, true); // set true to error instead of warning
     autoref_tilde_upref(str, entry);
-    if (str.empty()) str = u8" ";
+    if (str.empty()) str = " ";
     // ensure spaces between chinese char and alphanumeric char
     chinese_alpha_num_space(str);
     // ensure spaces outside of chinese double quotes
@@ -495,7 +495,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     // add html id for links
     EnvLabel(labels, label_orders, entry, str);
     // replace environments with html tags
-    equation_tag(str, u8"equation"); equation_tag(str, u8"align"); equation_tag(str, u8"gather");
+    equation_tag(str, "equation"); equation_tag(str, "align"); equation_tag(str, "gather");
     // itemize and enumerate
     Itemize(str); Enumerate(str);
     // process table environments
@@ -517,9 +517,9 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     newcommand(str, rules);
     subsections(str);
     // replace \name{} with html tags
-    Command2Tag(u8"subsubsection", u8"<h3><b>", u8"</b></h3>", str);
-    Command2Tag(u8"bb", u8"<b>", u8"</b>", str); Command2Tag(u8"textbf", u8"<b>", u8"</b>", str);
-    Command2Tag(u8"textsl", u8"<i>", u8"</i>", str);
+    Command2Tag("subsubsection", "<h3><b>", "</b></h3>", str);
+    Command2Tag("bb", "<b>", "</b>", str); Command2Tag("textbf", "<b>", "</b>", str);
+    Command2Tag("textsl", "<i>", "</i>", str);
     pay2div(str); // deal with "\pay" "\paid" pseudo command
     // replace \upref{} with link icon
     upref(str, entry);
@@ -529,7 +529,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     // footnote
     footnote(str, entry, gv::url);
     // delete redundent commands
-    replace(str, u8"\\dfracH", u8"");
+    replace(str, "\\dfracH", "");
     // remove spaces around chinese punctuations
     rm_chinese_punc_space(str);
     // verbatim recover (in inverse order of `verbatim()`)
@@ -537,26 +537,26 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     lstinline(str, str_verb);
     verb(str, str_verb);
 
-    Command2Tag(u8"x", u8"<code>", u8"</code>", str);
+    Command2Tag("x", "<code>", "</code>", str);
     // insert body Title
-    if (replace(html, u8"PhysWikiTitle", title) != 1)
+    if (replace(html, "PhysWikiTitle", title) != 1)
         throw internal_err(u8"\"PhysWikiTitle\" 在 entry_template.html 中数量不对");
     // insert HTML body
-    if (replace(html, u8"PhysWikiHTMLbody", str) != 1)
+    if (replace(html, "PhysWikiHTMLbody", str) != 1)
         throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
-    if (replace(html, u8"PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
+    if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
         throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
     last_next_buttons(html, db_read, order, entry, title);
 
-    if (replace(html, u8"PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
+    if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
         throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
     // save html file
     write(html, gv::path_out + entry + ".html.tmp");
 
     // update db "entries" table
-    Str key_str; join(key_str, keywords, u8"|");
+    Str key_str; join(key_str, keywords, "|");
     Str pentry_str; join(pentry_str, pentries);
     if (title != db_title || key_str != db_keys_str
         || isdraft != db_draft || pentry_str != db_pentry_str)
@@ -598,7 +598,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
                         (db_rw,
                          R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "pentry"=? )"
                          R"(WHERE "id"=?;)");
-                join(key_str, keywords, u8"|");
+                join(key_str, keywords, "|");
                 join(pentry_str, pentries);
                 stmt_update.bind(1, titles[i]);
                 stmt_update.bind(2, key_str);
@@ -741,7 +741,7 @@ inline void PhysWikiOnline()
     PhysWikiOnlineN_round1(titles, entries, db_read);
 
     // generate dep.json
-    if (file_exist(gv::path_out + u8"../tree/data/dep.json"))
+    if (file_exist(gv::path_out + "../tree/data/dep.json"))
         dep_json(db);
 
     PhysWikiOnlineN_round2(entries, titles, db_read);

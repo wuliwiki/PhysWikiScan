@@ -75,41 +75,41 @@ inline void global_forbid_char(Str_I str)
 inline void limit_env_cmd(Str_I str)
 {
     // commands not supported
-    if (find_command(str, u8"documentclass") >= 0)
+    if (find_command(str, "documentclass") >= 0)
         throw scan_err(u8"\"documentclass\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
-    if (find_command(str, u8"newcommand") >= 0)
+    if (find_command(str, "newcommand") >= 0)
         throw scan_err(u8"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
-    if (find_command(str, u8"renewcommand") >= 0)
+    if (find_command(str, "renewcommand") >= 0)
         throw scan_err(u8"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
-    if (find_command(str, u8"usepackage") >= 0)
+    if (find_command(str, "usepackage") >= 0)
         throw scan_err(u8"不支持 \"usepackage\" 命令， 每个词条文件是一个 section，请先阅读说明");
-    if (find_command(str, u8"newpage") >= 0)
+    if (find_command(str, "newpage") >= 0)
         throw scan_err(u8"暂不支持 \"newpage\" 命令");
-    if (find_command(str, u8"title") >= 0)
+    if (find_command(str, "title") >= 0)
         throw scan_err(u8"\"title\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
-    if (find_command(str, u8"author") >= 0)
+    if (find_command(str, "author") >= 0)
         throw scan_err(u8"不支持 \"author\" 命令， 每个词条文件是一个 section，请先阅读说明");
-    if (find_command(str, u8"maketitle") >= 0)
+    if (find_command(str, "maketitle") >= 0)
         throw scan_err(u8"不支持 \"maketitle\" 命令， 每个词条文件是一个 section，请先阅读说明");
 
     // allowed environments
     // there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
-    vecStr envs_allow = { u8"equation", u8"gather", u8"gather*", u8"gathered", u8"align", u8"align*",
-        /*u8"alignat", u8"alignat*", u8"alignedat",*/ u8"aligned", u8"split", u8"figure", u8"itemize",
-        u8"enumerate", u8"lstlisting", u8"example", u8"exercise", u8"lemma", u8"theorem", u8"definition",
-        u8"corollary", u8"matrix", u8"pmatrix", u8"vmatrix", u8"table", u8"tabular", u8"cases", u8"array",
-        u8"case", u8"Bmatrix", u8"bmatrix", /*u8"eqnarray", u8"eqnarray*", u8"multline", u8"multline*",
-        u8"smallmatrix",*/ u8"subarray", u8"Vmatrix", u8"issues" };
+    vecStr envs_allow = { "equation", "gather", "gather*", "gathered", "align", "align*",
+        /*"alignat", "alignat*", "alignedat",*/ "aligned", "split", "figure", "itemize",
+        "enumerate", "lstlisting", "example", "exercise", "lemma", "theorem", "definition",
+        "corollary", "matrix", "pmatrix", "vmatrix", "table", "tabular", "cases", "array",
+        "case", "Bmatrix", "bmatrix", /*"eqnarray", "eqnarray*", "multline", "multline*",
+        "smallmatrix",*/ "subarray", "Vmatrix", "issues" };
 
     Str env;
     Long ind0 = -1;
     while (1) {
-        ind0 = find_command(str, u8"begin", ind0+1);
+        ind0 = find_command(str, "begin", ind0+1);
         if (ind0 < 0)
             break;
         command_arg(env, str, ind0);
         if (search(env, envs_allow) < 0) {
-            if (env == u8"document")
+            if (env == "document")
                 throw scan_err(u8"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明。");
             else
                 throw scan_err(u8"暂不支持 " + env + u8" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
@@ -122,10 +122,10 @@ inline Long autoref_space(Str_I str, Bool_I error)
 {
     Long ind0 = 0, N = 0;
     Str follow = u8" ，、．。）~”\n";
-    vecStr follow2 = { u8"\\begin" };
+    vecStr follow2 = { "\\begin" };
     Str msg;
     while (1) {
-        ind0 = find_command(str, u8"autoref", ind0);
+        ind0 = find_command(str, "autoref", ind0);
         Long start = ind0;
         if (ind0 < 0)
             return N;
@@ -163,7 +163,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
     Long ind0 = 0, N = 0;
     Str label, entry1, entry2;
     while (1) {
-        ind0 = find_command(str, u8"autoref", ind0);
+        ind0 = find_command(str, "autoref", ind0);
         if (ind0 < 0)
             return N;
         command_arg(label, str, ind0);
@@ -171,27 +171,27 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
         ind0 = skip_command(str, ind0, 1);
         if (ind0 == size(str))
             return N;
-        Long ind1 = expect(str, u8"~", ind0);
+        Long ind1 = expect(str, "~", ind0);
         if (ind1 < 0) {
-            if (expect(str, u8"\\upref", ind0) > 0)
+            if (expect(str, "\\upref", ind0) > 0)
                 throw scan_err(u8"\\autoref{} 和 \\upref{} 中间应该有 ~");
             Long ind2 = label.find('_');
             if (ind2 < 0)
-                throw scan_err(u8"\\autoref{" + label + u8"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
-            ind5 = str.rfind(u8"\\upref", ind5-1); entry2.clear();
-            if (ind5 > 0 && ExpectKeyReverse(str, u8"~", ind5 - 1) < 0)
+                throw scan_err("\\autoref{" + label + u8"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
+            ind5 = str.rfind("\\upref", ind5-1); entry2.clear();
+            if (ind5 > 0 && ExpectKeyReverse(str, "~", ind5 - 1) < 0)
                 command_arg(entry2, str, ind5);
             Str tmp = label_entry_old(label);
             if (tmp != entry && tmp != entry2)
-                throw scan_err(u8"\\autoref{" + label + u8"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
+                throw scan_err("\\autoref{" + label + u8"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
             continue;
         }
-        Long ind2 = expect(str, u8"\\upref", ind1);
+        Long ind2 = expect(str, "\\upref", ind1);
         if (ind2 < 0)
             throw scan_err(u8"\\autoref{} 后面不应该有单独的 ~");
         command_arg(entry1, str, ind2 - 6);
         if (label_entry_old(label) != entry1)
-            throw scan_err(u8"\\autoref{" + label + u8"}~\\upref{" + entry1 + u8"} 不一致， 请使用“外部引用”按钮");
+            throw scan_err("\\autoref{" + label + "}~\\upref{" + entry1 + u8"} 不一致， 请使用“外部引用”按钮");
         str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
     }
@@ -224,7 +224,7 @@ inline Long rm_chinese_punc_space(Str_IO str)
 // return the number replaced
 inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = false)
 {
-    vecStr keys = {u8",", u8".", u8"?", u8"(", u8":"};
+    vecStr keys = {",", ".", "?", "(", ":"};
     Str keys_rep = u8"，。？（：";
     Intvs intvNorm;
     FindNormalText(intvNorm, str);
@@ -235,9 +235,9 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
             break;
 
         if (is_in(ind0, intvNorm)) {
-            Long ind1 = str.find_last_not_of(u8" ", ind0-1);
+            Long ind1 = str.find_last_not_of(" ", ind0-1);
             if (ind1 >= 0 && is_chinese(str, ind1)) {
-                str.find_first_not_of(u8" ", ind0+1);
+                str.find_first_not_of(" ", ind0+1);
                 // --- exceptions ---
                 if (ikey == 1 && is_alphanum(str[ind0 + 1]))
                     continue; // e.g. "文件名.jpg"
@@ -254,9 +254,9 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
                 // --- end exceptions ---
                 if (replace) {
                     str[ind0] = keys_rep[ikey]; ++N;
-                    if (keys[ikey] == u8"(") {
+                    if (keys[ikey] == "(") {
                         // replace possible matching ')' as well
-                        Long ind1 = str.find_first_of(u8"()", ind0);
+                        Long ind1 = str.find_first_of("()", ind0);
                         if (ind1 > 0 && str[ind1] == ')' && is_in(ind1, intvNorm)) {
                             str.replace(ind1, 1, u8"）"); ++N;
                         }
@@ -277,7 +277,7 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
 // check escape characters in normal text i.e. `& # _ ^`
 inline Long check_normal_text_escape(Str_IO str)
 {
-//    vecStr keys = {u8"&", u8"#", u8"_", u8"^"};
+//    vecStr keys = {"&", "#", "_", "^"};
 //    Intvs intvNorm;
 //    FindNormalText(intvNorm, str);
 //    Long ind0 = -1, ikey, N = 0;
@@ -379,16 +379,16 @@ inline void add_space_around_inline_eq(Str_I path_in)
     vecStr names, str_verb;
     Str fname, str;
     Intvs intv;
-    file_list_ext(names, path_in + "contents/", u8"tex", false);
+    file_list_ext(names, path_in + "contents/", "tex", false);
     
     //RemoveNoEntry(names);
     if (names.size() <= 0) return;
-    //names.resize(0); names.push_back(u8"Sample"));
+    //names.resize(0); names.push_back("Sample"));
     
     for (unsigned i{}; i < names.size(); ++i) {
         cout << i << " ";
         cout << names[i] << "...";
-        if (names[i] == u8"Sample" || names[i] == u8"edTODO")
+        if (names[i] == "Sample" || names[i] == "edTODO")
             continue;
         // main process
         fname = path_in + "contents/" + names[i] + ".tex";

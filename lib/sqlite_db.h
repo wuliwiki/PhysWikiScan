@@ -62,7 +62,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
             if (from < 0) {
-                throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + u8" -> " + entries[i]);
+                throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + " -> " + entries[i]);
             }
             tree[from].push_back(i);
         }
@@ -83,7 +83,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
     dag_reduce(edges, tree);
     std::stringstream ss;
     if (size(edges)) {
-        ss << u8"\n" << endl;
+        ss << "\n" << endl;
         ss << u8"==============  多余的预备知识  ==============" << endl;
         for (auto &edge : edges) {
             ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
@@ -138,7 +138,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
             Long from = search(pentry, entries);
             if (from < 0)
                 throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
-                    + pentry + u8" -> " + entries[i]);
+                    + pentry + " -> " + entries[i]);
             tree[from].push_back(i);
         }
     }
@@ -206,7 +206,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
         authors.push_back(stmt_select2.getColumn(0));
         stmt_select2.reset();
     }
-    join(str, authors, u8"; ");
+    join(str, authors, "; ");
     return str;
 }
 
@@ -427,7 +427,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     unordered_map<Long, Long> author_contrib;
     Str author;
     Str sha1, time, entry;
-    file_list_ext(fnames, path, u8"tex", false);
+    file_list_ext(fnames, path, "tex", false);
     cout << "updating sqlite database \"history\" table (" << fnames.size()
         << " backup) ..." << endl; cout.flush();
 
@@ -676,7 +676,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             label = v_labels[j][i];
             order = v_label_orders[j][i];
             type = label_type(label);
-            if (type == u8"fig" || type == u8"code")
+            if (type == "fig" || type == "code")
                 continue;
 
             bool changed = false;
@@ -741,47 +741,47 @@ inline Long dep_json(SQLite::Database &db)
 
     Str str;
     // write part names
-    str += u8"{\n  \"parts\": [\n";
+    str += "{\n  \"parts\": [\n";
     for (Long i = 0; i < size(part_names); ++i)
-        str += u8"    {\"name\": \"" + part_names[i] + "\"},\n";
+        str += "    {\"name\": \"" + part_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
-    str += u8"\n  ],\n";
+    str += "\n  ],\n";
     // write chapter names
-    str += u8"  \"chapters\": [\n";
+    str += "  \"chapters\": [\n";
     for (Long i = 0; i < size(chap_names); ++i)
-        str += u8"    {\"name\": \"" + chap_names[i] + "\"},\n";
+        str += "    {\"name\": \"" + chap_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
-    str += u8"\n  ],\n";
+    str += "\n  ],\n";
     // write entries
-    str += u8"  \"nodes\": [\n";
+    str += "  \"nodes\": [\n";
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        str += u8"    {\"id\": \"" + entries[i] + u8"\"" +
+        str += "    {\"id\": \"" + entries[i] + "\"" +
                ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
                ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
-               ", \"title\": \"" + titles[i] + u8"\""
+               ", \"title\": \"" + titles[i] + "\""
             ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
     str.pop_back(); str.pop_back();
-    str += u8"\n  ],\n";
+    str += "\n  ],\n";
 
     // write links
-    str += u8"  \"links\": [\n";
+    str += "  \"links\": [\n";
     Long Nedge = 0;
     for (Long i = 0; i < size(tree); ++i) {
         for (auto &j : tree[i]) {
-            str += u8"    {\"source\": \"" + entries[i] + "\", ";
-            str += u8"\"target\": \"" + entries[j] + u8"\", ";
-            str += u8"\"value\": 1},\n";
+            str += "    {\"source\": \"" + entries[i] + "\", ";
+            str += "\"target\": \"" + entries[j] + "\", ";
+            str += "\"value\": 1},\n";
             ++Nedge;
         }
     }
     if (Nedge > 0) {
         str.pop_back(); str.pop_back();
     }
-    str += u8"\n  ]\n}\n";
-    write(str, gv::path_out + u8"../tree/data/dep.json");
+    str += "\n  ]\n}\n";
+    write(str, gv::path_out + "../tree/data/dep.json");
     return 0;
 }

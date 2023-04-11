@@ -13,7 +13,7 @@ inline void get_title(Str_O title, Str_I str)
     trim(title);
     if (title.empty())
         throw scan_err(u8"请在第一行注释标题（不能为空）！");
-    Long ind0 = title.find(u8"\\");
+    Long ind0 = title.find("\\");
     if (ind0 >= 0)
         throw scan_err(u8"第一行注释的标题不能含有 “\\” ");
 }
@@ -22,12 +22,12 @@ inline void get_title(Str_O title, Str_I str)
 inline Bool is_draft(Str_I str)
 {
     Intvs intv;
-    find_env(intv, str, u8"issues");
+    find_env(intv, str, "issues");
     if (intv.size() > 1)
         throw scan_err(u8"每个词条最多支持一个 issues 环境!");
     else if (intv.empty())
         return false;
-    Long ind = str.find(u8"\\issueDraft", intv.L(0));
+    Long ind = str.find("\\issueDraft", intv.L(0));
     if (ind < 0)
         return false;
     if (ind < intv.R(0))
@@ -43,13 +43,13 @@ inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
     Str temp, depEntry;
     pentries.clear();
     while (1) {
-        ind0 = find_command(str, u8"pentry", ind0);
+        ind0 = find_command(str, "pentry", ind0);
         if (ind0 < 0)
             return;
         command_arg(temp, str, ind0, 0, 't');
         Long ind1 = 0;
         while (1) {
-            ind1 = find_command(temp, u8"upref", ind1);
+            ind1 = find_command(temp, "upref", ind1);
             if (ind1 < 0)
                 return;
             command_arg(depEntry, temp, ind1, 0, 't');
@@ -70,10 +70,10 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 {
     keywords.clear();
     Str word;
-    Long ind0 = str.find(u8"\n", 0);
+    Long ind0 = str.find("\n", 0);
     if (ind0 < 0 || ind0 == size(str)-1)
         return 0;
-    ind0 = expect(str, u8"%", ind0+1);
+    ind0 = expect(str, "%", ind0+1);
     if (ind0 < 0) {
         // SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;
@@ -87,7 +87,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 
     ind0 = 0;
     while (1) {
-        Long ind1 = line.find(u8"|", ind0);
+        Long ind1 = line.find("|", ind0);
         if (ind1 < 0)
             break;
         word = line.substr(ind0, ind1 - ind0);

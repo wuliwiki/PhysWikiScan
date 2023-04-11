@@ -14,11 +14,11 @@ inline Long EnsureSpace(Str_I name, Str_IO str, Long start, Long end)
         ind0 = str.find(name, ind0);
         if (ind0 < 0 || ind0 > end) break;
         if (ind0 == 0 || str.at(ind0 - 1) != ' ') {
-            str.insert(ind0, u8" "); ++ind0; ++N;
+            str.insert(ind0, " "); ++ind0; ++N;
         }
         ind0 += name.size();
         if (ind0 == size(str) || str.at(ind0) != ' ') {
-            str.insert(ind0, u8" "); ++N;
+            str.insert(ind0, " "); ++N;
         }
     }
     return N;
@@ -27,10 +27,10 @@ inline Long EnsureSpace(Str_I name, Str_IO str, Long start, Long end)
 // check if an index is in an HTML tag "<name>...</name>
 inline Bool is_in_tag(Str_I str, Str_I name, Long_I ind)
 {
-    Long ind1 = str.rfind(u8"<" + name + u8">", ind);
+    Long ind1 = str.rfind("<" + name + ">", ind);
     if (ind1 < 0)
         return false;
-    Long ind2 = str.rfind(u8"</" + name + u8">", ind);
+    Long ind2 = str.rfind("</" + name + ">", ind);
     if (ind2 < ind1)
         return true;
     return false;
@@ -46,8 +46,8 @@ inline Long EqOmitTag(Str_IO str)
     find_inline_eq(indInline, str);
     Nrange = combine(intv, indInline);
     for (i = Nrange - 1; i >= 0; --i) {
-        N += EnsureSpace(u8"<", str, intv.L(i), intv.R(i));
-        N += EnsureSpace(u8">", str, intv.L(i), intv.R(i));
+        N += EnsureSpace("<", str, intv.L(i), intv.R(i));
+        N += EnsureSpace(">", str, intv.L(i), intv.R(i));
     }
     return N;
 }
@@ -94,7 +94,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 
     // all commands to find
     if (rules.size() % 4 != 0)
-        throw Str(u8"rules.size() illegal!");
+        throw Str("rules.size() illegal!");
     // == print newcommands ===
     // for (Long i = 0; i < size(rules); i += 4)
     //     cout << rules[i] << " || " << rules[i+1] << " || " << rules[i+2] << " || " << rules[i+3] << endl;
@@ -117,18 +117,18 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
         Long Narg = command_Narg(str, ind0); // actual args used in [] or {}
         format.clear();
         if (has_st)
-            format += u8"*";
+            format += "*";
         if (Narg == -1) {
             Narg = 1;
-            format += u8"()";
+            format += "()";
         }
         else if (Narg == -2) {
             Narg = 2;
-            format += u8"[]()";
+            format += "[]()";
         }
         else {
             if (has_op)
-                format += u8"[]";
+                format += "[]";
         }
 
         // decide which rule to use (result: rules[ind])
@@ -171,7 +171,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
         }
         // get arguments
         Long end = -1; // replace str[ind0] to str[end-1]
-        if (rule_format == u8"[]()" || rule_format == u8"*[]()") {
+        if (rule_format == "[]()" || rule_format == "*[]()") {
             args.resize(2);
             args[0] = command_opt(str, ind0);
             Long indL = str.find('(', ind0);
@@ -180,7 +180,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
             trim(args[1]);
             end = indR + 1;
         }
-        else if (rule_format == u8"()" || rule_format == u8"*()") {
+        else if (rule_format == "()" || rule_format == "*()") {
             Long indL = str.find('(', ind0);
             Long indR = pair_brace(str, indL);
             args.resize(1);
@@ -202,7 +202,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
         // apply rule
         new_cmd = rules[ind*4 + 3];
         for (Long i = 0; i < Narg_rule; ++i)
-            replace(new_cmd, u8"#" + num2str32(i + 1), args[i]);
+            replace(new_cmd, "#" + num2str32(i + 1), args[i]);
         str.replace(ind0, end - ind0, ' ' + new_cmd + ' '); ++N;
     }
     return N;
@@ -213,25 +213,25 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 inline Long TextEscape(Str_IO str)
 {
     Long N{};
-    N += replace(str, u8"<", u8"&lt;");
-    N += replace(str, u8">", u8"&gt;");
-    Long tmp = replace(str, u8"\\\\", u8"<br>");
+    N += replace(str, "<", "&lt;");
+    N += replace(str, ">", "&gt;");
+    Long tmp = replace(str, "\\\\", "<br>");
     if (tmp > 0)
         throw Str(u8"正文中发现 '\\\\' 强制换行！");
     N += tmp;
-    N += replace(str, u8"\\ ", u8" ");
-    N += replace(str, u8"{}", u8"");
-    N += replace(str, u8"\\^", u8"^");
-    N += replace(str, u8"\\%", u8"%");
-    N += replace(str, u8"\\&", u8"&amp");
-    N += replace(str, u8"\\{", u8"{");
-    N += replace(str, u8"\\}", u8"}");
-    N += replace(str, u8"\\#", u8"#");
-    N += replace(str, u8"\\~", u8"~");
-    N += replace(str, u8"\\_", u8"_");
-    N += replace(str, u8"\\,", u8" ");
-    N += replace(str, u8"\\;", u8" ");
-    N += replace(str, u8"\\textbackslash", u8"&bsol;");
+    N += replace(str, "\\ ", " ");
+    N += replace(str, "{}", "");
+    N += replace(str, "\\^", "^");
+    N += replace(str, "\\%", "%");
+    N += replace(str, "\\&", "&amp");
+    N += replace(str, "\\{", "{");
+    N += replace(str, "\\}", "}");
+    N += replace(str, "\\#", "#");
+    N += replace(str, "\\~", "~");
+    N += replace(str, "\\_", "_");
+    N += replace(str, "\\,", " ");
+    N += replace(str, "\\;", " ");
+    N += replace(str, "\\textbackslash", "&bsol;");
     return N;
 }
 
@@ -269,34 +269,34 @@ inline Long Table(Str_IO str)
     Intvs intv;
     vecLong indLine; // stores the position of "\hline"
     vecStr captions;
-    Str str_beg = u8"<div class = \"eq\" align = \"center\">"
-        u8"<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
-    Str str_end = u8"</td></tr></table>\n</div></div>";
-    N = find_env(intv, str, u8"table", 'o');
+    Str str_beg = "<div class = \"eq\" align = \"center\">"
+        "<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
+    Str str_end = "</td></tr></table>\n</div></div>";
+    N = find_env(intv, str, "table", 'o');
     if (N == 0) return 0;
     captions.resize(N);
     for (Long i = N - 1; i >= 0; --i) {
         indLine.clear();
-        ind0 = find_command(str, u8"caption", intv.L(i));
+        ind0 = find_command(str, "caption", intv.L(i));
         if (ind0 < 0 || ind0 > intv.R(i))
-            throw Str(u8"table no caption!");
+            throw Str("table no caption!");
         command_arg(captions[i], str, ind0);
-        if ((Long)captions[i].find(u8"\\footnote") >= 0)
+        if ((Long)captions[i].find("\\footnote") >= 0)
             throw Str(u8"表格标题中不能添加 \\footnote");
         // recognize \hline and replace with tags, also deletes '\\'
         while (true) {
-            ind0 = str.find(u8"\\hline", ind0);
+            ind0 = str.find("\\hline", ind0);
             if (ind0 < 0 || ind0 > intv.R(i)) break;
             indLine.push_back(ind0);
             ind0 += 5;
         }
         Nline = indLine.size();
         str.replace(indLine[Nline - 1], 6, str_end);
-        ind0 = ExpectKeyReverse(str, u8"\\\\", indLine[Nline - 1] - 1);
+        ind0 = ExpectKeyReverse(str, "\\\\", indLine[Nline - 1] - 1);
         str.erase(ind0 + 1, 2);
         for (Long j = Nline - 2; j > 0; --j) {
-            str.replace(indLine[j], 6, u8"</td></tr><tr><td>");
-            ind0 = ExpectKeyReverse(str, u8"\\\\", indLine[j] - 1);
+            str.replace(indLine[j], 6, "</td></tr><tr><td>");
+            ind0 = ExpectKeyReverse(str, "\\\\", indLine[j] - 1);
             str.erase(ind0 + 1, 2);
         }
         str.replace(indLine[0], 6, str_beg);
@@ -304,22 +304,22 @@ inline Long Table(Str_IO str)
     // second round, replace '&' with tags
     // delete latex code
     // TODO: add title
-    find_env(intv, str, u8"table", 'o');
+    find_env(intv, str, "table", 'o');
     for (Long i = N - 1; i >= 0; --i) {
         ind0 = intv.L(i) + 12; ind1 = intv.R(i);
         while (true) {
             ind0 = str.find('&', ind0);
             if (ind0 < 0 || ind0 > ind1) break;
             str.erase(ind0, 1);
-            str.insert(ind0, u8"</td><td>");
+            str.insert(ind0, "</td><td>");
             ind1 += 8;
         }
         ind0 = str.rfind(str_end, ind1) + str_end.size();
         str.erase(ind0, ind1 - ind0 + 1);
         ind0 = str.find(str_beg, intv.L(i)) - 1;
         str.replace(intv.L(i), ind0 - intv.L(i) + 1,
-            u8"<div align = \"center\"> " + Str(gv::is_eng?u8"Tab. ":u8"表") + num2str(i + 1) + u8"：" +
-            captions[i] + u8"</div>");
+            "<div align = \"center\"> " + Str(gv::is_eng?"Tab. ":u8"表") + num2str(i + 1) + u8"：" +
+            captions[i] + "</div>");
     }
     return N;
 }
@@ -331,8 +331,8 @@ inline Long Itemize(Str_IO str)
     Long i{}, j{}, N{}, Nitem{}, ind0{};
     Intvs intvIn, intvOut;
     vecLong indItem; // positions of each "\item"
-    N = find_env(intvIn, str, u8"itemize");
-    find_env(intvOut, str, u8"itemize", 'o');
+    N = find_env(intvIn, str, "itemize");
+    find_env(intvOut, str, "itemize", 'o');
     for (i = N - 1; i >= 0; --i) {
         // delete paragraph tags
         ind0 = intvIn.L(i);
@@ -344,7 +344,7 @@ inline Long Itemize(Str_IO str)
         }
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"</p>", ind0);
+            ind0 = str.find("</p>", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 4); intvIn.R(i) -= 4;  intvOut.R(i) -= 4;
@@ -352,10 +352,10 @@ inline Long Itemize(Str_IO str)
         // replace tags
         indItem.resize(0);
         str.erase(intvIn.R(i) + 1, intvOut.R(i) - intvIn.R(i));
-        str.insert(intvIn.R(i) + 1, u8"</li></ul>");
+        str.insert(intvIn.R(i) + 1, "</li></ul>");
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"\\item", ind0);
+            ind0 = str.find("\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
                 throw Str(u8"\\item 命令后面必须有空格或回车！");
@@ -367,10 +367,10 @@ inline Long Itemize(Str_IO str)
 
         for (j = Nitem - 1; j > 0; --j) {
             str.erase(indItem[j], 5);
-            str.insert(indItem[j], u8"</li><li>");
+            str.insert(indItem[j], "</li><li>");
         }
         str.erase(indItem[0], 5);
-        str.insert(indItem[0], u8"<ul><li>");
+        str.insert(indItem[0], "<ul><li>");
         str.erase(intvOut.L(i), indItem[0] - intvOut.L(i));
     }
     return N;
@@ -383,8 +383,8 @@ inline Long Enumerate(Str_IO str)
     Long i{}, j{}, N{}, Nitem{}, ind0{};
     Intvs intvIn, intvOut;
     vecLong indItem; // positions of each "\item"
-    N = find_env(intvIn, str, u8"enumerate");
-    find_env(intvOut, str, u8"enumerate", 'o');
+    N = find_env(intvIn, str, "enumerate");
+    find_env(intvOut, str, "enumerate", 'o');
     for (i = N - 1; i >= 0; --i) {
         // delete paragraph tags
         ind0 = intvIn.L(i);
@@ -396,7 +396,7 @@ inline Long Enumerate(Str_IO str)
         }
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"</p>", ind0);
+            ind0 = str.find("</p>", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 4); intvIn.R(i) -= 4; intvOut.R(i) -= 4;
@@ -404,10 +404,10 @@ inline Long Enumerate(Str_IO str)
         // replace tags
         indItem.resize(0);
         str.erase(intvIn.R(i) + 1, intvOut.R(i) - intvIn.R(i));
-        str.insert(intvIn.R(i) + 1, u8"</li></ol>");
+        str.insert(intvIn.R(i) + 1, "</li></ol>");
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"\\item", ind0);
+            ind0 = str.find("\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
                 throw Str(u8"\\item 命令后面必须有空格或回车！");
@@ -419,10 +419,10 @@ inline Long Enumerate(Str_IO str)
 
         for (j = Nitem - 1; j > 0; --j) {
             str.erase(indItem[j], 5);
-            str.insert(indItem[j], u8"</li><li>");
+            str.insert(indItem[j], "</li><li>");
         }
         str.erase(indItem[0], 5);
-        str.insert(indItem[0], u8"<ol><li>");
+        str.insert(indItem[0], "<ol><li>");
         str.erase(intvOut.L(i), indItem[0] - intvOut.L(i));
     }
     return N;
@@ -433,24 +433,24 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 {
     Long ind0 = 0, N = 0;
     Str temp, idNo;
-    ind0 = find_command(str, u8"footnote", ind0);
+    ind0 = find_command(str, "footnote", ind0);
     if (ind0 < 0)
         return 0;
-    str += u8"\n<hr><p>\n";
+    str += "\n<hr><p>\n";
     while (true) {
         ++N;
         num2str(idNo, N);
         command_arg(temp, str, ind0);
-        str += u8"<a href = \"" + url + entry + u8".html#ret" + idNo + u8"\" id = \"note" + idNo + u8"\">" + idNo + u8". <b>^</b></a> " + temp + u8"<br>\n";
-        ind0 -= eatL(str, ind0 - 1, u8" \n");
+        str += "<a href = \"" + url + entry + ".html#ret" + idNo + "\" id = \"note" + idNo + "\">" + idNo + ". <b>^</b></a> " + temp + "<br>\n";
+        ind0 -= eatL(str, ind0 - 1, " \n");
         str.replace(ind0, skip_command(str, ind0, 1) - ind0,
-            u8"<sup><a href = \"" + url + entry + u8".html#note" + idNo + u8"\" id = \"ret" + idNo + u8"\"><b>" + idNo + u8"</b></a></sup>");
+            "<sup><a href = \"" + url + entry + ".html#note" + idNo + "\" id = \"ret" + idNo + "\"><b>" + idNo + "</b></a></sup>");
         ++ind0;
-        ind0 = find_command(str, u8"footnote", ind0);
+        ind0 = find_command(str, "footnote", ind0);
         if (ind0 < 0)
             break;
     }
-    str += u8"</p>";
+    str += "</p>";
     return N;
 }
 
@@ -459,13 +459,13 @@ inline Long subsections(Str_IO str)
     Long ind0 = 0, N = 0;
     Str subtitle;
     while (1) {
-        ind0 = find_command(str, u8"subsection", ind0);
+        ind0 = find_command(str, "subsection", ind0);
         if (ind0 < 0)
             return N;
         ++N;
         command_arg(subtitle, str, ind0);
         Long ind1 = skip_command(str, ind0, 1);
-        str.replace(ind0, ind1 - ind0, u8"<h2 class = \"w3-text-indigo\"><b>" + num2str32(N) + u8". " + subtitle + u8"</b></h2>");
+        str.replace(ind0, ind1 - ind0, "<h2 class = \"w3-text-indigo\"><b>" + num2str32(N) + ". " + subtitle + "</b></h2>");
     }
 }
 
@@ -476,16 +476,16 @@ inline Long href(Str_IO str)
     Long ind0 = 0, N = 0, tmp;
     Str name, url;
     while (1) {
-        ind0 = find_command(str, u8"href", ind0);
+        ind0 = find_command(str, "href", ind0);
         if (ind0 < 0)
             return N;
-        if (index_in_env(tmp, ind0, { u8"equation", u8"align", u8"gather" }, str)) {
+        if (index_in_env(tmp, ind0, { "equation", "align", "gather" }, str)) {
             ++ind0; continue;
         }
         command_arg(url, str, ind0, 0);
         command_arg(name, str, ind0, 1);
-        if (url.substr(0, 7) != u8"http://" &&
-            url.substr(0, 8) != u8"https://") {
+        if (url.substr(0, 7) != "http://" &&
+            url.substr(0, 8) != "https://") {
             throw Str(u8"链接格式错误: " + url);
         }
 

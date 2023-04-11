@@ -5,12 +5,12 @@ inline void all_commands(vecStr_O commands, Str_I in_path)
 {
     vecStr fnames;
     Str str, name;
-    file_list_ext(fnames, in_path, u8"tex");
+    file_list_ext(fnames, in_path, "tex");
     for (Long i = 0; i < size(fnames); ++i) {
         read(str, in_path + fnames[i]);
         Long ind0 = 0;
         while (1) {
-            ind0 = str.find(u8"\\", ind0);
+            ind0 = str.find("\\", ind0);
             if (ind0 < 0)
                 break;
             command_name(name, str, ind0);
@@ -30,7 +30,7 @@ inline void word_count()
     SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     get_column(entries, "entries", "id", db);
     for (Long i = 0; i < size(entries); ++i) {
-        read(str, gv::path_in + "contents/" + entries[i] + u8".tex");
+        read(str, gv::path_in + "contents/" + entries[i] + ".tex");
         rm_comments(str);
         for (Long j = 0; j < (Long) str.size(); ++j) {
             if (!is_char8_start(str, j)) continue;

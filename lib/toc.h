@@ -7,9 +7,9 @@ inline Long ignore_entries(vecStr_IO names)
 {
     Long i{}, j{}, N{}, Nnames{}, Nnames0;
     vecStr names0; // names to remove
-    names0.push_back(u8"FrontMatters");
-    names0.push_back(u8"FrontMattersSample");
-    names0.push_back(u8"bibliography");
+    names0.push_back("FrontMatters");
+    names0.push_back("FrontMattersSample");
+    names0.push_back("bibliography");
     // add other names here
     Nnames = names.size();
     Nnames0 = names0.size();
@@ -32,7 +32,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 {
     // 文件夹中的词条文件（忽略不用编译的）
     entries.clear(); titles.clear();
-    file_list_ext(entries, gv::path_in + "contents/", Str(u8"tex"), false);
+    file_list_ext(entries, gv::path_in + "contents/", Str("tex"), false);
     ignore_entries(entries);
     if (entries.size() == 0)
         throw internal_err(u8"未找到任何词条");
@@ -56,18 +56,18 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
     CRLF_to_LF(str);
     Str str0 = str;
     rm_comments(str); // remove comments
-    if (str.empty()) str = u8" ";
-    if (str0.empty()) str = u8" ";
+    if (str.empty()) str = " ";
+    if (str0.empty()) str = " ";
 
     // go through uncommented entries in main.tex
     while (1) {
-        ind0 = str.find(u8"\\entry", ind0);
+        ind0 = str.find("\\entry", ind0);
         if (ind0 < 0)
             break;
 
         // get chinese title and entry label
         command_arg(title, str, ind0);
-        replace(title, u8"\\ ", u8" ");
+        replace(title, "\\ ", " ");
         if (title.empty())
             throw scan_err(u8"main.tex 中词条标题不能为空");
         command_arg(entry, str, ind0, 1);
@@ -95,7 +95,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
     // go through commented entries in main.tex
     ind0 = -1;
     while (1) {
-        ind0 = str0.find(u8"\\entry", ++ind0);
+        ind0 = str0.find("\\entry", ++ind0);
         if (ind0 < 0)
             break;
         // get entry label
@@ -116,7 +116,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
                 cout << u8"\n\n警告: 以下词条没有被 main.tex 提及（注释中也没有），但仍会被编译" << endl;
                 warned = true;
             }
-            read(str, gv::path_in + u8"contents/" + entries[i] + ".tex");
+            read(str, gv::path_in + "contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
             get_title(title, str);
             titles[i] = title;
@@ -132,7 +132,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
                 cout << u8"\n\n警告: 以下词条在 main.tex 中被注释，但仍会被编译" << endl;
                 warned = true;
             }
-            read(str, gv::path_in + u8"contents/" + entries[i] + ".tex");
+            read(str, gv::path_in + "contents/" + entries[i] + ".tex");
             CRLF_to_LF(str);
             get_title(title, str);
             titles[i] = title;
@@ -162,8 +162,8 @@ inline void table_of_contents(
             );
 
     Long ind0 = 0, ind1 = 0, ikey = -500, chapNo = -1, chapNo_tot = 0, partNo = 0;
-    vecStr keys{ u8"\\part", u8"\\chapter", u8"\\entry", u8"\\bibli"};
-    //keys.push_back(u8"\\entry"); keys.push_back(u8"\\chapter"); keys.push_back(u8"\\part");
+    vecStr keys{ "\\part", "\\chapter", "\\entry", "\\bibli"};
+    //keys.push_back("\\entry"); keys.push_back("\\chapter"); keys.push_back("\\part");
     
     Str title; // chinese entry name, chapter name, or part name
     Str entry; // entry label
@@ -181,13 +181,13 @@ inline void table_of_contents(
     CRLF_to_LF(str);
     read(toc, gv::path_out + "templates/index_template.html"); // read html template
     CRLF_to_LF(toc);
-    ind0 = toc.find(u8"PhysWikiHTMLbody", ind0);
+    ind0 = toc.find("PhysWikiHTMLbody", ind0);
     if (ind0 < 0)
         throw internal_err(u8"index_template.html 中没有找到 PhysWikiHTMLbody");
     toc.erase(ind0, 16);
 
     rm_comments(str); // remove comments
-    if (str.empty()) str = u8" ";
+    if (str.empty()) str = " ";
 
     Char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
 
@@ -203,7 +203,7 @@ inline void table_of_contents(
             // parse \entry{title}{entry}
             command_arg(title, str, ind1);
             command_arg(entry, str, ind1, 1);
-            replace(title, u8"\\ ", u8" ");
+            replace(title, "\\ ", " ");
             if (title.empty())
                 throw scan_err(u8"main.tex 中词条中文名不能为空");
             if (search(entry, entries) >= 0)
@@ -224,8 +224,8 @@ inline void table_of_contents(
                 throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中词条标题 “" + titles.back() + u8"” 不符！");
 
             // insert entry into html table of contents
-            class_draft = (is_draft.back()) ? u8"class=\"draft\" " : "";
-            ind0 = insert(toc, u8"<a " + class_draft + u8"href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
+            class_draft = (is_draft.back()) ? "class=\"draft\" " : "";
+            ind0 = insert(toc, "<a " + class_draft + "href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
                                + title + u8"</a>　\n", ind0);
 
             entry_part.push_back(partNo);
@@ -236,13 +236,13 @@ inline void table_of_contents(
             // ========== found "\chapter" =============
             // get chinese chapter name
             command_arg(title, str, ind1);
-            replace(title, u8"\\ ", u8" ");
+            replace(title, "\\ ", " ");
             if (last_command != 'p' && last_command != 'e') 
                 throw scan_err(u8"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
             if (chap_ids.size() > 1)
                 chap_entry_last.push_back(entries.back());
             // get chapter id from label cpt_xxx, where xxx is id
-            Long ind_label = find_command(str, u8"label", ind1);
+            Long ind_label = find_command(str, "label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
             if (ind_label < 0 || ind_label > ind_LF)
                 throw scan_err(u8"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}");
@@ -253,11 +253,11 @@ inline void table_of_contents(
             // insert chapter into html table of contents
             ++chapNo; ++chapNo_tot;
             if (chapNo > 0)
-                ind0 = insert(toc, u8"</p>", ind0);
+                ind0 = insert(toc, "</p>", ind0);
             chap_names.push_back(title);
             chap_part.push_back(partNo);
             ind0 = insert(toc, u8"\n\n<h3><b>第" + num2chinese(chapNo+1) + u8"章 " + title
-                + u8"</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
+                + "</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1; last_command = 'c';
         }
         else if (ikey == 0) {
@@ -265,13 +265,13 @@ inline void table_of_contents(
             // get chinese part name
             chapNo = -1;
             command_arg(title, str, ind1);
-            replace(title, u8"\\ ", u8" ");
+            replace(title, "\\ ", " ");
             if (part_ids.size() > 1)
                 part_chap_last.push_back(chap_ids.back());
             if (last_command != 'e' && last_command != 'n')
                 throw scan_err(u8"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
             // get part id from label prt_xxx, where xxx is id
-            Long ind_label = find_command(str, u8"label", ind1);
+            Long ind_label = find_command(str, "label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
             if (ind_label < 0 || ind_label > ind_LF)
                 throw scan_err(u8"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
@@ -282,35 +282,35 @@ inline void table_of_contents(
             part_names.push_back(title);
             
             ind0 = insert(toc,
-                u8"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
-                u8"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
-                    + num2str32(partNo) + u8"\">第" + num2chinese(partNo) + u8"部分 " + title + u8"</h3>\n"
-                u8"</div>\n\n<div class = \"w3-container\">\n"
+                "</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
+                "<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
+                    + num2str32(partNo) + u8"\">第" + num2chinese(partNo) + u8"部分 " + title + "</h3>\n"
+                "</div>\n\n<div class = \"w3-container\">\n"
                 , ind0);
             ++ind1; last_command = 'p';
         }
         else if (ikey == 3) {
             // =========  found "\bibli" ==========
             title = u8"参考文献";
-            ind0 = insert(toc, u8"<a href = \"" + gv::url + u8"bibliography.html\" target = \"_blank\">"
-                + title + u8"</a>　\n", ind0);
+            ind0 = insert(toc, "<a href = \"" + gv::url + "bibliography.html\" target = \"_blank\">"
+                + title + "</a>　\n", ind0);
             ++ind1;
         }
     }
-    toc.insert(ind0, u8"</p>\n</div>");
+    toc.insert(ind0, "</p>\n</div>");
 
     part_chap_last.push_back(chap_ids.back());
     chap_entry_last.push_back(entry);
 
     // list parts
-    ind0 = toc.find(u8"PhysWikiPartList", 0);
+    ind0 = toc.find("PhysWikiPartList", 0);
     if (ind0 < 0)
         throw internal_err(u8"html 模板中 PhysWikiPartList 不存在！");
     toc.erase(ind0, 16);
-    ind0 = insert(toc, u8"|", ind0);
+    ind0 = insert(toc, "|", ind0);
     for (Long i = 1; i < size(part_names); ++i) {
-        ind0 = insert(toc, u8"   <a href = \"#part" + num2str32(i) + u8"\">"
-                           + part_names[i] + u8"</a> |\n", ind0);
+        ind0 = insert(toc, "   <a href = \"#part" + num2str32(i) + "\">"
+                           + part_names[i] + "</a> |\n", ind0);
     }
 
     // write to index.html

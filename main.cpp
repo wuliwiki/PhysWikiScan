@@ -17,9 +17,9 @@ void get_args(vecStr_O args, Int_I argc, Char *argv[])
     }
     else {
         // input args
-        cout << u8"#===========================#" << endl;
-        cout << u8"#     PhysWikiScan          #" << endl;
-        cout << u8"#===========================#\n" << endl;
+        cout << "#===========================#" << endl;
+        cout << "#     PhysWikiScan          #" << endl;
+        cout << "#===========================#\n" << endl;
 
         cout << u8"请输入 arguments" << endl;
         Str temp; getline(std::cin, temp);
@@ -98,17 +98,17 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
     Long N = args.size();
 
     // directly specify path (depricated)
-    if (args.size() > 3 && args[N - 4] == u8"--path-in-out-data") {
+    if (args.size() > 3 && args[N - 4] == "--path-in-out-data") {
         path_in = args[N - 3];
         path_out = args[N - 2];
         path_data = args[N - 1];
-        url = u8"";
+        url = "";
         args.erase(args.begin() + N - 4, args.end());
         return;
     }
 
     // directly specify paths
-    if (N > 5 && args[N - 5] == u8"--path-in-out-data-url") {
+    if (N > 5 && args[N - 5] == "--path-in-out-data-url") {
         path_in = args[N - 4];
         path_out = args[N - 3];
         path_data = args[N - 2];
@@ -121,7 +121,7 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
     vecStr paths_in, paths_out, paths_data, urls;
     read_path_file(paths_in, paths_out, paths_data, urls);
 
-    if (args.size() > 1 && args[N - 2] == u8"--path") {
+    if (args.size() > 1 && args[N - 2] == "--path") {
         size_t i = str2int(args[N - 1]);
         path_in = paths_in[i];
         path_out = paths_out[i];
@@ -142,13 +142,13 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
     vecStr names, str_verb;
     Str fname, str;
     Intvs intv;
-    file_list_ext(names, path_in + "contents/", u8"tex", false);
+    file_list_ext(names, path_in + "contents/", "tex", false);
 
     //RemoveNoEntry(names);
     if (names.size() <= 0) return;
-    //names.resize(0); names.push_back(u8"Sample"));
+    //names.resize(0); names.push_back("Sample"));
 
-    vecStr skip_list = { u8"Sample", u8"edTODO" };
+    vecStr skip_list = { "Sample", "edTODO" };
     for (unsigned i{}; i < names.size(); ++i) {
         cout << i << " ";
         cout << names[i] << "...";
@@ -180,35 +180,35 @@ int main(int argc, char *argv[]) {
     timer.tic();
 
     get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);
-    if (gv::url == u8"https://wuli.wiki/online/" || gv::url == u8"https://wuli.wiki/changed/")
+    if (gv::url == "https://wuli.wiki/online/" || gv::url == "https://wuli.wiki/changed/")
         gv::is_wiki = true;
     else
         gv::is_wiki = false;
-    if (gv::path_in.substr(gv::path_in.size() - 4) == u8"/en/")
+    if (gv::path_in.substr(gv::path_in.size() - 4) == "/en/")
         gv::is_eng = true;
 
     // === parse arguments ===
     try {
-        if (args[0] == u8"." && args.size() == 1)
+        if (args[0] == "." && args.size() == 1)
             PhysWikiOnline();
-        else if (args[0] == u8"--titles") {
+        else if (args[0] == "--titles") {
             // update entries.txt and titles.txt
             vecStr titles, entries, isDraft;
             entries_titles(titles, entries);
-            write_vec_str(titles, gv::path_data + u8"titles.txt");
-            write_vec_str(entries, gv::path_data + u8"entries.txt");
+            write_vec_str(titles, gv::path_data + "titles.txt");
+            write_vec_str(entries, gv::path_data + "entries.txt");
         }
-        else if (args[0] == u8"--toc" && args.size() == 1)
+        else if (args[0] == "--toc" && args.size() == 1)
             arg_toc();
-        else if (args[0] == u8"--wc" && args.size() == 1)
+        else if (args[0] == "--wc" && args.size() == 1)
             word_count();
-        else if (args[0] == u8"--inline-eq-space")
+        else if (args[0] == "--inline-eq-space")
             // check format and auto correct .tex files
             add_space_around_inline_eq(gv::path_in);
-        else if (args[0] == u8",")
+        else if (args[0] == ",")
             // check format and auto correct .tex files
             replace_eng_punc_to_chinese(gv::path_in);
-        else if (args[0] == u8"--autoref" && args.size() == 4) {
+        else if (args[0] == "--autoref" && args.size() == 4) {
             // check a label, add one if necessary
             // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
             Str label;
@@ -216,24 +216,24 @@ int main(int argc, char *argv[]) {
             vecStr output;
             if (ret == 0) { // added
                 Str id = args[2] + args[3];
-                output = {label, u8"added"};
+                output = {label, "added"};
             } else // ret == 1, already exist
-                output = {label, u8"exist"};
+                output = {label, "exist"};
             cout << output[0] << endl;
             cout << output[1] << endl;
-            write_vec_str(output, gv::path_data + u8"autoref.txt");
-        } else if (args[0] == u8"--autoref-dry" && args.size() == 4) {
+            write_vec_str(output, gv::path_data + "autoref.txt");
+        } else if (args[0] == "--autoref-dry" && args.size() == 4) {
             // check a label only, without adding
             Str label;
             Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()), true);
             vecStr output;
             if (ret == 0) // added
-                output = {label, u8"added"};
+                output = {label, "added"};
             else // ret == 1, already exist
-                output = {label, u8"exist"};
+                output = {label, "exist"};
             cout << output[0] << endl;
             cout << output[1] << endl;
-        } else if (args[0] == u8"--entry" && args.size() > 1) {
+        } else if (args[0] == "--entry" && args.size() > 1) {
             // process specified entries
             vecStr entries;
             Str arg;
@@ -244,40 +244,40 @@ int main(int argc, char *argv[]) {
                 entries.push_back(arg);
             }
             PhysWikiOnlineN(entries);
-        } else if (args[0] == u8"--bib")
+        } else if (args[0] == "--bib")
             arg_bib();
-        else if (args[0] == u8"--history" && args.size() <= 2) {
+        else if (args[0] == "--history" && args.size() <= 2) {
             Str path;
             if (args.size() == 2) {
                 path = args[1];
                 assert(path[path.size() - 1] == '/');
             } else
-                path = u8"../PhysWiki-backup/";
+                path = "../PhysWiki-backup/";
             arg_history(path);
-        } else if (args[0] == u8"--hide" && args.size() > 1) {
-            Str str, fname = gv::path_in + u8"contents/" + args[1] + u8".tex";
+        } else if (args[0] == "--hide" && args.size() > 1) {
+            Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
             CRLF_to_LF(str);
             hide_eq_verb(str);
             write(str, fname);
-        } else if (args[0] == u8"--unhide" && args.size() > 1) {
-            Str str, fname = gv::path_in + u8"contents/" + args[1] + u8".tex";
+        } else if (args[0] == "--unhide" && args.size() > 1) {
+            Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
             CRLF_to_LF(str);
             unhide_eq_verb(str);
             write(str, fname);
-        } else if (args[0] == u8"--all-commands") {
+        } else if (args[0] == "--all-commands") {
             vecStr commands;
-            all_commands(commands, gv::path_in + u8"contents/");
-            write_vec_str(commands, gv::path_data + u8"commands.txt");
+            all_commands(commands, gv::path_in + "contents/");
+            write_vec_str(commands, gv::path_data + "commands.txt");
         } else {
             cerr << u8"内部错误： 命令不合法" << endl;
             return 0;
         }
 
-        // PhysWikiCheck(u8"../PhysWiki/contents/");
+        // PhysWikiCheck("../PhysWiki/contents/");
         cout.precision(3);
-        cout << u8"done! time (s): " << timer.toc() << endl;
+        cout << "done! time (s): " << timer.toc() << endl;
         if (argc <= 1) {
             cout << u8"按任意键退出..." << endl;
             Char c = getchar();

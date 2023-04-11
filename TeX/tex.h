@@ -12,7 +12,7 @@ inline Long find_command(Str_I str, Str_I name, Long_I start = 0)
 {
     Long ind0 = start;
     while (true) {
-        ind0 = str.find(u8"\\" + name, ind0);
+        ind0 = str.find("\\" + name, ind0);
         if (ind0 < 0)
             return -1;
 
@@ -29,9 +29,9 @@ inline Long find_command(Str_I str, Str_I name, Long_I start = 0)
 inline Long rm_comments(Str_IO str)
 {
     Intvs intvComm;
-    find_comments(intvComm, str, u8"%");
+    find_comments(intvComm, str, "%");
     for (Long i = intvComm.size() - 1; i >= 0; --i) {
-        Long ind = ExpectKeyReverse(str, u8"\n", intvComm.L(i) - 1) + 1;
+        Long ind = ExpectKeyReverse(str, "\n", intvComm.L(i) - 1) + 1;
         if (ind < 0) {
             if (intvComm.R(i) < size(str) && str[intvComm.R(i)] == U'\n' &&
                 str[intvComm.R(i) + 1] != U'\n')
@@ -84,16 +84,16 @@ inline Long skip_command(Str_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_ski
         if (Narg1 == 0)
             return str.size();
         else
-            throw Str(u8"skip_command() failed!");
+            throw scan_err("skip_command() failed!");
     }
     // skip *
     Long ind0 = -1;
     if (skip_star)
-        ind0 = expect(str, u8"*", i);
+        ind0 = expect(str, "*", i);
     if (ind0 < 0)
         ind0 = i;
     // skip optional argument
-    Long ind1 = expect(str, u8"[", ind0), ind2;
+    Long ind1 = expect(str, "[", ind0), ind2;
     if (ind1 >= 0) {
         ind2 = pair_brace(str, ind1-1);
         if (omit_skip_opt) {
@@ -106,16 +106,16 @@ inline Long skip_command(Str_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_ski
     }
     // skip arguments
     for (Long i = 0; i < Narg1; ++i) {
-        ind0 = expect(str, u8"{", ind0);
+        ind0 = expect(str, "{", ind0);
         if (ind0 > 0) {
             ind0 = pair_brace(str, ind0-1) + 1;
             continue;
         }
         if (!arg_no_brace)
-            throw Str(u8"skip_command(): '{' not found!");
+            throw scan_err("skip_command(): '{' not found!");
         ind0 = str.find_first_not_of(' ', ind0);
         if (ind0 < 0)
-            throw Str(u8"skip_command(): end of file!");
+            throw scan_err("skip_command(): end of file!");
         ++ind0;
     }
     return ind0;
@@ -126,7 +126,7 @@ inline Long skip_command(Str_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_ski
 inline void command_name(Str_O name, Str_I str, Long_I ind)
 {
     if (str[ind] != '\\')
-        throw Str(u8"not a command!");
+        throw scan_err("not a command!");
     // skip the command name
     Bool found = false;
     Long i;
@@ -144,7 +144,7 @@ inline void command_name(Str_O name, Str_I str, Long_I ind)
 inline Bool command_star(Str_I str, Long_I ind)
 {
     if (str[ind] != '\\')
-        throw Str(u8"command_star(): not a command!");
+        throw scan_err("command_star(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
     if (str[ind0 - 1] == '*')
         return true;
@@ -155,11 +155,11 @@ inline Bool command_star(Str_I str, Long_I ind)
 inline Bool is_in_cmd(Str_I str, Str_I name, Long_I ind)
 {
     if (ind < 0 || ind >= size(str))
-        throw Str(u8"内部错误： is_in_cmd() index out of bound");
-    Long ind0 = str.rfind(u8"\\" + name, ind);
+        throw scan_err(u8"内部错误： is_in_cmd() index out of bound");
+    Long ind0 = str.rfind("\\" + name, ind);
     if (ind0 < 0)
         return false;
-    ind0 = expect(str, u8"{", ind0 + name.size() + 1);
+    ind0 = expect(str, "{", ind0 + name.size() + 1);
     if (ind0 < 0)
         return false;
     Long ind1 = pair_brace(str, ind0 - 1);
@@ -173,9 +173,9 @@ inline Bool command_has_opt(Str_I str, Long_I ind, Bool_I trim = true)
 {
     Str arg;
     if (str[ind] != '\\')
-        throw Str(u8"has_opt(): not a command!");
+        throw scan_err("has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, u8"[", ind0);
+    ind0 = expect(str, "[", ind0);
     if (ind0 < 0)
         return false;
     return true;
@@ -187,9 +187,9 @@ inline Str command_opt(Str_I str, Long_I ind, Bool_I trim = true)
 {
     Str arg;
     if (str[ind] != '\\')
-        throw Str(u8"has_opt(): not a command!");
+        throw scan_err("has_opt(): not a command!");
     Long ind0 = skip_command(str, ind, 0, false);
-    ind0 = expect(str, u8"[", ind0);
+    ind0 = expect(str, "[", ind0);
     if (ind0 < 0)
         return arg;
     Long ind1 = pair_brace(str, ind0-1);
@@ -206,20 +206,20 @@ inline Str command_opt(Str_I str, Long_I ind, Bool_I trim = true)
 inline Long command_Narg(Str_I str, Long_I ind)
 {
     if (str[ind] != '\\')
-        throw Str(u8"not a command!");
+        throw scan_err("not a command!");
     Long Narg = 0, ind0 = skip_command(str, ind, 0, false);
     // skip optional argument
-    Long ind1 = expect(str, u8"[", ind0) - 1;
+    Long ind1 = expect(str, "[", ind0) - 1;
     if (ind1 > 0) {
         ind0 = pair_brace(str, ind1) + 1;
         ++Narg;
     }
-    if (expect(str, u8"(", ind0) > 0) {
+    if (expect(str, "(", ind0) > 0) {
         Narg = -Narg - 1;
     }
     else {
         while (true) {
-            ind0 = expect(str, u8"{", ind0) - 1;
+            ind0 = expect(str, "{", ind0) - 1;
             if (ind0 > 0) {
                 ind0 = pair_brace(str, ind0) + 1;
                 ++Narg;
@@ -251,16 +251,16 @@ inline Long command_arg(Str_O arg, Str_I str, Long_I ind, Long_I i = 0, Bool_I t
         ind0 = skip_command(str, ind0, i, false, arg_no_brace);
     }
     else {
-        throw Str(u8"command_arg(): i < 0 not allowed!");
+        throw scan_err("command_arg(): i < 0 not allowed!");
     }
     
-    ind1 = expect(str, u8"{", ind0);
+    ind1 = expect(str, "{", ind0);
     if (ind1 < 0) {
         if (!arg_no_brace)
             return -1;
         ind0 = str.find_first_not_of(' ', ind0);
         if (ind0 < 0)
-            throw Str(u8"command_arg(): end of file!");
+            throw scan_err("command_arg(): end of file!");
         if (str[ind0] == '\\') {
             command_name(arg, str, ind0);
             arg = '\\' + arg;
@@ -305,9 +305,9 @@ inline Long skip_env(Str_I str, Long_I ind)
 {
     Str name;
     command_arg(name, str, ind);
-    Long ind0 = find_command_spec(str, u8"end", name, ind);
+    Long ind0 = find_command_spec(str, "end", name, ind);
     if (ind0 < 0)
-        throw Str(u8"环境 " + name + u8" 没有 end");
+        throw scan_err(u8"环境 " + name + u8" 没有 end");
     return skip_command(str, ind0, 1);
 }
 
@@ -336,24 +336,24 @@ inline Long find_env(Intvs_O intv, Str_I str, Str_I env, Char option = 'i')
 {
     Long ind0{};
     if (option != 'i' && option != 'o')
-        throw Str(u8"内部错误： illegal option in find_env()!");
+        throw scan_err(u8"内部错误： illegal option in find_env()!");
     intv.clear();
     // find comments
     while (true) {
-        ind0 = find_command_spec(str, u8"begin", env, ind0);
+        ind0 = find_command_spec(str, "begin", env, ind0);
         if (ind0 < 0)
             return intv.size();
         if (option == 'i') {
-            if (env == u8"example" || env == u8"exercise" || env == u8"definition" || env == u8"lemma" || env == u8"theorem" || env == u8"corollary")
+            if (env == "example" || env == "exercise" || env == "definition" || env == "lemma" || env == "theorem" || env == "corollary")
                 ind0 = skip_command(str, ind0, 2);
             else
                 ind0 = skip_command(str, ind0, 1);
         }
         intv.pushL(ind0);
 
-        ind0 = find_command_spec(str, u8"end", env, ind0);
+        ind0 = find_command_spec(str, "end", env, ind0);
         if (ind0 < 0)
-            throw Str(u8"find_env() failed!");
+            throw scan_err("find_env() failed!");
         if (option == 'o')
             ind0 = skip_command(str, ind0, 1);
         if (ind0 < 0) {
@@ -370,14 +370,14 @@ inline Long find_env(Intvs_O intv, Str_I str, Str_I env, Char option = 'i')
 // output first index of "\end"
 inline Long inside_env(Long_O right, Str_I str, Long_I ind, Long_I Narg = 1)
 {
-    if (expect(str, u8"\\begin", ind) < 0)
-        throw Str(u8"inside_env() failed (1)!");
+    if (expect(str, "\\begin", ind) < 0)
+        throw scan_err("inside_env() failed (1)!");
     Str env;
     command_arg(env, str, ind, 0);
     Long left = skip_command(str, ind, Narg);
-    right = find_command_spec(str, u8"end", env, left);
+    right = find_command_spec(str, "end", env, left);
     if (right < 0)
-        throw Str(u8"inside_env() failed (2)!");
+        throw scan_err("inside_env() failed (2)!");
     return left;
 }
 
@@ -405,24 +405,24 @@ inline Str current_env(Long_I ind, Str_I str)
 {
     // check if in a qualified command
     vecStr cmd_env = {
-        u8"ali", u8"aligned",
-        u8"leftgroup", u8"aligned",
-        u8"pmat", u8"pmatrix",
-        u8"vmat", u8"vmatrix",
-        u8"bmat", u8"bmatrix",
-        u8"Bmat", u8"matrix",
-        u8"pentry", u8"mdframed",
-        u8"issues", u8"mdframed",
-        u8"addTODO", u8"mdframed"
+        "ali", "aligned",
+        "leftgroup", "aligned",
+        "pmat", "pmatrix",
+        "vmat", "vmatrix",
+        "bmat", "bmatrix",
+        "Bmat", "matrix",
+        "pentry", "mdframed",
+        "issues", "mdframed",
+        "addTODO", "mdframed"
     };
     for (Long i = 0; i < size(cmd_env); i += 2)
         if (is_in_cmd(str, cmd_env[i], ind))
             return cmd_env[i + 1];
 
     // check environment
-    Long ind0 = find_command(str, u8"end");
+    Long ind0 = find_command(str, "end");
     if (ind < 0)
-        return u8"document";
+        return "document";
     Str arg;
     command_arg(arg, str, ind0);
     return arg;
@@ -441,16 +441,16 @@ inline Long lstinline_intv(Intvs_O intv, Str_I str)
     Char dlm;
     intv.clear();
     while (true) {
-        ind0 = find_command(str, u8"lstinline", ind0);
+        ind0 = find_command(str, "lstinline", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str(u8"lstinline_intv() failed (1)!");
+            throw scan_err("lstinline_intv() failed (1)!");
         dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str(u8"lstinline_intv() failed (2)!");
+            throw scan_err("lstinline_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
         ind0 = ind2 + 1;
         ++N;
@@ -465,16 +465,16 @@ inline Long verb_intv(Intvs_O intv, Str_I str)
     Char dlm;
     intv.clear();
     while (true) {
-        ind0 = find_command(str, u8"verb", ind0);
+        ind0 = find_command(str, "verb", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str(u8"verb_intv() failed (1)!");
+            throw scan_err("verb_intv() failed (1)!");
         dlm = str[ind1];
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str(u8"verb_intv() failed (2)!");
+            throw scan_err("verb_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
         ind0 = ind2 + 1;
         ++N;
@@ -492,7 +492,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
     Long N{}; // number of $$
     Long ind0{};
     while (true) {
-        ind0 = str.find(u8"$", ind0);
+        ind0 = str.find("$", ind0);
         if (ind0 < 0)
             break;
         if (ind0 > 0 && str[ind0 - 1] == '\\') { // escaped
@@ -505,7 +505,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
         ++ind0; ++N;
     }
     if (N % 2 != 0) {
-        throw Str(u8"行内公式 $ 符号不匹配");
+        throw scan_err(u8"行内公式 $ 符号不匹配");
     }
     N /= 2;
     if (option == 'i' && N > 0) {
@@ -526,7 +526,7 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, Char option = 'i')
     Long ind0 = -1;
     while (true) {
         // find \(
-        ind0 = str.find(u8"\\(", ++ind0);
+        ind0 = str.find("\\(", ++ind0);
         if (ind0 < 0) break;
         // `\\(` means a line break and (, 
         //     whether inside or outside equation env
@@ -534,9 +534,9 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, Char option = 'i')
         intv.pushL(ind0);
         // find `\)`, ignore `\\)`
         while (true) {
-            ind0 = str.find(u8"\\)", ++ind0);
+            ind0 = str.find("\\)", ++ind0);
             if (ind0 < 0)
-                throw Str(u8"\\( 没有找到匹配的 \\)");
+                throw scan_err(u8"\\( 没有找到匹配的 \\)");
             if (ind0 > 0 && str[ind0-1] == '\\') continue;
             intv.pushR(ind0+1); break;
         }
@@ -571,19 +571,19 @@ inline Long FindAllBegin(Intvs_O intv, Str_I env, Str_I str, Char option)
     intv.clear();
     Long N{}, ind0{}, ind1;
     while (true) {
-        ind1 = str.find(u8"\\begin", ind0);
+        ind1 = str.find("\\begin", ind0);
         if (ind1 < 0)
             return N;
-        ind0 = expect(str, u8"{", ind1 + 6);
+        ind0 = expect(str, "{", ind1 + 6);
         if (expect(str, env, ind0) < 0)
             continue;
         ++N; intv.pushL(ind1);
         ind0 = pair_brace(str, ind0 - 1);
         if (option == '1')
             intv.pushR(ind0);
-        ind0 = expect(str, u8"{", ind0 + 1);
+        ind0 = expect(str, "{", ind0 + 1);
         if (ind0 < 0) {
-            throw Str(u8"内部错误： FindAllBegin(): expecting {}{}!");
+            throw scan_err(u8"内部错误： FindAllBegin(): expecting {}{}!");
         }
         ind0 = pair_brace(str, ind0 - 1);
         intv.pushR(ind0);
@@ -600,7 +600,7 @@ inline Long FindEnd(Intvs_O intv, Str_I env, Str_I str)
     Long N{}, ind0{};
     Str env1;
     while (true) {
-        ind0 = find_command(str, u8"end", ind0+1);
+        ind0 = find_command(str, "end", ind0+1);
         if (ind0 < 0)
             return N;
         command_arg(env1, str, ind0);
@@ -621,16 +621,16 @@ inline void find_double_dollar_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
     intv.clear();
     Long ind0 = 0;
     while (true) {
-        ind0 = str.find(u8"$$", ind0);
+        ind0 = str.find("$$", ind0);
         if (ind0 < 0)
             return;
         if (option == 'i')
             intv.pushL(ind0+2);
         else
             intv.pushL(ind0);
-        ind0 = str.find(u8"$$", ind0+2);
+        ind0 = str.find("$$", ind0+2);
         if (ind0 < 0)
-            throw Str(u8"$$...$$ 公式环境不闭合");
+            throw scan_err("$$...$$ 公式环境不闭合");
         if (option == 'i')
             intv.pushR(ind0 - 1);
         else
@@ -649,17 +649,17 @@ inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, Char option = 'i')
     Long ind0 = -1;
     while (true) {
         // find \[
-        ind0 = str.find(u8"\\[", ++ind0);
+        ind0 = str.find("\\[", ++ind0);
         if (ind0 < 0) break;
         if (ind0 > 0 && str[ind0-1] == '\\')
             continue; // `\\[3pt]` might be used in split environment
         intv.pushL(ind0);
         // find \]
-        ind0 = str.find(u8"\\]", ++ind0);
+        ind0 = str.find("\\]", ++ind0);
         if (ind0 < 0)
-            throw Str(u8"\\[ 没有找到匹配的 \\]");
+            throw scan_err(u8"\\[ 没有找到匹配的 \\]");
         if (ind0 > 0 && str[ind0-1] == '\\')
-            throw Str(u8"非法命令： \\\\]");
+            throw scan_err(u8"非法命令： \\\\]");
         intv.pushR(ind0+1);
     }
     N /= 2;
@@ -677,11 +677,11 @@ inline void find_display_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
     find_double_dollar_eq(intv, str, option);
     find_sqr_bracket_eq(intv1, str, option);
     combine(intv, intv1);
-    find_env(intv1, str, u8"equation", option);
+    find_env(intv1, str, "equation", option);
     combine(intv, intv1);
-    find_env(intv1, str, u8"align", option);
+    find_env(intv1, str, "align", option);
     combine(intv, intv1);
-    find_env(intv1, str, u8"gather", option);
+    find_env(intv1, str, "gather", option);
     combine(intv, intv1);
 }
 
@@ -696,7 +696,7 @@ inline void check_eq_empty_line(Str_I str)
     for (Long i = intv.size() - 1; i >= 0; --i) {
         for (Long j = intv.L(i); j < intv.R(i); ++j) {
             if (str[j] == '\n' && str[j+1] == '\n')
-                throw Str(u8"公式中禁止空行：" + str.substr(j, 40));
+                throw scan_err(u8"公式中禁止空行：" + str.substr(j, 40));
         }
     }
 }
@@ -711,8 +711,8 @@ inline void check_eq_ascii(Str_I str)
     Str tmp;
     for (Long i = intv.size() - 1; i >= 0; --i) {
         for (Long j = intv.L(i); j <= intv.R(i); ++j) {
-            if (!is_ascii(str[j]) && !is_in_cmd(str, u8"text", j))
-                throw Str(u8"公式中只能包含 ascii 字符： 不能有全角标点，汉字，希腊字母等， \\text{...} 命令内除外：" + str.substr(j, 40));
+            if (!is_ascii(str[j]) && !is_in_cmd(str, "text", j))
+                throw scan_err(u8"公式中只能包含 ascii 字符： 不能有全角标点，汉字，希腊字母等， \\text{...} 命令内除外：" + str.substr(j, 40));
         }
     }
 }
@@ -725,10 +725,10 @@ inline Long FindNormalText(Intvs_O intvNorm, Str_I str)
     lstinline_intv(intv, str);
     verb_intv(intv1, str);
     combine(intv, intv1);
-    find_env(intv1, str, u8"lstlisting", 'o');
+    find_env(intv1, str, "lstlisting", 'o');
     combine(intv, intv1);
     // comments
-    find_comments(intv1, str, u8"%");
+    find_comments(intv1, str, "%");
     combine(intv, intv1);
     // inline equations
     find_inline_eq(intv1, str, 'o');
@@ -737,53 +737,53 @@ inline Long FindNormalText(Intvs_O intvNorm, Str_I str)
     find_display_eq(intv1, str, 'o');
     combine(intv, intv1);
     // command environments
-    find_env(intv1, str, u8"Command", 'o');
+    find_env(intv1, str, "Command", 'o');
     combine(intv, intv1);
     // texttt command
-    find_all_command_intv(intv1, u8"texttt", str);
+    find_all_command_intv(intv1, "texttt", str);
     combine(intv, intv1);
     // input command
-    find_all_command_intv(intv1, u8"input", str);
+    find_all_command_intv(intv1, "input", str);
     combine(intv, intv1);
     // Figure environments
-    find_env(intv1, str, u8"figure", 'o');
+    find_env(intv1, str, "figure", 'o');
     combine(intv, intv1);
     // Table environments
-    find_env(intv1, str, u8"table", 'o');
+    find_env(intv1, str, "table", 'o');
     combine(intv, intv1);
     // subsubsection command
-    // find_all_command_intv(intv1, u8"subsubsection", str);
+    // find_all_command_intv(intv1, "subsubsection", str);
     // combine(intv, intv1);
 
     //  \begin{example}{} and \end{example}
-    FindAllBegin(intv1, u8"example", str, '2');
+    FindAllBegin(intv1, "example", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"example", str);
+    FindEnd(intv1, "example", str);
     combine(intv, intv1);
     //  exer\begin{exercise}{} and \end{exercise}
-    FindAllBegin(intv1, u8"exercise", str, '2');
+    FindAllBegin(intv1, "exercise", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"exercise", str);
+    FindEnd(intv1, "exercise", str);
     combine(intv, intv1);
     //  exer\begin{theorem}{} and \end{theorem}
-    FindAllBegin(intv1, u8"theorem", str, '2');
+    FindAllBegin(intv1, "theorem", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"theorem", str);
+    FindEnd(intv1, "theorem", str);
     combine(intv, intv1);
     //  exer\begin{definition}{} and \end{definition}
-    FindAllBegin(intv1, u8"definition", str, '2');
+    FindAllBegin(intv1, "definition", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"definition", str);
+    FindEnd(intv1, "definition", str);
     combine(intv, intv1);
     //  exer\begin{lemma}{} and \end{lemma}
-    FindAllBegin(intv1, u8"lemma", str, '2');
+    FindAllBegin(intv1, "lemma", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"lemma", str);
+    FindEnd(intv1, "lemma", str);
     combine(intv, intv1);
     //  exer\begin{corollary}{} and \end{corollary}
-    FindAllBegin(intv1, u8"corollary", str, '2');
+    FindAllBegin(intv1, "corollary", str, '2');
     combine(intv, intv1);
-    FindEnd(intv1, u8"corollary", str);
+    FindEnd(intv1, "corollary", str);
     combine(intv, intv1);
     // invert range
     return invert(intvNorm, intv, str.size());
@@ -823,10 +823,10 @@ inline Long Command2Tag(Str_I nameComm, Str_I strLeft, Str_I strRight, Str_IO st
 {
     Long N{}, ind0{}, ind1{}, ind2{};
     while (true) {
-        ind0 = str.find(u8"\\" + nameComm, ind0);
+        ind0 = str.find("\\" + nameComm, ind0);
         if (ind0 < 0) break;
         ind1 = ind0 + nameComm.size() + 1;
-        ind1 = expect(str, u8"{", ind1); --ind1;
+        ind1 = expect(str, "{", ind1); --ind1;
         if (ind1 < 0) {
             ++ind0; continue;
         }
@@ -852,20 +852,20 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 
     // verb
     while (true) {
-        ind0 = find_command(str, u8"verb", ind0);
+        ind0 = find_command(str, "verb", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(' ', ind0 + 5);
         if (ind1 < 0)
-            throw Str(u8"\\verb 没有开始");
+            throw scan_err(u8"\\verb 没有开始");
         dlm = str[ind1];
         if (dlm == '{')
-            throw Str(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
+            throw scan_err(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str(u8"\\verb 没有闭合");
+            throw scan_err(u8"\\verb 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str(u8"\\verb 不能为空");
+            throw scan_err(u8"\\verb 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
         Long ind10 = skip_char8(str, ind0, -1);
@@ -873,7 +873,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
             tmp = ' ';
         else
             tmp.clear();
-        tmp += u8"\\verb|" + num2str(size(str_verb) - 1) + u8"|";
+        tmp += "\\verb|" + num2str(size(str_verb) - 1) + "|";
         ind10 = skip_char8(str, ind2, 1);
         if (is_chinese(str, ind10))
             tmp += ' ';
@@ -884,20 +884,20 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
     // lstinline
     ind0 = 0;
     while (true) {
-        ind0 = find_command(str, u8"lstinline", ind0);
+        ind0 = find_command(str, "lstinline", ind0);
         if (ind0 < 0)
             break;
         ind1 = str.find_first_not_of(' ', ind0 + 10);
         if (ind1 < 0)
-            throw Str(u8"\\lstinline 没有开始");
+            throw scan_err(u8"\\lstinline 没有开始");
         dlm = str[ind1];
         if (dlm == '{')
-            throw Str(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
+            throw scan_err(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
         ind2 = str.find(dlm, ind1 + 1);
         if (ind2 < 0)
-            throw Str(u8"\\lstinline 没有闭合");
+            throw scan_err(u8"\\lstinline 没有闭合");
         if (ind2 - ind1 == 1)
-            throw Str(u8"\\lstinline 不能为空");
+            throw scan_err(u8"\\lstinline 不能为空");
 
         str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
 
@@ -906,7 +906,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
             tmp = ' ';
         else
             tmp.clear();
-        tmp += u8"\\lstinline|" + num2str(size(str_verb) - 1) + u8"|";
+        tmp += "\\lstinline|" + num2str(size(str_verb) - 1) + "|";
         ind10 = skip_char8(str, ind2, 1);
         if (is_chinese(str, ind10))
             tmp += ' ';
@@ -918,12 +918,12 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
     ind0 = 0;
     Intvs intvIn, intvOut;
     Str code;
-    find_env(intvIn, str, u8"lstlisting", 'i');
-    Long N = find_env(intvOut, str, u8"lstlisting", 'o');
-    Str lang = u8""; // language
+    find_env(intvIn, str, "lstlisting", 'i');
+    Long N = find_env(intvOut, str, "lstlisting", 'o');
+    Str lang; // language
     for (Long i = N - 1; i >= 0; --i) {
         // get language
-        ind0 = expect(str, u8"[", intvIn.L(i));
+        ind0 = expect(str, "[", intvIn.L(i));
         if (ind0 > 0) {
             ind0 = pair_brace(str, ind0-1) + 1;
         }
@@ -931,8 +931,8 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
             ind0 = intvIn.L(i);
         }
         str_verb.push_back(str.substr(ind0, intvIn.R(i) + 1 - ind0));
-        trim(str_verb.back(), u8"\n ");
-        str.replace(ind0, intvIn.R(i) - ind0 + 1, u8"\n" + num2str(size(str_verb)-1) + u8"\n");
+        trim(str_verb.back(), "\n ");
+        str.replace(ind0, intvIn.R(i) - ind0 + 1, "\n" + num2str(size(str_verb)-1) + "\n");
     }
 
     return str_verb.size();
@@ -947,13 +947,13 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 
     // verb
     while (true) {
-        ind0 = str.find(u8"\\verb|", ind0);
+        ind0 = str.find("\\verb|", ind0);
         if (ind0 < 0)
             break;
         ind0 += 6; // one char after |
         Long ind1 = str.find('|', ind0 + 1);
         if (ind1 < 0)
-            throw Str(u8"内部错误： verb_recover: \\verb|数字| 格式错误");
+            throw scan_err(u8"内部错误： verb_recover: \\verb|数字| 格式错误");
 
         Long verb_ind = str2int(str.substr(ind0, ind1 - ind0));
 
@@ -989,21 +989,21 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
     Str ind_str, tmp;
     while (true) {
-        ind0 = find_command(str, u8"lstinline", ind0);
+        ind0 = find_command(str, "lstinline", ind0);
         if (ind0 < 0)
             break;
-        if (index_in_env(ind0, u8"lstlisting", str)) {
+        if (index_in_env(ind0, "lstlisting", str)) {
             ++ind0; continue;
         }
-        ind1 = expect(str, u8"|", ind0 + 10); --ind1;
+        ind1 = expect(str, "|", ind0 + 10); --ind1;
         if (ind1 < 0)
-            throw Str(u8"内部错误： expect `|index|` after `lstinline`");
-        ind2 = str.find(u8"|", ind1 + 1);
+            throw scan_err(u8"内部错误： expect `|index|` after `lstinline`");
+        ind2 = str.find("|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], u8"<", u8"&lt;");
-        replace(str_verb[ind], u8">", u8"&gt;");
-        tmp = u8"<code>" + str_verb[ind] + u8"</code>";
+        replace(str_verb[ind], "<", "&lt;");
+        replace(str_verb[ind], ">", "&gt;");
+        tmp = "<code>" + str_verb[ind] + "</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
@@ -1018,21 +1018,21 @@ inline Long verb(Str_IO str, vecStr_IO str_verb)
     Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
     Str ind_str, tmp;
     while (true) {
-        ind0 = find_command(str, u8"verb", ind0);
+        ind0 = find_command(str, "verb", ind0);
         if (ind0 < 0)
             break;
-        if (index_in_env(ind0, u8"lstlisting", str)) {
+        if (index_in_env(ind0, "lstlisting", str)) {
             ++ind0; continue;
         }
-        ind1 = expect(str, u8"|", ind0 + 5); --ind1;
+        ind1 = expect(str, "|", ind0 + 5); --ind1;
         if (ind1 < 0)
-            throw Str(u8"内部错误： expect `|index|` after `verb`");
-        ind2 = str.find(u8"|", ind1 + 1);
+            throw scan_err(u8"内部错误： expect `|index|` after `verb`");
+        ind2 = str.find("|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2int(ind_str);
-        replace(str_verb[ind], u8"<", u8"&lt;");
-        replace(str_verb[ind], u8">", u8"&gt;");
-        tmp = u8"<code>" + str_verb[ind] + u8"</code>";
+        replace(str_verb[ind], "<", "&lt;");
+        replace(str_verb[ind], ">", "&gt;");
+        tmp = "<code>" + str_verb[ind] + "</code>";
         str.replace(ind0, ind2 - ind0 + 1, tmp);
         ind0 += tmp.size();
         ++N;
@@ -1049,7 +1049,7 @@ inline Long Env2Tag(Str_IO str, Long_I ind, Str_I strLeft, Str_I strRight, Long_
     Str envName;
     command_arg(envName, str, ind);
 
-    Long ind2 = find_command_spec(str, u8"end", envName, ind);
+    Long ind2 = find_command_spec(str, "end", envName, ind);
     Long ind3 = skip_command(str, ind2, 1);
     Long Nbegin = ind1 - ind;
     Long Nend = ind3 - ind2;
