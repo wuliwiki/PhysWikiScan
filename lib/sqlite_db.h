@@ -640,15 +640,34 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 {
     update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
     SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "entry", "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+        R"(SELECT "id", "order", "ref_by" FROM "labels" WHERE "entry"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
 
-    Long order, db_order;
-    vecStr db_ref_by;
-    Str label, type, db_type, entry, db_entry;
+    Str label, type, entry;
+    Long order;
+    vecStr db_labels;
+    vecLong db_orders;
+    vecStr db_entries;
+    vecBool db_labels_used;
+    vector<vecStr> db_ref_bys;
+
+    // get all db labels defined in `entries`
+    for (Long j = 0; j < size(entries); ++j) {
+        entry = entries[j];
+        stmt_select.bind(1, entry);
+        if (stmt_select.executeStep()) {
+            db_labels.push_back(stmt_select.getColumn(0));
+            db_orders.push_back((int)stmt_select.getColumn(1));
+            db_ref_bys.emplace_back();
+            parse(db_ref_bys.back(), (const char*)stmt_select.getColumn(2));
+            db_entries.push_back(entry);
+            stmt_select.reset();
+        }
+    }
+    db_labels_used.resize(db_labels.size(), false);
 
 
     for (Long j = 0; j < size(entries); ++j) {
@@ -660,35 +679,9 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             if (type == u8"fig" || type == u8"code")
                 continue;
 
-            stmt_select.bind(1, label);
-
-            if (stmt_select.executeStep()) { // label exist in db_rw
-                db_entry = (const char*)stmt_select.getColumn(0);
-                db_order = (int)stmt_select.getColumn(1);
-                bool changed = false;
-                if (entry != db_entry) {
-                    SLS_WARN(u8"label " + label + u8" 的 entry 发生改变（将更新）：" + db_entry + " -> " + entry);
-                    changed = true;
-                }
-                if (order != db_order) {
-                    SLS_WARN(u8"label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_order) + " -> " + to_string(order));
-                    changed = true;
-                    // order change means other ref_by entries needs to be updated with autoref() as well.
-                    if (!gv::is_entire) {
-                        parse(db_ref_by, (const char*)stmt_select.getColumn(2));
-                        for (auto &by_entry: db_ref_by)
-                            if (search(by_entry, entries) < 0)
-                                update_entries.insert(by_entry);
-                    }
-                }
-                if (changed) {
-                    stmt_update.bind(1, type);
-                    stmt_update.bind(2, entry);
-                    stmt_update.bind(3, int(order));
-                    stmt_update.bind(4, label);
-                    stmt_update.exec(); stmt_update.reset();
-                }
-            } else { // label not in db_rw
+            bool changed = false;
+            Long ind = search(label, db_labels);
+            if (ind < 0) {
                 SLS_WARN(u8"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
                          to_string(order));
                 stmt_insert.bind(1, label);
@@ -696,8 +689,42 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_insert.bind(3, entry);
                 stmt_insert.bind(4, int(order));
                 stmt_insert.exec(); stmt_insert.reset();
+                continue;
             }
-            stmt_select.reset();
+            db_labels_used[ind] = true;
+            if (entry != db_entries[ind]) {
+                throw scan_err("label " + label + u8" 的词条发生改变（暂时不允许，请使用新的标签）：" + db_entries[ind] + " -> " + entry);
+                changed = true;
+            }
+            if (order != db_orders[ind]) {
+                SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_orders[ind]) + " -> " + to_string(order));
+                changed = true;
+                // order change means other ref_by entries needs to be updated with autoref() as well.
+                if (!gv::is_entire) {
+                    for (auto &by_entry: db_ref_bys[ind])
+                        if (search(by_entry, entries) < 0)
+                            update_entries.insert(by_entry);
+                }
+            }
+            if (changed) {
+                stmt_update.bind(1, type);
+                stmt_update.bind(2, entry);
+                stmt_update.bind(3, int(order));
+                stmt_update.bind(4, label);
+                stmt_update.exec(); stmt_update.reset();
+            }
+        }
+    }
+
+    // 检查被删除的标签
+    for (Long i = 0; i < size(db_labels_used); ++i) {
+        if (!db_labels_used[i]) {
+            if (db_ref_bys[i].empty())
+                stmt_delete_label;
+            else {
+                join(ref_by_str, db_ref_bys[i], ", ");
+                throw scan_err("检测到 label 被删除： " + db_labels[i] + "\n但是被这些词条引用： " + ref_by_str);
+            }
         }
     }
 }
