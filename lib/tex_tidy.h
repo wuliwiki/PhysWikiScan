@@ -196,20 +196,24 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 }
 
 // delete spaces around chinese punctuations
-inline Long rm_punc_space(Str_IO str)
+inline Long rm_chinese_punc_space(Str_IO str)
 {
     vecStr keys = { u8"，", u8"、", u8"．", u8"。", u8"？", u8"（", u8"）", u8"：", u8"；", u8"【", u8"】", u8"…"};
-    Long ind0 = 0, N = 0, ikey;
+    Long N = 0, ikey;
+    u8_iter it(str, 0);
     while (1) {
-        ind0 = find(ikey, str, keys, ind0);
-        if (ind0 < 0)
+        Long ind = find(ikey, str, keys, it);
+        if (ind < 0)
             return N;
-        if (ind0 + 1 < size(str) && str[ind0 + 1] == ' ')
-            str.erase(ind0 + 1, 1);
-        if (ind0 > 0 && str[ind0 - 1] == ' ') {
-            str.erase(ind0 - 1, 1); --ind0;
+        it = ind;
+        ind = it+1;
+        if (ind < size(str) && str[ind] == ' ')
+            str.erase(ind, 1);
+        ind = it-1;
+        if (it > 0 && str[ind] == ' ') {
+            str.erase(ind, 1); --it;
         }
-        ++N; ++ind0;
+        ++N; ++it;
     }
 }
 
@@ -293,7 +297,6 @@ inline Long chinese_alpha_num_space(Str_IO str)
     Long N = 0;
     u8_iter it(str, -1);
     for (; it >= 1; --it) {
-        if (!is_char8_start(str, it)) continue;
         Long ind = it-1;
         if (is_chinese(str, ind) && is_alphanum(str[it])) {
             str.insert(str.begin() + it, ' ');
@@ -322,7 +325,7 @@ inline Long chinese_double_quote_space(Str_IO str)
         if (ind < 0)
             break;
         if (is_in(ind, intNorm)) {
-            if (u8char(str, ind) == quotes[0]) { // left quote
+            if (ikey == 0) { // left quote
                 if (ind > 0) {
                     Long ind10 = skip_char8(str, ind, -1);
                     /*if (search(c, u8" \n，。．！？…：()（）：【】") >= 0)
@@ -337,9 +340,9 @@ inline Long chinese_double_quote_space(Str_IO str)
                     /*if (search(c, u8" \n，。．！？…：()（）：【】") >= 0)
                         continue;*/
                     if (is_chinese(str, ind10) || is_alphanum(str[ind10]))
-                        inds.push_back(ind + 1);
+                        inds.push_back(ind10);
                 }
-                    
+
             }
         }
     }
@@ -354,14 +357,14 @@ inline Long inline_eq_space(Str_IO str)
     Intvs intv;
     find_inline_eq(intv, str, 'o');
     for (Long i = intv.size() - 1; i >= 0; --i) {
-        Long ind0 = skip_char8(str, intv.R(i), 1);
-        if (is_chinese(str, ind0)) {
+        Long ind0 = intv.R(i) + 1;
+        if (ind0 < size(str) && is_chinese(str, ind0)) {
             str.insert(str.begin() + ind0, ' ');
             ++N;
         }
         ind0 = skip_char8(str, intv.L(i), -1);
         if (is_chinese(str, ind0)) {
-            str.insert(str.begin() + ind0 + 1, ' ');
+            str.insert(str.begin() + intv.L(i), ' ');
             ++N;
         }
     }

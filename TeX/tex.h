@@ -510,8 +510,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
     N /= 2;
     if (option == 'i' && N > 0) {
         for (Long i = 0; i < N; ++i) {
-            ++intv.L(i);
-            intv.R(i) = skip_char8(str, intv.R(i), -1);
+            ++intv.L(i); --intv.R(i);
         }
     }
     return N;
