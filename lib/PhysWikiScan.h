@@ -419,7 +419,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
              R"(SELECT "caption", "authors", "order", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, entry);
     if (!stmt_select.executeStep())
-        internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加）： " + entry);
+        throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
     db_title = (const char*)stmt_select.getColumn(0);
     authors = (const char*)stmt_select.getColumn(1);
     order = (int)stmt_select.getColumn(2);
@@ -698,6 +698,10 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
 // requires ids.txt and labels.txt output from `PhysWikiOnline()`
 inline void PhysWikiOnlineN(vecStr_IO entries)
 {
+    {
+        SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+        db_check_add_entry_simulate_editor(entries, db_rw);
+    }
     SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
     vecStr titles(entries.size());
     PhysWikiOnlineN_round1(titles, entries, db_read);
