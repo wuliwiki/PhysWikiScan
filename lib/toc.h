@@ -293,7 +293,7 @@ inline void table_of_contents(
             // =========  found "\bibli" ==========
             title = u8"参考文献";
             ind0 = insert(toc, "<a href = \"" + gv::url + "bibliography.html\" target = \"_blank\">"
-                + title + "</a>　\n", ind0);
+                + title + u8"</a>　\n", ind0);
             ++ind1;
         }
     }

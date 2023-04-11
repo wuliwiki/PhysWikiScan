@@ -40,52 +40,52 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
     Str label, id;
     labels.clear(); label_orders.clear();
     while (1) {
-        ind5 = find_command(str, u8"label", ind0);
+        ind5 = find_command(str, "label", ind0);
         if (ind5 < 0) return N;
         // detect environment kind
-        ind2 = str.rfind(u8"\\end", ind5);
-        ind4 = str.rfind(u8"\\begin", ind5);
+        ind2 = str.rfind("\\end", ind5);
+        ind4 = str.rfind("\\begin", ind5);
         if (ind4 < 0 || (ind4 >= 0 && ind2 > ind4)) {
             // label not in environment, must be a subsection label
-            type = u8"sub"; envName = u8"subsection";
+            type = "sub"; envName = "subsection";
             // TODO: make sure the label follows a \subsection{} command
         }
         else {
-            Long ind1 = expect(str, u8"{", ind4 + 6);
+            Long ind1 = expect(str, "{", ind4 + 6);
             if (ind1 < 0)
                 throw(Str(u8"\\begin 后面没有 {"));
-            if (expect(str, u8"equation", ind1) > 0) {
-                type = u8"eq"; envName = u8"equation";
+            if (expect(str, "equation", ind1) > 0) {
+                type = "eq"; envName = "equation";
             }
-            else if (expect(str, u8"figure", ind1) > 0) {
-                type = u8"fig"; envName = u8"figure";
+            else if (expect(str, "figure", ind1) > 0) {
+                type = "fig"; envName = "figure";
             }
-            else if (expect(str, u8"definition", ind1) > 0) {
-                type = u8"def"; envName = u8"definition";
+            else if (expect(str, "definition", ind1) > 0) {
+                type = "def"; envName = "definition";
             }
-            else if (expect(str, u8"lemma", ind1) > 0) {
-                type = u8"lem"; envName = u8"lemma";
+            else if (expect(str, "lemma", ind1) > 0) {
+                type = "lem"; envName = "lemma";
             }
-            else if (expect(str, u8"theorem", ind1) > 0) {
-                type = u8"the"; envName = u8"theorem";
+            else if (expect(str, "theorem", ind1) > 0) {
+                type = "the"; envName = "theorem";
             }
-            else if (expect(str, u8"corollary", ind1) > 0) {
-                type = u8"cor"; envName = u8"corollary";
+            else if (expect(str, "corollary", ind1) > 0) {
+                type = "cor"; envName = "corollary";
             }
-            else if (expect(str, u8"example", ind1) > 0) {
-                type = u8"ex"; envName = u8"example";
+            else if (expect(str, "example", ind1) > 0) {
+                type = "ex"; envName = "example";
             }
-            else if (expect(str, u8"exercise", ind1) > 0) {
-                type = u8"exe"; envName = u8"exercise";
+            else if (expect(str, "exercise", ind1) > 0) {
+                type = "exe"; envName = "exercise";
             }
-            else if (expect(str, u8"table", ind1) > 0) {
-                type = u8"tab"; envName = u8"table";
+            else if (expect(str, "table", ind1) > 0) {
+                type = "tab"; envName = "table";
             }
-            else if (expect(str, u8"gather", ind1) > 0) {
-                type = u8"eq"; envName = u8"gather";
+            else if (expect(str, "gather", ind1) > 0) {
+                type = "eq"; envName = "gather";
             }
-            else if (expect(str, u8"align", ind1) > 0) {
-                type = u8"eq"; envName = u8"align";
+            else if (expect(str, "align", ind1) > 0) {
+                type = "eq"; envName = "align";
             }
             else {
                 throw scan_err(u8"该环境不支持 label");
@@ -93,12 +93,12 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         }
         
         // check label format and save label
-        ind0 = expect(str, u8"{", ind5 + 6);
+        ind0 = expect(str, "{", ind5 + 6);
         ind3 = expect(str, type + '_' + entry, ind0);
         if (ind3 < 0)
-            throw scan_err(u8"label " + str.substr(ind0, 20)
+            throw scan_err("label " + str.substr(ind0, 20)
                 + u8"... 格式错误， 是否为 \"" + type + '_' + entry + u8"\"？");
-        ind3 = str.find(u8"}", ind3);
+        ind3 = str.find("}", ind3);
         
         label = str.substr(ind0, ind3 - ind0);
         trim(label);
@@ -110,9 +110,9 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         
         // count idNum, insert html id tag, delete label
         Intvs intvEnv;
-        if (type == u8"eq") { // count equations
-            idN = find_env(intvEnv, str.substr(0,ind4), u8"equation");
-            Ngather = find_env(intvEnv, str.substr(0,ind4), u8"gather");
+        if (type == "eq") { // count equations
+            idN = find_env(intvEnv, str.substr(0,ind4), "equation");
+            Ngather = find_env(intvEnv, str.substr(0,ind4), "gather");
             if (Ngather > 0) {
                 for (i = 0; i < Ngather; ++i) {
                     for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
@@ -122,7 +122,7 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
                     ++idN;
                 }
             }
-            Nalign = find_env(intvEnv, str.substr(0,ind4), u8"align");
+            Nalign = find_env(intvEnv, str.substr(0,ind4), "align");
             if (Nalign > 0) {
                 for (i = 0; i < Nalign; ++i) {
                     for (j = intvEnv.L(i); j < intvEnv.R(i); ++j) {
@@ -132,7 +132,7 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
                     ++idN;
                 }
             }
-            if (envName == u8"gather" || envName == u8"align") {
+            if (envName == "gather" || envName == "align") {
                 for (i = ind4; i < ind5; ++i) {
                     if (str.at(i) == '\\' && str.at(i + 1) == '\\')
                         ++idN;
@@ -140,10 +140,10 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
             }
             ++idN;
         }
-        else if (type == u8"sub") { // count \subsection number
+        else if (type == "sub") { // count \subsection number
             Long ind = -1; idN = 0; ind4 = -1;
             while (1) {
-                ind = find_command(str, u8"subsection", ind + 1);
+                ind = find_command(str, "subsection", ind + 1);
                 if (ind > ind5 || ind < 0)
                     break;
                 ind4 = ind; ++idN;
@@ -154,7 +154,7 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         }
         label_orders.push_back(idN);
         str.erase(ind5, ind3 - ind5 + 1);
-        str.insert(ind4, u8"<span id = \"" + label + u8"\"></span>");
+        str.insert(ind4, "<span id = \"" + label + "\"></span>");
         ind0 = ind4 + 6;
     }
 }
@@ -173,7 +173,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
     Bool inEq;
     Str entry1, label0, fig_id, type, kind, newtab, file;
-    vecStr envNames{u8"equation", u8"align", u8"gather"};
+    vecStr envNames{"equation", "align", "gather"};
     Str db_ref_by_str;
     Str ref_by_str;
     set<Str> ref_by;
@@ -185,14 +185,14 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
 
     while (1) {
         newtab.clear(); file.clear();
-        ind0 = find_command(str, u8"autoref", ind0);
-        if (is_in_tag(str, u8"code", ind0)) {
+        ind0 = find_command(str, "autoref", ind0);
+        if (is_in_tag(str, "code", ind0)) {
             ++ind0; continue;
         }
         if (ind0 < 0)
             return N;
         inEq = index_in_env(ienv, ind0, envNames, str);
-        ind1 = expect(str, u8"{", ind0 + 8);
+        ind1 = expect(str, "{", ind0 + 8);
         if (ind1 < 0)
             throw scan_err(u8"\\autoref 变量不能为空");
         ind1 = NextNoSpace(entry1, str, ind1);
@@ -206,17 +206,17 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
         entry1 = str.substr(ind2 + 1, ind30 - ind2 - 1);
         type = str.substr(ind1, ind2 - ind1);
         if (!gv::is_eng) {
-            if (type == u8"eq") kind = u8"式";
-            else if (type == u8"fig") kind = u8"图";
-            else if (type == u8"def") kind = u8"定义";
-            else if (type == u8"lem") kind = u8"引理";
-            else if (type == u8"the") kind = u8"定理";
-            else if (type == u8"cor") kind = u8"推论";
-            else if (type == u8"ex") kind = u8"例";
-            else if (type == u8"exe") kind = u8"习题";
-            else if (type == u8"tab") kind = u8"表";
-            else if (type == u8"sub") kind = u8"子节";
-            else if (type == u8"lst") {
+            if (type == "eq") kind = u8"式";
+            else if (type == "fig") kind = u8"图";
+            else if (type == "def") kind = u8"定义";
+            else if (type == "lem") kind = u8"引理";
+            else if (type == "the") kind = u8"定理";
+            else if (type == "cor") kind = u8"推论";
+            else if (type == "ex") kind = u8"例";
+            else if (type == "exe") kind = u8"习题";
+            else if (type == "tab") kind = u8"表";
+            else if (type == "sub") kind = u8"子节";
+            else if (type == "lst") {
                 kind = u8"代码";
                 SLS_WARN(u8"autoref lstlisting 功能未完成！");
                 ++ind0; continue;
@@ -226,18 +226,18 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
             }
         }
         else {
-            if      (type == u8"eq")  kind = u8"eq. ";
-            else if (type == u8"fig") kind = u8"fig. ";
-            else if (type == u8"def") kind = u8"def. ";
-            else if (type == u8"lem") kind = u8"lem. ";
-            else if (type == u8"the") kind = u8"thm. ";
-            else if (type == u8"cor") kind = u8"cor. ";
-            else if (type == u8"ex")  kind = u8"ex. ";
-            else if (type == u8"exe") kind = u8"exer. ";
-            else if (type == u8"tab") kind = u8"tab. ";
-            else if (type == u8"sub") kind = u8"sub. ";
-            else if (type == u8"lst") {
-                kind = u8"code. ";
+            if      (type == "eq")  kind = "eq. ";
+            else if (type == "fig") kind = "fig. ";
+            else if (type == "def") kind = "def. ";
+            else if (type == "lem") kind = "lem. ";
+            else if (type == "the") kind = "thm. ";
+            else if (type == "cor") kind = "cor. ";
+            else if (type == "ex")  kind = "ex. ";
+            else if (type == "exe") kind = "exer. ";
+            else if (type == "tab") kind = "tab. ";
+            else if (type == "sub") kind = "sub. ";
+            else if (type == "lst") {
+                kind = "code. ";
                 SLS_WARN(u8"autoref lstlisting 功能未完成！");
                 ++ind0; continue;
             }
@@ -247,7 +247,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
         ind3 = str.find('}', ind3);
         label0 = str.substr(ind1, ind3 - ind1); trim(label0);
         Long db_label_order;
-        if (type == u8"fig") {
+        if (type == "fig") {
             fig_id = label_id(label0);
             stmt_select_fig.bind(1, fig_id);
             if (!stmt_select_fig.executeStep())
@@ -270,14 +270,14 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
                 new_label_ref_by[label0].insert(entry);
         }
 
-        file = gv::url + entry1 + u8".html";
+        file = gv::url + entry1 + ".html";
         if (entry1 != entry) // reference another entry1
-            newtab = u8"target = \"_blank\"";
+            newtab = "target = \"_blank\"";
         if (!inEq)
-            str.insert(ind3 + 1, u8" </a>");
+            str.insert(ind3 + 1, " </a>");
         str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
         if (!inEq)
-            str.insert(ind3 + 1, u8"<a href = \"" + file + u8"#" + label0 + u8"\" " + newtab + u8">");
+            str.insert(ind3 + 1, "<a href = \"" + file + "#" + label0 + "\" " + newtab + ">");
         str.erase(ind0, ind3 - ind0 + 1);
         ++N;
     }
@@ -291,7 +291,7 @@ void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
         Long ind0 = 0;
         while (1) {
             label = envName + "_" + entry + "_" + num2str(num);
-            ind0 = find_command(str, u8"label", ind0);
+            ind0 = find_command(str, "label", ind0);
             if (ind0 < 0)
                 return; // label is unique
             command_arg(label0, str, ind0, 0);
@@ -327,7 +327,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
     }
 
     // label does not exist
-    if (type == u8"fig")
+    if (type == "fig")
         throw scan_err(u8"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加。");
 
     // insert \label{} command
@@ -339,12 +339,12 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
 
     // find comments
     Intvs intvComm;
-    find_comments(intvComm, str, u8"%");
+    find_comments(intvComm, str, "%");
 
-    vecStr types = { u8"eq", u8"fig", u8"def", u8"lem",
-        u8"the", u8"cor", u8"ex", u8"exe", u8"tab", u8"sub" };
-    vecStr envNames = { u8"equation", u8"figure", u8"definition", u8"lemma",
-        u8"theorem", u8"corollary", u8"example", u8"exercise", u8"table"};
+    vecStr types = { "eq", "fig", "def", "lem",
+        "the", "cor", "ex", "exe", "tab", "sub" };
+    vecStr envNames = { "equation", "figure", "definition", "lemma",
+        "theorem", "corollary", "example", "exercise", "table"};
 
     Long idNum = search(type, types);
     if (idNum < 0)
@@ -352,14 +352,14 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
     
     // count environment display number starting at ind4
     Intvs intvEnv;
-    if (type == u8"eq") { // add equation labels
+    if (type == "eq") { // add equation labels
         // count equations
         ind0 = 0;
         Long idN = 0;
-        vecStr eq_envs = { u8"equation", u8"gather", u8"align" };
+        vecStr eq_envs = { "equation", "gather", "align" };
         Str env0;
         while (1) {
-            ind0 = find_command(str, u8"begin", ind0);
+            ind0 = find_command(str, "begin", ind0);
             if (ind0 < 0) {
                 throw scan_err(u8"被引用公式不存在");
             }
@@ -377,7 +377,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
                 new_label_name(label, type, entry, str);
                 ind0 = skip_command(str, ind0, 1);
                 if (!dry_run) {
-                    str.insert(ind0, u8"\\label{" + label + "}");
+                    str.insert(ind0, "\\label{" + label + "}");
                     write(str, full_name);
                 }
                 break;
@@ -386,13 +386,13 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
                 throw scan_err(u8"暂不支持引用含有 align 和 gather 环境的文件，请手动插入 label 并引用。");
                 Long ind1 = skip_env(str, ind0);
                 for (Long i = ind0; i < ind1; ++i) {
-                    if (str.substr(i, 2) == u8"\\\\" && current_env(i, str) == eq_envs[ienv]) {
+                    if (str.substr(i, 2) == "\\\\" && current_env(i, str) == eq_envs[ienv]) {
                         ++idN;
                         if (idN == ind) {
                             new_label_name(label, type, entry, str);
                             ind0 = skip_command(str, ind0, 1);
                             if (!dry_run) {
-                                str.insert(i + 2, u8"\n\\label{" + label + "}");
+                                str.insert(i + 2, "\n\\label{" + label + "}");
                                 write(str, full_name);
                             }
                             goto break2;
@@ -404,17 +404,17 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
         }
         break2: ;
     }
-    else if (type == u8"sub") { // add subsection labels
+    else if (type == "sub") { // add subsection labels
         Long ind0 = -1;
         for (Long i = 0; i < ind; ++i) {
-            ind0 = find_command(str, u8"subsection", ind0+1);
+            ind0 = find_command(str, "subsection", ind0+1);
             if (ind0 < 0)
                 throw scan_err(u8"被引用对象不存在");
         }
         ind0 = skip_command(str, ind0, 1);
         new_label_name(label, type, entry, str);
         if (!dry_run) {
-            str.insert(ind0, u8"\\label{" + label + "}");
+            str.insert(ind0, "\\label{" + label + "}");
             write(str, full_name);
         }
     }
@@ -426,7 +426,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
         new_label_name(label, type, entry, str);
         // this doesn't work for figure invironment, since there is an [ht] option
         if (!dry_run) {
-            str.insert(intvEnv.L(ind - 1), u8"\\label{" + label + "}");
+            str.insert(intvEnv.L(ind - 1), "\\label{" + label + "}");
             write(str, full_name);
         }
     }
@@ -447,21 +447,21 @@ inline Long upref(Str_IO str, Str_I entry)
     Long ind0 = 0, right, N = 0;
     Str entry1;
     while (1) {
-        ind0 = find_command(str, u8"upref", ind0);
+        ind0 = find_command(str, "upref", ind0);
         if (ind0 < 0)
             return N;
         command_arg(entry1, str, ind0);
         if (entry1 == entry)
             throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
         trim(entry1);
-        if (!file_exist(gv::path_in + u8"contents/" + entry1 + u8".tex")) {
-            throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + u8".tex");
+        if (!file_exist(gv::path_in + "contents/" + entry1 + ".tex")) {
+            throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
         }
         right = skip_command(str, ind0, 1);
         str.replace(ind0, right - ind0,
-                    u8"<span class = \"icon\"><a href = \""
+                    "<span class = \"icon\"><a href = \""
                     + gv::url + entry1 +
-                    u8".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
+                    ".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
         ++N;
     }
     return N;
@@ -478,12 +478,12 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
 
     for (i = Nenv - 1; i >= 0; --i) {
         Long iname, width = page_width - 35;
-        if (index_in_env(iname, intvEnvOut.L(i), { u8"example", u8"exercise", u8"definition", u8"theorem", u8"lemma", u8"corollary"}, str))
+        if (index_in_env(iname, intvEnvOut.L(i), { "example", "exercise", "definition", "theorem", "lemma", "corollary"}, str))
             width -= 40;
-        if (index_in_env(iname, intvEnvOut.L(i), { u8"itemize", u8"enumerate" }, str))
+        if (index_in_env(iname, intvEnvOut.L(i), { "itemize", "enumerate" }, str))
             width -= 40;
-        Str strLeft = u8"<div class=\"eq\"><div class = \"w3-cell\" style = \"width:" + num2str32(width) + u8"px\">\n\\begin{" + nameEnv + u8"}";
-        Str strRight = u8"\\end{" + nameEnv + u8"}\n</div></div>";
+        Str strLeft = "<div class=\"eq\"><div class = \"w3-cell\" style = \"width:" + num2str32(width) + "px\">\n\\begin{" + nameEnv + "}";
+        Str strRight = "\\end{" + nameEnv + "}\n</div></div>";
         str.replace(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i), strRight);
         str.replace(intvEnvOut.L(i), intvEnvIn.L(i) - intvEnvOut.L(i), strLeft);
     }

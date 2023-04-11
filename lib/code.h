@@ -97,7 +97,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
                     ++ind3;
                 }
                 replace(caption, "\\_", "_");
-                capption_str = u8"<div align = \"center\">代码 " + num2str(Ncaption) + "：" + caption + "</div>\n";
+                capption_str = u8"<div align = \"center\">代码 " + num2str(Ncaption) + u8"：" + caption + "</div>\n";
                 --Ncaption;
             }
         }

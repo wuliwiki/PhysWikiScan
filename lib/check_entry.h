@@ -79,7 +79,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
         return 0;
     }
     Str line; get_line(line, str, ind0);
-    Long tmp = line.find(u8"|", 0);
+    Long tmp = line.find("|", 0);
     if (tmp < 0) {
         // SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
         return 0;

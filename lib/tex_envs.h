@@ -157,7 +157,7 @@ inline Long theorem_like_env(Str_IO str)
                 + envBorderColors[i]
                 + " w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
                 + envCnNames[i] + " "
-                + env_num + "</b>　" + env_title + "</h3>\n");
+                + env_num + u8"</b>　" + env_title + "</h3>\n");
         }
     }
     return N_tot;

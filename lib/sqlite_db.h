@@ -89,7 +89,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
             ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
                  << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
         }
-        ss << u8"=============================================\n" << endl;
+        ss << "=============================================\n" << endl;
         throw scan_err(ss.str());
     }
 }

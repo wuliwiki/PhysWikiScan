@@ -630,7 +630,7 @@ inline void find_double_dollar_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
             intv.pushL(ind0);
         ind0 = str.find("$$", ind0+2);
         if (ind0 < 0)
-            throw scan_err("$$...$$ 公式环境不闭合");
+            throw scan_err(u8"$$...$$ 公式环境不闭合");
         if (option == 'i')
             intv.pushR(ind0 - 1);
         else
