@@ -406,7 +406,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
     if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
+        throw std::runtime_error("内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
     CRLF_to_LF(str);
 
     // read title from first comment
@@ -475,60 +475,32 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     autoref_tilde_upref(str, entry);
     if (str.empty()) str = u8" ";
     // ensure spaces between chinese char and alphanumeric char
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     chinese_alpha_num_space(str);
     // ensure spaces outside of chinese double quotes
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     chinese_double_quote_space(str);
     // check escape characters in normal text i.e. `& # _ ^`
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     check_normal_text_escape(str);
     // check non ascii char in equations (except in \text)
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     check_eq_ascii(str);
     // forbid empty lines in equations
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     check_eq_empty_line(str);
     // add spaces around inline equation
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     inline_eq_space(str);
     // replace "<" and ">" in equations
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     rep_eq_lt_gt(str);
     // escape characters
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     NormalTextEscape(str);
     // add paragraph tags
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     paragraph_tag(str);
     // add html id for links
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     EnvLabel(labels, label_orders, entry, str);
     // replace environments with html tags
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     equation_tag(str, u8"equation"); equation_tag(str, u8"align"); equation_tag(str, u8"gather");
     // itemize and enumerate
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     Itemize(str); Enumerate(str);
     // process table environments
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     Table(str);
     // ensure '<' and '>' has spaces around them
-    if (!is_valid(str))
-        throw std::runtime_error("内部错误： 非法的 UTF-8 文档！");
     EqOmitTag(str);
     // process example and exercise environments
     theorem_like_env(str);

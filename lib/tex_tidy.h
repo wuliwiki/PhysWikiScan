@@ -31,40 +31,42 @@ inline Long ensure_space_around(Str_IO str, Str_I c)
 inline void global_forbid_char(Str_I str)
 {
     // some of these may be fine in wuli.wiki/editor, but will not show when compiling pdf with XeLatex
-    static const Str forbidden = u8"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
-        u8"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
-        u8"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖"
-        u8"⓪①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+    static const Str32 forbidden32 = U"αΑ∵⊥βΒ⋂◯⋃•∩∪⋯∘χΧΔδ⋄ϵ∃Ε≡⊓⊔⊏⊐□⋆ηΗ∀Γγ⩾≥≫⋙∠≈ℏ∈∫∬∭∞ιΙΚκΛλ⩽⟵⟶"
+        U"⟷⟸⟹⟺≤⇐←⇇↔≪⋘↦∡∓μΜ≠∋∉⊈νΝ⊙∮ωΩ⊕⊗∥∂⟂∝ΦϕπΠ±ΨψρΡ⇉⇒σΣ∼≃⊂⊆"
+        U"⊃⊇∑Ττ∴θ×Θ→⊤◁▷↕⇕⇈⇑Υ↑≐↓⇊†‡⋱⇓υε∅ϰφςϖϱϑ∨∧ΞξΖζ▽Οο⊖"
+        U"⓪①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳";
+    static vecStr forbidden;
+
+    if (forbidden.empty())
+        for (auto c : forbidden32)
+            forbidden.push_back(u8(c));
 
     // check repetition
-//    static bool checked = false;
-//    if (!checked) {
-//        checked = true;
-//        Long ind = 0;
-//        while (ind < size(forbidden)) {
-//            ind = find_repeat(forbidden, ind);
-//            if (ind < 0) break;
-//            cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
-//            throw internal_err("found repeated char in `forbidden`");
-//            ++ind;
-//        };
-//    }
+    static bool checked = false;
+    if (!checked) {
+        checked = true;
+        Long ind = find_repeat(forbidden);
+        if (ind >= 0) {
+            cout << "ind = " << ind << ", char = " << forbidden[ind] << endl;
+            throw internal_err("found repeated char in `forbidden`");
+        }
+    }
 
-    Long ind = str.find_first_of(forbidden);
+    Long ikey, ind = find(ikey, str, forbidden);
     if (ind >= 0) {
         Long beg = max(Long(0),ind-30);
         SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + u8"？？？");
         // TODO: scan 应该搞一个批量替换功能
-        illegal_chars.insert(str[ind]);
+        illegal_chars.insert(char32(str, ind));
     }
 
-    Long N = str.size();
-    for (Long i = 0; i < N; ++i) {
-        // overleaf only suppors Basic Multilingual Plane (BMP) characters
-        // we should do that too (except for comments)
-        if (Long(str[i]) > 65536) {
-            Long beg = max(Long(0),i-30);
-            SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, i-beg) + u8"？？？");
+    // overleaf only suppors Basic Multilingual Plane (BMP) characters
+    // we should do that too (except for comments)
+    u8_iter it(str), it_end(str, -1);
+    for (; it != it_end; ++it) {
+        if (u32(*it)[0] > 65536) {
+            Long beg = max(Long(0),(Long)it-30);
+            SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, it-beg) + u8"？？？");
             illegal_chars.insert(str[ind]);
         }
     }
