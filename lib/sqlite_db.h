@@ -556,11 +556,11 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 }
 
 // db_rw table "figures" and "figure_store"
-inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries, const vector<vecStr> &img_ids,
-    const vector<vecLong> &img_orders, const vector<vecStr> &img_hashes,
-    SQLite::Database &db_rw)
+inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries,
+    const vector<vecStr> &entry_img_ids, const vector<vecLong> &entry_img_orders,
+    const vector<vecStr> &entry_img_hashes, SQLite::Database &db_rw)
 {
-    cout << "updating db for figures environments..." << endl;
+    // cout << "updating db for figures environments..." << endl;
     update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
     Str entry, id, hash, ext;
     Long order;
@@ -582,22 +582,22 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
         stmt_select.bind(1, entry);
-        if (stmt_select.executeStep()) {
+        while (stmt_select.executeStep()) {
             db_ids.push_back(stmt_select.getColumn(0));
             db_orders.push_back((int)stmt_select.getColumn(1));
             db_ref_bys.emplace_back();
             parse(db_ref_bys.back(), stmt_select.getColumn(2));
             db_hashes.push_back(stmt_select.getColumn(3));
             db_entries.push_back(entry);
-            stmt_select.reset();
         }
+        stmt_select.reset();
     }
     db_ids_used.resize(db_ids.size(), false);
 
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
-        for (Long j = 0; j < size(img_ids[i]); ++j) {
-            id = img_ids[i][j]; order = img_orders[i][j]; hash = img_hashes[i][j];
+        for (Long j = 0; j < size(entry_img_ids[i]); ++j) {
+            id = entry_img_ids[i][j]; order = entry_img_orders[i][j]; hash = entry_img_hashes[i][j];
             Long ind = search(id, db_ids);
             if (ind < 0) {
                 SLS_WARN(u8"发现数据库中没有的图片环境（将模拟 editor 添加）：" + id + ", " + entry + ", " +
@@ -658,7 +658,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
         }
     }
-    cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 // update labels table of database
@@ -667,7 +667,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                  const vector<vecStr> &entry_labels, const vector<vecLong> &entry_label_orders,
                  SQLite::Database &db_rw)
 {
-    cout << "updating db for labels..." << endl;
+    // cout << "updating db for labels..." << endl;
     update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
     SQLite::Statement stmt_select(db_rw,
         R"(SELECT "id", "order", "ref_by" FROM "labels" WHERE "entry"=?;)");
@@ -689,14 +689,14 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
         stmt_select.bind(1, entry);
-        if (stmt_select.executeStep()) {
+        while (stmt_select.executeStep()) {
             db_labels.push_back(stmt_select.getColumn(0));
             db_orders.push_back((int)stmt_select.getColumn(1));
             db_ref_bys.emplace_back();
             parse(db_ref_bys.back(),stmt_select.getColumn(2));
             db_entries.push_back(entry);
-            stmt_select.reset();
         }
+        stmt_select.reset();
     }
     db_labels_used.resize(db_labels.size(), false);
 
@@ -711,8 +711,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 
             Long ind = search(label, db_labels);
             if (ind < 0) {
-                SLS_WARN(u8"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", " + entry + ", " +
-                         to_string(order));
+                SLS_WARN(u8"数据库中不存在 label（将模拟 editor 插入）：" + label + ", " + type + ", "
+                    + entry + ", " + to_string(order));
                 stmt_insert.bind(1, label);
                 stmt_insert.bind(2, type);
                 stmt_insert.bind(3, entry);
@@ -761,7 +761,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             }
         }
     }
-    cout << "done!" << endl;
+    // cout << "done!" << endl;
 }
 
 // generate json file containing dependency tree
