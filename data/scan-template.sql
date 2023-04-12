@@ -72,14 +72,16 @@ CREATE TABLE "chapters" (
 -- 防止 FOREIGN KEY 报错
 INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 不在目录中
 
--- 图片环境（必须带标签）
+-- 图片环境（所有图片环境必须带标签）
 -- \label{fig_xxx} 中 xxx 为 "id"
 CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
+	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
 	"entry"	TEXT NOT NULL, -- 所在词条
 	"order"	INTEGER NOT NULL, -- 显示编号
 	"hash"	TEXT NOT NULL, -- 文件 SHA1 前 16 位， 多个 id 可以使用同一个 hash 共用一个文件（svg 和 pdf 同名的，使用后者）
+	"license"	TEXT NOT NULL DEFAULT '', -- 格式和 entries.license 相同
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 该环境是否已删除
