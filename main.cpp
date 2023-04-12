@@ -212,6 +212,8 @@ int main(int argc, char *argv[]) {
             // check a label, add one if necessary
             // args: [1]: entry, [2]: eq/fig/etc, [3]: disp_num
             Str label;
+            Str fname = gv::path_data + "autoref.txt";
+            file_remove(fname);
             Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()));
             vecStr output;
             if (ret == 0) { // added
@@ -221,7 +223,7 @@ int main(int argc, char *argv[]) {
                 output = {label, "exist"};
             cout << output[0] << endl;
             cout << output[1] << endl;
-            write_vec_str(output, gv::path_data + "autoref.txt");
+            write_vec_str(output, fname);
         } else if (args[0] == "--autoref-dry" && args.size() == 4) {
             // check a label only, without adding
             Str label;

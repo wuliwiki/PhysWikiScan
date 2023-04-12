@@ -284,7 +284,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
 }
 
 // get a new label name for an environment for an entry
-void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
+inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 {
     Str label0;
     for (Long num = 1; ; ++num) {
@@ -303,26 +303,24 @@ void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 }
 
 // check if a label exist, if not, add it
-// ind is not the label number, but the displayed number
+// order is not the label number, but the displayed number
 // if exist, return 1, output label
 // if doesn't exist, return 0
 // dry_run : don't actually modify tex file
-Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_run = false)
+inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bool_I dry_run = false)
 {
     Long ind0 = 0;
     Str label0, newtab;
 
     SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 
-    while (1) {
-        SQLite::Statement stmt_select(db,
-            R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
-        stmt_select.bind(1, type);
-        stmt_select.bind(2, entry);
-        stmt_select.bind(3, (int)ind);
-        if (!stmt_select.executeStep())
-            break;
-        label = (const char*)stmt_select.getColumn(0);
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
+    stmt_select.bind(1, type);
+    stmt_select.bind(2, entry);
+    stmt_select.bind(3, (int)order);
+    if (stmt_select.executeStep()) {
+        label = (const char *)stmt_select.getColumn(0);
         return 1;
     }
 
@@ -373,7 +371,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
             }
             // found one of eq_envs
             ++idN;
-            if (idN == ind) {
+            if (idN == order) {
                 new_label_name(label, type, entry, str);
                 ind0 = skip_command(str, ind0, 1);
                 if (!dry_run) {
@@ -388,7 +386,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
                 for (Long i = ind0; i < ind1; ++i) {
                     if (str.substr(i, 2) == "\\\\" && current_env(i, str) == eq_envs[ienv]) {
                         ++idN;
-                        if (idN == ind) {
+                        if (idN == order) {
                             new_label_name(label, type, entry, str);
                             ind0 = skip_command(str, ind0, 1);
                             if (!dry_run) {
@@ -406,7 +404,7 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
     }
     else if (type == "sub") { // add subsection labels
         Long ind0 = -1;
-        for (Long i = 0; i < ind; ++i) {
+        for (Long i = 0; i < order; ++i) {
             ind0 = find_command(str, "subsection", ind0+1);
             if (ind0 < 0)
                 throw scan_err(u8"被引用对象不存在");
@@ -420,22 +418,23 @@ Long check_add_label(Str_O label, Str_I entry, Str_I type, Long ind, Bool_I dry_
     }
     else { // add environment labels
         Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
-        if (ind > Nid)
+        if (order > Nid)
             throw scan_err(u8"被引用对象不存在");
 
         new_label_name(label, type, entry, str);
         // this doesn't work for figure invironment, since there is an [ht] option
         if (!dry_run) {
-            str.insert(intvEnv.L(ind - 1), "\\label{" + label + "}");
+            str.insert(intvEnv.L(order - 1), "\\label{" + label + "}");
             write(str, full_name);
         }
     }
+
     SQLite::Statement stmt_insert(db,
         R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
     stmt_insert.bind(1, label);
     stmt_insert.bind(2, type);
     stmt_insert.bind(3, entry);
-    stmt_insert.bind(4, int(ind));
+    stmt_insert.bind(4, int(order));
     stmt_insert.exec();
     return 0;
 }
