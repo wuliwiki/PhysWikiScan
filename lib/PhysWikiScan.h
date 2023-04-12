@@ -432,7 +432,6 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     read(html, gv::path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
 
-
     // check language: "\n%%eng\n" at the end of file means english, otherwise chinese
     if ((size(str) > 7 && str.substr(size(str) - 7) == "\n%%eng\n") ||
             gv::path_in.substr(gv::path_in.size()-4) == "/en/")
@@ -637,7 +636,7 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
 {
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str html, fname;
-    unordered_map<Str, set<Str>> label_ref_by, fig_ref_by;
+    unordered_map<Str, set<Str>> label_ref_by, fig_ref_by; // label_id -> ref_by entries
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
         cout << std::setw(5) << std::left << i
@@ -659,15 +658,15 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
     set<Str> ref_by;
-    for (auto &label_id : label_ref_by) {
+    for (auto &e : label_ref_by) {
         ref_by.clear();
-        ref_by_str = get_text("labels", "id", label_id.first, "ref_by", db_rw);
+        ref_by_str = get_text("labels", "id", e.first, "ref_by", db_rw);
         parse(ref_by, ref_by_str);
-        for (auto &by_entry : label_id.second)
+        for (auto &by_entry : e.second)
             ref_by.insert(by_entry);
         join(ref_by_str, ref_by);
         stmt_update_ref_by.bind(1, ref_by_str);
-        stmt_update_ref_by.bind(2, label_id.first);
+        stmt_update_ref_by.bind(2, e.first);
         stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
     }
 
