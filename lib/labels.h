@@ -312,10 +312,10 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
     Long ind0 = 0;
     Str label0, newtab;
 
-    SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 
-    SQLite::Statement stmt_select(db,
-        R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
+    SQLite::Statement stmt_select(db_rw,
+                                  R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
     stmt_select.bind(1, type);
     stmt_select.bind(2, entry);
     stmt_select.bind(3, (int)order);
@@ -429,13 +429,15 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
         }
     }
 
-    SQLite::Statement stmt_insert(db,
-        R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
-    stmt_insert.bind(1, label);
-    stmt_insert.bind(2, type);
-    stmt_insert.bind(3, entry);
-    stmt_insert.bind(4, int(order));
-    stmt_insert.exec();
+    if (!dry_run) {
+        SQLite::Statement stmt_insert(db_rw,
+            R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
+        stmt_insert.bind(1, label);
+        stmt_insert.bind(2, type);
+        stmt_insert.bind(3, entry);
+        stmt_insert.bind(4, int(order));
+        stmt_insert.exec();
+    }
     return 0;
 }
 
