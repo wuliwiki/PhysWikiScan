@@ -164,10 +164,12 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-// new_ref_label_ids: in database, these labels should append `entry` to "ref_by"
-// new_ref_fig_ids: in database, these figures should append `entry` to "ref_by"
-inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
-                    unordered_map<Str, set<Str>> &new_fig_ref_by,
+// new_label_ref_by: in database, these labels should append `entry` to "ref_by"
+// new_fig_ref_by: in database, these figures should append `entry` to "ref_by"
+inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> entries add to ref_by
+                    unordered_map<Str, set<Str>> &new_fig_ref_by, // fig_id -> entries add to ref_by
+                    unordered_map<Str, set<Str>> &del_label_ref_by, // label -> entries erase from ref_by
+                    unordered_map<Str, set<Str>> &db_fig_ref_by, // fig_id -> entries erase from ref_by
                     Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
@@ -182,6 +184,15 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
                                    R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_select_fig(db_read,
                                       R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+
+    // get all labels and figures ref_by `entry` in db
+    SQLite::Statement stmt_select0(db_read, R"(SELECT "id" FROM "labels" WHERE "ref_by" LIKE '%)" + entry + "%';");
+    SQLite::Statement stmt_select_fig0(db_read, R"(SELECT "id" FROM "figures" WHERE "ref_by" LIKE '%)" + entry + "%';");
+    unordered_set<Str> label_not_refed, fig_not_refed;
+    while (stmt_select0.executeStep())
+        label_not_refed.insert(stmt_select0.getColumn(0));
+    while (stmt_select_fig0.executeStep())
+        fig_not_refed.insert(stmt_select_fig0.getColumn(0));
 
     while (1) {
         newtab.clear(); file.clear();
@@ -249,6 +260,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
         Long db_label_order;
         if (type == "fig") {
             fig_id = label_id(label0);
+            fig_not_refed.erase(fig_id);
             stmt_select_fig.bind(1, fig_id);
             if (!stmt_select_fig.executeStep())
                 throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
@@ -259,6 +271,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
             if (!ref_by.count(entry))
                 new_fig_ref_by[fig_id].insert(entry);
         } else {
+            label_not_refed.erase(label0);
             stmt_select.bind(1, label0);
             if (!stmt_select.executeStep())
                 throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
@@ -281,6 +294,11 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by,
         str.erase(ind0, ind3 - ind0 + 1);
         ++N;
     }
+
+    for (auto &label : label_not_refed)
+        del_label_ref_by[entry].insert(label);
+    for (auto &fig : fig_not_refed)
+        db_fig_ref_by[entry].insert(fig);
 }
 
 // get a new label name for an environment for an entry
