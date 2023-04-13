@@ -51,8 +51,9 @@ inline Llong get_int(Str_I table, Str_I field, Str_I val, Str_I field_out, SQLit
 	Llong ret;
 	Str cmd = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
 	SQLite::Statement stmt(db, cmd);
-	if (stmt.executeStep())
-		ret = (int)stmt.getColumn(0);
+	if (!stmt.executeStep())
+        throw std::runtime_error("get_text(): row not found!");
+    ret = (int)stmt.getColumn(0);
 	return ret;
 }
 
@@ -61,8 +62,9 @@ inline Str get_text(Str_I table, Str_I field, Str_I val, Str_I field_out, SQLite
 	Str ret;
 	Str cmd = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
 	SQLite::Statement stmt(db, cmd);
-	if (stmt.executeStep())
-		ret = (const char*)stmt.getColumn(0);
+	if (!stmt.executeStep())
+        throw std::runtime_error("get_text(): row not found!");
+    ret = (const char*)stmt.getColumn(0);
 	return ret;
 }
 
