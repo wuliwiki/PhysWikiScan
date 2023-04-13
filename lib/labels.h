@@ -166,9 +166,8 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
 // return number of autoref replaced, or -1 if failed
 // new_label_ref_by: in database, these labels should append `entry` to "ref_by"
 // new_fig_ref_by: in database, these figures should append `entry` to "ref_by"
-inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> entries add to ref_by
-                    unordered_map<Str, set<Str>> &new_fig_ref_by, // fig_id -> entries add to ref_by
-                    unordered_set<Str> &del_refs, // entry -> labels delete delete from refs
+inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
+                    unordered_set<Str> &del_refs, // labels to delete from entry.refs
                     Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
     Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
@@ -180,12 +179,12 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> 
     set<Str> ref_by;
 
     SQLite::Statement stmt_select(db_read,
-                                   R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+        R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_select_fig(db_read,
-                                      R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+        R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+    SQLite::Statement stmt_select0(db_read,
+        R"(SELECT "refs" FROM "entries" WHERE "id"=')" + entry + "';");
 
-    // get all labels and figures ref_by `entry` in db
-    SQLite::Statement stmt_select0(db_read, R"(SELECT "refs" FROM "entries" WHERE "id"=')" + entry + "';");
     if (!stmt_select0.executeStep())
         throw scan_err(u8"词条不存在： " + entry);
     parse(del_refs, stmt_select0.getColumn(0));
@@ -228,9 +227,8 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> 
                 SLS_WARN(u8"autoref lstlisting 功能未完成！");
                 ++ind0; continue;
             }
-            else {
+            else
                 throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
-            }
         }
         else {
             if      (type == "eq")  kind = "eq. ";
@@ -265,8 +263,9 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> 
             stmt_select_fig.reset();
 
             if (!ref_by.count(entry))
-                new_fig_ref_by[fig_id].insert(entry);
-        } else {
+                add_refs.insert("fig_" + fig_id);
+        }
+        else {
             del_refs.erase(label0);
             stmt_select.bind(1, label0);
             if (!stmt_select.executeStep())
@@ -276,7 +275,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> 
             stmt_select.reset();
 
             if (!ref_by.count(entry))
-                new_label_ref_by[label0].insert(entry);
+                add_refs.insert(label0);
         }
 
         file = gv::url + entry1 + ".html";

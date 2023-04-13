@@ -895,3 +895,154 @@ inline Long dep_json(SQLite::Database &db)
     write(str, gv::path_out + "../tree/data/dep.json");
     return 0;
 }
+
+// update entries.refs, labels.ref_by, figures.ref_by
+inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_add_refs,
+    unordered_map<Str, unordered_set<Str>> &entry_del_refs)
+{
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
+
+    unordered_map<Str, set<Str>> label_del_ref_bys, fig_del_ref_bys;
+    for (auto &e : entry_del_refs) {
+        auto &entry = e.first;
+        for (auto &label: e.second) {
+            if (label_type(label) == "fig")
+                fig_del_ref_bys[label_id(label)].insert(entry);
+            else
+                label_del_ref_bys[label].insert(entry);
+        }
+    }
+
+    unordered_map<Str, unordered_set<Str>> label_add_ref_bys, fig_add_ref_bys;
+    for (auto &e : entry_add_refs) {
+        auto &entry = e.first;
+        for (auto &label: e.second) {
+            if (label_type(label) == "fig")
+                fig_add_ref_bys[label_id(label)].insert(entry);
+            else
+                label_add_ref_bys[label].insert(entry);
+        }
+    }
+
+    // =========== add labels.ref_by =================
+    cout << "adding labels ref_by..." << endl;
+    SQLite::Statement stmt_update_ref_by(db_rw,
+        R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+    Str ref_by_str;
+    set<Str> ref_by;
+
+    for (auto &e : label_add_ref_bys) {
+        auto &label = e.first;
+        auto &by_entries = e.second;
+        ref_by.clear();
+        ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : by_entries)
+            ref_by.insert(by_entry);
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by.bind(1, ref_by_str);
+        stmt_update_ref_by.bind(2, label);
+        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+    }
+    cout << "done!" << endl;
+
+    // =========== add figures.ref_by =================
+    cout << "adding figures ref_by..." << endl;
+    SQLite::Statement stmt_update_ref_by_fig(db_rw,
+                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+    unordered_map<Str, set<Str>> new_entry_figs;
+    // add to ref_by
+    for (auto &e : fig_add_ref_bys) {
+        auto &fig_id = e.first;
+        auto &by_entries = e.second;
+        ref_by.clear();
+        ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : by_entries)
+            ref_by.insert(by_entry);
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by_fig.bind(1, ref_by_str);
+        stmt_update_ref_by_fig.bind(2, fig_id);
+        stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
+    }
+    cout << "done!" << endl;
+
+    // ========== delete from labels.ref_by and figures.ref_by ===========
+    cout << "deleting from labels.ref_by and figures.ref_by..." << endl;
+    Str type, fig_id;
+    for (auto &e : label_del_ref_bys) {
+        auto &label = e.first;
+        type = label_type(label);
+        if (type == "fig") {
+            fig_id = label_id(e.first);
+            auto &by_entries = e.second;
+            ref_by.clear();
+            ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+            parse(ref_by, ref_by_str);
+            for (auto &by_entry : by_entries)
+                ref_by.erase(by_entry);
+            join(ref_by_str, ref_by);
+            stmt_update_ref_by_fig.bind(1, ref_by_str);
+            stmt_update_ref_by_fig.bind(2, fig_id);
+            stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
+        }
+        else {
+            auto &by_entries = e.second;
+            ref_by.clear();
+            ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+            parse(ref_by, ref_by_str);
+            for (auto &by_entry: by_entries)
+                ref_by.erase(by_entry);
+            join(ref_by_str, ref_by);
+            stmt_update_ref_by.bind(1, ref_by_str);
+            stmt_update_ref_by.bind(2, label);
+            stmt_update_ref_by.exec();
+            stmt_update_ref_by.reset();
+        }
+    }
+    cout << "done!" << endl;
+
+    // =========== updating entry.refs =================
+    cout << "updating entries.refs..." << endl;
+    Str ref_str;
+    set<Str> refs;
+    SQLite::Statement stmt_select_entry_refs(db_rw, R"(SELECT "refs" FROM "entries" WHERE "id"=?)");
+    SQLite::Statement stmt_update_entry_refs(db_rw, R"(UPDATE "entries" SET "refs"=? WHERE "id"=?)");
+    for (auto &e : entry_add_refs) {
+        auto &entry = e.first;
+        auto &new_refs = e.second;
+        stmt_select_entry_refs.bind(1, entry);
+        if (!stmt_select_entry_refs.executeStep())
+            throw internal_err("entry 找不到： " + entry);
+        parse(refs, stmt_select_entry_refs.getColumn(0));
+        stmt_select_entry_refs.reset();
+        refs.insert(new_refs.begin(), new_refs.end());
+        if (entry_del_refs.count(entry)) {
+            for (auto &label: entry_del_refs[entry])
+                refs.erase(label);
+            entry_del_refs.erase(entry);
+        }
+        join(ref_str, refs);
+        stmt_update_entry_refs.bind(1, ref_str);
+        stmt_update_entry_refs.bind(2, entry);
+        stmt_update_entry_refs.exec(); stmt_update_entry_refs.reset();
+    }
+    for (auto &e : entry_del_refs) {
+        auto &entry = e.first;
+        auto &del_refs = e.second;
+        stmt_select_entry_refs.bind(1, entry);
+        if (!stmt_select_entry_refs.executeStep())
+            throw internal_err("entry 找不到： " + entry);
+        parse(refs, stmt_select_entry_refs.getColumn(0));
+        stmt_select_entry_refs.reset();
+        for (auto &label : del_refs)
+            refs.erase(label);
+        join(ref_str, refs);
+        stmt_update_entry_refs.bind(1, ref_str);
+        stmt_update_entry_refs.bind(2, entry);
+        stmt_update_entry_refs.exec(); stmt_update_entry_refs.reset();
+    }
+    cout << "done!" << endl;
+    transaction.commit();
+}
