@@ -563,48 +563,64 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 // db_rw table "figures" and "figure_store"
 inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries,
-    const vector<vecStr> &entry_img_ids, const vector<vecLong> &entry_img_orders,
-    const vector<vecStr> &entry_img_hashes, SQLite::Database &db_rw)
+    const vector<vecStr> &entry_figs, const vector<vecLong> &entry_fig_orders,
+    const vector<vecStr> &entry_fig_hashes, SQLite::Database &db_rw)
 {
     // cout << "updating db for figures environments..." << endl;
     update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
     Str entry, id, hash, ext;
     Long order;
 
-    SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "id", "order", "ref_by", "hash" FROM "figures" WHERE "entry"=?;)");
+    SQLite::Statement stmt_select0(db_rw,
+        R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_select1(db_rw,
+        R"(SELECT "order", "ref_by", "hash" FROM "figures" WHERE "id"=?;)");
+    SQLite::Statement stmt_select2(db_rw,
+        R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+    SQLite::Statement stmt_update2(db_rw,
+        R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
     // get all figure envs defined in `entries`
     //  db_xxx[i] are from the same row of "labels" table
-    vecStr db_ids, db_entries, db_hashes;
-    vecBool db_ids_used;
+    vecStr db_figs, db_entries, db_hashes;
+    vecBool db_figs_used;
     vecLong db_orders;
     vector<vecStr> db_ref_bys;
-
+    set<Str> db_entry_figs;
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
-        stmt_select.bind(1, entry);
-        while (stmt_select.executeStep()) {
-            db_ids.push_back(stmt_select.getColumn(0));
-            db_orders.push_back((int)stmt_select.getColumn(1));
-            db_ref_bys.emplace_back();
-            parse(db_ref_bys.back(), stmt_select.getColumn(2));
-            db_hashes.push_back(stmt_select.getColumn(3));
+        stmt_select0.bind(1, entry);
+        if (!stmt_select0.executeStep())
+            throw scan_err("词条不存在： " + entry);
+        parse(db_entry_figs, stmt_select0.getColumn(0));
+        for (auto &fig_id: db_entry_figs) {
+            db_figs.push_back(fig_id);
             db_entries.push_back(entry);
+            stmt_select1.bind(1, fig_id);
+            if (!stmt_select1.executeStep())
+                throw scan_err("图片标签不存在： fig_" + fig_id);
+            db_orders.push_back((int)stmt_select1.getColumn(1));
+            db_ref_bys.emplace_back();
+            parse(db_ref_bys.back(), stmt_select1.getColumn(2));
+            db_hashes.push_back(stmt_select1.getColumn(3));
+            stmt_select1.reset();
         }
-        stmt_select.reset();
     }
-    db_ids_used.resize(db_ids.size(), false);
+    db_figs_used.resize(db_figs.size(), false);
+    Str figs_str;
+    set<Str> new_figs, figs;
 
     for (Long i = 0; i < size(entries); ++i) {
+        SQLite::Transaction transaction(db_rw);
         entry = entries[i];
-        for (Long j = 0; j < size(entry_img_ids[i]); ++j) {
-            id = entry_img_ids[i][j]; order = entry_img_orders[i][j]; hash = entry_img_hashes[i][j];
-            Long ind = search(id, db_ids);
+        new_figs.clear();
+        for (Long j = 0; j < size(entry_figs[i]); ++j) {
+            id = entry_figs[i][j]; order = entry_fig_orders[i][j]; hash = entry_fig_hashes[i][j];
+            Long ind = search(id, db_figs);
             if (ind < 0) {
                 SLS_WARN(u8"发现数据库中没有的图片环境（将模拟 editor 添加）：" + id + ", " + entry + ", " +
                     to_string(order));
@@ -613,9 +629,10 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                 stmt_insert.bind(3, int(order));
                 stmt_insert.bind(4, hash);
                 stmt_insert.exec(); stmt_insert.reset();
+                new_figs.insert(id);
                 continue;
             }
-            db_ids_used[ind] = true;
+            db_figs_used[ind] = true;
             bool changed = false;
             if (entry != db_entries[ind]) {
                 SLS_WARN(u8"发现数据库中图片 entry 改变（将更新）：" + id + ": "
@@ -647,20 +664,36 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                 stmt_update.exec(); stmt_update.reset();
             }
         }
+
+        // update entries.figures
+        stmt_select2.bind(1, entry);
+        if (!new_figs.empty()) {
+            if (!stmt_select2.executeStep())
+                throw internal_err("db_update_labels(): entry 不存在： " + entry);
+            parse(figs, stmt_select2.getColumn(0));
+            for (auto &e : new_figs)
+                figs.insert(e);
+            join(figs_str, figs);
+            stmt_update2.bind(1, figs_str);
+            stmt_update2.bind(2, entry);
+            stmt_update2.exec(); stmt_update2.reset();
+        }
+        stmt_select2.reset();
+        transaction.commit();
     }
 
     // 检查被删除的标签
     Str ref_by_str;
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
-    for (Long i = 0; i < size(db_ids_used); ++i) {
-        if (!db_ids_used[i]) {
+    for (Long i = 0; i < size(db_figs_used); ++i) {
+        if (!db_figs_used[i]) {
             if (db_ref_bys[i].empty()) {
-                stmt_delete.bind(1, db_ids[i]);
+                stmt_delete.bind(1, db_figs[i]);
                 stmt_delete.exec(); stmt_delete.reset();
             }
             else {
                 join(ref_by_str, db_ref_bys[i], ", ");
-                throw scan_err(u8"检测到 figure 被删除： " + db_ids[i] + u8"\n但是被这些词条引用： " + ref_by_str);
+                throw scan_err(u8"检测到 figure 被删除： " + db_figs[i] + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
     }
@@ -675,12 +708,18 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 {
     // cout << "updating db for labels..." << endl;
     update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
-    SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "id", "order", "ref_by" FROM "labels" WHERE "entry"=?;)");
+    SQLite::Statement stmt_select0(db_rw,
+        R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_select1(db_rw,
+        R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+    SQLite::Statement stmt_select2(db_rw,
+        R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_update2(db_rw,
+        R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
 
     Long order;
     Str label, type, entry;
@@ -692,22 +731,34 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     vecLong db_orders;
     vector<vecStr> db_ref_bys;
 
+    // get all labels defined by `entries`
+    set<Str> db_entry_labels;
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
-        stmt_select.bind(1, entry);
-        while (stmt_select.executeStep()) {
-            db_labels.push_back(stmt_select.getColumn(0));
-            db_orders.push_back((int)stmt_select.getColumn(1));
-            db_ref_bys.emplace_back();
-            parse(db_ref_bys.back(),stmt_select.getColumn(2));
+        stmt_select0.bind(1, entry);
+        if (!stmt_select0.executeStep())
+            throw scan_err("词条不存在： " + entry);
+        parse(db_entry_labels, stmt_select0.getColumn(0));
+        for (auto &label: db_entry_labels) {
+            db_labels.push_back(label);
             db_entries.push_back(entry);
+            stmt_select1.bind(1, label);
+            if (!stmt_select1.executeStep())
+                throw scan_err("标签不存在： " + label);
+            db_orders.push_back((int)stmt_select1.getColumn(0));
+            db_ref_bys.emplace_back();
+            parse(db_ref_bys.back(),stmt_select1.getColumn(1));
+            stmt_select1.reset();
         }
-        stmt_select.reset();
     }
     db_labels_used.resize(db_labels.size(), false);
+    Str labels_str;
+    set<Str> new_labels, labels;
 
     for (Long j = 0; j < size(entries); ++j) {
+        SQLite::Transaction transaction(db_rw);
         entry = entries[j];
+        new_labels.clear();
         for (Long i = 0; i < size(entry_labels[j]); ++i) {
             label = entry_labels[j][i];
             order = entry_label_orders[j][i];
@@ -724,6 +775,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_insert.bind(3, entry);
                 stmt_insert.bind(4, int(order));
                 stmt_insert.exec(); stmt_insert.reset();
+                new_labels.insert(label);
                 continue;
             }
             db_labels_used[ind] = true;
@@ -750,6 +802,22 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_update.exec(); stmt_update.reset();
             }
         }
+
+        // update entries.labels
+        stmt_select2.bind(1, entry);
+        if (!new_labels.empty()) {
+            if (!stmt_select2.executeStep())
+                throw internal_err("db_update_labels(): entry 不存在： " + entry);
+            parse(labels, stmt_select2.getColumn(0));
+            for (auto &e : new_labels)
+                labels.insert(e);
+            join(labels_str, labels);
+            stmt_update2.bind(1, labels_str);
+            stmt_update2.bind(2, entry);
+            stmt_update2.exec(); stmt_update2.reset();
+        }
+        stmt_select2.reset();
+        transaction.commit();
     }
 
     // 检查被删除的标签（如果只被本词条引用， 就留给 autoref() 报错）

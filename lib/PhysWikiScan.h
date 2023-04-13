@@ -399,7 +399,7 @@ inline void arg_history(Str_I path)
 }
 
 // generate html from a single tex
-inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vecLong_O img_orders, vecStr_O img_hashes,
+inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, vecLong_O img_orders, vecStr_O img_hashes,
                             Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
                             vecStr_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -504,7 +504,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O img_ids, vec
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(img_ids, img_orders, img_hashes, str, entry);
+    FigureEnvironment(figure_ids, img_orders, img_hashes, str, entry);
     // get dependent entries from \pentry{}
     get_pentry(pentries, str, db_read);
     // issues environment
@@ -572,8 +572,8 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     Bool update_db, isdraft;
     Str key_str, pentry_str;
     unordered_set<Str> update_entries;
-    vecLong img_orders, label_orders;
-    vecStr keywords, img_ids, img_hashes, labels, pentries;
+    vecLong fig_orders, label_orders;
+    vecStr keywords, fig_ids, fig_hashes, labels, pentries;
     Long N0 = entries.size();
 
     for (Long i = 0; i < size(entries); ++i) {
@@ -584,51 +584,47 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
 
-        PhysWikiOnline1(update_db, titles[i], img_ids, img_orders, img_hashes, isdraft,
-            keywords, labels, label_orders, pentries, entry, rules, db_read);
+        PhysWikiOnline1(update_db, titles[i], fig_ids, fig_orders, fig_hashes, isdraft,
+                        keywords, labels, label_orders, pentries, entry, rules, db_read);
 
         cout << titles[i] << endl; cout.flush();
 
-        {
-            // update db "entries"
-            SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-            if (update_db) {
-                SQLite::Statement stmt_update
-                        (db_rw,
-                         R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "pentry"=? )"
-                         R"(WHERE "id"=?;)");
-                join(key_str, keywords, "|");
-                join(pentry_str, pentries);
-                stmt_update.bind(1, titles[i]);
-                stmt_update.bind(2, key_str);
-                stmt_update.bind(3, (int) isdraft);
-                stmt_update.bind(4, pentry_str);
-                stmt_update.bind(5, entries[i]);
-                stmt_update.exec(); stmt_update.reset();
-            }
+        // update db "entries"
+        SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+        if (update_db) {
+            SQLite::Statement stmt_update
+                    (db_rw,
+                     R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "pentry"=? )"
+                     R"(WHERE "id"=?;)");
+            join(key_str, keywords, "|");
+            join(pentry_str, pentries);
+            stmt_update.bind(1, titles[i]);
+            stmt_update.bind(2, key_str);
+            stmt_update.bind(3, (int) isdraft);
+            stmt_update.bind(4, pentry_str);
+            stmt_update.bind(5, entries[i]);
+            stmt_update.exec(); stmt_update.reset();
+        }
 
-            // update db labels, figures
-            db_update_figures(update_entries, {entry}, {img_ids}, {img_orders},
-                              {img_hashes}, db_rw);
-            db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
+        // update db labels, figures
+        db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
+                          {fig_hashes}, db_rw);
+        db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
 
-            // order change means `update_entries` needs to be updated with autoref() as well.
-            // but just in case, we also run 1st round again for them
-            if (!gv::is_entire && !update_entries.empty()) {
-                for (auto &new_entry: update_entries)
-                    if (search(new_entry, entries) < 0)
-                        entries.push_back(new_entry);
-                update_entries.clear();
-                titles.resize(entries.size());
-            }
+        // order change means `update_entries` needs to be updated with autoref() as well.
+        // but just in case, we also run 1st round again for them
+        if (!gv::is_entire && !update_entries.empty()) {
+            for (auto &new_entry: update_entries)
+                if (search(new_entry, entries) < 0)
+                    entries.push_back(new_entry);
+            update_entries.clear();
+            titles.resize(entries.size());
         }
 
         // check dependency tree
-        {
-            vector<DGnode> tree;
-            vecStr _entries, _titles, parts, chapters;
-            db_get_tree1(tree, _entries, _titles, parts, chapters, entry, db_read);
-        }
+        vector<DGnode> tree;
+        vecStr _entries, _titles, parts, chapters;
+        db_get_tree1(tree, _entries, _titles, parts, chapters, entry, db_read);
     }
 }
 
@@ -637,6 +633,7 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str html, fname;
     unordered_map<Str, set<Str>> new_label_ref_by, new_fig_ref_by; // label_id -> ref_by entries
+    unordered_map<Str, set<Str>> del_label_ref_by, del_fig_ref_by;
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
         cout << std::setw(5) << std::left << i
@@ -645,52 +642,92 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
         fname = gv::path_out + entry + ".html";
         read(html, fname + ".tmp"); // read html file
         // process \autoref and \upref
-        autoref(new_label_ref_by, new_fig_ref_by, html, entry, db_read);
+        autoref(new_label_ref_by, new_fig_ref_by,
+                del_label_ref_by, del_fig_ref_by, html, entry, db_read);
         write(html, fname); // save html file
         file_remove(fname + ".tmp");
     }
     cout << endl; cout.flush();
 
-    // updating labels and figures ref_by
-    cout << "updating labels ref_by..." << endl;
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
+
+    // =========== updating labels.ref_by =================
+    cout << "updating labels ref_by..." << endl;
     SQLite::Statement stmt_update_ref_by(db_rw,
         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
     set<Str> ref_by;
+    unordered_map<Str, set<Str>> new_entry_refs;
     for (auto &e : new_label_ref_by) {
+        auto &label = e.first;
+        auto &by_entries = e.second;
         ref_by.clear();
-        ref_by_str = get_text("labels", "id", e.first, "ref_by", db_rw);
+        ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
         parse(ref_by, ref_by_str);
-        for (auto &by_entry : e.second)
+        for (auto &by_entry : by_entries) {
             ref_by.insert(by_entry);
+            new_entry_refs[by_entry].insert(label);
+        }
         join(ref_by_str, ref_by);
         stmt_update_ref_by.bind(1, ref_by_str);
-        stmt_update_ref_by.bind(2, e.first);
+        stmt_update_ref_by.bind(2, label);
         stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
     }
+    cout << "done!" << endl;
 
+    // =========== updating figures.ref_by =================
     cout << "updating figures ref_by..." << endl;
     SQLite::Statement stmt_select_ref_by_fig(db_rw,
         R"(SELECT "ref_by" FROM "figures" WHERE "id"=?;)");
     SQLite::Statement stmt_update_ref_by_fig(db_rw,
         R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
-    for (auto &fig_id : new_fig_ref_by) {
+    unordered_map<Str, set<Str>> new_entry_figs;
+    for (auto &e : new_fig_ref_by) {
+        auto &fig_id = e.first;
+        auto &by_entries = e.second;
         ref_by.clear();
-        stmt_select_ref_by_fig.bind(1, fig_id.first);
+        stmt_select_ref_by_fig.bind(1, fig_id);
         if (!stmt_select_ref_by_fig.executeStep())
-            throw internal_err(u8"找不到 figures.id： " + fig_id.first);
+            throw internal_err(u8"找不到 figures.id： " + fig_id);
         ref_by_str = (const char*)stmt_select_ref_by_fig.getColumn(0);
         stmt_select_ref_by_fig.reset();
         parse(ref_by, ref_by_str);
-        for (auto &by_entry : fig_id.second)
+        for (auto &by_entry : by_entries) {
             ref_by.insert(by_entry);
+            new_entry_refs[by_entry].insert("fig_" + fig_id);
+        }
         join(ref_by_str, ref_by);
         stmt_update_ref_by_fig.bind(1, ref_by_str);
-        stmt_update_ref_by_fig.bind(2, fig_id.first);
+        stmt_update_ref_by_fig.bind(2, fig_id);
         stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
     }
     cout << "done!" << endl;
+
+    // =========== updating entry.refs =================
+    cout << "updating entries.refs..." << endl;
+
+    Str ref_str;
+    set<Str> db_entry_refs;
+    SQLite::Statement stmt_select_entry_refs(db_rw, R"(SELECT "refs" FROM "entries" WHERE "id"=?)");
+    SQLite::Statement stmt_update_entry_refs(db_rw, R"(UPDATE "entries" SET "refs"=? WHERE "id"=?)");
+    for (auto &e : new_entry_refs) {
+        auto &entry = e.first;
+        auto &new_refs = e.second;
+        stmt_select_entry_refs.bind(1, entry);
+        if (!stmt_select_entry_refs.executeStep())
+            throw internal_err("entry 找不到： " + entry);
+        parse(db_entry_refs, stmt_select_entry_refs.getColumn(0));
+        stmt_select_entry_refs.reset();
+        db_entry_refs.insert(new_refs.begin(), new_refs.end());
+        join(ref_str, db_entry_refs);
+        stmt_update_entry_refs.bind(1, ref_str);
+        stmt_update_entry_refs.bind(2, entry);
+        stmt_update_entry_refs.exec(); stmt_update_entry_refs.reset();
+    }
+    cout << "done!" << endl;
+
+    transaction.commit();
 }
 
 // like PhysWikiOnline, but convert only specified files

@@ -30,6 +30,10 @@ CREATE TABLE "entries" (
 	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authorID] 是否正在被占用（审核发布后解除）
 	"last_mod"	TEXT NOT NULL DEFAULT '', -- 最后修改时间 YYYYMMDDHHMM
 
+	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
+	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
+	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
+
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
 	FOREIGN KEY("chapter") REFERENCES "chapters"("id")

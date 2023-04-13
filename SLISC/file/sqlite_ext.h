@@ -5,6 +5,7 @@
 #include <sqlite3.h>
 #include <SQLiteCpp/Statement.h>
 #include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/Transaction.h>
 #include "../arith/scalar_arith.h"
 #include "../str/unicode.h"
 
