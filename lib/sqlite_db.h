@@ -603,10 +603,10 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             stmt_select1.bind(1, fig_id);
             if (!stmt_select1.executeStep())
                 throw scan_err("图片标签不存在： fig_" + fig_id);
-            db_orders.push_back((int)stmt_select1.getColumn(1));
+            db_orders.push_back((int)stmt_select1.getColumn(0));
             db_ref_bys.emplace_back();
-            parse(db_ref_bys.back(), stmt_select1.getColumn(2));
-            db_hashes.push_back(stmt_select1.getColumn(3));
+            parse(db_ref_bys.back(), stmt_select1.getColumn(1));
+            db_hashes.push_back(stmt_select1.getColumn(2));
             stmt_select1.reset();
         }
     }

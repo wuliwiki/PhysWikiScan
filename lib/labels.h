@@ -299,6 +299,7 @@ inline Long autoref(unordered_map<Str, set<Str>> &new_label_ref_by, // label -> 
         del_label_ref_by[entry].insert(label);
     for (auto &fig : fig_not_refed)
         db_fig_ref_by[entry].insert(fig);
+    return N;
 }
 
 // get a new label name for an environment for an entry
