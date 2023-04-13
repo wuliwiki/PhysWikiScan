@@ -853,13 +853,13 @@ inline Long dep_json(SQLite::Database &db)
     // write part names
     str += "{\n  \"parts\": [\n";
     for (Long i = 0; i < size(part_names); ++i)
-        str += "    {\"name\": \"" + part_names[i] + "\"},\n";
+        str += R"(    {"name": ")" + part_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
     str += "\n  ],\n";
     // write chapter names
     str += "  \"chapters\": [\n";
     for (Long i = 0; i < size(chap_names); ++i)
-        str += "    {\"name\": \"" + chap_names[i] + "\"},\n";
+        str += R"(    {"name": ")" + chap_names[i] + "\"},\n";
     str.pop_back(); str.pop_back();
     str += "\n  ],\n";
     // write entries
@@ -867,10 +867,10 @@ inline Long dep_json(SQLite::Database &db)
     for (Long i = 0; i < size(titles); ++i) {
         if (titles[i].empty())
             continue;
-        str += "    {\"id\": \"" + entries[i] + "\"" +
+        str += R"(    {"id": ")" + entries[i] + "\"" +
                ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
                ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
-               ", \"title\": \"" + titles[i] + "\""
+               R"(, "title": ")" + titles[i] + "\""
             ", \"url\": \"../online/" +
             entries[i] + ".html\"},\n";
     }
@@ -882,8 +882,8 @@ inline Long dep_json(SQLite::Database &db)
     Long Nedge = 0;
     for (Long i = 0; i < size(tree); ++i) {
         for (auto &j : tree[i]) {
-            str += "    {\"source\": \"" + entries[i] + "\", ";
-            str += "\"target\": \"" + entries[j] + "\", ";
+            str += R"(    {"source": ")" + entries[i] + "\", ";
+            str += R"("target": ")" + entries[j] + "\", ";
             str += "\"value\": 1},\n";
             ++Nedge;
         }

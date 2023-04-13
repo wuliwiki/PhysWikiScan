@@ -67,16 +67,16 @@ inline Long define_newcommands(vecStr_O rules)
         ind0 = -1;
         for (Long i = 0; i < 4; ++i) {
             if ((ind0 = line.find("\"", ind0+1)) < 0)
-                throw Str(u8"内部错误： new_commands.txt 格式错误！");
+                throw internal_err(u8"new_commands.txt 格式错误！");
             if ((ind1 = line.find("\"", ind0+1)) < 0)
-                throw Str(u8"内部错误： new_commands.txt 格式错误！");
+                throw internal_err(u8"new_commands.txt 格式错误！");
             rules.push_back(line.substr(ind0+1, ind1-ind0-1));
             ind0 = ind1;
         }
     }
     for (Long i = 4; i < size(rules); i+=4) {
         if (rules[i] < rules[i - 4])
-            throw Str(u8"内部错误： define_newcommands(): rules not sorted: " + rules[i]);
+            throw internal_err(u8"define_newcommands(): rules not sorted: " + rules[i]);
     }
     return rules.size();
 }
@@ -94,7 +94,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 
     // all commands to find
     if (rules.size() % 4 != 0)
-        throw Str("rules.size() illegal!");
+        throw scan_err("rules.size() illegal!");
     // == print newcommands ===
     // for (Long i = 0; i < size(rules); i += 4)
     //     cout << rules[i] << " || " << rules[i+1] << " || " << rules[i+2] << " || " << rules[i+3] << endl;
@@ -147,7 +147,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
             if (ind1 < 0) {
                 if (candi < 0) {
                     ind = -1; break;
-                    // throw Str(u8"内部错误：命令替换规则不存在：" + cmd + u8" （格式：" + format + u8"）");
+                    // throw scan_err(u8"内部错误：命令替换规则不存在：" + cmd + u8" （格式：" + format + u8"）");
                 }
                 ind = candi;
                 break;
@@ -217,7 +217,7 @@ inline Long TextEscape(Str_IO str)
     N += replace(str, ">", "&gt;");
     Long tmp = replace(str, "\\\\", "<br>");
     if (tmp > 0)
-        throw Str(u8"正文中发现 '\\\\' 强制换行！");
+        throw scan_err(u8"正文中发现 '\\\\' 强制换行！");
     N += tmp;
     N += replace(str, "\\ ", " ");
     N += replace(str, "{}", "");
@@ -247,9 +247,9 @@ inline Long NormalTextEscape(Str_IO str)
     for (Long i = Nnorm - 1; i >= 0; --i) {
         temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
         try {N1 = TextEscape(temp);}
-        catch(Str str) {
+        catch(const std::exception &e) {
             if (!warned) {
-                SLS_WARN(str); warned = true;
+                SLS_WARN(e.what()); warned = true;
             }
         }
         if (N1 < 0)
@@ -279,10 +279,10 @@ inline Long Table(Str_IO str)
         indLine.clear();
         ind0 = find_command(str, "caption", intv.L(i));
         if (ind0 < 0 || ind0 > intv.R(i))
-            throw Str("table no caption!");
+            throw scan_err(u8"表格没有标题");
         command_arg(captions[i], str, ind0);
         if ((Long)captions[i].find("\\footnote") >= 0)
-            throw Str(u8"表格标题中不能添加 \\footnote");
+            throw scan_err(u8"表格标题中不能添加 \\footnote");
         // recognize \hline and replace with tags, also deletes '\\'
         while (true) {
             ind0 = str.find("\\hline", ind0);
@@ -358,7 +358,7 @@ inline Long Itemize(Str_IO str)
             ind0 = str.find("\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
-                throw Str(u8"\\item 命令后面必须有空格或回车！");
+                throw scan_err(u8"\\item 命令后面必须有空格或回车！");
             indItem.push_back(ind0); ind0 += 5;
         }
         Nitem = indItem.size();
@@ -410,7 +410,7 @@ inline Long Enumerate(Str_IO str)
             ind0 = str.find("\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
-                throw Str(u8"\\item 命令后面必须有空格或回车！");
+                throw scan_err(u8"\\item 命令后面必须有空格或回车！");
             indItem.push_back(ind0); ind0 += 5;
         }
         Nitem = indItem.size();
@@ -486,7 +486,7 @@ inline Long href(Str_IO str)
         command_arg(name, str, ind0, 1);
         if (url.substr(0, 7) != "http://" &&
             url.substr(0, 8) != "https://") {
-            throw Str(u8"链接格式错误: " + url);
+            throw scan_err(u8"链接格式错误: " + url);
         }
 
         Long ind1 = skip_command(str, ind0, 2);
