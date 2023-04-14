@@ -322,7 +322,7 @@ inline void db_update_parts_chapters(
     cout << "updating sqlite database (" << part_name.size() << " parts, "
          << chap_name.size() << " chapters) ..." << endl;
     cout.flush();
-    SQLite::Database db_rw(gv::path_data + "scan.db_rw", SQLite::OPEN_READWRITE);
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
     cout << "clear parts and chatpers tables" << endl;
     table_clear("parts", db_rw); table_clear("chapters", db_rw);
