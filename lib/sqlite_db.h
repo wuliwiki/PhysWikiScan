@@ -396,6 +396,10 @@ inline void db_update_entries_from_toc(
             stmt_select.reset();
 
             bool changed = false;
+            if (titles[i] != db_title) {
+                SLS_WARN(entry + ": title has changed from " + db_title + " to " + titles[i]);
+                changed = true;
+            }
             if (part_ids[entry_part[i]] != db_part) {
                 SLS_WARN(entry + ": part has changed from " + db_part + " to " + part_ids[entry_part[i]]);
                 changed = true;
