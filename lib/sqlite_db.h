@@ -597,6 +597,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         if (!stmt_select0.executeStep())
             throw scan_err("词条不存在： " + entry);
         parse(db_entry_figs, stmt_select0.getColumn(0));
+        stmt_select0.reset();
         for (auto &fig_id: db_entry_figs) {
             db_figs.push_back(fig_id);
             db_fig_entries.push_back(entry);
