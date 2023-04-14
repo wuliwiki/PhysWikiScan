@@ -91,7 +91,8 @@ CREATE TABLE "figures" (
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 该环境是否已删除
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("hash") REFERENCES "figure_files"("hash")
+	FOREIGN KEY("hash") REFERENCES "figure_files"("hash"),
+	UNIQUE("entry", "order")
 );
 
 -- 图片文件

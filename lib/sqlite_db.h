@@ -1068,6 +1068,16 @@ inline void arg_fix_db()
 
     // === regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels" ======
     cout << R"(regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels"...)" << endl;
+    SQLite::Transaction transaction(db_rw);
+    vecStr db_figs0, db_labels0;
+    get_column(db_figs0, "figures", "id", db_rw);
+    get_column(db_labels0, "labels", "id", db_rw);
+    unordered_set<Str> figs_unused, labels_unused;
+    figs_unused.insert(db_figs0.begin(), db_figs0.end());
+    labels_unused.insert(db_labels0.begin(), db_labels0.end());
+    db_figs0.clear(); db_figs0.shrink_to_fit();
+    db_labels0.clear(); db_labels0.shrink_to_fit();
+
     SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id", "labels" FROM "entries" WHERE "labels" != '';)");
     SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
     unordered_set<Str> labels;
@@ -1075,6 +1085,7 @@ inline void arg_fix_db()
         entry = (const char*)stmt_select_labels.getColumn(0);
         parse(labels, stmt_select_labels.getColumn(1));
         for (auto &label : labels) {
+            labels_unused.erase(label);
             stmt_update_labels_entry.bind(1, entry);
             stmt_update_labels_entry.bind(2, label);
             stmt_update_labels_entry.exec();
@@ -1091,6 +1102,7 @@ inline void arg_fix_db()
         entry = (const char*)stmt_select_figs.getColumn(0);
         parse(figs, stmt_select_figs.getColumn(1));
         for (auto &fig_id : figs) {
+            figs_unused.erase(fig_id);
             stmt_update_figs_entry.bind(1, entry);
             stmt_update_figs_entry.bind(2, fig_id);
             stmt_update_figs_entry.exec();
@@ -1099,9 +1111,25 @@ inline void arg_fix_db()
             stmt_update_figs_entry.reset();
         }
     }
+
+    // delete unused figures and labels
+    SQLite::Statement stmt_fig_mark_del(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
+    for (auto &fig_id : figs_unused) {
+        stmt_fig_mark_del.bind(1, fig_id);
+        stmt_fig_mark_del.exec(); stmt_fig_mark_del.reset();
+    }
+    SQLite::Statement stmt_del_label(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
+    for (auto &label : labels_unused) {
+        stmt_del_label.bind(1, label);
+        stmt_del_label.exec(); stmt_del_label.reset();
+    }
+
     cout << "done!" << endl;
 
     // === regenerate "figures.ref_by", "labels.ref_by" from "entries.refs" ===========
+    exec(R"(UPDATE "figures" SET "ref_by"='';)", db_rw);
+    exec(R"(UPDATE "labels" SET "ref_by"='';)", db_rw);
+
     cout << R"(regenerate "figures.ref_by", "labels.ref_by" from "entries.refs...")" << endl;
     SQLite::Statement stmt_select_refs(db_rw, R"(SELECT "id", "refs" FROM "entries" WHERE "refs" != '';)");
     while (stmt_select_refs.executeStep()) {
@@ -1138,4 +1166,5 @@ inline void arg_fix_db()
         stmt_update_labels_ref_by.reset();
     }
     cout << "done!" << endl;
+    transaction.commit();
 }

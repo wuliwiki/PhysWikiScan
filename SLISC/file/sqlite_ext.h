@@ -72,7 +72,7 @@ inline Str get_text(Str_I table, Str_I field, Str_I val, Str_I field_out, SQLite
 inline void get_column(vecStr_O data, Str_I table, Str_I field, SQLite::Database &db)
 {
 	data.clear();
-	Str cmd = "SELECT \"" + field + "\" FROM " + table;
+	Str cmd = "SELECT \"" + field + "\" FROM \"" + table + "\";";
 	SQLite::Statement stmt(db, cmd);
 	while (stmt.executeStep())
 		data.push_back(stmt.getColumn(0));
@@ -81,7 +81,7 @@ inline void get_column(vecStr_O data, Str_I table, Str_I field, SQLite::Database
 inline void get_column(vecStr32_O data, Str_I table, Str_I field, SQLite::Database &db)
 {
 	data.clear();
-	Str cmd = "SELECT \"" + field + "\" FROM " + table;
+	Str cmd = "SELECT \"" + field + "\" FROM \"" + table + "\";";
 	SQLite::Statement stmt(db, cmd);
 	while (stmt.executeStep()) {
 		const char *p = stmt.getColumn(0);
