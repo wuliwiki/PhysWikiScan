@@ -321,10 +321,10 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
     Long ind0 = 0;
     Str label0, newtab;
 
-    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 
-    SQLite::Statement stmt_select(db_rw,
-                                  R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
+    SQLite::Statement stmt_select(db_read,
+        R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
     stmt_select.bind(1, type);
     stmt_select.bind(2, entry);
     stmt_select.bind(3, (int)order);
@@ -439,13 +439,28 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
     }
 
     if (!dry_run) {
+        // insert into "labels"
+        SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+        SQLite::Transaction transaction(db_rw);
         SQLite::Statement stmt_insert(db_rw,
             R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
         stmt_insert.bind(1, label);
         stmt_insert.bind(2, type);
         stmt_insert.bind(3, entry);
         stmt_insert.bind(4, int(order));
-        stmt_insert.exec();
+        stmt_insert.exec(); stmt_insert.reset();
+
+        // update "entries.refs"
+        set<Str> labels;
+        parse(labels, get_text("entries", "id", entry, "labels", db_rw));
+        labels.insert(label);
+        Str labels_str; join(labels_str, labels);
+        SQLite::Statement stmt_update(db_rw,
+            R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
+        stmt_update.bind(1, labels_str);
+        stmt_update.bind(2, entry);
+        stmt_update.exec(); stmt_update.reset();
+        transaction.commit();
     }
     return 0;
 }

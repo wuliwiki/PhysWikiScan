@@ -570,7 +570,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
     Str entry, id, hash, ext;
     Long order;
-
+    SQLite::Transaction transaction(db_rw);
     SQLite::Statement stmt_select0(db_rw,
         R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_select1(db_rw,
@@ -615,7 +615,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     set<Str> new_figs, figs;
 
     for (Long i = 0; i < size(entries); ++i) {
-        SQLite::Transaction transaction(db_rw);
         entry = entries[i];
         new_figs.clear();
         for (Long j = 0; j < size(entry_figs[i]); ++j) {
@@ -679,7 +678,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             stmt_update2.exec(); stmt_update2.reset();
         }
         stmt_select2.reset();
-        transaction.commit();
     }
 
     // 检查被删除的标签
@@ -697,6 +695,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
         }
     }
+    transaction.commit();
     // cout << "done!" << endl;
 }
 
@@ -706,6 +705,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                  const vector<vecStr> &entry_labels, const vector<vecLong> &entry_label_orders,
                  SQLite::Database &db_rw)
 {
+    SQLite::Transaction transaction(db_rw);
     // cout << "updating db for labels..." << endl;
     update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
     SQLite::Statement stmt_select0(db_rw,
@@ -755,7 +755,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     set<Str> new_labels, labels;
 
     for (Long j = 0; j < size(entries); ++j) {
-        SQLite::Transaction transaction(db_rw);
         entry = entries[j];
         new_labels.clear();
         for (Long i = 0; i < size(entry_labels[j]); ++i) {
@@ -816,7 +815,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             stmt_update2.exec(); stmt_update2.reset();
             stmt_select0.reset();
         }
-        transaction.commit();
     }
 
     // 检查被删除的标签（如果只被本词条引用， 就留给 autoref() 报错）
