@@ -47,18 +47,21 @@ inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
         if (ind0 < 0)
             return;
         command_arg(temp, str, ind0, 0, 't');
-        Long ind1 = 0;
+        Long ind1 = 0, ind2 = 0;
         while (1) {
-            ind1 = find_command(temp, "upref", ind1);
+            ind1 = find_command(temp, "upref", ind2);
             if (ind1 < 0)
                 return;
+            if (!pentries.empty())
+                if (expect(str, u8"，", ind2) < 0)
+                    throw scan_err(u8"\\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \\pentry{词条1\\upref{文件名1}， 词条2\\upref{文件名2}}。");
             command_arg(depEntry, temp, ind1, 0, 't');
             if (!exist("entries", "id", depEntry, db_read))
                 throw scan_err(u8"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             if (search(depEntry, pentries) >= 0)
                 throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
             pentries.push_back(depEntry);
-            ++ind1;
+            ind2 = skip_command(str, ind1, 1);
         }
     }
 }

@@ -337,7 +337,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
             return 1;
         }
         else
-            throw scan_err(u8"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加 \\label{fig_xxxx}。");
+            throw scan_err(u8"找不到图片， 请确认图片存在且成功编译， 且用 \\label{} 定义了标签。 要上传图片请使用菜单栏的【上传图片】按钮， 成功后会自动插入图片环境并创建 label。");
     }
     else {
         SQLite::Statement stmt_select_label(db_read,
