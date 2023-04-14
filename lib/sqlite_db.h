@@ -1056,3 +1056,86 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
     cout << "done!" << endl;
     transaction.commit();
 }
+
+// make db consistent
+// (regenerate derived fields)
+inline void arg_fix_db()
+{
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    Str refs_str, entry;
+    set<Str> refs;
+    unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by;
+
+    // === regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels" ======
+    cout << R"(regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels"...)" << endl;
+    SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id", "labels" FROM "entries" WHERE "labels" != '';)");
+    SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
+    unordered_set<Str> labels;
+    while (stmt_select_labels.executeStep()) {
+        entry = (const char*)stmt_select_labels.getColumn(0);
+        parse(labels, stmt_select_labels.getColumn(1));
+        for (auto &label : labels) {
+            stmt_update_labels_entry.bind(1, entry);
+            stmt_update_labels_entry.bind(2, label);
+            stmt_update_labels_entry.exec();
+            if (!stmt_update_labels_entry.getChanges())
+                throw internal_err("数据库 labels 表格中未找到： " + label);
+            stmt_update_labels_entry.reset();
+        }
+    }
+
+    SQLite::Statement stmt_select_figs(db_rw, R"(SELECT "id", "figures" FROM "entries" WHERE "figures" != '';)");
+    SQLite::Statement stmt_update_figs_entry(db_rw, R"(UPDATE "figures" SET "entry"=? WHERE "id"=?;)");
+    unordered_set<Str> figs;
+    while (stmt_select_figs.executeStep()) {
+        entry = (const char*)stmt_select_figs.getColumn(0);
+        parse(figs, stmt_select_figs.getColumn(1));
+        for (auto &fig_id : figs) {
+            stmt_update_figs_entry.bind(1, entry);
+            stmt_update_figs_entry.bind(2, fig_id);
+            stmt_update_figs_entry.exec();
+            if (!stmt_update_figs_entry.getChanges())
+                throw internal_err("数据库 figs 表格中未找到： " + fig_id);
+            stmt_update_figs_entry.reset();
+        }
+    }
+    cout << "done!" << endl;
+
+    // === regenerate "figures.ref_by", "labels.ref_by" from "entries.refs" ===========
+    cout << R"(regenerate "figures.ref_by", "labels.ref_by" from "entries.refs...")" << endl;
+    SQLite::Statement stmt_select_refs(db_rw, R"(SELECT "id", "refs" FROM "entries" WHERE "refs" != '';)");
+    while (stmt_select_refs.executeStep()) {
+        entry = (const char*)stmt_select_refs.getColumn(0);
+        parse(refs, stmt_select_refs.getColumn(1));
+        for (auto &ref : refs) {
+            if (label_type(ref) == "fig")
+                figs_ref_by[label_id(ref)].insert(entry);
+            else
+                labels_ref_by[ref].insert(entry);
+        }
+    }
+
+    SQLite::Statement stmt_update_fig_ref_by(db_rw, R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+    Str ref_by_str;
+    for (auto &e : figs_ref_by) {
+        join(ref_by_str, e.second);
+        stmt_update_fig_ref_by.bind(1, ref_by_str);
+        stmt_update_fig_ref_by.bind(2, e.first);
+        stmt_update_fig_ref_by.exec();
+        if (!stmt_update_fig_ref_by.getChanges())
+            throw internal_err("数据库 figures 表格中未找到： " + e.first);
+        stmt_update_fig_ref_by.reset();
+    }
+
+    SQLite::Statement stmt_update_labels_ref_by(db_rw, R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+    for (auto &e : labels_ref_by) {
+        join(ref_by_str, e.second);
+        stmt_update_labels_ref_by.bind(1, ref_by_str);
+        stmt_update_labels_ref_by.bind(2, e.first);
+        stmt_update_labels_ref_by.exec();
+        if (!stmt_update_labels_ref_by.getChanges())
+            throw internal_err("数据库 labels 表格中未找到： " + e.first);
+        stmt_update_labels_ref_by.reset();
+    }
+    cout << "done!" << endl;
+}

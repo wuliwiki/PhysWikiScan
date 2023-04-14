@@ -6,7 +6,7 @@
 CREATE TABLE "entries" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题
-	"authors"	TEXT NOT NULL DEFAULT '', -- "id1 id2 id3" 作者 ID
+	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID
 	
 	"part"	TEXT NOT NULL DEFAULT '', -- 部分
 	"chapter"	TEXT NOT NULL DEFAULT '', -- 章
@@ -27,7 +27,7 @@ CREATE TABLE "entries" (
 	"issueOther"	TEXT NOT NULL DEFAULT '', -- \issueOther{} 中的文字
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
-	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authorID] 是否正在被占用（审核发布后解除）
+	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authors.id] 是否正在被占用（审核发布后解除）
 	"last_mod"	TEXT NOT NULL DEFAULT '', -- 最后修改时间 YYYYMMDDHHMM
 
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
@@ -82,12 +82,12 @@ CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
 	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
-	"entry"	TEXT NOT NULL, -- 所在词条
+	"entry"	TEXT NOT NULL, -- 【生成】所在词条（以 entries.figures 为准）
 	"order"	INTEGER NOT NULL, -- 显示编号
 	"hash"	TEXT NOT NULL, -- 文件 SHA1 前 16 位， 多个 id 可以使用同一个 hash 共用一个文件（svg 和 pdf 同名的，使用后者）
 	"license"	TEXT NOT NULL DEFAULT '', -- 格式和 entries.license 相同
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
-	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 该环境是否已删除
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
@@ -151,9 +151,9 @@ CREATE TABLE "code" (
 CREATE TABLE "labels" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"type"	TEXT NOT NULL, -- [sub|tab|def|lem|the|cor|ex|exe] 标签类型
-	"entry"	TEXT NOT NULL, -- 所在词条
+	"entry"	TEXT NOT NULL, -- 【生成】所在词条（以 entries.labels 为准）
 	"order"	INTEGER NOT NULL, -- 显示编号
-	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 被哪些词条引用（需要排序）
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条引用（以 entries.refs 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	UNIQUE("type", "entry", "order")

@@ -259,6 +259,8 @@ int main(int argc, char *argv[]) {
             } else
                 path = "../PhysWiki-backup/";
             arg_history(path);
+        } else if (args[0] == "--fix-db" && args.size() == 1) {
+            arg_fix_db();
         } else if (args[0] == "--hide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
