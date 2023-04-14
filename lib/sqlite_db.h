@@ -584,12 +584,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     SQLite::Statement stmt_update2(db_rw,
         R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
-    // get all figure envs defined in `entries`
+    // get all figure envs defined in `entries`, to detect deleted figures
     //  db_xxx[i] are from the same row of "labels" table
-    vecStr db_figs, db_entries, db_hashes;
+    vecStr db_figs, db_fig_entries, db_fig_hashes;
     vecBool db_figs_used;
-    vecLong db_orders;
-    vector<vecStr> db_ref_bys;
+    vecLong db_fig_orders;
+    vector<vecStr> db_fig_ref_bys;
     set<Str> db_entry_figs;
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
@@ -599,14 +599,14 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         parse(db_entry_figs, stmt_select0.getColumn(0));
         for (auto &fig_id: db_entry_figs) {
             db_figs.push_back(fig_id);
-            db_entries.push_back(entry);
+            db_fig_entries.push_back(entry);
             stmt_select1.bind(1, fig_id);
             if (!stmt_select1.executeStep())
                 throw scan_err("图片标签不存在： fig_" + fig_id);
-            db_orders.push_back((int)stmt_select1.getColumn(0));
-            db_ref_bys.emplace_back();
-            parse(db_ref_bys.back(), stmt_select1.getColumn(1));
-            db_hashes.push_back(stmt_select1.getColumn(2));
+            db_fig_orders.push_back((int)stmt_select1.getColumn(0));
+            db_fig_ref_bys.emplace_back();
+            parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
+            db_fig_hashes.push_back(stmt_select1.getColumn(2));
             stmt_select1.reset();
         }
     }
@@ -633,26 +633,26 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
             db_figs_used[ind] = true;
             bool changed = false;
-            if (entry != db_entries[ind]) {
+            if (entry != db_fig_entries[ind]) {
                 SLS_WARN(u8"发现数据库中图片 entry 改变（将更新）：" + id + ": "
-                         + db_entries[ind] + " -> " + entry);
+                         + db_fig_entries[ind] + " -> " + entry);
                 changed = true;
             }
-            if (order != db_orders[ind]) {
+            if (order != db_fig_orders[ind]) {
                 SLS_WARN(u8"发现数据库中图片 order 改变（将更新）：" + id + ": "
-                         + to_string(db_orders[ind]) + " -> " + to_string(order));
+                         + to_string(db_fig_orders[ind]) + " -> " + to_string(order));
                 changed = true;
 
                 // order change means other ref_by entries needs to be updated with autoref() as well.
                 if (!gv::is_entire) {
-                    for (auto &by_entry: db_ref_bys[ind])
+                    for (auto &by_entry: db_fig_ref_bys[ind])
                         if (search(by_entry, entries) < 0)
                             update_entries.insert(by_entry);
                 }
             }
-            if (hash != db_hashes[ind]) {
+            if (hash != db_fig_hashes[ind]) {
                 SLS_WARN(u8"发现数据库中图片 hash 改变（将更新）：" + id + ": "
-                         + db_hashes[ind] + " -> " + hash);
+                         + db_fig_hashes[ind] + " -> " + hash);
                 changed = true;
             }
             if (changed) {
@@ -664,7 +664,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
         }
 
-        // update entries.figures
+        // add entries.figures
         stmt_select2.bind(1, entry);
         if (!new_figs.empty()) {
             if (!stmt_select2.executeStep())
@@ -680,17 +680,29 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         stmt_select2.reset();
     }
 
-    // 检查被删除的标签
+    // 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
     Str ref_by_str;
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
     for (Long i = 0; i < size(db_figs_used); ++i) {
         if (!db_figs_used[i]) {
-            if (db_ref_bys[i].empty()) {
+            if (db_fig_ref_bys[i].empty() ||
+                (db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == entry)) {
+                // delete from "figures"
                 stmt_delete.bind(1, db_figs[i]);
                 stmt_delete.exec(); stmt_delete.reset();
+                // delete from "entries.figures"
+                stmt_select0.bind(1, db_fig_entries[i]);
+                SLS_ASSERT(stmt_select0.executeStep());
+                parse(figs, stmt_select0.getColumn(0));
+                figs.erase(db_figs[i]);
+                stmt_select0.reset();
+                join(figs_str, figs);
+                stmt_update2.bind(1, figs_str);
+                stmt_update2.bind(2, db_fig_entries[i]);
+                stmt_update2.exec(); stmt_update2.reset();
             }
             else {
-                join(ref_by_str, db_ref_bys[i], ", ");
+                join(ref_by_str, db_fig_ref_bys[i], ", ");
                 throw scan_err(u8"检测到 figure 被删除： " + db_figs[i] + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
@@ -844,6 +856,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             }
         }
     }
+    transaction.commit();
     // cout << "done!" << endl;
 }
 
@@ -986,7 +999,13 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
             fig_id = label_id(e.first);
             auto &by_entries = e.second;
             ref_by.clear();
-            ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+            try {
+                ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+            }
+            catch (const std::exception &e) {
+                if ((Long)Str(e.what()).find("row not found") >= 0)
+                    continue; // label deleted
+            }
             parse(ref_by, ref_by_str);
             for (auto &by_entry : by_entries)
                 ref_by.erase(by_entry);
@@ -998,7 +1017,13 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
         else {
             auto &by_entries = e.second;
             ref_by.clear();
-            ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+            try {
+                ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+            }
+            catch (const std::exception &e) {
+                if ((Long)Str(e.what()).find("row not found") >= 0)
+                    continue; // label deleted
+            }
             parse(ref_by, ref_by_str);
             for (auto &by_entry: by_entries)
                 ref_by.erase(by_entry);
@@ -1064,17 +1089,19 @@ inline void arg_fix_db()
     set<Str> refs;
     unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by;
 
+    // get all labels.id and figures.id from database, to detect unused ones
+    unordered_set<Str> db_figs_unused, db_labels_unused;
+    {
+        vecStr db_figs0, db_labels0;
+        get_column(db_figs0, "figures", "id", db_rw);
+        get_column(db_labels0, "labels", "id", db_rw);
+        db_figs_unused.insert(db_figs0.begin(), db_figs0.end());
+        db_labels_unused.insert(db_labels0.begin(), db_labels0.end());
+    }
+
     // === regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels" ======
     cout << R"(regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels"...)" << endl;
     SQLite::Transaction transaction(db_rw);
-    vecStr db_figs0, db_labels0;
-    get_column(db_figs0, "figures", "id", db_rw);
-    get_column(db_labels0, "labels", "id", db_rw);
-    unordered_set<Str> figs_unused, labels_unused;
-    figs_unused.insert(db_figs0.begin(), db_figs0.end());
-    labels_unused.insert(db_labels0.begin(), db_labels0.end());
-    db_figs0.clear(); db_figs0.shrink_to_fit();
-    db_labels0.clear(); db_labels0.shrink_to_fit();
 
     SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id", "labels" FROM "entries" WHERE "labels" != '';)");
     SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
@@ -1083,7 +1110,7 @@ inline void arg_fix_db()
         entry = (const char*)stmt_select_labels.getColumn(0);
         parse(labels, stmt_select_labels.getColumn(1));
         for (auto &label : labels) {
-            labels_unused.erase(label);
+            db_labels_unused.erase(label);
             stmt_update_labels_entry.bind(1, entry);
             stmt_update_labels_entry.bind(2, label);
             stmt_update_labels_entry.exec();
@@ -1100,7 +1127,7 @@ inline void arg_fix_db()
         entry = (const char*)stmt_select_figs.getColumn(0);
         parse(figs, stmt_select_figs.getColumn(1));
         for (auto &fig_id : figs) {
-            figs_unused.erase(fig_id);
+            db_figs_unused.erase(fig_id);
             stmt_update_figs_entry.bind(1, entry);
             stmt_update_figs_entry.bind(2, fig_id);
             stmt_update_figs_entry.exec();
@@ -1112,12 +1139,12 @@ inline void arg_fix_db()
 
     // delete unused figures and labels
     SQLite::Statement stmt_fig_mark_del(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
-    for (auto &fig_id : figs_unused) {
+    for (auto &fig_id : db_figs_unused) {
         stmt_fig_mark_del.bind(1, fig_id);
         stmt_fig_mark_del.exec(); stmt_fig_mark_del.reset();
     }
     SQLite::Statement stmt_del_label(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
-    for (auto &label : labels_unused) {
+    for (auto &label : db_labels_unused) {
         stmt_del_label.bind(1, label);
         stmt_del_label.exec(); stmt_del_label.reset();
     }

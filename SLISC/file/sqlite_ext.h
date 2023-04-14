@@ -41,7 +41,8 @@ inline bool count(Str_I table, Str_I field, Str_I text, SQLite::Database &db)
 	Str cmd = "SELECT COUNT(*) FROM \"" + table + "\" WHERE \"" + field + "\" = ?;";
 	SQLite::Statement stmt(db, cmd);
 	stmt.bind(1, text);
-	if (!stmt.executeStep()) throw Str("unknown!");
+	if (!stmt.executeStep())
+        throw std::runtime_error("unknown: " + cmd + " [? = " + text + "]");
 	return (int)stmt.getColumn(0);
 }
 
@@ -52,7 +53,7 @@ inline Llong get_int(Str_I table, Str_I field, Str_I val, Str_I field_out, SQLit
 	Str cmd = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
 	SQLite::Statement stmt(db, cmd);
 	if (!stmt.executeStep())
-        throw std::runtime_error("get_text(): row not found!");
+        throw std::runtime_error("get_text(): row not found: " + cmd);
     ret = (int)stmt.getColumn(0);
 	return ret;
 }
@@ -63,7 +64,7 @@ inline Str get_text(Str_I table, Str_I field, Str_I val, Str_I field_out, SQLite
 	Str cmd = "SELECT \"" + field_out + "\" FROM \"" + table + "\" WHERE \"" + field + "\" = '" + val + "';";
 	SQLite::Statement stmt(db, cmd);
 	if (!stmt.executeStep())
-        throw std::runtime_error("get_text(): row not found!");
+        throw std::runtime_error("get_text(): row not found: " + cmd);
     ret = (const char*)stmt.getColumn(0);
 	return ret;
 }
