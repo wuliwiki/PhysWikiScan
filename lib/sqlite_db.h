@@ -322,14 +322,15 @@ inline void db_update_parts_chapters(
     cout << "updating sqlite database (" << part_name.size() << " parts, "
          << chap_name.size() << " chapters) ..." << endl;
     cout.flush();
-    SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Database db_rw(gv::path_data + "scan.db_rw", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
     cout << "clear parts and chatpers tables" << endl;
-    table_clear("parts", db); table_clear("chapters", db);
+    table_clear("parts", db_rw); table_clear("chapters", db_rw);
 
     // insert parts
-    cout << "inserting parts to db..." << endl;
-    SQLite::Statement stmt_insert_part(db,
-        R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
+    cout << "inserting parts to db_rw..." << endl;
+    SQLite::Statement stmt_insert_part(db_rw,
+                                       R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
     for (Long i = 0; i < size(part_name); ++i) {
         // cout << "part " << i << ". " << part_ids[i] << ": " << part_name[i] << " chapters: " << chap_first[i] << " -> " << chap_last[i] << endl;
         stmt_insert_part.bind(1, part_ids[i]);
@@ -342,9 +343,9 @@ inline void db_update_parts_chapters(
     cout << "\n\n\n" << endl;
 
     // insert chapters
-    cout << "inserting chapters to db..." << endl;
-    SQLite::Statement stmt_insert_chap(db,
-        R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
+    cout << "inserting chapters to db_rw..." << endl;
+    SQLite::Statement stmt_insert_chap(db_rw,
+                                       R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
 
     for (Long i = 0; i < size(chap_name); ++i) {
         // cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
@@ -356,6 +357,7 @@ inline void db_update_parts_chapters(
         stmt_insert_chap.bind(6, entry_last[i]);
         stmt_insert_chap.exec(); stmt_insert_chap.reset();
     }
+    transaction.commit();
     cout << "done." << endl;
 }
 
@@ -372,7 +374,8 @@ inline void db_update_entries_from_toc(
         R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
     SQLite::Statement stmt_select(db_rw,
         R"(SELECT "caption", "keys", "pentry", "part", "chapter", "order" FROM "entries" WHERE "id"=?;)");
-    
+    SQLite::Transaction transaction(db_rw);
+
     for (Long i = 0; i < size(entries); i++) {
         Long entry_order = i + 1;
         Str entry = entries[i];
@@ -416,6 +419,7 @@ inline void db_update_entries_from_toc(
         else // entry_exist == false
             throw scan_err(u8"main.tex 中的词条在数据库中未找到： " + entry);
     }
+    transaction.commit();
     cout << "done." << endl;
 }
 
@@ -430,6 +434,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     file_list_ext(fnames, path, "tex", false);
     cout << "updating sqlite database \"history\" table (" << fnames.size()
         << " backup) ..." << endl; cout.flush();
+
+    SQLite::Transaction transaction(db_rw);
 
     // update "history" table
     check_foreign_key(db_rw);
@@ -558,6 +564,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         stmt_contrib.exec(); stmt_contrib.reset();
     }
 
+    transaction.commit();
     cout << "done." << endl;
 }
 
