@@ -5,7 +5,7 @@
 -- 目录中的 \entry{标题}{xxx} 中 xxx 为 "id"
 CREATE TABLE "entries" (
 	"id"	TEXT UNIQUE NOT NULL,
-	"caption"	TEXT NOT NULL DEFAULT '', -- 标题
+	"caption"	TEXT NOT NULL DEFAULT '', -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
 	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID
 	
 	"part"	TEXT NOT NULL DEFAULT '', -- 部分

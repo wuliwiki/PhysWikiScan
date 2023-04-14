@@ -144,34 +144,29 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 }
 
 // create table of content from main.tex
-// path must end with '\\'
-// return the number of entries
-// names is a list of filenames
-// titles[i] is the chinese title of entries[i]
+// path must end with '/'
+// titles[i] is the chinese title of entries[i].tex from first line of comment
 // `entry_part[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `entry_chap[i]` is similar to `entry_part[i]`, for chapters
 // if entry_part.size() == 0, `chap_names, entry_chap, entry_part, part_names` will be ignored
 inline void table_of_contents(
-        vecStr_O part_ids, vecStr_O part_names, vecStr_O part_chap_first, vecStr_O part_chap_last,
-        vecStr_O chap_ids, vecStr_O chap_names, vecLong_O chap_part, vecStr_O chap_entry_first, vecStr_O chap_entry_last,
-        vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, SQLite::Database &db_read)
+        vecStr_O part_ids, vecStr_O part_names, vecStr_O part_chap_first, vecStr_O part_chap_last, // part info
+        vecStr_O chap_ids, vecStr_O chap_names, vecLong_O chap_part, vecStr_O chap_entry_first, vecStr_O chap_entry_last, // chapter info
+        vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, // entry info
+        SQLite::Database &db_read)
 {
-    SQLite::Statement stmt_select(
-            db_read,
-            R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)"
-            );
+    SQLite::Statement stmt_select(db_read,
+        R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)");
 
     Long ind0 = 0, ind1 = 0, ikey, chapNo = -1, chapNo_tot = 0, partNo = 0;
     vecStr keys{ "\\part", "\\chapter", "\\entry", "\\bibli"};
-    //keys.push_back("\\entry"); keys.push_back("\\chapter"); keys.push_back("\\part");
     
-    Str title; // chinese entry name, chapter name, or part name
-    Str entry; // entry label
-    Str str, str2, toc, class_draft;
+    Str title, entry, str, str2, html, class_draft;
 
     part_ids.clear(); part_names.clear(); part_chap_first.clear(); part_chap_last.clear();
     chap_ids.clear(); chap_names.clear(); chap_part.clear();
-    chap_entry_first.clear(); chap_entry_last.clear(); entry_chap.clear();
+    chap_entry_first.clear(); chap_entry_last.clear();
+    entries.clear(); titles.clear(); is_draft.clear(); entry_part.clear(); entry_chap.clear();
 
     part_ids.push_back(""); part_names.push_back(u8"无"); part_chap_first.push_back(""); part_chap_last.push_back("");
     chap_ids.push_back(""); chap_names.push_back(u8"无");  chap_part.push_back(0);
@@ -179,12 +174,12 @@ inline void table_of_contents(
 
     read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
-    read(toc, gv::path_out + "templates/index_template.html"); // read html template
-    CRLF_to_LF(toc);
-    ind0 = toc.find("PhysWikiHTMLbody", ind0);
+    read(html, gv::path_out + "templates/index_template.html"); // read html template
+    CRLF_to_LF(html);
+    ind0 = html.find("PhysWikiHTMLbody", ind0);
     if (ind0 < 0)
         throw internal_err(u8"index_template.html 中没有找到 PhysWikiHTMLbody");
-    toc.erase(ind0, 16);
+    html.erase(ind0, 16);
 
     rm_comments(str); // remove comments
     if (str.empty()) str = " ";
@@ -229,7 +224,7 @@ inline void table_of_contents(
 
             // insert entry into html table of contents
             class_draft = (is_draft.back()) ? "class=\"draft\" " : "";
-            ind0 = insert(toc, "<a " + class_draft + "href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
+            ind0 = insert(html, "<a " + class_draft + "href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
                                + title + u8"</a>　\n", ind0);
 
             entry_part.push_back(partNo);
@@ -257,10 +252,10 @@ inline void table_of_contents(
             // insert chapter into html table of contents
             ++chapNo; ++chapNo_tot;
             if (chapNo > 0)
-                ind0 = insert(toc, "</p>", ind0);
+                ind0 = insert(html, "</p>", ind0);
             chap_names.push_back(title);
             chap_part.push_back(partNo);
-            ind0 = insert(toc, u8"\n\n<h3><b>第" + num2chinese(chapNo+1) + u8"章 " + title
+            ind0 = insert(html, u8"\n\n<h3><b>第" + num2chinese(chapNo+1) + u8"章 " + title
                 + "</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
             ++ind1; last_command = 'c';
         }
@@ -285,7 +280,7 @@ inline void table_of_contents(
             ++partNo;
             part_names.push_back(title);
             
-            ind0 = insert(toc,
+            ind0 = insert(html,
                 "</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
                 "<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
                     + num2str32(partNo) + u8"\">第" + num2chinese(partNo) + u8"部分 " + title + "</h3>\n"
@@ -296,29 +291,29 @@ inline void table_of_contents(
         else if (ikey == 3) {
             // =========  found "\bibli" ==========
             title = u8"参考文献";
-            ind0 = insert(toc, "<a href = \"" + gv::url + "bibliography.html\" target = \"_blank\">"
+            ind0 = insert(html, "<a href = \"" + gv::url + "bibliography.html\" target = \"_blank\">"
                 + title + u8"</a>　\n", ind0);
             ++ind1;
         }
     }
-    toc.insert(ind0, "</p>\n</div>");
+    html.insert(ind0, "</p>\n</div>");
 
     part_chap_last.push_back(chap_ids.back());
     chap_entry_last.push_back(entry);
 
     // list parts
-    ind0 = toc.find("PhysWikiPartList", 0);
+    ind0 = html.find("PhysWikiPartList", 0);
     if (ind0 < 0)
         throw internal_err(u8"html 模板中 PhysWikiPartList 不存在！");
-    toc.erase(ind0, 16);
-    ind0 = insert(toc, "|", ind0);
+    html.erase(ind0, 16);
+    ind0 = insert(html, "|", ind0);
     for (Long i = 1; i < size(part_names); ++i) {
-        ind0 = insert(toc, "   <a href = \"#part" + num2str32(i) + "\">"
+        ind0 = insert(html, "   <a href = \"#part" + num2str32(i) + "\">"
                            + part_names[i] + "</a> |\n", ind0);
     }
 
     // write to index.html
-    write(toc, gv::path_out + "index.html");
+    write(html, gv::path_out + "index.html");
     Long kk = find_repeat(chap_ids);
     if (kk >= 0)
         throw scan_err(u8"\\chapter{} label 重复定义： " + chap_ids[kk]);

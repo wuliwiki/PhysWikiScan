@@ -364,14 +364,14 @@ inline void db_update_parts_chapters(
 // update "entries" table of sqlite db, based on the info from main.tex
 // `entries` are a list of entreis from main.tex
 inline void db_update_entries_from_toc(
-        vecStr_I entries, vecLong_I entry_part, vecStr_I part_ids,
+        vecStr_I entries, vecStr_I titles, vecLong_I entry_part, vecStr_I part_ids,
         vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw)
 {
     cout << "updating sqlite database (" <<
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
 
     SQLite::Statement stmt_update(db_rw,
-        R"(UPDATE "entries" SET "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
+        R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
     SQLite::Statement stmt_select(db_rw,
         R"(SELECT "caption", "keys", "pentry", "part", "chapter", "order" FROM "entries" WHERE "id"=?;)");
     SQLite::Transaction transaction(db_rw);
@@ -409,10 +409,11 @@ inline void db_update_entries_from_toc(
                 changed = true;
             }
             if (changed) {
-                stmt_update.bind(1, part_ids[entry_part[i]]);
-                stmt_update.bind(2, chap_ids[entry_chap[i]]);
-                stmt_update.bind(3, (int) entry_order);
-                stmt_update.bind(4, entry);
+                stmt_update.bind(1, titles[i]);
+                stmt_update.bind(2, part_ids[entry_part[i]]);
+                stmt_update.bind(3, chap_ids[entry_chap[i]]);
+                stmt_update.bind(4, (int) entry_order);
+                stmt_update.bind(5, entry);
                 stmt_update.exec(); stmt_update.reset();
             }
         }

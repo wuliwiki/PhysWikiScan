@@ -376,7 +376,7 @@ inline void arg_toc()
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
                              entry_first, entry_last);
-    db_update_entries_from_toc(entries, entry_part, part_ids, entry_chap, chap_ids, db_rw);
+    db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
 }
 
 // --bib
@@ -399,6 +399,7 @@ inline void arg_history(Str_I path)
 }
 
 // generate html from a single tex
+// output title from first line comment
 inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, vecLong_O img_orders, vecStr_O img_hashes,
                             Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
                             vecStr_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
@@ -426,6 +427,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, 
     db_keys_str = (const char*)stmt_select.getColumn(3);
     db_pentry_str = (const char*)stmt_select.getColumn(4);
     db_draft = (int)stmt_select.getColumn(5);
+    stmt_select.reset();
 
     // read html template and \newcommand{}
     Str html;
@@ -453,12 +455,13 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, 
             throw internal_err(u8"\"PhysWikiHTMLKeywords\" 在 entry_template.html 中数量不对");
     }
 
-    // TODO: enable this when editor can do the rename in db
-//    if (!db_title.empty() && title != db_title)
-//        throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题");
+    if (title != db_title) {
+        if (order > 0) // in main.tex
+            throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题（如果还不行请尝试重新编译 main.tex， 并确保其中的标题和词条文件第一行注释相同）");
+    }
 
     // insert HTML title
-    if (replace(html, "PhysWikiHTMLtitle", title) != 1)
+    if (replace(html, "PhysWikiHTMLtitle", db_title) != 1)
         throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 
     // check globally forbidden char
@@ -598,7 +601,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
                      R"(WHERE "id"=?;)");
             join(key_str, keywords, "|");
             join(pentry_str, pentries);
-            stmt_update.bind(1, titles[i]);
+            stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
             stmt_update.bind(2, key_str);
             stmt_update.bind(3, (int) isdraft);
             stmt_update.bind(4, pentry_str);
