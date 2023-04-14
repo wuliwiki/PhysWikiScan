@@ -213,7 +213,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Database &db_rw)
 {
     SQLite::Statement stmt_insert(db_rw,
-        R"(INSERT INTO "entries" ("id", "caption", "draft") VALUES (?, ?, 1);)");
+        R"(INSERT INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
     for (auto &entry : entries) {
         if (!exist("entries", "id", entry, db_rw)) {
             SLS_WARN(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
