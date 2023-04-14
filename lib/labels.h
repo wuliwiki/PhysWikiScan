@@ -32,7 +32,7 @@ inline Str label_entry_old(Str_I label)
 // return number of labels processed, or -1 if failed
 inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
 {
-    Long ind0{}, ind2{}, ind3{}, ind4{}, ind5{}, N{},
+    Long ind0{}, ind2{}, ind3{}, ind4{}, N{},
         Ngather{}, Nalign{}, i{}, j{};
     Str type; // "eq", "fig", "ex", "sub"...
     Str envName; // "equation" or "figure" or "example"...
@@ -40,25 +40,32 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
     Str label, id;
     labels.clear(); label_orders.clear();
     while (1) {
-        ind5 = find_command(str, "label", ind0);
+        const Long ind5 = find_command(str, "label", ind0);
         if (ind5 < 0) return N;
         // detect environment kind
         ind2 = str.rfind("\\end", ind5);
         ind4 = str.rfind("\\begin", ind5);
         if (ind4 < 0 || (ind4 >= 0 && ind2 > ind4)) {
             // label not in environment, must be a subsection label
+            Long ind7 = str.rfind("\\subsection", ind5);
+            Long ind8 = str.rfind("\n", ind5);
+            if (ind7 < 0 || ind8 > ind7)
+                throw scan_err(u8"环境外的 \\label 视为 \\subsection{} 的标签， 必须紧接在后面（不能换行）： " + str.substr(ind5, 22));
             type = "sub"; envName = "subsection";
-            // TODO: make sure the label follows a \subsection{} command
         }
         else {
             Long ind1 = expect(str, "{", ind4 + 6);
             if (ind1 < 0)
-                throw(Str(u8"\\begin 后面没有 {"));
+                throw scan_err(u8"\\begin 后面没有 {： " + str.substr(ind4, 22));
             if (expect(str, "equation", ind1) > 0) {
                 type = "eq"; envName = "equation";
             }
             else if (expect(str, "figure", ind1) > 0) {
                 type = "fig"; envName = "figure";
+                Long ind7 = str.rfind("\\caption", ind5);
+                Long ind8 = str.rfind("\n", ind5);
+                if (ind7 < 0 || ind8 > ind7)
+                    throw scan_err(u8"figure 环境中的 \\label 必须紧接在 \\caption{} 后面（不能换行）： " + str.substr(ind5, 22));
             }
             else if (expect(str, "definition", ind1) > 0) {
                 type = "def"; envName = "definition";
@@ -155,7 +162,7 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         label_orders.push_back(idN);
         str.erase(ind5, ind3 - ind5 + 1);
         str.insert(ind4, "<span id = \"" + label + "\"></span>");
-        ind0 = ind4 + 6;
+        ind0 = ind5 + 1;
     }
 }
 
