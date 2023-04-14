@@ -712,8 +712,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
         R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_select1(db_rw,
         R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
-    SQLite::Statement stmt_select2(db_rw,
-        R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
     SQLite::Statement stmt_update(db_rw,
@@ -726,10 +724,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 
     // get all db labels defined in `entries`
     //  db_xxx[i] are from the same row of "labels" table
-    vecStr db_labels, db_entries;
+    vecStr db_labels, db_label_entries;
     vecBool db_labels_used;
-    vecLong db_orders;
-    vector<vecStr> db_ref_bys;
+    vecLong db_label_orders;
+    vector<vecStr> db_label_ref_bys;
 
     // get all labels defined by `entries`
     set<Str> db_entry_labels;
@@ -739,15 +737,16 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
         if (!stmt_select0.executeStep())
             throw scan_err("词条不存在： " + entry);
         parse(db_entry_labels, stmt_select0.getColumn(0));
+        stmt_select0.reset();
         for (auto &label: db_entry_labels) {
             db_labels.push_back(label);
-            db_entries.push_back(entry);
+            db_label_entries.push_back(entry);
             stmt_select1.bind(1, label);
             if (!stmt_select1.executeStep())
                 throw scan_err("标签不存在： " + label);
-            db_orders.push_back((int)stmt_select1.getColumn(0));
-            db_ref_bys.emplace_back();
-            parse(db_ref_bys.back(),stmt_select1.getColumn(1));
+            db_label_orders.push_back((int)stmt_select1.getColumn(0));
+            db_label_ref_bys.emplace_back();
+            parse(db_label_ref_bys.back(), stmt_select1.getColumn(1));
             stmt_select1.reset();
         }
     }
@@ -780,16 +779,16 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             }
             db_labels_used[ind] = true;
             bool changed = false;
-            if (entry != db_entries[ind]) {
-                throw scan_err("label " + label + u8" 的词条发生改变（暂时不允许，请使用新的标签）：" + db_entries[ind] + " -> " + entry);
+            if (entry != db_label_entries[ind]) {
+                throw scan_err("label " + label + u8" 的词条发生改变（暂时不允许，请使用新的标签）：" + db_label_entries[ind] + " -> " + entry);
                 changed = true;
             }
-            if (order != db_orders[ind]) {
-                SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_orders[ind]) + " -> " + to_string(order));
+            if (order != db_label_orders[ind]) {
+                SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_label_orders[ind]) + " -> " + to_string(order));
                 changed = true;
                 // order change means other ref_by entries needs to be updated with autoref() as well.
                 if (!gv::is_entire) {
-                    for (auto &by_entry: db_ref_bys[ind])
+                    for (auto &by_entry: db_label_ref_bys[ind])
                         if (search(by_entry, entries) < 0)
                             update_entries.insert(by_entry);
                 }
@@ -803,20 +802,20 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             }
         }
 
-        // update entries.labels
-        stmt_select2.bind(1, entry);
+        // add to entries.labels
         if (!new_labels.empty()) {
-            if (!stmt_select2.executeStep())
+            stmt_select0.bind(1, entry);
+            if (!stmt_select0.executeStep())
                 throw internal_err("db_update_labels(): entry 不存在： " + entry);
-            parse(labels, stmt_select2.getColumn(0));
+            parse(labels, stmt_select0.getColumn(0));
             for (auto &e : new_labels)
                 labels.insert(e);
             join(labels_str, labels);
             stmt_update2.bind(1, labels_str);
             stmt_update2.bind(2, entry);
             stmt_update2.exec(); stmt_update2.reset();
+            stmt_select0.reset();
         }
-        stmt_select2.reset();
         transaction.commit();
     }
 
@@ -825,13 +824,24 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
     for (Long i = 0; i < size(db_labels_used); ++i) {
         if (!db_labels_used[i]) {
-            if (db_ref_bys[i].empty() ||
-                    (db_ref_bys[i].size() == 1 && db_ref_bys[i][0] == entry)) {
+            if (db_label_ref_bys[i].empty() ||
+                (db_label_ref_bys[i].size() == 1 && db_label_ref_bys[i][0] == entry)) {
+                // delete from "labels"
                 stmt_delete.bind(1, db_labels[i]);
                 stmt_delete.exec(); stmt_delete.reset();
+                // delete from "entries.labels"
+                stmt_select0.bind(1, db_label_entries[i]);
+                SLS_ASSERT(stmt_select0.executeStep());
+                parse(labels, stmt_select0.getColumn(0));
+                labels.erase(db_labels[i]);
+                stmt_select0.reset();
+                join(labels_str, labels);
+                stmt_update2.bind(1, labels_str);
+                stmt_update2.bind(2, db_label_entries[i]);
+                stmt_update2.exec(); stmt_update2.reset();
             }
             else {
-                join(ref_by_str, db_ref_bys[i], ", ");
+                join(ref_by_str, db_label_ref_bys[i], ", ");
                 throw scan_err(u8"检测到 label 被删除： " + db_labels[i] + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
