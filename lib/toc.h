@@ -154,14 +154,14 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 inline void table_of_contents(
         vecStr_O part_ids, vecStr_O part_names, vecStr_O part_chap_first, vecStr_O part_chap_last,
         vecStr_O chap_ids, vecStr_O chap_names, vecLong_O chap_part, vecStr_O chap_entry_first, vecStr_O chap_entry_last,
-        vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, SQLite::Database &db)
+        vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, SQLite::Database &db_read)
 {
     SQLite::Statement stmt_select(
-            db,
+            db_read,
             R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)"
             );
 
-    Long ind0 = 0, ind1 = 0, ikey = -500, chapNo = -1, chapNo_tot = 0, partNo = 0;
+    Long ind0 = 0, ind1 = 0, ikey, chapNo = -1, chapNo_tot = 0, partNo = 0;
     vecStr keys{ "\\part", "\\chapter", "\\entry", "\\bibli"};
     //keys.push_back("\\entry"); keys.push_back("\\chapter"); keys.push_back("\\part");
     
@@ -190,6 +190,7 @@ inline void table_of_contents(
     if (str.empty()) str = " ";
 
     Char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
+    Str db_title;
 
     while (1) {
         ind1 = find(ikey, str, keys, ind1);
@@ -212,16 +213,19 @@ inline void table_of_contents(
             if (last_command == 'c')
                 chap_entry_first.push_back(entry);
 
+            titles.push_back(title);
+
             // get db info
             stmt_select.bind(1, entry);
             if (!stmt_select.executeStep())
                 throw scan_err(u8"数据库中找不到 main.tex 中词条： " + entry);
-            titles.push_back(stmt_select.getColumn(0));
+            db_title = (const char *)stmt_select.getColumn(0);
             is_draft.push_back((int)stmt_select.getColumn(1));
             stmt_select.reset();
 
-            if (title != titles.back())
-                throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中词条标题 “" + titles.back() + u8"” 不符！");
+            // TODO: enable this when editor can update db title
+            // if (db_title != title)
+            //    throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中词条标题 “" + db_title + u8"” 不符！");
 
             // insert entry into html table of contents
             class_draft = (is_draft.back()) ? "class=\"draft\" " : "";

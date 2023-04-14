@@ -669,7 +669,6 @@ inline void PhysWikiOnlineN(vecStr_IO entries)
 inline void PhysWikiOnline()
 {
     SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-    SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 
     gv::is_entire = true; // compiling the whole wiki
 
@@ -684,8 +683,8 @@ inline void PhysWikiOnline()
 
     // get entries from folder
     {
-        vecStr not_used;
-        entries_titles(entries, not_used);
+        vecStr titles;
+        entries_titles(entries, titles);
 
         SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
         db_check_add_entry_simulate_editor(entries, db_rw);
@@ -698,7 +697,7 @@ inline void PhysWikiOnline()
 
     // generate dep.json
     if (file_exist(gv::path_out + "../tree/data/dep.json"))
-        dep_json(db);
+        dep_json(db_read);
 
     PhysWikiOnlineN_round2(entries, titles, db_read);
 

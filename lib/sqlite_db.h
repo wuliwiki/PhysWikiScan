@@ -849,13 +849,13 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(SQLite::Database &db)
+inline Long dep_json(SQLite::Database &db_read)
 {
     vecStr entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
     vector<DGnode> tree;
-    db_get_parts(part_ids, part_names, db);
-    db_get_chapters(chap_ids, chap_names, chap_parts, db);
-    db_get_tree(tree, entries, titles,entry_part, entry_chap, db);
+    db_get_parts(part_ids, part_names, db_read);
+    db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
+    db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
 
     Str str;
     // write part names
