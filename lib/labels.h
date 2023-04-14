@@ -321,21 +321,37 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bo
     Long ind0 = 0;
     Str label0, newtab;
 
+
     SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 
-    SQLite::Statement stmt_select(db_read,
-        R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
-    stmt_select.bind(1, type);
-    stmt_select.bind(2, entry);
-    stmt_select.bind(3, (int)order);
-    if (stmt_select.executeStep()) {
-        label = (const char *)stmt_select.getColumn(0);
-        return 1;
+    // check if label exist
+    if (type == "fig") {
+        SQLite::Statement stmt_select_fig(db_read,
+            R"(SELECT "id" FROM "figures" WHERE "entry"=? AND "order"=?;)");
+        stmt_select_fig.bind(1, entry);
+        stmt_select_fig.bind(2, (int)order);
+        if (stmt_select_fig.executeStep()) {
+            label = "fig_";
+            label += (const char *) stmt_select_fig.getColumn(0);
+            stmt_select_fig.reset();
+            return 1;
+        }
+        else
+            throw scan_err(u8"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加 \\label{fig_xxxx}。");
     }
-
+    else {
+        SQLite::Statement stmt_select_label(db_read,
+            R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
+        stmt_select_label.bind(1, type);
+        stmt_select_label.bind(2, entry);
+        stmt_select_label.bind(3, (int) order);
+        if (stmt_select_label.executeStep()) {
+            label = (const char *) stmt_select_label.getColumn(0);
+            stmt_select_label.reset();
+            return 1;
+        }
+    }
     // label does not exist
-    if (type == "fig")
-        throw scan_err(u8"每个图片上传后都会自动创建 label， 如果没有请手动在 \\caption{} 后面添加。");
 
     // insert \label{} command
     Str full_name = gv::path_in + "/contents/" + entry + ".tex";
