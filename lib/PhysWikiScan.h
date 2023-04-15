@@ -400,7 +400,7 @@ inline void arg_history(Str_I path)
 
 // generate html from a single tex
 // output title from first line comment
-inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, vecLong_O img_orders, vecStr_O img_hashes,
+inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vecStr_O fig_hashes,
                             Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
                             vecStr_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -495,7 +495,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, 
     // add paragraph tags
     paragraph_tag(str);
     // add html id for links
-    EnvLabel(labels, label_orders, entry, str);
+    EnvLabel(fig_ids, fig_orders,labels, label_orders, entry, str);
     // replace environments with html tags
     equation_tag(str, "equation"); equation_tag(str, "align"); equation_tag(str, "gather");
     // itemize and enumerate
@@ -507,7 +507,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O figure_ids, 
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(figure_ids, img_orders, img_hashes, str, entry);
+    FigureEnvironment(fig_hashes, str, entry, fig_ids, fig_orders);
     // get dependent entries from \pentry{}
     get_pentry(pentries, str, db_read);
     // issues environment

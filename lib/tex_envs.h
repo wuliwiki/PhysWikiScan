@@ -6,17 +6,21 @@
 // path must end with '\\'
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
-inline Long FigureEnvironment(vecStr_O img_ids, vecLong_O img_orders, vecStr_O img_hashes,
-        Str_IO str, Str_I entry)
+inline Long FigureEnvironment(vecStr_O fig_hashes, Str_IO str, Str_I entry,
+                              vecStr_I fig_ids, vecLong_I fig_orders)
 {
-    img_ids.clear(); img_orders.clear(); img_hashes.clear();
+    fig_hashes.clear();
     Long N = 0;
     Intvs intvFig;
     Str figName, fname_in, fname_out, href, format, caption, widthPt, figNo, version;
     Long Nfig = find_env(intvFig, str, "figure", 'o');
+    if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
+        throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
+    fig_hashes.resize(Nfig);
+    Str tmp, fig_hash;
+
     for (Long i = Nfig - 1; i >= 0; --i) {
         num2str(figNo, i + 1);
-        img_orders.push_back(i + 1);
         // get label and id
         Str tmp1 = "id = \"fig_";
         Long ind_label = str.rfind(tmp1, intvFig.L(i));
@@ -26,7 +30,6 @@ inline Long FigureEnvironment(vecStr_O img_ids, vecLong_O img_orders, vecStr_O i
         Long ind_label_end = str.find(U'\"', ind_label);
         SLS_ASSERT(ind_label_end > 0);
         Str id = str.substr(ind_label, ind_label_end - ind_label);
-        img_ids.push_back(id);
         // get width of figure
         Long ind0 = str.find("width", intvFig.L(i)) + 5;
         ind0 = expect(str, "=", ind0);
@@ -65,17 +68,17 @@ inline Long FigureEnvironment(vecStr_O img_ids, vecLong_O img_orders, vecStr_O i
 
         version.clear();
         // last_modified(version, fname_in);
-        Str tmp; read(tmp, fname_in); CRLF_to_LF(tmp);
-        Str img_hash = sha1sum(tmp).substr(0, 16);
-        img_hashes.push_back(img_hash);
+        read(tmp, fname_in); CRLF_to_LF(tmp);
+        fig_hash = sha1sum(tmp).substr(0, 16);
+        fig_hashes[i] = fig_hash;
 
         // ===== rename figure files with hash ========
-        Str fname_in2 = gv::path_in + "figures/" + img_hash + "." + format;
+        Str fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
         if (file_exist(fname_in) && fname_in != fname_in2)
             file_move(fname_in2, fname_in, true);
         if (format == "svg") {
             Str fname_in_svg = gv::path_in + "figures/" + figName + ".pdf";
-            Str fname_in_svg2 = gv::path_in + "figures/" + img_hash + ".pdf";
+            Str fname_in_svg2 = gv::path_in + "figures/" + fig_hash + ".pdf";
             if (file_exist(fname_in_svg) && fname_in_svg2 != fname_in_svg)
                 file_move(fname_in_svg2, fname_in_svg, true);
         }
@@ -84,15 +87,15 @@ inline Long FigureEnvironment(vecStr_O img_ids, vecLong_O img_orders, vecStr_O i
         Str str_mod, tex_fname = gv::path_in + "contents/" + entry + ".tex";
         read(str_mod, tex_fname);
         if (format == "png")
-            replace(str_mod, figName + ".png", img_hash + ".png");
+            replace(str_mod, figName + ".png", fig_hash + ".png");
         else {
-            replace(str_mod, figName + ".pdf", img_hash + ".pdf");
-            replace(str_mod, figName + ".svg", img_hash + ".svg");
+            replace(str_mod, figName + ".pdf", fig_hash + ".pdf");
+            replace(str_mod, figName + ".svg", fig_hash + ".svg");
         }
         write(str_mod, tex_fname);
         // ===========================================
 
-        fname_out = gv::path_out + img_hash + "." + format;
+        fname_out = gv::path_out + fig_hash + "." + format;
         file_copy(fname_out, fname_in2, true);
 
         // get caption of figure
@@ -105,7 +108,7 @@ inline Long FigureEnvironment(vecStr_O img_ids, vecLong_O img_orders, vecStr_O i
             throw scan_err(u8"图片标题中不能添加 \\footnote{}");
         // insert html code
         num2str(widthPt, Long(33 / 14.25 * width * 100)/100.0);
-        href = gv::url + img_hashes.back() + "." + format;
+        href = gv::url + fig_hash + "." + format;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             "<div class = \"w3-content\" style = \"max-width:" + widthPt + "em;\">\n"
             + "<a href=\"" + href + "\" target = \"_blank\"><img src = \"" + href

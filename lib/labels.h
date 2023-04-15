@@ -30,17 +30,19 @@ inline Str label_entry_old(Str_I label)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
+inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
+                     vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
 {
     Long ind0{}, ind2{}, ind3{}, ind4{}, N{},
         Ngather{}, Nalign{}, i{}, j{};
     Str type; // "eq", "fig", "ex", "sub"...
     Str envName; // "equation" or "figure" or "example"...
     Long idN{}; // convert to idNum
-    Str label, id;
+    Str label, fig_id;
+    fig_ids.clear(); fig_orders.clear();
     labels.clear(); label_orders.clear();
     while (1) {
-        const Long ind5 = find_command(str, "label", ind0);
+        const Long ind5 = find_command(str, "label", ind4);
         if (ind5 < 0) return N;
         // detect environment kind
         ind2 = str.rfind("\\end", ind5);
@@ -109,11 +111,21 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         
         label = str.substr(ind0, ind3 - ind0);
         trim(label);
-        Long ind = search(label, labels);
-        if (ind < 0)
-            labels.push_back(label);
-        else
-            throw scan_err(u8"标签多次定义： " + labels[ind]);
+        if (type == "fig") {
+            fig_id = label_id(label);
+            Long ind = search(fig_id, fig_ids);
+            if (ind < 0)
+                fig_ids.push_back(fig_id);
+            else
+                throw scan_err(u8"标签多次定义： " + label);
+        }
+        else {
+            Long ind = search(label, labels);
+            if (ind < 0)
+                labels.push_back(label);
+            else
+                throw scan_err(u8"标签多次定义： " + label);
+        }
         
         // count idNum, insert html id tag, delete label
         Intvs intvEnv;
@@ -159,13 +171,23 @@ inline Long EnvLabel(vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_I
         else {
             idN = find_env(intvEnv, str.substr(0, ind4), envName) + 1;
         }
-        label_orders.push_back(idN);
+        if (type == "fig") {
+            if (search(idN, fig_orders) >= 0)
+                throw scan_err(u8"图片似乎定义了多个 \\label{}： fig_" + fig_ids.back());
+            if (fig_orders.empty()) {
+                if (idN != 1)
+                    throw scan_err(u8"似乎第一个图片环境没有定义 \\label{}");
+            }
+            else if (idN != fig_orders.back()+1)
+                throw scan_err(u8"似乎第 " + to_string(fig_orders.back()+1) + u8" 个图片环境没有定义 \\label{}");
+            fig_orders.push_back(idN);
+        }
+        else
+            label_orders.push_back(idN);
         str.erase(ind5, ind3 - ind5 + 1);
         str.insert(ind4, "<span id = \"" + label + "\"></span>");
-        ind0 = ind5 + 1;
     }
 }
-
 
 // replace autoref with html link
 // no comment allowed

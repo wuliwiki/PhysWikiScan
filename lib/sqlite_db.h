@@ -787,7 +787,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             order = entry_label_orders[j][i];
             type = label_type(label);
             if (type == "fig" || type == "code")
-                continue; // handled separately
+                throw internal_err("`labels` here should not contain fig or code type!");
 
             Long ind = search(label, db_labels);
             if (ind < 0) {
