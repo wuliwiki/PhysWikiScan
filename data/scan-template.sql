@@ -33,6 +33,7 @@ CREATE TABLE "entries" (
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
+	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
 
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
@@ -84,49 +85,52 @@ CREATE TABLE "figures" (
 	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
 	"entry"	TEXT NOT NULL, -- 【生成】所在词条（以 entries.figures 为准）
 	"order"	INTEGER NOT NULL, -- 显示编号（从 1 开始)
-	"hash"	TEXT NOT NULL, -- 文件 SHA1 前 16 位， 多个 id 可以使用同一个 hash 共用一个文件（svg 和 pdf 同名的，使用后者）
+	"image"	TEXT NOT NULL DEFAULT '', -- [hash1.png|hash.pdf] 文件 SHA1 的前 16 位 + 拓展名
+	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 其他的文件格式（pdf 必须有对应的 svg）
+	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 图片历史版本
+	"files"	TEXT NOT NULL, -- "id1 id2" 附件（创作该图片的项目文件、源码等）
 	"license"	TEXT NOT NULL DEFAULT '', -- 格式和 entries.license 相同
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 该环境是否已删除
+	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 环境是否已删除
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("hash") REFERENCES "figure_files"("hash"),
+	FOREIGN KEY("image") REFERENCES "images"("hash"),
 	UNIQUE("entry", "order")
 );
 
 -- 图片文件
--- 图片文件名为 "hash"."ext"
-CREATE TABLE "figure_store" (
-	"hash"	TEXT UNIQUE NOT NULL, -- SHA1 的前 16 位
-	"ext"	TEXT UNIQUE NOT NULL, -- [png|svg] 文件类型（svg 需要有同名 pdf）， 文件使用 id
-	"use_count"	INTEGER NOT NULL, -- 被多少个 "figures" 使用， 只有为 0 时可以被删除
-	"author"	INTEGER NOT NULL, -- 当前版本修改者
-	"right"	TEXT NOT NULL, -- [Xiao|CC|ask] 当前版本协议
-	"time"	TEXT NOT NULL, -- 上传时间
-	"files"	TEXT NOT NULL, -- "hash1 hash2"， 附件（创作该图片的项目文件、源码等）
+CREATE TABLE "images" (
+	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
+	"ext"	TEXT NOT NULL, -- [pdf|svg|png|jpg|gif] 拓展名
+	"figures"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境使用（包括 image, image_alt）
+	"figures_old"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境作为 image_old
+	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
+	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议， 格式和 entries.license 相同
+	"time"	TEXT NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
--- 文件（词条附件）
+-- 文件（百科附件）
 CREATE TABLE "files" (
-	"id"	TEXT UNIQUE NOT NULL,
-	"hash"	TEXT UNIQUE NOT NULL,
-	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 引用的词条
+	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
+	"name"	TEXT UNIQUE NOT NULL, -- 文件名（含拓展名）
 	"description"	TEXT UNIQUE NOT NULL, -- 描述
+	"hash"	TEXT UNIQUE NOT NULL, -- 当前版本文件的 MD5
+	"hash_old"	TEXT NOT NULL DEFAULT '', -- 历史版本
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	PRIMARY KEY("id"),
-	FOREIGN KEY("hash") REFERENCES "files"("id")
+	FOREIGN KEY("hash") REFERENCES "file_lib"("hash")
 );
 
--- 文件（被 "files" 和 "figure_store" 使用的）
-CREATE TABLE "file_store" (
+-- 文件（被 "files" 和 "figures.files" 使用）
+CREATE TABLE "file_lib" (
 	"hash"	TEXT UNIQUE NOT NULL, -- MD5
-	"name"	TEXT UNIQUE NOT NULL, -- 文件名（含拓展名）
-	"use_count"	INTEGER NOT NULL, -- 被使用多少次
-	"used"	INTEGER NOT NULL, -- [0|1] 是否被使用
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 被哪些词条引用
+	"used_by_figures"	TEXT NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"	INTEGER NOT NULL, -- 当前版本修改者
-	"right"	TEXT NOT NULL, -- [Xiao|CC|ask] 当前版本协议
+	"license"	TEXT NOT NULL, -- [Xiao|CC|ask] 当前版本协议
 	"time"	TEXT UNIQUE NOT NULL, -- 上传时间
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
@@ -140,7 +144,7 @@ CREATE TABLE "code" (
 	"caption"	TEXT UNIQUE NOT NULL, -- 文件名
 	"language"	TEXT NOT NULL, -- [none|matlab|...] 高亮语言
 	"order"	INTEGER NOT NULL, -- 显示编号
-	"right"	TEXT NOT NULL, -- [orig|CC|ask] 版权
+	"license"	TEXT NOT NULL, -- [orig|CC|ask] 版权
 	"source"	TEXT NOT NULL, -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 引用的词条
 	PRIMARY KEY("id"),
