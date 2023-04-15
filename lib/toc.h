@@ -212,8 +212,19 @@ inline void table_of_contents(
 
             // get db info
             stmt_select.bind(1, entry);
-            if (!stmt_select.executeStep())
-                throw scan_err(u8"数据库中找不到 main.tex 中词条： " + entry);
+            if (!stmt_select.executeStep()) {
+                SLS_WARN(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
+                {
+                    vecStr titles;
+                    entries_titles(entries, titles);
+                    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+                    db_check_add_entry_simulate_editor(entries, db_rw);
+                }
+                stmt_select.reset();
+                stmt_select.bind(1, entry);
+                if (!stmt_select.executeStep())
+                    throw scan_err(u8"数据库中找不到 main.tex 中词条（文件不存在）： " + entry);
+            }
             db_title = (const char *)stmt_select.getColumn(0);
             is_draft.push_back((int)stmt_select.getColumn(1));
             stmt_select.reset();
