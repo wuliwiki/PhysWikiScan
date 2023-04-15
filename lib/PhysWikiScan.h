@@ -400,7 +400,7 @@ inline void arg_history(Str_I path)
 
 // generate html from a single tex
 // output title from first line comment
-inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vecStr_O fig_hashes,
+inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete, Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
                             Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
                             vecStr_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -507,7 +507,7 @@ inline void PhysWikiOnline1(Bool_O update_db, Str_O title, vecStr_O fig_ids, vec
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(fig_hashes, str, entry, fig_ids, fig_orders);
+    FigureEnvironment(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
     // get dependent entries from \pentry{}
     get_pentry(pentries, str, db_read);
     // issues environment
@@ -576,8 +576,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     Str key_str, pentry_str;
     unordered_set<Str> update_entries;
     vecLong fig_orders, label_orders;
-    vecStr keywords, fig_ids, fig_hashes, labels, pentries;
+    vecStr keywords, fig_ids, labels, pentries;
+    vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = entries.size();
+    unordered_set<Str> img_to_delete;
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
@@ -587,7 +589,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
 
-        PhysWikiOnline1(update_db, titles[i], fig_ids, fig_orders, fig_hashes, isdraft,
+        PhysWikiOnline1(update_db, img_to_delete, titles[i], fig_ids, fig_orders, fig_ext_hash, isdraft,
                         keywords, labels, label_orders, pentries, entry, rules, db_read);
 
         cout << titles[i] << endl; cout.flush();
@@ -611,7 +613,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
         // update db labels, figures
         db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
-                          {fig_hashes}, db_rw);
+                          {fig_ext_hash}, db_rw);
         db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
 
         // order change means `update_entries` needs to be updated with autoref() as well.
@@ -629,6 +631,9 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         vecStr _entries, _titles, parts, chapters;
         db_get_tree1(tree, _entries, _titles, parts, chapters, entry, db_read);
     }
+
+    for (auto &e : img_to_delete)
+        file_remove(e);
 }
 
 inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)

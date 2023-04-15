@@ -576,29 +576,29 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 // db_rw table "figures" and "figure_store"
 inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries,
     const vector<vecStr> &entry_figs, const vector<vecLong> &entry_fig_orders,
-    const vector<vecStr> &entry_fig_hashes, SQLite::Database &db_rw)
+    const vector<vector<unordered_map<Str,Str>>> &entry_fig_ext_hash, SQLite::Database &db_rw)
 {
     // cout << "updating db for figures environments..." << endl;
     update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
-    Str entry, id, hash, ext;
+    Str entry, id, ext;
     Long order;
     SQLite::Transaction transaction(db_rw);
     SQLite::Statement stmt_select0(db_rw,
         R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_select1(db_rw,
-        R"(SELECT "order", "ref_by", "hash" FROM "figures" WHERE "id"=?;)");
+        R"(SELECT "order", "ref_by", "image", "image_alt" FROM "figures" WHERE "id"=?;)");
     SQLite::Statement stmt_select2(db_rw,
         R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
-        R"(INSERT INTO "figures" ("id", "entry", "order", "hash") VALUES (?, ?, ?, ?);)");
+        R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
     SQLite::Statement stmt_update(db_rw,
-        R"(UPDATE "figures" SET "entry"=?, "order"=?, "hash"=?; WHERE "id"=?;)");
+        R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "image_alt"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update2(db_rw,
         R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
     // get all figure envs defined in `entries`, to detect deleted figures
     //  db_xxx[i] are from the same row of "labels" table
-    vecStr db_figs, db_fig_entries, db_fig_hashes;
+    vecStr db_figs, db_fig_entries, db_fig_image, db_fig_image_alt;
     vecBool db_figs_used;
     vecLong db_fig_orders;
     vector<vecStr> db_fig_ref_bys;
@@ -619,27 +619,42 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             db_fig_orders.push_back((int)stmt_select1.getColumn(0));
             db_fig_ref_bys.emplace_back();
             parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
-            db_fig_hashes.push_back(stmt_select1.getColumn(2));
+            db_fig_image.push_back(stmt_select1.getColumn(2));
+            db_fig_image_alt.push_back(stmt_select1.getColumn(3));
             stmt_select1.reset();
         }
     }
     db_figs_used.resize(db_figs.size(), false);
-    Str figs_str;
+    Str figs_str, image, image_alt;
     set<Str> new_figs, figs;
 
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
         new_figs.clear();
         for (Long j = 0; j < size(entry_figs[i]); ++j) {
-            id = entry_figs[i][j]; order = entry_fig_orders[i][j]; hash = entry_fig_hashes[i][j];
+            id = entry_figs[i][j]; order = entry_fig_orders[i][j];
             Long ind = search(id, db_figs);
+            const unordered_map<Str,Str> &map = entry_fig_ext_hash[i][j];
+            if (map.size() == 1) { // png
+                if (!map.count("png"))
+                    throw internal_err("db_update_figures(): unexpected fig format!");
+                image = map.at("png") + ".png";
+                image_alt = "";
+            }
+            else if (map.size() == 2) { // svg + pdf
+                if (!map.count("svg") || !map.count("pdf"))
+                    throw internal_err("db_update_figures(): unexpected fig format!");
+                image = map.at("pdf") + ".pdf";
+                image_alt = map.at("svg") + ".svg";
+            }
             if (ind < 0) {
                 SLS_WARN(u8"发现数据库中没有的图片环境（将模拟 editor 添加）：" + id + ", " + entry + ", " +
                     to_string(order));
                 stmt_insert.bind(1, id);
                 stmt_insert.bind(2, entry);
                 stmt_insert.bind(3, int(order));
-                stmt_insert.bind(4, hash);
+                stmt_insert.bind(4, image);
+                stmt_insert.bind(5, image_alt);
                 stmt_insert.exec(); stmt_insert.reset();
                 new_figs.insert(id);
                 continue;
@@ -663,16 +678,22 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                             update_entries.insert(by_entry);
                 }
             }
-            if (hash != db_fig_hashes[ind]) {
-                SLS_WARN(u8"发现数据库中图片 hash 改变（将更新）：" + id + ": "
-                         + db_fig_hashes[ind] + " -> " + hash);
+            if (image != db_fig_image[ind]) {
+                SLS_WARN(u8"发现数据库中图片 image 改变（将更新）：" + id + ": "
+                         + db_fig_image[ind] + " -> " + image);
+                changed = true;
+            }
+            if (image_alt != db_fig_image_alt[ind]) {
+                SLS_WARN(u8"发现数据库中图片 image_alt 改变（将更新）：" + id + ": "
+                         + db_fig_image_alt[ind] + " -> " + image_alt);
                 changed = true;
             }
             if (changed) {
                 stmt_update.bind(1, entry);
                 stmt_update.bind(2, int(order));
-                stmt_update.bind(3, hash);
-                stmt_update.bind(4, id);
+                stmt_update.bind(3, image);
+                stmt_update.bind(4, image_alt);
+                stmt_update.bind(5, id);
                 stmt_update.exec(); stmt_update.reset();
             }
         }

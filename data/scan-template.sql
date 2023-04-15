@@ -85,10 +85,10 @@ CREATE TABLE "figures" (
 	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
 	"entry"	TEXT NOT NULL, -- 【生成】所在词条（以 entries.figures 为准）
 	"order"	INTEGER NOT NULL, -- 显示编号（从 1 开始)
-	"image"	TEXT NOT NULL DEFAULT '', -- [hash1.png|hash.pdf] 文件 SHA1 的前 16 位 + 拓展名
+	"image"	TEXT NOT NULL DEFAULT '', -- [hash1.png|hash.pdf] 文件 SHA1 的前 16 位 + 拓展名（当前 pdf 文件暂时使用 svg 文件的 hash）
 	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 其他的文件格式（pdf 必须有对应的 svg）
 	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 图片历史版本
-	"files"	TEXT NOT NULL, -- "id1 id2" 附件（创作该图片的项目文件、源码等）
+	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）
 	"license"	TEXT NOT NULL DEFAULT '', -- 格式和 entries.license 相同
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
@@ -223,6 +223,7 @@ CREATE TABLE "authors" (
 	"hide"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 不出现在文章作者列表
 	"aka"	TEXT NOT NULL DEFAULT '', -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
 	"contrib"	INTEGER NOT NULL DEFAULT 0, -- 贡献的分钟数（折算）
+	"recent_entries"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 最近 10 个编辑的词条（按时间从新到老）
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 

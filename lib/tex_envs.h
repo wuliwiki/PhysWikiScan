@@ -6,17 +6,19 @@
 // path must end with '\\'
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
-inline Long FigureEnvironment(vecStr_O fig_hashes, Str_IO str, Str_I entry,
-                              vecStr_I fig_ids, vecLong_I fig_orders)
+// fig_ext_hash[i] maps the file extension to file hash
+inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordered_map<Str, Str>> &fig_ext_hash, Str_IO str, Str_I entry,
+                              vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
 {
-    fig_hashes.clear();
+    fig_ext_hash.clear();
     Long N = 0;
     Intvs intvFig;
-    Str figName, fname_in, fname_out, href, format, caption, widthPt, figNo, version;
+    Str figName, fname_in, fname_out, href, format, caption, widthPt, figNo;
+    Str fname_in2, str_mod, tex_fname, svg_file;
     Long Nfig = find_env(intvFig, str, "figure", 'o');
     if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
         throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
-    fig_hashes.resize(Nfig);
+    fig_ext_hash.resize(Nfig);
     Str tmp, fig_hash;
 
     for (Long i = Nfig - 1; i >= 0; --i) {
@@ -53,47 +55,72 @@ inline Long FigureEnvironment(vecStr_O fig_hashes, Str_IO str, Str_I entry,
         if (figName.substr(Nname - 4, 4) == ".png") {
             format = "png";
             figName = figName.substr(0, Nname - 4);
+            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            if (!file_exist(fname_in))
+                throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
+            fig_hash = sha1sum_f(fname_in).substr(0, 16);
+            fig_ext_hash[i][format] = fig_hash;
+            // rename figure files with hash
+            fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+            if (fname_in != fname_in2) {
+                file_copy(fname_in2, fname_in, true);
+                img_to_delete.insert(fname_in);
+            }
+            // modify .tex file
+            tex_fname = gv::path_in + "contents/" + entry + ".tex";
+            read(str_mod, tex_fname);
+            replace(str_mod, figName + "." + format, fig_hash + "." + format);
+            write(str_mod, tex_fname);
         }
         else if (figName.substr(Nname - 4, 4) == ".pdf") {
-            format = "svg";
             figName = figName.substr(0, Nname - 4);
+            // ==== pdf ====
+            format = "pdf";
+            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            if (!file_exist(fname_in))
+                throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
+            fig_hash = sha1sum_f(fname_in).substr(0, 16);
+            fig_ext_hash[i][format] = fig_hash;
+            // rename figure files with hash
+            fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+            if (fname_in != fname_in2) {
+                file_copy(fname_in2, fname_in, true);
+                img_to_delete.insert(fname_in);
+            }
+            // modify .tex file
+            tex_fname = gv::path_in + "contents/" + entry + ".tex";
+            read(str_mod, tex_fname);
+            replace(str_mod, figName + "." + format, fig_hash + "." + format);
+            write(str_mod, tex_fname);
+
+            // ==== svg =====
+            format = "svg";
+            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            if (file_exist(fname_in)) {
+                // svg and pdf hashes are still the same (old standard)
+                read(tmp, fname_in);
+                CRLF_to_LF(tmp);
+                fig_hash = sha1sum(tmp).substr(0, 16);
+                fig_ext_hash[i][format] = fig_hash;
+                fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+                // rename figure files with hash
+                if (fname_in != fname_in2) {
+                    file_copy(fname_in2, fname_in, true);
+                    img_to_delete.insert(fname_in);
+                }
+            }
+            else {
+                // svg and pdf hashes not the same (new standard)
+                svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
+                read(tmp, gv::path_in + "figures/" + svg_file);
+                CRLF_to_LF(tmp);
+                fig_hash = sha1sum(tmp).substr(0, 16);
+                fig_ext_hash[i][format] = fig_hash;
+                fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+            }
         }
         else
-            throw internal_err(u8"图片格式不支持：" + figName);
-
-        fname_in = gv::path_in + "figures/" + figName + "." + format;
-
-        if (!file_exist(fname_in))
-            throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
-
-        version.clear();
-        // last_modified(version, fname_in);
-        read(tmp, fname_in); CRLF_to_LF(tmp);
-        fig_hash = sha1sum(tmp).substr(0, 16);
-        fig_hashes[i] = fig_hash;
-
-        // ===== rename figure files with hash ========
-        Str fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
-        if (file_exist(fname_in) && fname_in != fname_in2)
-            file_move(fname_in2, fname_in, true);
-        if (format == "svg") {
-            Str fname_in_svg = gv::path_in + "figures/" + figName + ".pdf";
-            Str fname_in_svg2 = gv::path_in + "figures/" + fig_hash + ".pdf";
-            if (file_exist(fname_in_svg) && fname_in_svg2 != fname_in_svg)
-                file_move(fname_in_svg2, fname_in_svg, true);
-        }
-
-        // ===== modify original .tex file =======
-        Str str_mod, tex_fname = gv::path_in + "contents/" + entry + ".tex";
-        read(str_mod, tex_fname);
-        if (format == "png")
-            replace(str_mod, figName + ".png", fig_hash + ".png");
-        else {
-            replace(str_mod, figName + ".pdf", fig_hash + ".pdf");
-            replace(str_mod, figName + ".svg", fig_hash + ".svg");
-        }
-        write(str_mod, tex_fname);
-        // ===========================================
+            throw internal_err(u8"图片格式暂不支持：" + figName);
 
         fname_out = gv::path_out + fig_hash + "." + format;
         file_copy(fname_out, fname_in2, true);
