@@ -612,9 +612,11 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
 
         // update db labels, figures
+        db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
         db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
                           {fig_ext_hash}, db_rw);
-        db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
+        db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
+
 
         // order change means `update_entries` needs to be updated with autoref() as well.
         // but just in case, we also run 1st round again for them

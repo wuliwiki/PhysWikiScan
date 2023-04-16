@@ -573,7 +573,58 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     cout << "done." << endl;
 }
 
-// db_rw table "figures" and "figure_store"
+// db table "images"
+inline void db_update_images(Str_I entry, vecStr_I fig_ids,
+    const vector<unordered_map<Str,Str>> & fig_ext_hash, SQLite::Database &db_rw)
+{
+    SQLite::Transaction transaction(db_rw);
+    SQLite::Statement stmt_select(db_rw,
+        R"(SELECT "ext", "figures" FROM "images" WHERE "hash"=?;)");
+    SQLite::Statement stmt_insert(db_rw,
+        R"(INSERT INTO "images" ("hash", "ext", "figures") VALUES (?,?,?);)");
+    SQLite::Statement stmt_update(db_rw,
+        R"(UPDATE "images" SET "figures"=? WHERE "hash"=?;)");
+    Str db_image_ext, tmp;
+    set<Str> db_image_figures;
+
+    // first get all "images" the entry uses
+//    SQLite::Statement stmt_select2(db_rw,
+//        R"(SELECT "image", "image_alt" FROM "figures" WHERE "id"=?;)");
+
+    for (Long i = 0; i < size(fig_ids); ++i) {
+        for (auto &ext_hash: fig_ext_hash[i]) {
+            auto &image_ext = ext_hash.first;
+            auto &image_hash = ext_hash.second;
+            stmt_select.bind(1, ext_hash.second);
+            if (!stmt_select.executeStep()) {
+                SLS_WARN("数据库中找不到图片文件（将模拟 editor 添加）：" + image_hash + image_ext);
+                stmt_insert.bind(1, image_hash);
+                stmt_insert.bind(2, image_ext);
+                stmt_insert.bind(3, fig_ids[i]);
+                stmt_insert.exec(); stmt_insert.reset();
+            }
+            else {
+                db_image_ext = (const char*)stmt_select.getColumn(0);
+                parse(db_image_figures, stmt_select.getColumn(1));
+                if (image_ext != db_image_ext)
+                    throw internal_err(u8"图片文件拓展名不允许改变: " + image_hash + "."
+                        + db_image_ext + " -> " + image_ext);
+                if (db_image_figures.insert(fig_ids[i]).second) {
+                    // inserted
+                    SLS_WARN(u8"images.figures 发生改变(将模拟 editor 更新): 新增 " + fig_ids[i]);
+                    join(tmp, db_image_figures);
+                    stmt_update.bind(1, tmp);
+                    stmt_update.bind(2, image_hash);
+                    stmt_update.exec(); stmt_update.reset();
+                }
+            }
+            stmt_select.reset();
+        }
+    }
+    transaction.commit();
+}
+
+// db table "figures"
 inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries,
     const vector<vecStr> &entry_figs, const vector<vecLong> &entry_fig_orders,
     const vector<vector<unordered_map<Str,Str>>> &entry_fig_ext_hash, SQLite::Database &db_rw)

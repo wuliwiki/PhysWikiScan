@@ -33,7 +33,7 @@ CREATE TABLE "entries" (
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
-	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
+	-- "files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
 
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
@@ -99,7 +99,7 @@ CREATE TABLE "figures" (
 	UNIQUE("entry", "order")
 );
 
--- 图片文件
+-- 图片文件（包括历史版本)
 CREATE TABLE "images" (
 	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
 	"ext"	TEXT NOT NULL, -- [pdf|svg|png|jpg|gif] 拓展名
