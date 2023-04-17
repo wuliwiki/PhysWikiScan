@@ -94,15 +94,60 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
     }
 }
 
+// parse the string from "entries.pentry"
+inline void parse_pentry(Pentry_O v_pentries, Str_I str)
+{
+    Long ind0 = 0, ikey;
+    Str entry;
+    vecStr keys = {" ", "*", "|"};
+    v_pentries.clear();
+    while (1) {
+        v_pentries.emplace_back();
+        auto &pentry = v_pentries.back();
+        while (1) {
+            Long ind1 = find(ikey, str, keys, ind0);
+            if (ind1 < 0)
+                ind1 = str.size();
+            entry = str.substr(ind0, ind1 - ind0);
+            for (auto &p : pentry)
+                if (entry == p.first)
+                    throw internal_err("illegal entries.pentry string (repetition): " + str);
+            pentry.push_back(make_pair(entry, false));
+            if (ind1 == str.size())
+                return;
+            if (ikey == 1) // "*"
+                pentry.back().second = true;
+            else if (ikey == 2) // "|"
+                break;
+        }
+    }
+}
+
+// join pentry back to a string
+inline void join_pentry(Str_O str, Pentry_I v_pentries)
+{
+    for (auto &pentries : v_pentries) {
+        SLS_ASSERT(!pentries.empty());
+        for (auto &p : pentries) {
+            str += p.first;
+            if (p.second)
+                str += "*";
+            str += " ";
+        }
+        str.pop_back(); str += "|";
+    }
+    str.pop_back();
+}
 
 // get dependency tree from database, for 1 entry
-// also check for cycle, and check for any of it's pentries are redundant
+// also check for cycle, and check for any of it's pentries_o are redundant
 // entries[0] will be for `entry`
-// entries[i], tree[i], titles[i], pentries[i] corresponds
-inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles, vector<vecStr> &pentries,
-                        vecStr_O parts, vecStr_O chapters, Str_I entry, SQLite::Database &db_rw)
+// entries[i], tree[i], titles[i], pentries_o[i] corresponds
+inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles, vector<vecStr> &pentries_o,
+                        vecStr_O parts, vecStr_O chapters, Str_I entry,
+                        const vector<vecStr> &pentries, SQLite::Database &db_rw)
 {
-    pentries.clear();
+    pentries_o.clear();
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
 
     SQLite::Statement stmt_select(
@@ -123,9 +168,9 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
         chapters.push_back(stmt_select.getColumn(2));
         pentry_str = (const char*)stmt_select.getColumn(3);
         stmt_select.reset();
-        pentries.emplace_back();
-        parse(pentries.back(), pentry_str);
-        for (auto &pentry : pentries.back()) {
+        pentries_o.emplace_back();
+        parse(pentries_o.back(), pentry_str);
+        for (auto &pentry : pentries_o.back()) {
             if (search(pentry, entries) < 0
                 && find(q.begin(), q.end(), pentry) == q.end())
                 q.push_back(pentry);
@@ -135,7 +180,7 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
 
     // construct tree
     for (Long i = 0; i < size(entries); ++i) {
-        for (auto &pentry : pentries[i]) {
+        for (auto &pentry : pentries_o[i]) {
             Long from = search(pentry, entries);
             if (from < 0)
                 throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
@@ -171,8 +216,8 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
             auto &alt_path = alt_paths[j];
             Long i_beg = alt_path[0], i_bak = alt_path.back();
             // remove redundant pentry
-            Long ind = search(entries[i_bak], pentries[0]);
-            erase(pentries[0], ind); N_rm++;
+            Long ind = search(entries[i_bak], pentries_o[0]);
+            erase(pentries_o[0], ind); N_rm++;
             ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << entries[i_bak] << ")" << endl;
             ss << u8"   已存在路径： " << endl;
             ss << "   " << titles[i_beg] << "(" << entries[i_beg] << ")" << endl;
@@ -183,10 +228,10 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
     }
     dag_inv(tree);
 
-    // update db - remove redundant ones from pentries[0]
+    // update db - remove redundant ones from pentries_o[0]
     if (N_rm > 0) {
         SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
-        join(pentry_str, pentries[0]);
+        join(pentry_str, pentries_o[0]);
         stmt_update.bind(1, pentry_str);
         stmt_update.bind(2, entry);
         stmt_update.exec(); stmt_update.reset();

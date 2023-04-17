@@ -1,5 +1,13 @@
 #pragma once
 
+// an object representing all \pentry{} info of an entry
+// v_pentries[i] is a single \pentry{} command
+// Str is "entry" or "entry:num", name of a tree node,
+// and Bool is whether the dependency is "weak" (will be first deleted in case of circle)
+typedef vector<vector<pair<Str,Bool>>> Pentry;
+typedef Pentry &Pentry_O, &Pentry_IO;
+typedef const Pentry &Pentry_I;
+
 // get the title (defined in the first comment, can have space after %)
 // limited to 20 characters
 inline void get_title(Str_O title, Str_I str)
@@ -37,20 +45,24 @@ inline Bool is_draft(Str_I str)
 }
 
 // get dependent entries (id) from \pentry{}
-inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
+inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read)
 {
-    Long ind0 = -1;
+    Bool star;
+    Long ind0 = -1, ikey;
     Str temp, depEntry;
-    pentries.clear();
+    v_pentries.clear();
     while (1) {
         ind0 = find_command(str, "pentry", ind0+1);
         if (ind0 < 0)
             return;
+        v_pentries.emplace_back();
+        auto &pentries = v_pentries.back();
         command_arg(temp, str, ind0, 0, 't');
         Long ind1 = 0, ind2 = 0;
         Bool first_upref = true;
         while (1) {
-            ind1 = find_command(temp, "upref", ind2);
+            ind1 = find(ikey, temp, {"\\upref", "\\upref2"}, ind2);
+            if (ikey == 1) star = true;
             if (ind1 < 0)
                 break;
             if (!first_upref)
@@ -61,7 +73,7 @@ inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
                 throw scan_err(u8"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             if (search(depEntry, pentries) >= 0)
                 throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
-            pentries.push_back(depEntry);
+            pentries.push_back(make_pair(depEntry, star));
             ind2 = skip_command(temp, ind1, 1);
             first_upref = false;
         }

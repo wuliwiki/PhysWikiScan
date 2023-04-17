@@ -402,7 +402,7 @@ inline void arg_history(Str_I path)
 // output title from first line comment
 inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete, Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
                             Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
-                            vecStr_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+                            vector<vecStr> &pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -559,9 +559,8 @@ inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete,
 
     // update db "entries" table
     Str key_str; join(key_str, keywords, "|");
-    Str pentry_str; join(pentry_str, pentries);
     if (title != db_title || key_str != db_keys_str
-        || isdraft != db_draft || pentry_str != db_pentry_str)
+        || isdraft != db_draft)
         update_db = true;
 }
 
@@ -576,7 +575,8 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     Str key_str, pentry_str;
     unordered_set<Str> update_entries;
     vecLong fig_orders, label_orders;
-    vecStr keywords, fig_ids, labels, pentries;
+    vecStr keywords, fig_ids, labels;
+    vector<vecStr> pentries;
     vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = entries.size();
     unordered_set<Str> img_to_delete;
@@ -599,10 +599,9 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         if (update_db) {
             SQLite::Statement stmt_update
                     (db_rw,
-                     R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "pentry"=? )"
+                     R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=? )"
                      R"(WHERE "id"=?;)");
             join(key_str, keywords, "|");
-            join(pentry_str, pentries);
             stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
             stmt_update.bind(2, key_str);
             stmt_update.bind(3, (int) isdraft);
@@ -631,10 +630,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         // TODO: need to apply the new rules for multiple pentry list for each entry
         // check dependency tree and auto remove redundant pentry
         vector<DGnode> tree;
-        vector<vecStr> pentries;
+        vector<vecStr> pentries_out;
         vecStr _entries, _titles, parts, chapters;
-        db_get_tree1(tree, _entries, _titles, pentries,
-                     parts, chapters, entry, db_rw);
+        db_get_tree1(tree, _entries, _titles, pentries_out,
+                     parts, chapters, entry, pentries, db_rw);
     }
 
     for (auto &e : img_to_delete)
