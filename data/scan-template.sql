@@ -21,9 +21,10 @@ CREATE TABLE "entries" (
 
 	"keys" TEXT NOT NULL DEFAULT '', -- "关键词1|...|关键词N"
 
-	-- "entry1 entry2:2* | entry3" 预备知识的词条标签
+	-- "entry1 entry2:2* | entry3~" 预备知识的词条标签（空格允许多个， | 两边的空格允许没有）
 	-- 在每个 entry 后面用 ":数字" 表示只需要哪个子节点（从 1 开始）， 没有数字默认最后一个节点（即整篇）
-	-- 在最后用 * 表示发现循环时优先被程序忽略， 用 " | " 分隔多个 pentry 列表（两边必须有空格）
+	-- 然后用 * 表示发现循环时优先被程序忽略， 再用 ~ 表示是否被知识树忽略， 用 "|" 分隔多个 pentry 列表
+	-- 每个 pentry 列表默认引用前一个 pentry 代表的节点（不能明确列出来）
 	"pentry"	TEXT NOT NULL DEFAULT '',
 
 	"draft"	INTEGER NOT NULL DEFAULT 2, -- [0|1|2] 是否草稿（词条是否标记 \issueDraft， 2 代表未知）

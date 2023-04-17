@@ -1,11 +1,12 @@
 #pragma once
 
-// an object representing all \pentry{} info of an entry
-// v_pentries[i] is a single \pentry{} command
+// an object representing all dependency info of an entry
+// pentry[i] is a single \pentry{} command
 // Str is "entry"
-// Char is the number in "entry:num" starting from 1, 0 if there is none
-// Bool is whether there is a * at the end
-typedef vector<vector<tuple<Str,Long,Bool>>> Pentry;
+// Long is the number in "entry:num" starting from 1, 0 if there is none
+// Bool is whether there is a * (prefer to be ignored)
+// Bool is whether there is a ~ (actually ignored)
+typedef vector<vector<tuple<Str,Long,Bool,Bool>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;
 
@@ -46,6 +47,7 @@ inline Bool is_draft(Str_I str)
 }
 
 // get dependent entries (id) from \pentry{}
+// will ignore \pentry{} with no \upref{} or \upref0{}
 inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read)
 {
     Bool star;
@@ -55,8 +57,9 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
     while (1) {
         ind0 = find_command(str, "pentry", ind0+1);
         if (ind0 < 0)
-            return;
-        v_pentries.emplace_back();
+            break;
+        if (v_pentries.empty() || !v_pentries.back().empty())
+            v_pentries.emplace_back();
         auto &pentries = v_pentries.back();
         command_arg(temp, str, ind0, 0, 't');
         Long ind1 = 0, ind2 = 0;
@@ -72,7 +75,9 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
             command_arg(depEntry, temp, ind1);
             if (command_has_opt(temp, ind1)) {
                 try { num = str2int(command_opt(temp, ind1)); }
-                catch (...) { throw scan_err("\\upref[]{} 方括号中只能是数字"); }
+                catch (...) { throw scan_err(u8"\\upref[]{} 或 \\upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。"); }
+                if (num <= 0)
+                    throw scan_err(u8"\\upref[]{} 或 \\upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。");
             }
             else
                 num = 0;
@@ -81,11 +86,13 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
             for (auto &e : pentries)
                 if (depEntry == get<0>(e))
                     throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
-            pentries.push_back(make_tuple(depEntry, num, star));
+            pentries.push_back(make_tuple(depEntry, num, star, false));
             ind2 = skip_command(temp, ind1, 1);
             first_upref = false;
         }
     }
+    if (v_pentries.back().empty())
+        v_pentries.pop_back();
 }
 
 // get keywords from the comment in the second line

@@ -189,8 +189,9 @@ int main(int argc, char *argv[]) {
 
     // === parse arguments ===
     try {
-        if (args[0] == "." && args.size() == 1)
+        if (args[0] == "." && args.size() == 1) {
             PhysWikiOnline();
+        }
         else if (args[0] == "--titles") {
             // update entries.txt and titles.txt
             vecStr titles, entries, isDraft;
