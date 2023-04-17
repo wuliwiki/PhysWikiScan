@@ -20,7 +20,11 @@ CREATE TABLE "entries" (
 	"type"  TEXT NOT NULL DEFAULT '',
 
 	"keys" TEXT NOT NULL DEFAULT '', -- "关键词1|...|关键词N"
-	"pentry"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2 entry3" 预备知识的词条标签
+
+	-- "entry1 entry2:2* | entry3" 预备知识的词条标签
+	-- 在每个 entry 后面用 ":数字" 表示只需要哪个子节点（从 1 开始）
+	-- 在最后用 * 表示发现循环时优先被程序忽略， 用 | 分隔多个 pentry 列表
+	"pentry"	TEXT NOT NULL DEFAULT '',
 
 	"draft"	INTEGER NOT NULL DEFAULT 2, -- [0|1|2] 是否草稿（词条是否标记 \issueDraft， 2 代表未知）
 	"issues"	TEXT NOT NULL DEFAULT '', -- "XXX XXX XXX" 其中 XXX 是 \issueXXX 中的， 不包括 \issueDraft
