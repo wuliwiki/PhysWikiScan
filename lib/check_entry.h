@@ -52,7 +52,7 @@ inline void get_pentry(vecStr_O pentries, Str_I str, SQLite::Database &db_read)
         while (1) {
             ind1 = find_command(temp, "upref", ind2);
             if (ind1 < 0)
-                return; // break; // TODO: I'll just restore this bug to prevent too much work for now...
+                break;
             if (!first_upref)
                 if (expect(temp, u8"，", ind2) < 0)
                     throw scan_err(u8"\\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \\pentry{词条1\\upref{文件名1}， 词条2\\upref{文件名2}}。");

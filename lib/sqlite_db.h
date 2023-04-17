@@ -97,18 +97,19 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
 
 // get dependency tree from database, for 1 entry
 // also check for cycle, and check for any of it's pentries are redundant
-// entries[0] (tree[0]) will be `entry`
-inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
-                        vecStr_O parts, vecStr_O chapters, Str_I entry, SQLite::Database &db_read)
+// entries[0] will be for `entry`
+// entries[i], tree[i], titles[i], pentries[i] corresponds
+inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles, vector<vecStr> &pentries,
+                        vecStr_O parts, vecStr_O chapters, Str_I entry, SQLite::Database &db_rw)
 {
+    pentries.clear();
     tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
 
     SQLite::Statement stmt_select(
-            db_read,
+            db_rw,
             R"(SELECT "caption", "part", "chapter", "pentry" FROM "entries" WHERE "id" = ?;)");
 
     Str pentry_str, e;
-    vector<vecStr> pentries;
     deque<Str> q; q.push_back(entry);
 
     // broad first search (BFS)
@@ -164,19 +165,32 @@ inline void db_get_tree1(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles
     vector<vecLong> alt_paths;
     dag_reduce(alt_paths, tree, 0);
     std::stringstream ss;
-    if (size(alt_paths)) {
+    Long N_rm = 0;
+    if (!alt_paths.empty()) {
         for (Long j = 0; j < size(alt_paths); ++j) {
             auto &alt_path = alt_paths[j];
             Long i_beg = alt_path[0], i_bak = alt_path.back();
+            // remove redundant pentry
+            Long ind = search(entries[i_bak], pentries[0]);
+            erase(pentries[0], ind); N_rm++;
             ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << entries[i_bak] << ")" << endl;
             ss << u8"   已存在路径： " << endl;
             ss << "   " << titles[i_beg] << "(" << entries[i_beg] << ")" << endl;
             for (Long i = 1; i < size(alt_path); ++i)
                 ss << "<- " << titles[alt_path[i]] << "(" << entries[alt_path[i]] << ")" << endl;
         }
-        throw scan_err(ss.str());
+        SLS_WARN(ss.str());
     }
     dag_inv(tree);
+
+    // update db - remove redundant ones from pentries[0]
+    if (N_rm > 0) {
+        SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
+        join(pentry_str, pentries[0]);
+        stmt_update.bind(1, pentry_str);
+        stmt_update.bind(2, entry);
+        stmt_update.exec(); stmt_update.reset();
+    }
 }
 
 // calculate author list of an entry, based on "history" table counts in db_read

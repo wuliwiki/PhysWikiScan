@@ -627,11 +627,14 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
             update_entries.clear();
             titles.resize(entries.size());
         }
+
         // TODO: need to apply the new rules for multiple pentry list for each entry
-        // check dependency tree
-        // vector<DGnode> tree;
-        // vecStr _entries, _titles, parts, chapters;
-        // db_get_tree1(tree, _entries, _titles, parts, chapters, entry, db_read);
+        // check dependency tree and auto remove redundant pentry
+        vector<DGnode> tree;
+        vector<vecStr> pentries;
+        vecStr _entries, _titles, parts, chapters;
+        db_get_tree1(tree, _entries, _titles, pentries,
+                     parts, chapters, entry, db_rw);
     }
 
     for (auto &e : img_to_delete)
