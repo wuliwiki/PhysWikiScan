@@ -2,9 +2,10 @@
 
 // an object representing all \pentry{} info of an entry
 // v_pentries[i] is a single \pentry{} command
-// Str is "entry" or "entry:num", name of a tree node,
-// and Bool is whether the dependency is "weak" (will be first deleted in case of circle)
-typedef vector<vector<pair<Str,Bool>>> Pentry;
+// Str is "entry"
+// Char is the number in "entry:num" starting from 1, 0 if there is none
+// Bool is whether there is a * at the end
+typedef vector<vector<tuple<Str,Long,Bool>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;
 
@@ -48,7 +49,7 @@ inline Bool is_draft(Str_I str)
 inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read)
 {
     Bool star;
-    Long ind0 = -1, ikey;
+    Long ind0 = -1, ikey, num;
     Str temp, depEntry;
     v_pentries.clear();
     while (1) {
@@ -61,19 +62,26 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
         Long ind1 = 0, ind2 = 0;
         Bool first_upref = true;
         while (1) {
-            ind1 = find(ikey, temp, {"\\upref", "\\upref2"}, ind2);
+            ind1 = find(ikey, temp, {"\\upref", "\\upref0"}, ind2);
             if (ikey == 1) star = true;
             if (ind1 < 0)
                 break;
             if (!first_upref)
                 if (expect(temp, u8"，", ind2) < 0)
                     throw scan_err(u8"\\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \\pentry{词条1\\upref{文件名1}， 词条2\\upref{文件名2}}。");
-            command_arg(depEntry, temp, ind1, 0, 't');
+            command_arg(depEntry, temp, ind1);
+            if (command_has_opt(temp, ind1)) {
+                try { num = str2int(command_opt(temp, ind1)); }
+                catch (...) { throw scan_err("\\upref[]{} 方括号中只能是数字"); }
+            }
+            else
+                num = 0;
             if (!exist("entries", "id", depEntry, db_read))
                 throw scan_err(u8"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
-            if (search(depEntry, pentries) >= 0)
-                throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
-            pentries.push_back(make_pair(depEntry, star));
+            for (auto &e : pentries)
+                if (depEntry == get<0>(e))
+                    throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
+            pentries.push_back(make_tuple(depEntry, num, star));
             ind2 = skip_command(temp, ind1, 1);
             first_upref = false;
         }

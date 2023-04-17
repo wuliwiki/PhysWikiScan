@@ -299,6 +299,7 @@ inline Long pay2div(Str_IO str)
     }
 }
 
+// buttons for last and next entry
 inline void last_next_buttons(Str_IO html, SQLite::Database &db_read, Long_I order, Str_I entry, Str_I title)
 {
     Str last_entry, last_title, last_url, next_entry, next_title, next_url;
@@ -350,9 +351,9 @@ inline void last_next_buttons(Str_IO html, SQLite::Database &db_read, Long_I ord
         throw internal_err(u8"\"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, "PhysWikiNextEntryURL", gv::url+next_entry+".html") != 2)
         throw internal_err(u8"\"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, "PhysWikiLastTitle", last_title) != 2)
+    if (replace(html, "PhysWikiLastTitle", u8"上一篇：" + last_title) != 2)
         throw internal_err(u8"\"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
-    if (replace(html, "PhysWikiNextTitle", next_title) != 2)
+    if (replace(html, "PhysWikiNextTitle", u8"下一篇：" + next_title) != 2)
         throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
@@ -400,9 +401,10 @@ inline void arg_history(Str_I path)
 
 // generate html from a single tex
 // output title from first line comment
-inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete, Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
-                            Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
-                            vector<vecStr> &pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
+    Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
+    Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
+    Pentry_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -430,7 +432,7 @@ inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete,
     stmt_select.reset();
 
     // read html template and \newcommand{}
-    Str html;
+    html.clear();
     read(html, gv::path_out + "templates/entry_template.html");
     CRLF_to_LF(html);
 
@@ -554,9 +556,6 @@ inline void PhysWikiOnline1(Bool_O update_db, unordered_set<Str> &img_to_delete,
     if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
         throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
-    // save html file
-    write(html, gv::path_out + entry + ".html.tmp");
-
     // update db "entries" table
     Str key_str; join(key_str, keywords, "|");
     if (title != db_title || key_str != db_keys_str
@@ -572,11 +571,11 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
     cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
     Bool update_db, isdraft;
-    Str key_str, pentry_str;
+    Str key_str;
     unordered_set<Str> update_entries;
     vecLong fig_orders, label_orders;
     vecStr keywords, fig_ids, labels;
-    vector<vecStr> pentries;
+    Pentry pentries;
     vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = entries.size();
     unordered_set<Str> img_to_delete;
@@ -588,9 +587,12 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
-
-        PhysWikiOnline1(update_db, img_to_delete, titles[i], fig_ids, fig_orders, fig_ext_hash, isdraft,
+        Str html;
+        PhysWikiOnline1(html, update_db, img_to_delete, titles[i], fig_ids, fig_orders, fig_ext_hash, isdraft,
                         keywords, labels, label_orders, pentries, entry, rules, db_read);
+        // save html file
+        // TODO: mark redundant pentries with a slightly different color
+        write(html, gv::path_out + entry + ".html.tmp");
 
         cout << titles[i] << endl; cout.flush();
 
@@ -605,8 +607,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
             stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
             stmt_update.bind(2, key_str);
             stmt_update.bind(3, (int) isdraft);
-            stmt_update.bind(4, pentry_str);
-            stmt_update.bind(5, entries[i]);
+            stmt_update.bind(4, entries[i]);
             stmt_update.exec(); stmt_update.reset();
         }
 
@@ -629,11 +630,11 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
         // TODO: need to apply the new rules for multiple pentry list for each entry
         // check dependency tree and auto remove redundant pentry
-        vector<DGnode> tree;
-        vector<vecStr> pentries_out;
-        vecStr _entries, _titles, parts, chapters;
-        db_get_tree1(tree, _entries, _titles, pentries_out,
-                     parts, chapters, entry, pentries, db_rw);
+//        vector<DGnode> tree;
+//        vector<Pentry> pentries_out;
+//        vecStr _entries, _titles, parts, chapters;
+//        db_get_tree1(tree, _entries, _titles, pentries_out,
+//                     parts, chapters, entry, pentries, db_rw);
     }
 
     for (auto &e : img_to_delete)

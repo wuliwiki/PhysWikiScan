@@ -867,19 +867,17 @@ inline Long MatchBraces(vecLong_O ind_left, vecLong_O ind_right,
 }
 
 // get non-negative integer from string
-// return the index after the last digit, return -1 if failed
+// return the index after the last digit, throw if failed
 // str[start] must be a number
 inline Long str2int(Long_O num, Str_I str, Long_I start = 0)
 {
 	Long i{};
-	Char c;
-	c = str.at(start);
-	if (c < '0' || c > '9') {
-		SLS_ERR("not a number!"); return -1;  // break point here
-	}
+	Char c = str.at(start);
+	if (c < '0' || c > '9')
+		throw std::runtime_error("str2int(): not a number: " + str.substr(start, 20));
 	num = c - '0';
 	for (i = start + 1; i < size(str); ++i) {
-		c = str.at(i);
+		c = str[i];
 		if (c >= '0' && c <= '9')
 			num = 10 * num + (Long)(c - '0');
 		else
@@ -888,11 +886,12 @@ inline Long str2int(Long_O num, Str_I str, Long_I start = 0)
 	return i;
 }
 
+// every str[i] must be a number
 inline Long str2int(Str_I str, Long_I start = 0)
 {
 	Long num;
-	if (str2int(num, str, start) < 0)
-		throw Str("str2int()");
+	if (str2int(num, str, start) != size(str))
+		throw std::runtime_error("str2int(): not a number" + str.substr(start, 20));
 	return num;
 }
 

@@ -224,7 +224,8 @@ int main(int argc, char *argv[]) {
             cout << output[0] << endl;
             cout << output[1] << endl;
             write_vec_str(output, fname);
-        } else if (args[0] == "--autoref-dry" && args.size() == 4) {
+        }
+        else if (args[0] == "--autoref-dry" && args.size() == 4) {
             // check a label only, without adding
             Str label;
             Str fname = gv::path_data + "autoref.txt";
@@ -238,7 +239,8 @@ int main(int argc, char *argv[]) {
             cout << output[0] << endl;
             cout << output[1] << endl;
             write_vec_str(output, fname);
-        } else if (args[0] == "--entry" && args.size() > 1) {
+        }
+        else if (args[0] == "--entry" && args.size() > 1) {
             // process specified entries
             vecStr entries;
             Str arg;
@@ -249,7 +251,8 @@ int main(int argc, char *argv[]) {
                 entries.push_back(arg);
             }
             PhysWikiOnlineN(entries);
-        } else if (args[0] == "--bib")
+        }
+        else if (args[0] == "--bib")
             arg_bib();
         else if (args[0] == "--history" && args.size() <= 2) {
             Str path;
@@ -259,25 +262,30 @@ int main(int argc, char *argv[]) {
             } else
                 path = "../PhysWiki-backup/";
             arg_history(path);
-        } else if (args[0] == "--fix-db" && args.size() == 1) {
+        }
+        else if (args[0] == "--fix-db" && args.size() == 1) {
             arg_fix_db();
-        } else if (args[0] == "--hide" && args.size() > 1) {
+        }
+        else if (args[0] == "--hide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
             CRLF_to_LF(str);
             hide_eq_verb(str);
             write(str, fname);
-        } else if (args[0] == "--unhide" && args.size() > 1) {
+        }
+        else if (args[0] == "--unhide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
             CRLF_to_LF(str);
             unhide_eq_verb(str);
             write(str, fname);
-        } else if (args[0] == "--all-commands") {
+        }
+        else if (args[0] == "--all-commands") {
             vecStr commands;
             all_commands(commands, gv::path_in + "contents/");
             write_vec_str(commands, gv::path_data + "commands.txt");
-        } else {
+        }
+        else {
             cerr << u8"内部错误： 命令不合法" << endl;
             return 0;
         }

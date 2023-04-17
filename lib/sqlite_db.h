@@ -97,46 +97,72 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
 // parse the string from "entries.pentry"
 inline void parse_pentry(Pentry_O v_pentries, Str_I str)
 {
-    Long ind0 = 0, ikey;
-    Str entry;
-    vecStr keys = {" ", "*", "|"};
+    Long ind0;
+    Str entry; // "entry" in "entry:num"
+    Long num; // "num" in "entry:num", 0 for nothing
+    Bool star; // has "*" in "entry:num*"
     v_pentries.clear();
-    while (1) {
+    while (ind0 < size(str)) {
         v_pentries.emplace_back();
         auto &pentry = v_pentries.back();
-        while (1) {
-            Long ind1 = find(ikey, str, keys, ind0);
-            if (ind1 < 0)
-                ind1 = str.size();
+        while (1) { // get a node each loop
+            num = 0; star = false;
+            // get entry
+            if (!is_letter(str[ind0]))
+                throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str);
+            Long ind1 = ind0 + 1;
+            while (ind1 < size(str) && is_letter(str[ind1]))
+                ++ind1;
             entry = str.substr(ind0, ind1 - ind0);
-            for (auto &p : pentry)
-                if (entry == p.first)
-                    throw internal_err("illegal entries.pentry string (repetition): " + str);
-            pentry.push_back(make_pair(entry, false));
-            if (ind1 == str.size())
-                return;
-            if (ikey == 1) // "*"
-                pentry.back().second = true;
-            else if (ikey == 2) // "|"
+            for (auto &ee: v_pentries) // check repeat
+                for (auto &e : ee)
+                    if (entry == get<0>(e))
+                        throw internal_err(u8"数据库中 entries.pentry 存在重复的节点: " + str);
+            ind0 = ind1;
+            if (ind0 == size(str)) break;
+            // get number
+            if (str[ind0] == ':')
+                ind0 = str2int(num, str, ind0 + 1);
+            if (ind0 == size(str)) break;
+            // get star
+            if (str[ind0] == '*') {
+                star = true; ++ind0;
+            }
+            // check "|"
+            ind0 = str.find_first_not_of(' ', ind0);
+            if (ind0 < 0)
+                throw internal_err(u8"数据库中 entries.pentry 格式不对 (多余的空格): " + str);
+            if (str[ind0] == '|') {
+                ind0 = str.find_first_not_of(' ', ind0 + 1);
+                if (ind0 < 0)
+                    throw internal_err(u8"数据库中 entries.pentry 格式不对 (多余的空格): " + str);
                 break;
+            }
+            pentry.push_back(make_tuple(entry, num, star));
         }
+        pentry.push_back(make_tuple(entry, num, star));
     }
 }
 
 // join pentry back to a string
 inline void join_pentry(Str_O str, Pentry_I v_pentries)
 {
+    str.clear();
+    if (v_pentries.empty()) return;
     for (auto &pentries : v_pentries) {
-        SLS_ASSERT(!pentries.empty());
+        if (pentries.empty())
+            throw internal_err("\\pentry{} empty!");
         for (auto &p : pentries) {
-            str += p.first;
-            if (p.second)
+            str += get<0>(p);
+            if (get<1>(p) > 0)
+                str += ":" + num2str(get<1>(p));
+            if (get<2>(p))
                 str += "*";
             str += " ";
         }
-        str.pop_back(); str += "|";
+        str += "| ";
     }
-    str.pop_back();
+    str.resize(str.size()-3); // remove " | "
 }
 
 // get dependency tree from database, for 1 entry
