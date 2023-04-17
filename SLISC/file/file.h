@@ -30,7 +30,8 @@ inline void write(Str_I str, Str_I fname);
 inline Str pwd()
 {
 	Char buff[FILENAME_MAX];
-	getcwd(buff, FILENAME_MAX);
+	if (getcwd(buff, FILENAME_MAX) == NULL)
+		SLS_ERR("pwd()");
 	return buff;
 }
 
@@ -495,8 +496,8 @@ inline void open_bin(ofstream &fout, Str_I fname)
 // open binary file to read
 inline void open_bin(ifstream &fin, Str_I fname)
 {
-    if (!file_exist(fname))
-        throw std::runtime_error("file not found: " + fname);
+	if (!file_exist(fname))
+		throw std::runtime_error("file not found: " + fname);
 	if (fin.is_open())
 		fin.close();
 #ifndef SLS_USE_MSVC
