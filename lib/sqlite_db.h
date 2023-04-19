@@ -95,30 +95,31 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
 }
 
 // parse the string from "entries.pentry"
-inline void parse_pentry(Pentry_O v_pentries, Str_I str)
+// 0 means the last node or the whole entry
+inline void parse_pentry(Pentry_O pentry, Str_I str)
 {
     Long ind0 = 0;
     Str entry; // "entry" in "entry:num"
     Long num; // "num" in "entry:num", 0 for nothing
     Bool star; // has "*" in "entry:num*"
     Bool tilde; // hash "~" at the end
-    v_pentries.clear();
+    pentry.clear();
     while (ind0 >= 0 && ind0 < size(str)) {
-        v_pentries.emplace_back();
-        auto &pentry = v_pentries.back();
+        pentry.emplace_back();
+        auto &pentry1 = pentry.back();
         while (1) { // get a node each loop
             num = 0; star = tilde = false;
             // get entry
             if (!is_letter(str[ind0]))
-                throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str);
+                throw internal_err(u8"数据库中 entries.pentry1 格式不对 (非字母): " + str);
             Long ind1 = ind0 + 1;
             while (ind1 < size(str) && is_letter(str[ind1]))
                 ++ind1;
             entry = str.substr(ind0, ind1 - ind0);
-            for (auto &ee: v_pentries) // check repeat
+            for (auto &ee: pentry) // check repeat
                 for (auto &e : ee)
                     if (entry == get<0>(e))
-                        throw internal_err(u8"数据库中 entries.pentry 存在重复的节点: " + str);
+                        throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str);
             ind0 = ind1;
             if (ind0 == size(str)) break;
             // get number
@@ -138,16 +139,16 @@ inline void parse_pentry(Pentry_O v_pentries, Str_I str)
             // check "|"
             ind0 = str.find_first_not_of(' ', ind0);
             if (ind0 < 0)
-                throw internal_err(u8"数据库中 entries.pentry 格式不对 (多余的空格): " + str);
+                throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
             if (str[ind0] == '|') {
                 ind0 = str.find_first_not_of(' ', ind0 + 1);
                 if (ind0 < 0)
-                    throw internal_err(u8"数据库中 entries.pentry 格式不对 (多余的空格): " + str);
+                    throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
                 break;
             }
-            pentry.push_back(make_tuple(entry, num, star, tilde));
+            pentry1.push_back(make_tuple(entry, num, star, tilde));
         }
-        pentry.push_back(make_tuple(entry, num, star, tilde));
+        pentry1.push_back(make_tuple(entry, num, star, tilde));
     }
 }
 
@@ -174,6 +175,22 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
     str.resize(str.size()-3); // remove " | "
 }
 
+// used by
+inline void db_get_entry_info(
+        tuple<Str, Str, Str, Pentry> &info, // title, part, chap, pentry
+        Str_I entry, SQLite::Statement &stmt_select)
+{
+    auto &pentry = get<3>(info);
+    stmt_select.bind(1, entry);
+    if (stmt_select.executeStep())
+        throw internal_err("entry not found: " + entry + " " SLS_WHERE);
+    get<0>(info) = (const char*)stmt_select.getColumn(0); // title
+    get<1>(info) = (const char*)stmt_select.getColumn(1); // part
+    get<2>(info) = (const char*)stmt_select.getColumn(2); // chapter
+    parse_pentry(pentry, stmt_select.getColumn(3));
+    stmt_select.reset();
+}
+
 // get dependency tree from database, for 1 entry
 // each node of the tree is a part of an entry (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
@@ -192,35 +209,33 @@ inline void db_get_tree1(vector<DGnode> &tree,
     pair<Str,Long> e;
     deque<pair<Str,Long>> q; // queue of nodes to search
     q.push_back(node);
+    // get entry info
+    db_get_entry_info(entry_info[node.first], node.first, stmt_select);
 
-    // broad first search (BFS) to construct subtree
+    // broad first search (BFS) to get all nodes involved
     while (!q.empty()) {
-        auto &entry = e.first = move(q.front().first);
-        auto &num = e.second = q.front().second;
+        auto &entry = e.first = std::move(q.front().first);
+        /*auto &num =*/ e.second = q.front().second;
         q.pop_front();
-        auto &info = entry_info[entry];
-        auto &pentry = get<3>(info);
-        // get entry info
-        if (!entry_info.count(entry)) {
-            nodes.push_back(e);
-            stmt_select.bind(1, entry);
-            SLS_ASSERT(stmt_select.executeStep());
-            get<0>(info) = (const char*)stmt_select.getColumn(0); // title
-            get<1>(info) = (const char*)stmt_select.getColumn(1); // part
-            get<2>(info) = (const char*)stmt_select.getColumn(2); // chapter
-            parse_pentry(pentry, stmt_select.getColumn(3));
-            stmt_select.reset();
-        }
-
+        auto &pentry = get<3>(entry_info[entry]);
         for (auto &pentry1 : pentry) {
             for (auto &en : pentry1) {
-                auto nod = make_pair(get<0>(en), get<1>(en));
-                if (search(nod, nodes) < 0
-                    && find(q.begin(), q.end(), nod) == q.end())
-                    q.push_back(nod);
+                auto &entry_from = get<0>(en);
+                if (!entry_info.count(entry_from))
+                    db_get_entry_info(entry_info[entry_from], entry_from, stmt_select);
+                auto &num = get<1>(en);
+                if (num == 0)
+                    num = size(get<3>(entry_info[entry_from])); // 0 is max
+                auto nod = make_pair(entry_from, num);
+                if (search(nod, nodes) < 0) {
+                    nodes.push_back(nod);
+                    if (find(q.begin(), q.end(), nod) == q.end())
+                        q.push_back(nod);
+                }
             }
         }
     }
+    sort(nodes);
     tree.resize(nodes.size());
 
     // construct tree
@@ -230,9 +245,11 @@ inline void db_get_tree1(vector<DGnode> &tree,
         for (auto &pentry1 : pentry) {
             for (auto &en : pentry1) {
                 auto nod = make_pair(get<0>(en), get<1>(en));
-                Long from = search(nod, nodes);
+                Long from;
+                from = search(nod, nodes);
                 if (from < 0)
                     throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
+                                       + nod.first + ":" + to_string(nod.second));
                 tree[from].push_back(i);
             }
         }
@@ -245,13 +262,15 @@ inline void db_get_tree1(vector<DGnode> &tree,
     //                 << j << "." << titles[j] << "(" << nodes[j] << ")" << endl;
 
     // check cyclic
-    TODO: work the following!
     vecLong cycle;
     if (!dag_check(cycle, tree)) {
+        cycle.push_back(cycle[0]);
         Str msg = u8"存在循环预备知识: ";
-        for (auto ind : cycle)
-            msg += to_string(ind) + "." + titles[ind] + " (" + nodes[ind] + ") -> ";
-        msg += titles[cycle[0]] + " (" + nodes[cycle[0]] + ")";
+        for (auto ind : cycle) {
+            auto &entry = nodes[ind].first;
+            auto &title = get<0>(entry_info[entry]);
+            msg += to_string(ind) + "." + title + " (" + entry + ") -> ";
+        }
         throw scan_err(msg);
     }
 
@@ -265,9 +284,9 @@ inline void db_get_tree1(vector<DGnode> &tree,
         for (Long j = 0; j < size(alt_paths); ++j) {
             auto &alt_path = alt_paths[j];
             Long i_beg = alt_path[0], i_bak = alt_path.back();
-            // remove redundant pentry
+            // mark redundant pentry
             Long ind = search(nodes[i_bak], pentries[0]);
-            erase(pentries[0], ind); N_rm++;
+            mark(pentries[0], ind); N_rm++;
             ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << nodes[i_bak] << ")" << endl;
             ss << u8"   已存在路径： " << endl;
             ss << "   " << titles[i_beg] << "(" << nodes[i_beg] << ")" << endl;

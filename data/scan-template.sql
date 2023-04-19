@@ -54,15 +54,16 @@ CREATE TABLE "parts" (
 	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
 	"order"	INTEGER UNIQUE NOT NULL, -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
 	"caption"	TEXT NOT NULL UNIQUE, -- 标题
-	"chap_first"	TEXT NOT NULL, -- 第一章
-	"chap_last"	INTEGER NOT NULL, -- 最后一章
+	"chap_first"	TEXT NOT NULL UNIQUE, -- 第一章
+	"chap_last"	INTEGER NOT NULL UNIQUE, -- 最后一章
+	"subject"	TEXT NOT NULL DEFAULT '', -- [phys|math|cs] 学科
 	PRIMARY KEY("id"),
 	FOREIGN KEY("chap_first") REFERENCES "chapters"("id"),
 	FOREIGN KEY("chap_last") REFERENCES "chapters"("id")
 );
 
 -- 防止 FOREIGN KEY 报错
-INSERT INTO "parts" VALUES('', 0, '无', '', '');
+INSERT INTO "parts" VALUES('', 0, '无', '', '', '');
 
 -- 章
 -- 目录中 \label{cpt_xxx} 中 xxx 为 "id"
@@ -232,6 +233,7 @@ CREATE TABLE "authors" (
 	"aka"	TEXT NOT NULL DEFAULT '', -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
 	"contrib"	INTEGER NOT NULL DEFAULT 0, -- 贡献的分钟数（折算）
 	"recent_entries"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 最近 10 个编辑的词条（按时间从新到老）
+	"referee"	TEXT NOT NULL DEFAULT '', -- "part:part1 sub:math sub:phys" 哪些部分/学科的审稿人
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
