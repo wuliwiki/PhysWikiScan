@@ -62,15 +62,15 @@ inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordere
             fig_ext_hash[i][format] = fig_hash;
             // rename figure files with hash
             fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
-            if (fname_in != fname_in2) {
+            if (figName != fig_hash) {
                 file_copy(fname_in2, fname_in, true);
                 img_to_delete.insert(fname_in);
+                // modify .tex file
+                tex_fname = gv::path_in + "contents/" + entry + ".tex";
+                read(str_mod, tex_fname);
+                replace(str_mod, figName + "." + format, fig_hash + "." + format);
+                write(str_mod, tex_fname);
             }
-            // modify .tex file
-            tex_fname = gv::path_in + "contents/" + entry + ".tex";
-            read(str_mod, tex_fname);
-            replace(str_mod, figName + "." + format, fig_hash + "." + format);
-            write(str_mod, tex_fname);
         }
         else if (figName.substr(Nname - 4, 4) == ".pdf") {
             figName = figName.substr(0, Nname - 4);
@@ -83,28 +83,28 @@ inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordere
             fig_ext_hash[i][format] = fig_hash;
             // rename figure files with hash
             fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
-            if (fname_in != fname_in2) {
+            if (figName != fig_hash) {
                 file_copy(fname_in2, fname_in, true);
                 img_to_delete.insert(fname_in);
+                // modify .tex file
+                tex_fname = gv::path_in + "contents/" + entry + ".tex";
+                read(str_mod, tex_fname);
+                replace(str_mod, figName + "." + format, fig_hash + "." + format);
+                write(str_mod, tex_fname);
             }
-            // modify .tex file
-            tex_fname = gv::path_in + "contents/" + entry + ".tex";
-            read(str_mod, tex_fname);
-            replace(str_mod, figName + "." + format, fig_hash + "." + format);
-            write(str_mod, tex_fname);
 
             // ==== svg =====
             format = "svg";
             fname_in = gv::path_in + "figures/" + figName + "." + format;
             if (file_exist(fname_in)) {
-                // svg and pdf hashes are still the same (old standard)
+                // svg and pdf hashes (or old file name rule) are still the same (old standard)
                 read(tmp, fname_in);
                 CRLF_to_LF(tmp);
                 fig_hash = sha1sum(tmp).substr(0, 16);
                 fig_ext_hash[i][format] = fig_hash;
                 fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
                 // rename figure files with hash
-                if (fname_in != fname_in2) {
+                if (figName != fig_hash) {
                     file_copy(fname_in2, fname_in, true);
                     img_to_delete.insert(fname_in);
                 }
@@ -112,11 +112,7 @@ inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordere
             else {
                 // svg and pdf hashes not the same (new standard)
                 svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
-                read(tmp, gv::path_in + "figures/" + svg_file);
-                CRLF_to_LF(tmp);
-                fig_hash = sha1sum(tmp).substr(0, 16);
-                fig_ext_hash[i][format] = fig_hash;
-                fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+                fname_in2 = gv::path_in + "figures/" + svg_file;
             }
         }
         else
