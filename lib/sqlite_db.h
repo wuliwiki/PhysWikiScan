@@ -622,11 +622,20 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         db_author_to_id[db_author_names0[i]] = db_author_ids0[i];
     }
 
+    SQLite::Statement stmt_select3(db_rw, R"(SELECT "id", "aka" FROM "authors" WHERE "aka" != -1;)");
+    Str aka;
+    unordered_map<int, int> db_author_aka;
+    while (stmt_select3.executeStep()) {
+        int id = stmt_select3.getColumn(0);
+        int aka = stmt_select3.getColumn(1);
+        db_author_aka[id] = aka;
+    }
+
     db_author_ids0.clear(); db_author_names0.clear();
     db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
 
     SQLite::Statement stmt_insert(db_rw,
-        R"(INSERT OR IGNORE INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+        R"(INSERT OR IGNORE INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
     get_column(entries0, "entries", "id", db_rw);
@@ -635,11 +644,11 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
     // insert a deleted entry (to ensure FOREIGN KEY exist)
     SQLite::Statement stmt_insert_entry(db_rw,
-        R"(INSERT INTO entries ("id", "deleted") VALUES (?, 1);)");
+        R"(INSERT INTO "entries" ("id", "deleted") VALUES (?, 1);)");
 
     // insert new_authors to "authors" table
     SQLite::Statement stmt_insert_auth(db_rw,
-        R"(INSERT INTO authors ("id", "name") VALUES (?, ?);)");
+        R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
 
     Str fpath;
 
@@ -715,10 +724,15 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         cout << u8"新作者： " << author.second << ". " << author.first << endl;
 
     cout << "\nupdating author contribution..." << endl;
+    for (auto &e : db_author_aka) {
+        author_contrib[e.second] += author_contrib[e.first];
+        author_contrib[e.first] = 0;
+    }
+
     SQLite::Statement stmt_contrib(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
     for (auto &e : author_contrib) {
-        stmt_contrib.bind(2, (int)e.first);
         stmt_contrib.bind(1, (int)e.second);
+        stmt_contrib.bind(2, (int)e.first);
         stmt_contrib.exec(); stmt_contrib.reset();
     }
 
