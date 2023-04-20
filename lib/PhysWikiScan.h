@@ -5,7 +5,7 @@
 #include "../SLISC/algo/sort.h"
 #include "../SLISC/algo/graph.h"
 #include "../SLISC/util/sha1sum.h"
-
+#include "../SLISC/slisc_update.h"
 
 using namespace slisc;
 
@@ -630,11 +630,22 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
         // TODO: need to apply the new rules for multiple pentry list for each entry
         // check dependency tree and auto remove redundant pentry
+        Bool update_pentry;
         vector<DGnode> tree;
         vector<Pentry> _pentries;
         vecStr _entries, _titles, parts, chapters;
-        db_get_tree1(tree, _entries, _titles, _pentries,
-                     parts, chapters, entry, db_rw);
+        unordered_map<Str,pair<Str, Pentry>> entry_info;
+        vector<Node> nodes;
+        db_get_tree1(update_pentry, tree, nodes, entry_info, entry, db_read);
+        // update db - remove redundant ones from pentries[0]
+        if (update_pentry) {
+            SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
+            Str pentry_str;
+            join_pentry(pentry_str, get<1>(entry_info[entry]));
+            stmt_update.bind(1, pentry_str);
+            stmt_update.bind(2, entry);
+            stmt_update.exec(); stmt_update.reset();
+        }
     }
 
     for (auto &e : img_to_delete)

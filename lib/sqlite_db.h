@@ -118,7 +118,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
             entry = str.substr(ind0, ind1 - ind0);
             for (auto &ee: pentry) // check repeat
                 for (auto &e : ee)
-                    if (entry == get<0>(e))
+                    if (entry == e.entry)
                         throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str);
             ind0 = ind1;
             if (ind0 == size(str)) break;
@@ -146,9 +146,9 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
                     throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
                 break;
             }
-            pentry1.push_back(make_tuple(entry, num, star, tilde));
+            pentry1.emplace_back(entry, num, star, tilde);
         }
-        pentry1.push_back(make_tuple(entry, num, star, tilde));
+        pentry1.emplace_back(entry, num, star, tilde);
     }
 }
 
@@ -161,12 +161,12 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
         if (pentries.empty())
             throw scan_err("\\pentry{} empty!");
         for (auto &p : pentries) {
-            str += get<0>(p);
-            if (get<1>(p) > 0)
-                str += ":" + num2str(get<1>(p));
-            if (get<2>(p))
+            str += p.entry;
+            if (p.num > 0)
+                str += ":" + num2str(p.num);
+            if (p.star)
                 str += "*";
-            if (get<3>(p))
+            if (p.tilde)
                 str += "~";
             str += " ";
         }
@@ -175,63 +175,75 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
     str.resize(str.size()-3); // remove " | "
 }
 
-// used by
 inline void db_get_entry_info(
-        tuple<Str, Str, Str, Pentry> &info, // title, part, chap, pentry
+        pair<Str, Pentry> &info, // title, pentry
         Str_I entry, SQLite::Statement &stmt_select)
 {
-    auto &pentry = get<3>(info);
+    auto &pentry = get<1>(info);
     stmt_select.bind(1, entry);
     if (stmt_select.executeStep())
         throw internal_err("entry not found: " + entry + " " SLS_WHERE);
     get<0>(info) = (const char*)stmt_select.getColumn(0); // title
-    get<1>(info) = (const char*)stmt_select.getColumn(1); // part
-    get<2>(info) = (const char*)stmt_select.getColumn(2); // chapter
-    parse_pentry(pentry, stmt_select.getColumn(3));
+    parse_pentry(pentry, stmt_select.getColumn(1));
     stmt_select.reset();
 }
 
-// get dependency tree from database, for 1 entry
-// each node of the tree is a part of an entry (if there are multiple pentries)
+// a node of the knowledge tree
+struct Node {
+    Str entry;
+    Long num;
+    Node(Str_I entry, Long_I num): entry(entry), num(num) {};
+};
+
+typedef const Node &Node_I;
+typedef Node &Node_O, &Node_IO;
+
+inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.num == b.num; }
+inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.num < b.num : a.entry < b.entry; }
+
+// get dependency tree from database, for (the last node of) 1 entry0
+// each node of the tree is a part of an entry0 (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
-// nodes[0] will be for `entry`
+// nodes[0] will be for `entry0`
 // nodes[i], tree[i], titles[i], pentries[i] corresponds
-inline void db_get_tree1(vector<DGnode> &tree,
-    vector<pair<Str,Long>> &nodes, // nodes[i] is tree[i], with (entry, num)
-    unordered_map<Str,tuple<Str, Str, Str, Pentry>> &entry_info, // entry -> (title, part, chap, pentry)
-    const pair<Str,Long> &node, SQLite::Database &db_rw)
+inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
+                         vector<Node> &nodes, // nodes[i] is tree[i], with (entry, num)
+    unordered_map<Str,pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
+    Str_I entry0, SQLite::Database &db_read)
 {
+    update_pentry = false;
     tree.clear(); nodes.clear(); entry_info.clear();
-    SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "caption", "part", "chapter", "pentry" FROM "nodes" WHERE "id" = ?;)");
+    SQLite::Statement stmt_select(db_read,
+                                  R"(SELECT "caption", "pentry" FROM "nodes" WHERE "id" = ?;)");
 
     Str pentry_str;
-    pair<Str,Long> e;
-    deque<pair<Str,Long>> q; // queue of nodes to search
-    q.push_back(node);
-    // get entry info
-    db_get_entry_info(entry_info[node.first], node.first, stmt_select);
+    db_get_entry_info(entry_info[entry0], entry0, stmt_select);
+    Long entry_num = size(entry_info[entry0].second);
+    if (entry_num == 0) entry_num = 1;
+    deque<Node> q; // queue of nodes to search
+    q.emplace_back(entry0, entry_num);
 
     // broad first search (BFS) to get all nodes involved
     while (!q.empty()) {
-        auto &entry = e.first = std::move(q.front().first);
-        /*auto &num =*/ e.second = q.front().second;
+        auto entry = std::move(q.front().entry);
+        auto num = q.front().num;
         q.pop_front();
-        auto &pentry = get<3>(entry_info[entry]);
-        for (auto &pentry1 : pentry) {
-            for (auto &en : pentry1) {
-                auto &entry_from = get<0>(en);
-                if (!entry_info.count(entry_from))
-                    db_get_entry_info(entry_info[entry_from], entry_from, stmt_select);
-                auto &num = get<1>(en);
-                if (num == 0)
-                    num = size(get<3>(entry_info[entry_from])); // 0 is max
-                auto nod = make_pair(entry_from, num);
-                if (search(nod, nodes) < 0) {
-                    nodes.push_back(nod);
-                    if (find(q.begin(), q.end(), nod) == q.end())
-                        q.push_back(nod);
-                }
+        auto &pentry = entry_info[entry].second;
+        if (pentry.empty()) continue;
+        if (num > size(pentry))
+            throw internal_err(Str(__func__) + SLS_WHERE);
+        for (auto &en : pentry[num-1]) {
+            if (!entry_info.count(en.entry))
+                db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
+            if (en.num == 0) {
+                en.num = size(entry_info[en.entry].second); // 0 is max
+                if (en.num == 0) en.num = 1;
+            }
+            Node nod(en.entry, en.num);
+            if (search(nod, nodes) < 0) {
+                nodes.push_back(nod);
+                if (find(q.begin(), q.end(), nod) == q.end())
+                    q.push_back(nod);
             }
         }
     }
@@ -239,17 +251,18 @@ inline void db_get_tree1(vector<DGnode> &tree,
     tree.resize(nodes.size());
 
     // construct tree
+    // every node has a non-zero number now
     for (Long i = 0; i < size(nodes); ++i) {
-        auto &entry = nodes[i].first;
-        auto &pentry = get<3>(entry_info[entry]);
+        auto &entry = nodes[i].entry;
+        auto &pentry = entry_info[entry].second;
         for (auto &pentry1 : pentry) {
             for (auto &en : pentry1) {
-                auto nod = make_pair(get<0>(en), get<1>(en));
+                Node nod {en.entry, en.num};
                 Long from;
                 from = search(nod, nodes);
                 if (from < 0)
-                    throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： "
-                                       + nod.first + ":" + to_string(nod.second));
+                    throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
+                                       + nod.entry + ":" + to_string(nod.num));
                 tree[from].push_back(i);
             }
         }
@@ -267,44 +280,48 @@ inline void db_get_tree1(vector<DGnode> &tree,
         cycle.push_back(cycle[0]);
         Str msg = u8"存在循环预备知识: ";
         for (auto ind : cycle) {
-            auto &entry = nodes[ind].first;
-            auto &title = get<0>(entry_info[entry]);
+            auto &entry = nodes[ind].entry;
+            auto &title = entry_info[entry].first;
             msg += to_string(ind) + "." + title + " (" + entry + ") -> ";
         }
         throw scan_err(msg);
     }
 
     // check redundancy
+
     dag_inv(tree);
     vector<vecLong> alt_paths;
     dag_reduce(alt_paths, tree, 0);
     std::stringstream ss;
-    Long N_rm = 0;
     if (!alt_paths.empty()) {
         for (Long j = 0; j < size(alt_paths); ++j) {
+            // mark ignored (add ~ to the end)
             auto &alt_path = alt_paths[j];
             Long i_beg = alt_path[0], i_bak = alt_path.back();
-            // mark redundant pentry
-            Long ind = search(nodes[i_bak], pentries[0]);
-            mark(pentries[0], ind); N_rm++;
-            ss << u8"\n\n存在多余的预备知识： " << titles[i_bak] << "(" << nodes[i_bak] << ")" << endl;
+            auto &node_beg = nodes[i_beg];
+            auto &entry_bak = nodes[i_bak].entry;
+            auto &pentry = get<1>(entry_info[nodes[i_bak].entry]);
+            auto &pentry1 = pentry[nodes[i_bak].num-1];
+            for (auto &e : pentry1) {
+                if (node_beg.entry == e.entry && node_beg.num == e.num
+                        && !e.tilde) {
+                    update_pentry = true;
+                    e.tilde = true;
+                }
+            }
+            auto &title_bak = get<0>(entry_info[entry_bak]);
+            ss << u8"\n\n存在多余的预备知识： " << title_bak << "(" << entry_bak << ")" << endl;
             ss << u8"   已存在路径： " << endl;
-            ss << "   " << titles[i_beg] << "(" << nodes[i_beg] << ")" << endl;
-            for (Long i = 1; i < size(alt_path); ++i)
-                ss << "<- " << titles[alt_path[i]] << "(" << nodes[alt_path[i]] << ")" << endl;
+            for (Long i = 0; i < size(alt_path); ++i) {
+                auto &entry = nodes[alt_path[i]].entry;
+                auto &title = get<0>(entry_info[entry]);
+                ss << title << "(" << entry
+                    << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
+            }
         }
         SLS_WARN(ss.str());
     }
     dag_inv(tree);
-
-    // update db - remove redundant ones from pentries[0]
-    if (N_rm > 0) {
-        SQLite::Statement stmt_update(db_rw, R"(UPDATE "nodes" SET "pentry"=? WHERE "id"=?;)");
-        join(pentry_str, pentries[0]);
-        stmt_update.bind(1, pentry_str);
-        stmt_update.bind(2, entry);
-        stmt_update.exec(); stmt_update.reset();
-    }
 }
 
 // calculate author list of an entry, based on "history" table counts in db_read

@@ -1,12 +1,18 @@
 #pragma once
 
-// an object representing all dependency info of an entry
+// a single \upref{} or \upref0{} inside a \pentry{}
+struct PentryRef {
+    Str entry;
+    Long num; // "entry:num" starting from 1, 0 if there is none
+    Bool star; // \upref0{}, i.e. marked * (prefer to be ignored)
+    Bool tilde; // omitted in the tree, i.e. marked ~
+    PentryRef(Str_I entry, Long_I num, Bool_I star, Bool_I tilde):
+        entry(entry), num(num), star(star), tilde(tilde) {};
+};
+
+// all \pentry info of an entry
 // pentry[i] is a single \pentry{} command
-// Str is "entry"
-// Long is the number in "entry:num" starting from 1, 0 if there is none
-// Bool is whether there is a * (prefer to be ignored)
-// Bool is whether there is a ~ (actually ignored)
-typedef vector<vector<tuple<Str,Long,Bool,Bool>>> Pentry;
+typedef vector<vector<PentryRef>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;
 
@@ -84,9 +90,9 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
             if (!exist("entries", "id", depEntry, db_read))
                 throw scan_err(u8"\\pentry{} 中 \\upref 引用的词条未找到: " + depEntry + ".tex");
             for (auto &e : pentries)
-                if (depEntry == get<0>(e))
+                if (depEntry == e.entry)
                     throw scan_err(u8"\\pentry{} 中预备知识重复： " + depEntry + ".tex");
-            pentries.push_back(make_tuple(depEntry, num, star, false));
+            pentries.emplace_back(depEntry, num, star, false);
             ind2 = skip_command(temp, ind1, 1);
             first_upref = false;
         }
