@@ -626,7 +626,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
 
     SQLite::Statement stmt_insert(db_rw,
-        R"(INSERT INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+        R"(INSERT OR IGNORE INTO history ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
     get_column(entries0, "entries", "id", db_rw);
@@ -641,9 +641,12 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     SQLite::Statement stmt_insert_auth(db_rw,
         R"(INSERT INTO authors ("id", "name") VALUES (?, ?);)");
 
+    Str fpath;
+
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
-        sha1 = sha1sum_f(path + fname + ".tex").substr(0, 16);
+        fpath = path + fname + ".tex";
+        sha1 = sha1sum_f(fpath).substr(0, 16);
         bool sha1_exist = db_history.count(sha1);
 
         // fname = YYYYMMDDHHMM_[name]_[entry].tex
@@ -690,7 +693,12 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
             stmt_insert.bind(2, time);
             stmt_insert.bind(3, int(authorID));
             stmt_insert.bind(4, entry);
-            stmt_insert.exec(); stmt_insert.reset();
+            stmt_insert.exec();
+            if (!stmt_insert.getChanges()) {
+                SLS_WARN("重复的 sha1 （将删除）: " + fname + ".tex");
+                file_remove(fpath);
+            }
+            stmt_insert.reset();
         }
     }
 

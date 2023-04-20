@@ -112,6 +112,8 @@ inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordere
             else {
                 // svg and pdf hashes not the same (new standard)
                 svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
+                fig_hash = svg_file.substr(0, svg_file.find('.'));
+                fig_ext_hash[i][format] = fig_hash;
                 fname_in2 = gv::path_in + "figures/" + svg_file;
             }
         }
