@@ -97,7 +97,7 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
             first_upref = false;
         }
     }
-    if (v_pentries.back().empty())
+    if (!v_pentries.empty() && v_pentries.back().empty())
         v_pentries.pop_back();
 }
 
