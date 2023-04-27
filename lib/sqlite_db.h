@@ -809,6 +809,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
+    SQLite::Statement stmt_update0(db_rw,
+        R"(UPDATE "figures" SET "order"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "image_alt"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update2(db_rw,
@@ -845,10 +847,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     db_figs_used.resize(db_figs.size(), false);
     Str figs_str, image, image_alt;
     set<Str> new_figs, figs;
+    vector<pair<Str,Long>> update; // {id, order}
 
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
-        new_figs.clear();
+        new_figs.clear(); update.clear();
         for (Long j = 0; j < size(entry_figs[i]); ++j) {
             id = entry_figs[i][j]; order = entry_fig_orders[i][j];
             Long ind = search(id, db_figs);
@@ -908,12 +911,19 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
             if (changed) {
                 stmt_update.bind(1, entry);
-                stmt_update.bind(2, int(order));
+                stmt_update.bind(2, -int(order)); // -order to avoid UNIQUE constraint
                 stmt_update.bind(3, image);
                 stmt_update.bind(4, image_alt);
                 stmt_update.bind(5, id);
                 stmt_update.exec(); stmt_update.reset();
+                update.emplace_back(id, order);
             }
+        }
+        // set label orders back to positive
+        for (auto &e : update) {
+            stmt_update0.bind(1, int(e.second)); // order
+            stmt_update0.bind(2, e.first); // id
+            stmt_update0.exec(); stmt_update0.reset();
         }
 
         // add entries.figures
@@ -978,8 +988,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
         R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+    SQLite::Statement stmt_update0(db_rw,
+        R"(UPDATE "labels" SET "order"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update(db_rw,
-        R"(UPDATE "labels" SET "type"=?, "entry"=?, "order"=? WHERE "id"=?;)");
+        R"(UPDATE "labels" SET "entry"=?, "order"=? WHERE "id"=?;)");
     SQLite::Statement stmt_update2(db_rw,
         R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
 
@@ -1017,10 +1029,11 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     db_labels_used.resize(db_labels.size(), false);
     Str labels_str;
     set<Str> new_labels, labels;
-
+    vector<pair<Str,Long>> update; // {label, order}
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
         new_labels.clear();
+        update.clear();
         for (Long i = 0; i < size(entry_labels[j]); ++i) {
             label = entry_labels[j][i];
             order = entry_label_orders[j][i];
@@ -1057,12 +1070,18 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 }
             }
             if (changed) {
-                stmt_update.bind(1, type);
-                stmt_update.bind(2, entry);
-                stmt_update.bind(3, int(order));
-                stmt_update.bind(4, label);
+                stmt_update.bind(1, entry);
+                stmt_update.bind(2, -(int)order); // -order to avoid UNIQUE constraint
+                stmt_update.bind(3, label);
                 stmt_update.exec(); stmt_update.reset();
+                update.emplace_back(label, order);
             }
+        }
+        // set label orders back to positive
+        for (auto &e : update) {
+            stmt_update0.bind(1, int(e.second)); // order
+            stmt_update0.bind(2, e.first); // label
+            stmt_update0.exec(); stmt_update0.reset();
         }
 
         // add to entries.labels
