@@ -3,6 +3,7 @@
 
 #pragma once
 #include "../util/bit.h"
+#include "../str/str.h"
 #include "arf.h"
 #include "acb_hypgeom.h"
 
@@ -348,8 +349,9 @@ typedef Breal &Breal_O, &Breal_IO;
 
 inline Str to_string(Breal_I x, Llong_I digits = 10)
 {
-	Char * s = arf_get_str(x.m_n, digits);
+	char * s = arf_get_str(x.m_n, digits);
 	Str str(s); free(s);
+	rm_float_zeros(str);
 	return str;
 }
 
@@ -412,7 +414,7 @@ inline Doub get_digits(Areal_I x) { return get_prec(x) / 3.32192809489; }
 
 inline Str to_string(Areal_I x, Llong_I digits = -1)
 {
-	Char *s = arb_get_str(x.m_n, digits < 0 ? get_digits(x)+5 : digits, ARB_STR_MORE);
+	char *s = arb_get_str(x.m_n, digits < 0 ? get_digits(x)+5 : digits, ARB_STR_MORE);
 	Str str(s); free(s);
 	return str;
 }

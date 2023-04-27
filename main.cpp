@@ -4,7 +4,7 @@
 #include "lib/PhysWikiScan.h"
 
 // get arguments
-void get_args(vecStr_O args, Int_I argc, Char *argv[])
+void get_args(vecStr_O args, Int_I argc, char *argv[])
 {
     args.clear();
     if (argc > 1) {
@@ -122,7 +122,7 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
     read_path_file(paths_in, paths_out, paths_data, urls);
 
     if (args.size() > 1 && args[N - 2] == "--path") {
-        size_t i = str2int(args[N - 1]);
+        Llong i = str2Llong(args[N - 1]);
         path_in = paths_in[i];
         path_out = paths_out[i];
         path_data = paths_data[i];
@@ -296,7 +296,7 @@ int main(int argc, char *argv[]) {
         cout << "done! time (s): " << timer.toc() << endl;
         if (argc <= 1) {
             cout << u8"按任意键退出..." << endl;
-            Char c = getchar();
+            char c = getchar();
             ++c;
         }
     }

@@ -7,7 +7,6 @@
 #include <sys/stat.h> // for time_stamp
 #include "../util/time.h"
 #include "../util/linux.h"
-#include "../util/bit.h"
 #include "../arith/arith1.h"
 #include "../str/unicode.h"
 #include "../algo/sort.h"
@@ -15,6 +14,11 @@
 #ifdef SLS_USE_MSVC
 #include "../algo/search.h"
 #include "../str/str.h"
+#else
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <stdio.h>
 #endif
 
 namespace slisc {
@@ -29,7 +33,7 @@ inline void write(Str_I str, Str_I fname);
 #ifdef SLS_USE_LINUX
 inline Str pwd()
 {
-	Char buff[FILENAME_MAX];
+	char buff[FILENAME_MAX];
 	if (getcwd(buff, FILENAME_MAX) == NULL)
 		SLS_ERR("pwd()");
 	return buff;
@@ -508,22 +512,22 @@ inline void open_bin(ifstream &fin, Str_I fname)
 }
 
 // write binary file (once)
-inline void write(const Char *data, Long_I Nbyte, Str_I fname)
+inline void write(const void *data, Long_I Nbyte, Str_I fname)
 {
 	ofstream fout; open_bin(fout, fname);
-	fout.write(data, Nbyte);
+	fout.write((char*)data, Nbyte);
 	fout.close();
 }
 
 // read binary file (once)
 // return the actual bytes read
-inline Long read(Char *data, Long_I Nbyte, Str_I fname)
+inline Long read(void *data, Long_I Nbyte, Str_I fname)
 {
 	Long Nbyte0 = file_size(fname);
 	if (Nbyte0 > Nbyte)
 		SLS_ERR("Nbyte too small");
 	ifstream fin; open_bin(fin, fname);
-	Long count = fin.read(&data[0], Nbyte0).gcount();
+	Long count = fin.read((char*)data, Nbyte0).gcount();
 	fin.close();
 	return count;
 }
@@ -702,17 +706,17 @@ inline void read(ifstream &fin, Str_O str)
 // string with 32-bit char (usually for UTF32)
 inline void write(ofstream &fout, Str32_I str)
 {
-	fout.write((Char *)str.data(), 4*str.size());
+	fout.write((char*)str.data(), 4*str.size());
 }
 
-// if end of file reached before str is filled, it will be resized
-inline void read(ifstream &fin, Str32_O str)
-{
-	Long count = fin.read((Char *)&str[0], 4*str.size()).gcount();
-	count /= 4;
-	if (count < size(str))
-		str.resize(count);
-}
+// // if end of file reached before str is filled, it will be resized
+// inline void read(ifstream &fin, Str32_O str)
+// {
+// 	Long count = fin.read((char*)str, 4*str.size()).gcount();
+// 	count /= 4;
+// 	if (count < size(str))
+// 		str.resize(count);
+// }
 
 // read a table from text file
 // two numbers should be separated by space
@@ -886,10 +890,6 @@ inline void read(VecQdoub_O v, Str_I file, Long_I skip_lines = 0)
 
 // get time-stamp of a file
 #ifndef SLS_USE_MSVC
-#include <sys/stat.h>
-#include <unistd.h>
-#include <time.h>
-#include <stdio.h>
 inline void last_modified(Str_O yyyymmddhhmmss, Str_I fname) {
 	struct tm *time;
 	struct stat attrib;

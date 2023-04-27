@@ -5,7 +5,6 @@
 #include "../SLISC/algo/sort.h"
 #include "../SLISC/algo/graph.h"
 #include "../SLISC/util/sha1sum.h"
-#include "../SLISC/slisc_update.h"
 
 using namespace slisc;
 

@@ -13,7 +13,7 @@ opt_asan = false # $(opt_debug)
 # c++ standard [c++11|gnu++11]
 opt_std = c++11
 # static link (not all libs supported)
-opt_static = false
+opt_static = true
 # use Boost lib
 opt_boost = false
 # use SQLiteCpp
@@ -31,7 +31,7 @@ ifeq ($(opt_debug), true)
     endif
 else
     $(info Build: Release)
-    release_flag = -O3 -D NDEBUG
+    release_flag = -O3
 endif
 
 # Address Sanitizer
@@ -39,7 +39,7 @@ ifeq ($(opt_asan), true)
     ifeq ($(opt_compiler), g++)
         ifeq ($(opt_static), false)
             $(info Address Sanitizer: on)
-            asan_flag = -fsanitize=address -static-libasan -D SLS_USE_ASAN
+            asan_flag = -fsanitize=address -static-libasan
         else
             $(info Address Sanitizer: off)
         endif
@@ -52,7 +52,6 @@ endif
 
 # === Boost ===
 ifeq ($(opt_boost), true)
-    boost_flag = -D SLS_USE_BOOST
     ifeq ($(opt_static), false)
         $(info Boost: dynamic)
         boost_lib = -l:libboost_system.so -l:libboost_filesystem.so
@@ -67,7 +66,6 @@ endif
 # === SQLiteCpp ===
 ifeq ($(opt_sqlitecpp), true)
     opt_sqlite = false
-    sqlitecpp_flag = -D SLS_USE_SQLITECPP -D SLS_USE_SQLITE
     $(info SQLiteCpp: static)
     sqlitecpp_lib = -l:libSQLiteCpp.a -l:libSQLiteCpp-sqlite3.a
 else
@@ -77,7 +75,7 @@ endif
 
 # === compiler flags ===
 ifeq ($(opt_compiler), g++)
-    compiler_flag = -std=$(opt_std) -Wall -Wno-cpp -Wno-reorder -Wno-misleading-indentation -fmax-errors=5 -fopenmp
+    compiler_flag = -std=$(opt_std) -Wall -Wno-reorder -fmax-errors=5
 endif
 
 $(info  )$(info  )$(info  )$(info  )
@@ -91,7 +89,7 @@ flags = $(compiler_flag) $(debug_flag) $(release_flag) $(mkl_flag) $(boost_flag)
 ifeq ($(opt_static), true)
     static_flag = -static
 endif
-libs = $(static_flag) $(arpack_lib) $(mplapack_lib) $(gsl_lib) $(mkl_lib) $(lapacke_lib) $(cblas_lib) $(arb_lib) $(boost_lib) $(matfile_lib) $(sqlite_lib) $(sqlitecpp_lib) $(quad_math_lib) -l pthread -l dl
+libs = $(static_flag) $(mplapack_lib) $(boost_lib) $(sqlitecpp_lib) -l pthread -l dl
 
 # subfolders of SLISC, including SLISC, e.g. "SLISC/:SLISC/prec/:...:SLISC/lin/"
 in_paths = $(shell find SLISC -maxdepth 1 -type d -printf "../%p/:" | head -c -2)/
@@ -110,5 +108,5 @@ link: # force link
 clean:
 	rm -f *.o PhysWikiScan
 
-main.o: main.cpp lib/*.h
+main.o: main.cpp lib/*.h SLISC/*.h SLISC/*/*.h
 	$(opt_compiler) $(flags) -c main.cpp

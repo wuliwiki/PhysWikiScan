@@ -113,7 +113,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
         // recover code from verbatim index
         ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
         trim(ind_str, "\n ");
-        code = str_verb[str2int(ind_str)];
+        code = str_verb[str2Llong(ind_str)];
         if (line_size_lim(code, 78) >= 0)
             throw scan_err(u8"单行代码过长（防止 pdf 中代码超出长度）");
         // TODO: 即使是 pdf 的 lstlisting 应该也可以自动换行吧！

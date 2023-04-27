@@ -5,7 +5,7 @@
 inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
 {
     Long ind0 = 0, ind1, ind2;
-    Char dlm;
+    char dlm;
     Str tmp;
 
     // verb

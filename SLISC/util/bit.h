@@ -1,8 +1,8 @@
 // bit operations and endian related
 
 // Notes:
-// 1. C-style conversion between Char and Uchar does not change any bit.
-// 2. Char(-128) = Char(128) = 0b10000000
+// 1. C-style conversion between char and Uchar does not change any bit.
+// 2. char(-128) = char(128) = 0x80 = 0b10000000
 // 3. negative operand for C operator >> or << are undefined!
 
 #pragma once
@@ -14,17 +14,15 @@ namespace slisc {
 // for example, shot int(1) will be 00000001 0000000 in little endian
 // there is no concept of "bit endian" since they are not addressable
 // Intel x86 and x64 architechture use little endian
-inline Bool little_endian()
-{
-	short int num = 1;
-	Char *b = (Char *)&num;
-	return b[0];
+inline bool little_endian() {
+    int16_t i = 1;
+    return *(char *)&i == 1;
 }
 
 // convert endianness
 inline void change_endian(void *data, Long_I elm_size, Long_I Nelm)
 {
-	Char *p = (Char *)data;
+	char *p = (char *)data;
 	Long half = elm_size/2;
 	for (Long i = 0; i < Nelm; ++i) {
 		for (Long j = 0; j < half; ++j) {
@@ -44,6 +42,20 @@ inline Bool bitR(Uchar_I byte, Int_I i)
 inline Bool bitR(const void *byte, Int_I i)
 { return *(Uchar*)byte & Uchar(1) << i; }
 
+//     (for multiple bytes)
+inline Bool bitR(const void *data, Long_I size, Long_I i, Bool_I auto_endian = false)
+{
+#ifdef SLS_CHECK_BOUNDS
+	SLS_ASSERT(i > 0 && i < size*8);
+#endif
+	auto p = (Uchar *)data;
+	if (!auto_endian || !little_endian())
+		p += size - 1 - i/8;
+	else
+		p += i/8;
+	return *p & Uchar(1) << (i%8);
+}
+
 // get i-th bit from the left
 inline Bool bitL(Char_I byte, Int_I i)
 { return (Uchar)byte & Uchar(128) >> i; }
@@ -53,6 +65,20 @@ inline Bool bitL(Uchar_I byte, Int_I i)
 
 inline Bool bitL(const void *byte, Int_I i)
 { return *(Uchar*)byte & Uchar(128) >> i; }
+
+//     (for multiple bytes)
+inline Bool bitL(const void *data, Long_I size, Long_I i, Bool_I auto_endian = false)
+{
+#ifdef SLS_CHECK_BOUNDS
+	SLS_ASSERT(i > 0 && i < size*8);
+#endif
+	auto p = (Uchar *)data;
+	if (!auto_endian || !little_endian())
+		p += i/8;
+	else
+		p += size - 1 - i/8;
+	return *p & Uchar(128) >> (i%8);
+}
 
 // set i-th bit from the right to 1
 inline void set_bitR(void *byte, Int_I i)
@@ -133,7 +159,7 @@ inline Str to_bitstr(Char_I byte)
 // auto_endian: flip the bytes for little endian
 inline Str to_bitstr(const void *byte, Long_I Nbyte = 1, Bool add_space = true, Bool auto_endian = false)
 {
-	Char *p = (Char *)byte;
+	char *p = (char *)byte;
 	Str str;
 	if (!auto_endian || !little_endian()) {
 		if (!add_space) {
@@ -165,10 +191,10 @@ inline Str to_bitstr(const void *byte, Long_I Nbyte = 1, Bool add_space = true, 
 }
 
 // convert each char to a bit, '0' is 'false', otherwise 'true'
-// also consider to use binary literal e.g. `Char(0b10100101)`
-inline Char str2bit(Str_I str)
+// also consider to use binary literal e.g. `char(0b10100101)`
+inline char str2bit(Str_I str)
 {
-	Char byte = 0;
+	char byte = 0;
 	for (Long i = 0; i < 8; ++i)
 		if (str[i] != '0')
 			set_bitL(&byte, i);
@@ -202,7 +228,7 @@ inline void Int2baseN(Uchar *p, Int_I N, Uchar_I base, Int_I n)
 
 // visible ASCII chars (in order)
 // !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-inline Char b94(Long_I i)
+inline char b94(Long_I i)
 {
 	static const Str s = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	return s[i];
@@ -210,14 +236,14 @@ inline Char b94(Long_I i)
 
 // visible ASCII chars (in order) that doesn't need to escape in a C printf string （escape: "%\)
 // !#$&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~
-inline Char b91(Long_I i)
+inline char b91(Long_I i)
 {
 	static const Str s = "!#$&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~";
 	return s[i];
 }
 
 // b91 without 0OIl (confusing in some font)
-inline Char b87(Long_I i)
+inline char b87(Long_I i)
 {
 	static Str s = "!#$&'()*+,-./123456789:;<=>?@ABCDEFGHJKLMNPQRSTUVWXYZ[]^_`abcdefghijkmnopqrstuvwxyz{|}~";
 	return s[i];
@@ -227,7 +253,7 @@ inline Char b87(Long_I i)
 // https://en.wikipedia.org/wiki/Base64
 // for a library that converts a file to Base64 string, see
 // https://github.com/ReneNyffenegger/cpp-base64
-inline Char b64(Long_I i)
+inline char b64(Long_I i)
 {
 	static const Str s = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	return s[i];
@@ -235,7 +261,7 @@ inline Char b64(Long_I i)
 
 // base 64 (2) : safe filename and paths
 // 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_
-inline Char b64_2(Long_I i)
+inline char b64_2(Long_I i)
 {
 	static const Str s = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
 	return s[i];
@@ -243,7 +269,7 @@ inline Char b64_2(Long_I i)
 
 // alpha numeric characters
 // 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
-inline Char b62(Long_I i)
+inline char b62(Long_I i)
 {
 	static const Str s = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 	return s[i];
@@ -251,7 +277,7 @@ inline Char b62(Long_I i)
 
 // base 58: alpha numeric without 0OIl (confusing in some font)
 // 123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz
-inline Char b58(Long_I i)
+inline char b58(Long_I i)
 {
 	static const Str s = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	return s[i];
@@ -259,7 +285,7 @@ inline Char b58(Long_I i)
 
 // visible ASCII chars that can be used in URL [path segment] literally (otherwise use percent-encoding)
 // !$&'()*+-.0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz|~
-inline Char b79(Long_I i)
+inline char b79(Long_I i)
 {
 	static const Str s = "!$&'()*+-.0123456789:;=@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz|~";
 	return s[i];
@@ -267,7 +293,7 @@ inline Char b79(Long_I i)
 
 // lower case alpha numeric characters
 // 0123456789abcdefghijklmnopqrstuvwxyz
-inline Char b36(Long_I i)
+inline char b36(Long_I i)
 {
 	static const Str s = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 	return s[i];
@@ -283,7 +309,7 @@ inline Long b87_ind(Char_I c)
 }
 
 // convert 5-digit base87 to 4-byte int (little endian)
-inline Int b872Int(const Char *p)
+inline Int b872Int(const char *p)
 {
 	Int n = b87_ind(p[0]), exp = 1;
 	for (Int i = 1; i < 5; ++i) {
@@ -294,7 +320,7 @@ inline Int b872Int(const Char *p)
 }
 
 // convert 4-byte int to 5-digit base87 (little endian)
-inline void Int2b87(Char *p, Int_I n)
+inline void Int2b87(char *p, Int_I n)
 {
 	Int m = n;
 	p[0] = b87(m % 87);

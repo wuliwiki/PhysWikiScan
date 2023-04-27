@@ -80,7 +80,7 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
                     throw scan_err(u8"\\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \\pentry{词条1\\upref{文件名1}， 词条2\\upref{文件名2}}。");
             command_arg(depEntry, temp, ind1);
             if (command_has_opt(temp, ind1)) {
-                try { num = str2int(command_opt(temp, ind1)); }
+                try { num = str2Llong(command_opt(temp, ind1)); }
                 catch (...) { throw scan_err(u8"\\upref[]{} 或 \\upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。"); }
                 if (num <= 0)
                     throw scan_err(u8"\\upref[]{} 或 \\upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。");

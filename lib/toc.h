@@ -184,7 +184,7 @@ inline void table_of_contents(
     rm_comments(str); // remove comments
     if (str.empty()) str = " ";
 
-    Char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
+    char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
     Str db_title;
 
     while (1) {

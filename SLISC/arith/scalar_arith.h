@@ -1,6 +1,7 @@
 // basic scalar arithmetic
 
 #pragma once
+#include "../arith/fp_arith.h"
 #include "../arith/complex_arith.h"
 #include "../arith/Imag.h"
 
@@ -87,6 +88,16 @@ inline Comp to_num(Comp_I x) { return x; }
 inline Lcomp to_num(Lcomp_I x) { return x; }
 
 
+
+// check number of decimal digits of an integer
+template<typename T>
+constexpr int digits(const T &n) {
+	static_assert(std::is_integral<T>::value, "T must be an integral type " SLS_WHERE);
+    int count = 0;
+    if (n < 0) n = -n;
+    do { count++; n /= 10; } while (n != 0);
+    return count;
+}
 
 // modulus
 // all mod variants satisfies "s = div(s,d)*d + mod(s,d)"
@@ -248,11 +259,32 @@ inline Qdoub factorialq(Int_I n) {
 #endif
 
 // common api for STL and SLISC
-template <class T>
-inline Long size(const T &v) { return v.size(); }
+template <class T> inline Long size(const vector<T> &v) { return (Long)v.size(); }
 
+template <class T> inline Long size(const set<T> &v) { return (Long)v.size(); }
+
+template <class T> inline Long size(const unordered_set<T> &v) { return (Long)v.size(); }
+
+template <class T> inline Long size(const deque<T> &v) { return (Long)v.size(); }
+
+template <class T> inline Long size(const stack<T> &v) { return (Long)v.size(); }
+
+template <class T> inline Long size(const std::basic_string<T> &v) { return (Long)v.size(); }
+
+
+template <class T, class U> inline Long size(const map<T,U> &v) { return (Long)v.size(); }
+
+template <class T, class U> inline Long size(const unordered_map<T,U> &v) { return (Long)v.size(); }
+
+
+// get the size of an std::tuple
+// see also `std::tuple_size`
+template <typename... Ts>
+constexpr Long size(const std::tuple<Ts...>&) { return (Long)sizeof...(Ts); }
+
+// get pointer
 template <class T>
-inline const T *p(const T &v)
+inline const T *ptr(const T &v)
 {
 #ifdef SLS_CHECK_BOUNDS
 	SLS_ASSERT(!v.empty());
@@ -261,7 +293,7 @@ inline const T *p(const T &v)
 }
 
 template <class T>
-inline T *p(T &v)
+inline T *ptr(T &v)
 {
 #ifdef SLS_CHECK_BOUNDS
 	SLS_ASSERT(!v.empty());
@@ -353,6 +385,19 @@ inline void primes2(vecLong_O v, Long_I Nprime)
 }
 
 inline Doub sinc(Doub_I x) { return x == 0. ? 1. : sin(x) / x; }
+
+
+// b^n that output an integer 
+inline Int pow(Int b, Uint n) {
+    Int r = 1;
+    while (n > 0) {
+        if (n & 1) {
+            r *= b;
+        }
+        b *= b; n >>= 1;
+    }
+    return r;
+}
 
 
 } // namespace slisc

@@ -332,7 +332,7 @@ inline Long find_all_command_intv(Intvs_O intv, Str_I name, Str_I str)
 // return number of environments found
 // if option = 'i', range starts from the next index of \begin{} and previous index of \end{}
 // if option = 'o', range starts from '\' of \begin{} and '}' of \end{}
-inline Long find_env(Intvs_O intv, Str_I str, Str_I env, Char option = 'i')
+inline Long find_env(Intvs_O intv, Str_I str, Str_I env, char option = 'i')
 {
     Long ind0{};
     if (option != 'i' && option != 'o')
@@ -438,7 +438,7 @@ inline Bool index_in_env(Long_I ind, Str_I name, Str_I str)
 inline Long lstinline_intv(Intvs_O intv, Str_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
-    Char dlm;
+    char dlm;
     intv.clear();
     while (true) {
         ind0 = find_command(str, "lstinline", ind0);
@@ -462,7 +462,7 @@ inline Long lstinline_intv(Intvs_O intv, Str_I str)
 inline Long verb_intv(Intvs_O intv, Str_I str)
 {
     Long N{}, ind0{}, ind1{}, ind2{};
-    Char dlm;
+    char dlm;
     intv.clear();
     while (true) {
         ind0 = find_command(str, "verb", ind0);
@@ -486,7 +486,7 @@ inline Long verb_intv(Intvs_O intv, Str_I str)
 // if option = 'i', intervals does not include $, if 'o', it does.
 // return the number of $...$ environments found.
 // "$$" with nothing inside will be ignored
-inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
+inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
     Long N{}; // number of $$
@@ -519,7 +519,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, Char option = 'i')
 // find the range of inline equations using \(...\)
 // if option = 'i', intervals does not include \( and \), if 'o', it does.
 // return the number of \(...\) environments found.
-inline Long find_paren_eq(Intvs_O intv, Str_I str, Char option = 'i')
+inline Long find_paren_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
     Long N = 0; // number of \(...\)
@@ -549,7 +549,7 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, Char option = 'i')
 }
 
 // combine find_single_dollar_eq() and find_paren_eq()
-inline void find_inline_eq(Intvs_O intv, Str_I str, Char option = 'i')
+inline void find_inline_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     Intvs intv1;
     find_single_dollar_eq(intv, str, option);
@@ -566,7 +566,7 @@ inline void find_inline_eq(Intvs_O intv, Str_I str, Char option = 'i')
 // output interval from '\' to '}'
 // return number found
 // use FindAllBegin
-inline Long FindAllBegin(Intvs_O intv, Str_I env, Str_I str, Char option)
+inline Long FindAllBegin(Intvs_O intv, Str_I env, Str_I str, char option)
 {
     intv.clear();
     Long N{}, ind0{}, ind1;
@@ -616,7 +616,7 @@ inline Long FindEnd(Intvs_O intv, Str_I env, Str_I str)
 // find $$...$$ equation environments
 // assuming comments and verbatims are removed
 // if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
-inline void find_double_dollar_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
+inline void find_double_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
     Long ind0 = 0;
@@ -642,7 +642,7 @@ inline void find_double_dollar_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
 // find the range of display equations using \[...\]
 // if option = 'i', intervals does not include \[ and \], if 'o', it does.
 // return the number of \[...\] environments found.
-inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, Char option = 'i')
+inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
     Long N = 0; // number of \[...\]
@@ -670,7 +670,7 @@ inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, Char option = 'i')
 }
 
 // find display equations
-inline void find_display_eq(Intvs_O intv, Str_I str, Char_I option = 'i')
+inline void find_display_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     Intvs intv1;
     intv.clear();
@@ -847,7 +847,7 @@ inline Long Command2Tag(Str_I nameComm, Str_I strLeft, Str_I strRight, Str_IO st
 inline Long verbatim(vecStr_O str_verb, Str_IO str)
 {
     Long ind0 = 0, ind1, ind2;
-    Char dlm;
+    char dlm;
     Str tmp;
 
     // verb
@@ -946,7 +946,7 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
     Str ind_str, tmp;
 
     // verb
-    while (true) {
+    while (1) {
         ind0 = str.find("\\verb|", ind0);
         if (ind0 < 0)
             break;
@@ -955,10 +955,10 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
         if (ind1 < 0)
             throw scan_err(u8"内部错误： verb_recover: \\verb|数字| 格式错误");
 
-        Long verb_ind = str2int(str.substr(ind0, ind1 - ind0));
+        Long verb_ind = str2Llong(str.substr(ind0, ind1 - ind0));
 
         // determin delimiter
-        Char dlm;
+        char dlm;
         if (Long(str_verb[verb_ind].find('|')) >= 0) {
             if (Long(str_verb[verb_ind].find('+')) >= 0) {
                 if (Long(str_verb[verb_ind].find('-')) >= 0) {
@@ -1000,7 +1000,7 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
             throw scan_err(u8"内部错误： expect `|index|` after `lstinline`");
         ind2 = str.find("|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
-        Long ind = str2int(ind_str);
+        Long ind = str2Llong(ind_str);
         replace(str_verb[ind], "<", "&lt;");
         replace(str_verb[ind], ">", "&gt;");
         tmp = "<code>" + str_verb[ind] + "</code>";
@@ -1029,7 +1029,7 @@ inline Long verb(Str_IO str, vecStr_IO str_verb)
             throw scan_err(u8"内部错误： expect `|index|` after `verb`");
         ind2 = str.find("|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
-        Long ind = str2int(ind_str);
+        Long ind = str2Llong(ind_str);
         replace(str_verb[ind], "<", "&lt;");
         replace(str_verb[ind], ">", "&gt;");
         tmp = "<code>" + str_verb[ind] + "</code>";

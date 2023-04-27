@@ -1,7 +1,7 @@
 // every program that uses SLISC should include "global.h" first
 #define SLS_MAJOR 0
 #define SLS_MINOR 2
-#define SLS_PATCH 0
+#define SLS_PATCH 1
 
 #include "config.h"
 
@@ -10,35 +10,27 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#define SLS_FP_EXCEPT // turn on floating point exception
-#define SLS_USE_UTFCPP // use utfcpp lib to convert utf8, 16 and 32
-
-#ifndef NDEBUG
-#define SLS_CHECK_BOUNDS
-#define SLS_CHECK_SHAPES
-#endif
-
-// STL
-#include <stdlib.h>
-#include <math.h>
-#include <cassert>
-#include <cmath>
-#include <climits>
-#include <limits>
-#include <cfloat>
-#include <algorithm>
+// ===== STL headers =====
+// IO, string, file
 #include <iostream>
-#include "prec/quad_math_declare.h"
-#include <complex>
-#include <vector>
+#include <cstring>
 #include <string>
 #include <iomanip>
 #include <fstream>
-#include <cstring>
-#include <cstdarg>
-#include <utility>
-#include <functional>
+
+// math
+#include <cfloat>
+#include <climits>
+#include <limits>
+#include <cmath>
+#include "prec/quad_math_declare.h" // put before <complex>
+#include <complex>
+
+// container
+#include <array>
+#include <algorithm>
 #include <tuple>
+#include <vector>
 #include <unordered_map>
 #include <map>
 #include <unordered_set>
@@ -46,7 +38,17 @@
 #include <deque>
 #include <queue>
 #include <stack>
-#include <array>
+
+// util
+#include <cstdlib>
+#include <cstdint>
+#include <cstdarg>
+#include <functional>
+#include <utility>
+#include <cassert>
+#include <cerrno>
+#include <thread>
+#include <mutex>
 
 // compilers
 #ifdef _MSC_VER
@@ -121,6 +123,11 @@
 	#endif
 #endif
 
+// use e.g. `#if SLS_CPP >= 11` to tell c++ version
+#ifdef __cplusplus
+	#define SLS_CPP (__cplusplus/100 - 2000)
+#endif
+
 // text styles (see also text_style() in disp.h)
 #define SLS_RED_BOLD "\033[1;31m"
 #define SLS_YELLOW_BOLD "\033[1;33m"
@@ -151,11 +158,10 @@
 	} while(0)
 #endif
 
-
 #define SLS_FAIL SLS_ERR("failed!")
 #define SLS_ASSERT(condition) if (!(condition)) SLS_FAIL
 
-// my std extension
+// my std extension for quad_math
 #include "prec/quad_math.h"
 
 #ifdef SLS_USE_MPLAPACK
@@ -191,11 +197,13 @@ using std::sinh; using std::cosh; using std::tanh;
 
 // Scalar types
 
-typedef char Char;
-typedef const Char Char_I; // 8 bit integer
+// note that `char` might be signed or unsigned, and is not a typedef
+// e.g. `char *` is not `signed char*` nor `unsigned char*`
+typedef signed char Char; // 8 bit signed integer
+typedef const Char Char_I;
 typedef Char &Char_O, &Char_IO;
 
-typedef unsigned char Uchar;
+typedef unsigned char Uchar; // 8 bit unsigned integer
 typedef const Uchar Uchar_I;
 typedef Uchar &Uchar_O, &Uchar_IO;
 
@@ -357,35 +365,7 @@ typedef vvecLlong vvecLong;
 typedef const vvecLong &vvecLong_I;
 typedef vvecLong &vvecLong_O, &vvecLong_IO;
 
-// quiet NaN definition
-// uncomment one of the following 3 methods of defining a global NaN
-// you can test by verifying that (NaN != NaN) is true
-
-//Uint proto_nan[2]={0xffffffff, 0x7fffffff};
-//double NaN = *( double* )proto_nan;
-//Doub NaN = sqrt(-1.);
-static const Doub NaN = std::numeric_limits<Doub>::quiet_NaN();
-// inline Bool isnan(Doub s)
-// { return s != s; }
-
 inline Bool isnan(Comp s) { return s != s; }
-
-// Floating Point Exceptions for Microsoft compilers
-// no exception for integer overflow
-#ifdef SLS_FP_EXCEPT
-	#ifdef SLS_USE_MSVC
-struct turn_on_floating_exceptions {
-	turn_on_floating_exceptions() {
-		unsigned cw; _controlfp_s(&cw, 0, 0);
-		// also: EM_INEXACT, EM_UNDERFLOW
-		cw &= ~(EM_INVALID | EM_OVERFLOW | EM_ZERODIVIDE | EM_DENORMAL);
-		unsigned cw1; _controlfp_s(&cw1, cw, MCW_EM);
-	}
-};
-// in case of ODR error, put this in main function;
-// turn_on_floating_exceptions yes_turn_on_floating_exceptions;turn_on_floating_exceptions yes_turn_on_floating_exceptions;
-	#endif
-#endif
 
 // error type
 class sls_err : public std::exception
@@ -395,18 +375,76 @@ private:
 public:
     explicit sls_err(Str_I msg): m_msg(msg) {}
 
-    const char* what() const noexcept override {
+    const char *what() const noexcept override {
         return m_msg.c_str();
     }
 };
 
-// === constants ===
+// === print() like python ===
+// print(a,b,...) is equivalent to `cout << a << b << ... << endl`
+// don't worry about how it works, just use it like a magic
+inline void print() { cout << endl; }
 
-const Doub PI = 3.14159265358979323;
-const Doub E = 2.71828182845904524;
+template<typename T, typename... Args>
+void print(const T& first, const Args&... args)
+{
+	std::mutex print_mutex; // thread safety
+	std::lock_guard<std::mutex> lock(print_mutex);
+    cout << first;
+    print(args...);
+}
+
+#define SLS_PRINT(x) do { print(#x, "=", x); } while(0);
+
+// === constants ===
+static const Doub
+Eps = std::numeric_limits<Doub>::epsilon(),
+NaN = std::numeric_limits<Doub>::quiet_NaN(),
+SNaN = std::numeric_limits<Doub>::signaling_NaN(),
+Inf = numeric_limits<Doub>::infinity(),
+
+PI = 3.14159265358979323,
+E = 2.71828182845904524;
 #ifdef SLS_USE_QUAD_MATH
-const Qdoub PIq = 3.14159265358979323846264338327950288Q;
-const Qdoub Eq = 2.71828182845904523536028747135266250Q;
+static const Qdoub
+PIq = 3.14159265358979323846264338327950288Q,
+Eq = 2.71828182845904523536028747135266250Q;
 #endif
+
+namespace c {
+	// exact
+	static const Doub
+	c0 = 299792458,                   // speed of light
+	h = 6.62607015e-34,               // Plank constant
+	hbar = h/(2*PI),                  // reduced Plank constant
+	qe = 1.602176634e-19,             // elementary charge
+	Na = 6.02214076e23,               // Avogadro constant
+	kb = 1.380649e-23,                // Boltzmann constant
+	R = Na*kb,                        // gas constant
+	u = 0.9999999996530e-3/Na,        // atomic mass unit
+	AU = 149597870700,                // astronomical unit
+	ly = c0*3600*24*365.25,           // light-year
+
+	// measured
+	mu0 = 1.25663706212e-6,                // vacuum permeability
+	epsilon0 = 1/(mu0*c0*c0),              // vacuum permittivity
+	k = 1/(4*PI*epsilon0),                 // Coulomb's constant
+	G = 6.67430e-11,                       // gravitational constant
+	alpha = qe*qe/(4*PI*epsilon0*hbar*c0), // fine structure constant
+	me = 9.1093837015e-31,                 // electron mass
+	mp = 1.67262192369e-27,                // proton mass
+	Rh = 1.0973731568160e7,                // Rydberg constant
+	a0 = 5.29177210903e-11,                // Bohr radius
+
+	// conversion constants
+	inch = 2.54e-2,                   // length
+	gauss = 1e-4,                     // electric field
+	mile = 6.09e+2,                   // length
+	lb = 0.454, pound=0.454,          // mass
+	au_x = a0,                        // 1 a.u. distance
+	au_t = me*a0*a0/hbar,             // 1 a.u. time
+	au_E = hbar*hbar/(me*a0*a0),      // 1 a.u. energy
+	au_Ef = qe/(4*PI*epsilon0*a0*a0); // 1 a.u. electric field
+}
 
 } // namespace slisc
