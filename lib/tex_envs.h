@@ -132,7 +132,7 @@ inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordere
         if ((Long)caption.find("\\footnote") >= 0)
             throw scan_err(u8"图片标题中不能添加 \\footnote{}");
         // insert html code
-        widthPt = num2str((33 / 14.25 * width * 100)/100.0);
+        widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);
         href = gv::url + fig_hash + "." + format;
         str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
             "<div class = \"w3-content\" style = \"max-width:" + widthPt + "em;\">\n"

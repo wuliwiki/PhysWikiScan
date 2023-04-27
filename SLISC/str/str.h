@@ -851,37 +851,46 @@ inline Long str2int0(T &num, Str_I str, Long_I start = 0)
 // get integer from string: dddd, +dddd, -dddd
 // str[start] must be a number or '+' or '-' or ' '
 // return the index after the last digit
-// return -1 if failed
+// return -1 if format is wrong
 // return -i if overflow, where i is the index after processed digit (num will be the front digits before overflow)
+// see also std::strtol, std::strtoll
 template <class T>
 inline Long str2int(T &num, Str_I str, Long_I start = 0)
 {
-	Long N = size(str);
+	Long N = size(str); num = 0;
 	if (start >= N) return -1;
-	Long ind = start;
-	while (str[ind] == ' ')
-		if (++ind == N) return -1;
-	if (is_num(str[ind]))
-		return str2int(num, str, ind);
-	else if (str[ind] == '+')
-		return str2int(num, str, ind+1);
-	else if (str[ind] == '-') {
-		if (++ind == N) return -1;
-		char c = str[ind];
-		if (!is_num(c)) return -1;
+	Long i = start;
+	while (str[i] == ' ')
+		if (++i == N) return -1;
+    if (str[i] == '+' && ++i == N)
+        return -1;
+    char c = str[i];
+	if (is_num(c)) {
+        num = c - '0';
+        T max = numeric_limits<T>::max();
+        for (++i; i < N; ++i) {
+            if (!is_num(c = str[i])) return i;
+            c -= '0';
+            if (num > max - c)
+                return -i; // overflow
+            num = 10 * num + c;
+        }
+    }
+	else if (str[i] == '-') {
+		if (++i == N) return -1;
+		if (!is_num(c = str[i])) return -1;
 		num = '0' - c;
-		T min1 = numeric_limits<T>::min() / 10;
-		char min2 = abs(numeric_limits<T>::min()) % 10;
-		for (Long i = ind + 1; i < N; ++i) {
+        T min = numeric_limits<T>::min();
+		for (++i; i < N; ++i) {
 			c = str[i];
 			if (!is_num(c)) return i;
-			if (num < min1 || (num == min1 && c > min2))
+            c -= '0';
+			if (num < min + c)
 				return -i; // overflow
-			num = 10 * num + ('0' - c);
+			num = 10 * num - c;
 		}
-		return N;
 	}
-	return -1;
+	return i;
 }
 
 // str must be +ddd, -ddd, or ddd
@@ -889,7 +898,7 @@ inline Int str2Int(Str_I str, Long_I start = 0)
 {
 	Int num;
 	if (str2int(num, str, start) < 0)
-		SLS_ERR("str2int(): not an integer: " + str.substr(start, 20));
+		SLS_ERR("str2Int(): not an integer: " + str.substr(start, 20));
 	return num;
 }
 
@@ -898,7 +907,7 @@ inline Llong str2Llong(Str_I str, Long_I start = 0)
 {
 	Llong num;
 	if (str2int(num, str, start) < 0)
-		SLS_ERR("str2int(): not an integer: " + str.substr(start, 20));
+		SLS_ERR("str2Int(): not an integer: " + str.substr(start, 20));
 	return num;
 }
 
