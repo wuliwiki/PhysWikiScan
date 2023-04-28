@@ -428,34 +428,85 @@ inline void db_update_authors(SQLite::Database &db)
     cout << "done!" << endl;
 }
 
+struct BibInfo {
+    Long order; // starts from 1
+    Str detail;
+    set<Str> ref_by; // {entry1, entry2, ...}
+};
+
 // update "bibliography" table of sqlite db
 inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Database &db) {
-    check_foreign_key(db);
+    SQLite::Transaction transaction(db);
 
-    SQLite::Statement stmt(db, R"(SELECT "id", "details" FROM "bibliography";)");
-    unordered_map<Str, Str> db_data;
-    while (stmt.executeStep())
-        db_data[stmt.getColumn(0)] = (const char*)stmt.getColumn(1);
+    // read the whole db bibliography table
+    SQLite::Statement stmt_select(db,
+        R"(SELECT "id", "order", "details", "ref_by" FROM "bibliography" WHERE "id" != '';)");
+    SQLite::Statement stmt_delete(db,
+        R"(DELETE FROM "bibliography" WHERE "id"=?;)");
+    unordered_map<Str, BibInfo> db_bib_info; // id -> (order, details, ref_by)
+    while (stmt_select.executeStep()) {
+        const Str &id = (const char*)stmt_select.getColumn(0);
+        auto &info = db_bib_info[id];
+        info.order = (int)stmt_select.getColumn(1);
+        info.detail = (const char*)stmt_select.getColumn(2);
+        const Str &ref_by_str = (const char*)stmt_select.getColumn(3);
+        if (search(id, bib_labels) < 0) {
+            SLS_WARN(u8"检测到删除文献（将删除）： " + to_string(info.order) + ". " + id);
+            if (!info.ref_by.empty())
+                throw scan_err(u8"检测到删除的文献： " + id + u8"， 但被以下词条引用： " + ref_by_str);
+            stmt_delete.bind(1, id);
+            stmt_delete.exec(); stmt_delete.reset();
+        }
+    }
+    stmt_select.reset();
 
-    SQLite::Statement stmt_insert_bib(db,
-        R"(INSERT INTO bibliography ("id", "order", "details") VALUES (?, ?, ?);)");
+    SQLite::Statement stmt_update(db,
+        R"(UPDATE "bibliography" SET "order"=?, "details"=? WHERE "id"=?;)");
+    SQLite::Statement stmt_insert(db,
+        R"(INSERT INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
+    unordered_set<Str> id_flip_sign;
 
     for (Long i = 0; i < size(bib_labels); i++) {
-        Str bib_label = bib_labels[i], bib_detail = bib_details[i];
-        if (db_data.count(bib_label)) {
-            if (db_data[bib_label] != bib_detail) {
-                SLS_WARN(u8"数据库文献详情 bib_detail 发生变化需要更新！ 该功能未实现，将不更新： " + bib_label);
-                cout << u8"数据库的 bib_detail： " << db_data[bib_label] << endl;
-                cout << u8"当前的   bib_detail： " << bib_detail << endl;
+        Long order = i+1;
+        const Str &id = bib_labels[i], &bib_detail = bib_details[i];
+        if (db_bib_info.count(id)) {
+            auto &info = db_bib_info[id];
+            bool changed = false;
+            if (order != info.order) {
+                SLS_WARN(u8"数据库中文献 " + id + " 编号改变（将更新）： " + to_string(info.order) + " -> " + to_string(order));
+                changed = true;
+                id_flip_sign.insert(id);
+                stmt_update.bind(1, -(int)order); // to avoid unique constraint
             }
-            continue;
+            if (bib_detail != info.detail) {
+                SLS_WARN(u8"数据库中文献 " + id + " 详情改变（将更新）： " + info.detail + " -> " + bib_detail);
+                changed = true;
+                stmt_update.bind(1, (int)order); // to avoid unique constraint
+            }
+            if (changed) {
+                stmt_update.bind(2, bib_detail);
+                stmt_update.bind(3, id);
+                stmt_update.exec(); stmt_update.reset();
+            }
         }
-        SLS_WARN(u8"数据库中不存在文献（将添加）： " + num2str(i) + ". " + bib_label);
-        stmt_insert_bib.bind(1, bib_label);
-        stmt_insert_bib.bind(2, int(i));
-        stmt_insert_bib.bind(3, bib_detail);
-        stmt_insert_bib.exec(); stmt_insert_bib.reset();
+        else {
+            SLS_WARN(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
+            stmt_insert.bind(1, id);
+            stmt_insert.bind(2, -(int)order);
+            stmt_insert.bind(3, bib_detail);
+            stmt_insert.exec(); stmt_insert.reset();
+            id_flip_sign.insert(id);
+        }
     }
+
+    // set the orders back
+    SQLite::Statement stmt_update2(db,
+        R"(UPDATE "bibliography" SET "order" = "order" * -1 WHERE "id"=?;)");
+    for (auto &id : id_flip_sign) {
+        stmt_update2.bind(1, id);
+        stmt_update2.exec(); stmt_update2.reset();
+    }
+    transaction.commit();
 }
 
 // delete and rewrite "chapters" and "parts" table of sqlite db

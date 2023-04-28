@@ -38,6 +38,7 @@ CREATE TABLE "entries" (
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
+	"bibs"	TEXT NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
 	-- "files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
 
 	PRIMARY KEY("id"),
@@ -136,7 +137,7 @@ CREATE TABLE "files" (
 -- 文件（被 "files" 和 "figures.files" 使用）
 CREATE TABLE "file_lib" (
 	"hash"	TEXT UNIQUE NOT NULL, -- MD5
-	"ref_by"	TEXT NOT NULL DEFAULT '', -- 被哪些词条引用
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"used_by_figures"	TEXT NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"	INTEGER NOT NULL, -- 当前版本修改者
 	"license"	TEXT NOT NULL, -- [Xiao|CC|ask] 当前版本协议
@@ -178,8 +179,12 @@ CREATE TABLE "bibliography" (
 	"id"	TEXT UNIQUE NOT NULL, -- \cite{xxx} 中的 xxx
 	"order"	INTEGER UNIQUE NOT NULL, -- 显示编号
 	"details"	TEXT NOT NULL, -- 详细信息（TODO: 待拆分）
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条引用（以 entries.cite 为准）
 	PRIMARY KEY("id")
 );
+
+-- 防止 FOREIGN KEY 报错
+INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无');
 
 -- 编辑历史（一个记录 5 分钟）
 CREATE TABLE "history" (
