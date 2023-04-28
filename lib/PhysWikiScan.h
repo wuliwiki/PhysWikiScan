@@ -581,11 +581,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = size(entries);
     unordered_set<Str> img_to_delete;
-    Bool update_pentry;
     vector<DGnode> tree;
     unordered_map<Str, pair<Str, Pentry>> entry_info;
     vector<Node> nodes;
-    Str pentry_str;
+    Str pentry_str, db_pentry_str;
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
@@ -640,15 +639,17 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
 
         // check dependency tree and auto mark redundant pentry with ~
-        db_get_tree1(update_pentry, tree, nodes, entry_info, entry,
+        db_get_tree1(tree, nodes, entry_info, entry,
                      titles[i], pentry, db_read);
-        // update db - remove redundant ones from pentry[0]
-        if (update_pentry) {
+        // update entries.pentry if changed
+        db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
+        join_pentry(pentry_str, get<1>(entry_info[entry]));
+        if (pentry_str == db_pentry_str) {
             SQLite::Statement stmt_update(db_rw,
-                R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
-            join_pentry(pentry_str, get<1>(entry_info[entry]));
+                                          R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
             stmt_update.bind(1, pentry_str);
-            stmt_update.exec(); stmt_update.reset();
+            stmt_update.exec();
+            stmt_update.reset();
         }
     }
 

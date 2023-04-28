@@ -206,13 +206,12 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 // also check for cycle, and check for any of it's pentries are redundant
 // nodes[0] will be for `entry0`
 // nodes[i], tree[i], titles[i], pentries[i] corresponds
-inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
+inline void db_get_tree1(vector<DGnode> &tree,
     vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
     unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
     Str_I entry0, Str_I title0, Pentry_I pentry0, // use the last i_node as tree root
     SQLite::Database &db_read)
 {
-    update_pentry = false;
     tree.clear(); nodes.clear(); entry_info.clear();
     SQLite::Statement stmt_select(db_read,
         R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
@@ -307,7 +306,6 @@ inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
             for (auto &e : pentry1) {
                 if (node_beg.entry == e.entry && node_beg.i_node == e.i_node
                         && !e.tilde) {
-                    update_pentry = true;
                     e.tilde = true;
                 }
             }
