@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
         else if (args[0] == "--titles") {
             // update entries.txt and titles.txt
             vecStr titles, entries, isDraft;
-            entries_titles(titles, entries);
+            entries_titles(entries, titles);
             write_vec_str(titles, gv::path_data + "titles.txt");
             write_vec_str(entries, gv::path_data + "entries.txt");
         }
@@ -215,12 +215,13 @@ int main(int argc, char *argv[]) {
             Str label;
             Str fname = gv::path_data + "autoref.txt";
             file_remove(fname);
-            Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()));
+            Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]));
             vecStr output;
             if (ret == 0) { // added
                 Str id = args[2] + args[3];
                 output = {label, "added"};
-            } else // ret == 1, already exist
+            }
+            else // ret == 1, already exist
                 output = {label, "exist"};
             cout << output[0] << endl;
             cout << output[1] << endl;

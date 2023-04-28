@@ -99,21 +99,21 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
 inline void parse_pentry(Pentry_O pentry, Str_I str)
 {
     Long ind0 = 0;
-    Str entry; // "entry" in "entry:num"
-    Long num; // "num" in "entry:num", 0 for nothing
-    Bool star; // has "*" in "entry:num*"
+    Str entry; // "entry" in "entry:i_node"
+    Long i_node; // "i_node" in "entry:i_node", 0 for nothing
+    Bool star; // has "*" in "entry:i_node*"
     Bool tilde; // hash "~" at the end
     pentry.clear();
     while (ind0 >= 0 && ind0 < size(str)) {
         pentry.emplace_back();
         auto &pentry1 = pentry.back();
         while (1) { // get a node each loop
-            num = 0; star = tilde = false;
+            i_node = 0; star = tilde = false;
             // get entry
             if (!is_letter(str[ind0]))
                 throw internal_err(u8"数据库中 entries.pentry1 格式不对 (非字母): " + str);
             Long ind1 = ind0 + 1;
-            while (ind1 < size(str) && is_letter(str[ind1]))
+            while (ind1 < size(str) && is_alphanum(str[ind1]))
                 ++ind1;
             entry = str.substr(ind0, ind1 - ind0);
             for (auto &ee: pentry) // check repeat
@@ -124,7 +124,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
             if (ind0 == size(str)) break;
             // get number
             if (str[ind0] == ':')
-                ind0 = str2int(num, str, ind0 + 1);
+                ind0 = str2int(i_node, str, ind0 + 1);
             if (ind0 == size(str)) break;
             // get star
             if (str[ind0] == '*') {
@@ -146,9 +146,9 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
                     throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
                 break;
             }
-            pentry1.emplace_back(entry, num, star, tilde);
+            pentry1.emplace_back(entry, i_node, star, tilde);
         }
-        pentry1.emplace_back(entry, num, star, tilde);
+        pentry1.emplace_back(entry, i_node, star, tilde);
     }
 }
 
@@ -162,8 +162,8 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
             throw scan_err("\\pentry{} empty!");
         for (auto &p : pentries) {
             str += p.entry;
-            if (p.num > 0)
-                str += ":" + num2str(p.num);
+            if (p.i_node > 0)
+                str += ":" + num2str(p.i_node);
             if (p.star)
                 str += "*";
             if (p.tilde)
@@ -181,7 +181,7 @@ inline void db_get_entry_info(
 {
     auto &pentry = get<1>(info);
     stmt_select.bind(1, entry);
-    if (stmt_select.executeStep())
+    if (!stmt_select.executeStep())
         throw internal_err("entry not found: " + entry + " " SLS_WHERE);
     get<0>(info) = (const char*)stmt_select.getColumn(0); // title
     parse_pentry(pentry, stmt_select.getColumn(1));
@@ -191,15 +191,15 @@ inline void db_get_entry_info(
 // a node of the knowledge tree
 struct Node {
     Str entry;
-    Long num;
-    Node(Str_I entry, Long_I num): entry(entry), num(num) {};
+    Long i_node;
+    Node(Str_I entry, Long_I i_node): entry(entry), i_node(i_node) {};
 };
 
 typedef const Node &Node_I;
 typedef Node &Node_O, &Node_IO;
 
-inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.num == b.num; }
-inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.num < b.num : a.entry < b.entry; }
+inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.i_node == b.i_node; }
+inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node < b.i_node : a.entry < b.entry; }
 
 // get dependency tree from database, for (the last node of) 1 entry0
 // each node of the tree is a part of an entry0 (if there are multiple pentries)
@@ -207,39 +207,41 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.num < 
 // nodes[0] will be for `entry0`
 // nodes[i], tree[i], titles[i], pentries[i] corresponds
 inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
-                         vector<Node> &nodes, // nodes[i] is tree[i], with (entry, num)
-    unordered_map<Str,pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
-    Str_I entry0, SQLite::Database &db_read)
+    vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
+    unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
+    Str_I entry0, Str_I title0, Pentry_I pentry0, // use the last i_node as tree root
+    SQLite::Database &db_read)
 {
     update_pentry = false;
     tree.clear(); nodes.clear(); entry_info.clear();
     SQLite::Statement stmt_select(db_read,
-                                  R"(SELECT "caption", "pentry" FROM "nodes" WHERE "id" = ?;)");
+        R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
 
-    Str pentry_str;
-    db_get_entry_info(entry_info[entry0], entry0, stmt_select);
-    Long entry_num = size(entry_info[entry0].second);
-    if (entry_num == 0) entry_num = 1;
-    deque<Node> q; // queue of nodes to search
-    q.emplace_back(entry0, entry_num);
+    Str entry, pentry_str;
+    Long i_node = size(pentry0);
+    if (i_node == 0) return;
+    deque<Node> q; // nodes to search
+    q.emplace_back(entry0, i_node);
+    entry_info[entry0].first = title0;
+    entry_info[entry0].second = pentry0;
 
     // broad first search (BFS) to get all nodes involved
     while (!q.empty()) {
-        auto entry = std::move(q.front().entry);
-        auto num = q.front().num;
+        entry = std::move(q.front().entry);
+        i_node = q.front().i_node;
         q.pop_front();
         auto &pentry = entry_info[entry].second;
         if (pentry.empty()) continue;
-        if (num > size(pentry))
+        if (i_node > size(pentry))
             throw internal_err(Str(__func__) + SLS_WHERE);
-        for (auto &en : pentry[num-1]) {
+        for (auto &en : pentry[i_node-1]) {
             if (!entry_info.count(en.entry))
                 db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
-            if (en.num == 0) {
-                en.num = size(entry_info[en.entry].second); // 0 is max
-                if (en.num == 0) en.num = 1;
+            if (en.i_node == 0) { // 0 is max
+                en.i_node = size(entry_info[en.entry].second);
+                if (en.i_node == 0) en.i_node = 1;
             }
-            Node nod(en.entry, en.num);
+            Node nod(en.entry, en.i_node);
             if (search(nod, nodes) < 0) {
                 nodes.push_back(nod);
                 if (find(q.begin(), q.end(), nod) == q.end())
@@ -248,21 +250,21 @@ inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
         }
     }
     sort(nodes);
-    tree.resize(nodes.size());
 
     // construct tree
     // every node has a non-zero number now
+    tree.resize(nodes.size());
     for (Long i = 0; i < size(nodes); ++i) {
         auto &entry = nodes[i].entry;
         auto &pentry = entry_info[entry].second;
         for (auto &pentry1 : pentry) {
             for (auto &en : pentry1) {
-                Node nod {en.entry, en.num};
+                Node nod {en.entry, en.i_node};
                 Long from;
                 from = search(nod, nodes);
                 if (from < 0)
                     throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
-                                       + nod.entry + ":" + to_string(nod.num));
+                                       + nod.entry + ":" + to_string(nod.i_node));
                 tree[from].push_back(i);
             }
         }
@@ -301,9 +303,9 @@ inline void db_get_tree1(Bool_O update_pentry, vector<DGnode> &tree,
             auto &node_beg = nodes[i_beg];
             auto &entry_bak = nodes[i_bak].entry;
             auto &pentry = get<1>(entry_info[nodes[i_bak].entry]);
-            auto &pentry1 = pentry[nodes[i_bak].num-1];
+            auto &pentry1 = pentry[nodes[i_bak].i_node-1];
             for (auto &e : pentry1) {
-                if (node_beg.entry == e.entry && node_beg.num == e.num
+                if (node_beg.entry == e.entry && node_beg.i_node == e.i_node
                         && !e.tilde) {
                     update_pentry = true;
                     e.tilde = true;

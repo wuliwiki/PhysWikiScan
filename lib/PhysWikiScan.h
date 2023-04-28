@@ -211,17 +211,20 @@ inline Long paragraph_tag(Str_IO str)
 }
 
 // replace \pentry comman with html round panel
-inline Long pentry(Str_IO str)
+inline Long pentry_cmd(Str_IO str)
 {
     if (!gv::is_eng)
-        return Command2Tag("pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>预备知识</b>　", "</div>", str);
-    return Command2Tag("pentry", u8"<div class = \"w3-panel w3-round-large w3-light-blue\"><b>Prerequisite</b>　", "</div>", str);
+        return Command2Tag("pentry",
+            u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>预备知识</b>　)", "</div>", str);
+    return Command2Tag("pentry",
+        u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>Prerequisite</b>　)", "</div>", str);
 }
 
 // mark incomplete
 inline Long addTODO(Str_IO str)
 {
-    return Command2Tag("addTODO", u8"<div class = \"w3-panel w3-round-large w3-sand\">未完成：", "</div>", str);
+    return Command2Tag("addTODO",
+        u8R"(<div class = "w3-panel w3-round-large w3-sand">未完成：)", "</div>", str);
 }
 
 // replace "<" and ">" in equations
@@ -290,10 +293,10 @@ inline Long pay2div(Str_IO str)
         if (ind0 < 0)
             return N;
         ++N;
-        str.replace(ind0, 4, "<div id=\"pay\" style=\"display:inline\">");
+        str.replace(ind0, 4, R"(<div id="pay" style="display:inline">)");
         ind0 = find_command(str, "paid", ind0);
         if (ind0 < 0)
-            throw scan_err(u8"\\pay 命令没有匹配的 \\paid 命令");
+            throw scan_err(u8R"(\pay 命令没有匹配的 \paid 命令)");
         str.replace(ind0, 5, "</div>");
     }
 }
@@ -403,7 +406,7 @@ inline void arg_history(Str_I path)
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
     Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
     Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
-    Pentry_O pentries, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+    Pentry_O pentry, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -510,12 +513,12 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     // process figure environments
     FigureEnvironment(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
     // get dependent entries from \pentry{}
-    get_pentry(pentries, str, db_read);
+    get_pentry(pentry, str, db_read);
     // issues environment
     issuesEnv(str);
     addTODO(str);
     // process \pentry{}
-    pentry(str);
+    pentry_cmd(str);
     // replace user defined commands
     newcommand(str, rules);
     subsections(str);
@@ -574,10 +577,15 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     unordered_set<Str> update_entries;
     vecLong fig_orders, label_orders;
     vecStr keywords, fig_ids, labels;
-    Pentry pentries;
+    Pentry pentry;
     vector<unordered_map<Str, Str>> fig_ext_hash;
-    Long N0 = entries.size();
+    Long N0 = size(entries);
     unordered_set<Str> img_to_delete;
+    Bool update_pentry;
+    vector<DGnode> tree;
+    unordered_map<Str, pair<Str, Pentry>> entry_info;
+    vector<Node> nodes;
+    Str pentry_str;
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
@@ -587,10 +595,14 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         cout << std::setw(5) << std::left << i
              << std::setw(10) << std::left << entry; cout.flush();
         Str html;
-        PhysWikiOnline1(html, update_db, img_to_delete, titles[i], fig_ids, fig_orders, fig_ext_hash, isdraft,
-                        keywords, labels, label_orders, pentries, entry, rules, db_read);
+
+        // =================================================================
+        PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
+            fig_ids, fig_orders, fig_ext_hash, isdraft, keywords,
+            labels, label_orders, pentry, entry, rules, db_read);
+        // ===================================================================
         // save html file
-        // TODO: mark redundant pentries with a slightly different color
+        // TODO: mark redundant pentry with a slightly different color
         write(html, gv::path_out + entry + ".html.tmp");
 
         cout << titles[i] << endl; cout.flush();
@@ -628,22 +640,16 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
 
         // check dependency tree and auto mark redundant pentry with ~
-//        Bool update_pentry;
-//        vector<DGnode> tree;
-//        vector<Pentry> _pentries;
-//        vecStr _entries, _titles, parts, chapters;
-//        unordered_map<Str,pair<Str, Pentry>> entry_info;
-//        vector<Node> nodes;
-//        db_get_tree1(update_pentry, tree, nodes, entry_info, entry, db_read);
-//        // update db - remove redundant ones from pentries[0]
-//        if (update_pentry) {
-//            SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
-//            Str pentry_str;
-//            join_pentry(pentry_str, get<1>(entry_info[entry]));
-//            stmt_update.bind(1, pentry_str);
-//            stmt_update.bind(2, entry);
-//            stmt_update.exec(); stmt_update.reset();
-//        }
+        db_get_tree1(update_pentry, tree, nodes, entry_info, entry,
+                     titles[i], pentry, db_read);
+        // update db - remove redundant ones from pentry[0]
+        if (update_pentry) {
+            SQLite::Statement stmt_update(db_rw,
+                R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
+            join_pentry(pentry_str, get<1>(entry_info[entry]));
+            stmt_update.bind(1, pentry_str);
+            stmt_update.exec(); stmt_update.reset();
+        }
     }
 
     for (auto &e : img_to_delete)

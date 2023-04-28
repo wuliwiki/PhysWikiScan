@@ -345,7 +345,7 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 // if exist, return 1, output label
 // if doesn't exist, return 0
 // dry_run : don't actually modify tex file
-inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long order, Bool_I dry_run = false)
+inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order, Bool_I dry_run = false)
 {
     Long ind0 = 0;
     Str label0, newtab;
