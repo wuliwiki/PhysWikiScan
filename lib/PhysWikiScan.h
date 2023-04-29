@@ -580,7 +580,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     Pentry pentry;
     vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = size(entries);
-    unordered_set<Str> img_to_delete;
+    unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
     vector<DGnode> tree;
     unordered_map<Str, pair<Str, Pentry>> entry_info;
     vector<Node> nodes;
@@ -653,6 +653,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
     }
 
+    // TODO: do this
+    // unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
+    // db_update_entry_bibs(entry_add_bibs, entry_del_bibs);
+
     for (auto &e : img_to_delete)
         file_remove(e);
 }
@@ -661,7 +665,7 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
 {
     cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
     Str html, fname;
-    unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to delete
+    unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
         cout << std::setw(5) << std::left << i

@@ -1239,6 +1239,128 @@ inline Long dep_json(SQLite::Database &db_read)
     return 0;
 }
 
+// update entries.bibs and bibliography.ref_by
+inline void db_update_entry_bibs(const unordered_map<Str, unordered_set<Str>> &entry_add_bibs, // entry -> bibs
+                           unordered_map<Str, unordered_set<Str>> &entry_del_bibs)
+{
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
+
+    // convert arguments
+    unordered_map<Str, set<Str>> bib_del_ref_bys; // bibliography.id -> ref_by
+    for (auto &e : entry_del_bibs) {
+        auto &entry = e.first;
+        for (auto &bib: e.second)
+            bib_del_ref_bys[bib].insert(entry);
+    }
+
+    unordered_map<Str, unordered_set<Str>> bib_add_ref_bys; // bibliography.id -> ref_by
+    for (auto &e : entry_add_bibs) {
+        auto &entry = e.first;
+        for (auto &bib: e.second) {
+            bib_add_ref_bys[bib].insert(entry);
+        }
+    }
+
+    // =========== add & delete bibliography.ref_by =================
+    cout << "add & delete bibliography.ref_by..." << endl;
+    SQLite::Statement stmt_update_ref_by(db_rw,
+        R"(UPDATE "bibliography" SET "ref_by"=? WHERE "id"=?;)");
+    Str ref_by_str;
+    set<Str> ref_by;
+
+    for (auto &e : bib_add_ref_bys) {
+        auto &bib = e.first;
+        auto &by_entries = e.second;
+        ref_by.clear();
+        ref_by_str = get_text("bibliography", "id", bib, "ref_by", db_rw);
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : by_entries)
+            ref_by.insert(by_entry);
+        if (bib_del_ref_bys.count(bib)) {
+            for (auto &by_entry: bib_del_ref_bys[bib])
+                ref_by.erase(by_entry);
+            bib_del_ref_bys.erase(bib);
+        }
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by.bind(1, ref_by_str);
+        stmt_update_ref_by.bind(2, bib);
+        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+    }
+    cout << "done!" << endl;
+
+    // ========== delete from bibliography.ref_by ===========
+    cout << "delete from bibliography.ref_by ..." << endl;
+    for (auto &e : bib_del_ref_bys) {
+        auto &bib = e.first;
+        auto &by_entries = e.second;
+        ref_by.clear();
+        try {
+            ref_by_str = get_text("labels", "id", bib, "ref_by", db_rw);
+        }
+        catch (const std::exception &e) {
+            if ((Long)Str(e.what()).find("row not found") >= 0)
+                continue; // bibliography.id deleted
+        }
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry: by_entries)
+            ref_by.erase(by_entry);
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by.bind(1, ref_by_str);
+        stmt_update_ref_by.bind(2, bib);
+        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+    }
+    cout << "done!" << endl;
+
+    // =========== add & delete entry.bibs =================
+    cout << "add & delete entry.bibs ..." << endl;
+    Str bibs_str;
+    set<Str> bibs;
+    SQLite::Statement stmt_select_entry_bibs(db_rw,
+        R"(SELECT "bibs" FROM "entries" WHERE "id"=?)");
+    SQLite::Statement stmt_update_entry_bibs(db_rw,
+        R"(UPDATE "entries" SET "bibs"=? WHERE "id"=?)");
+
+    for (auto &e : entry_add_bibs) {
+        auto &entry = e.first;
+        auto &new_bibs = e.second;
+        stmt_select_entry_bibs.bind(1, entry);
+        if (!stmt_select_entry_bibs.executeStep())
+            throw internal_err("entry 找不到： " + entry);
+        parse(bibs, stmt_select_entry_bibs.getColumn(0));
+        stmt_select_entry_bibs.reset();
+        bibs.insert(new_bibs.begin(), new_bibs.end());
+        if (entry_del_bibs.count(entry)) {
+            for (auto &bib: entry_del_bibs[entry])
+                bibs.erase(bib);
+            entry_del_bibs.erase(entry);
+        }
+        join(bibs_str, bibs);
+        stmt_update_entry_bibs.bind(1, bibs_str);
+        stmt_update_entry_bibs.bind(2, entry);
+        stmt_update_entry_bibs.exec(); stmt_update_entry_bibs.reset();
+    }
+
+    cout << "delete entry.bibs ..." << endl;
+    for (auto &e : entry_del_bibs) {
+        auto &entry = e.first;
+        auto &del_bibs = e.second;
+        stmt_select_entry_bibs.bind(1, entry);
+        if (!stmt_select_entry_bibs.executeStep())
+            throw internal_err("entry 找不到： " + entry);
+        parse(bibs, stmt_select_entry_bibs.getColumn(0));
+        stmt_select_entry_bibs.reset();
+        for (auto &bib : del_bibs)
+            bibs.erase(bib);
+        join(bibs_str, bibs);
+        stmt_update_entry_bibs.bind(1, bibs_str);
+        stmt_update_entry_bibs.bind(2, entry);
+        stmt_update_entry_bibs.exec(); stmt_update_entry_bibs.reset();
+    }
+    cout << "done!" << endl;
+    transaction.commit();
+}
+
 // update entries.refs, labels.ref_by, figures.ref_by
 inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_add_refs,
     unordered_map<Str, unordered_set<Str>> &entry_del_refs)
@@ -1246,17 +1368,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
 
-    unordered_map<Str, set<Str>> label_del_ref_bys, fig_del_ref_bys;
-    for (auto &e : entry_del_refs) {
-        auto &entry = e.first;
-        for (auto &label: e.second) {
-            if (label_type(label) == "fig")
-                fig_del_ref_bys[label_id(label)].insert(entry);
-            else
-                label_del_ref_bys[label].insert(entry);
-        }
-    }
-
+    // transform arguments
     unordered_map<Str, unordered_set<Str>> label_add_ref_bys, fig_add_ref_bys;
     for (auto &e : entry_add_refs) {
         auto &entry = e.first;
@@ -1268,8 +1380,19 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
         }
     }
 
-    // =========== add labels.ref_by =================
-    cout << "adding labels ref_by..." << endl;
+    unordered_map<Str, unordered_set<Str>> label_del_ref_bys, fig_del_ref_bys;
+    for (auto &e : entry_del_refs) {
+        auto &entry = e.first;
+        for (auto &label: e.second) {
+            if (label_type(label) == "fig")
+                fig_del_ref_bys[label_id(label)].insert(entry);
+            else
+                label_del_ref_bys[label].insert(entry);
+        }
+    }
+
+    // =========== add & delete labels.ref_by =================
+    cout << "add & delete labels ref_by..." << endl;
     SQLite::Statement stmt_update_ref_by(db_rw,
         R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
@@ -1283,6 +1406,11 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
         parse(ref_by, ref_by_str);
         for (auto &by_entry : by_entries)
             ref_by.insert(by_entry);
+        if (label_del_ref_bys.count(label)) {
+            for (auto &by_entry : label_del_ref_bys[label])
+                ref_by.erase(by_entry);
+            label_del_ref_bys.erase(label);
+        }
         join(ref_by_str, ref_by);
         stmt_update_ref_by.bind(1, ref_by_str);
         stmt_update_ref_by.bind(2, label);
@@ -1290,10 +1418,10 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
     }
     cout << "done!" << endl;
 
-    // =========== add figures.ref_by =================
-    cout << "adding figures ref_by..." << endl;
+    // =========== add & delete figures.ref_by =================
+    cout << "add & delete figures ref_by..." << endl;
     SQLite::Statement stmt_update_ref_by_fig(db_rw,
-                                             R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
+        R"(UPDATE "figures" SET "ref_by"=? WHERE "id"=?;)");
     unordered_map<Str, set<Str>> new_entry_figs;
     // add to ref_by
     for (auto &e : fig_add_ref_bys) {
@@ -1304,6 +1432,11 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
         parse(ref_by, ref_by_str);
         for (auto &by_entry : by_entries)
             ref_by.insert(by_entry);
+        if (fig_del_ref_bys.count(fig_id)) {
+            for (auto &by_entry : fig_del_ref_bys[fig_id])
+                ref_by.erase(by_entry);
+            fig_del_ref_bys.erase(fig_id);
+        }
         join(ref_by_str, ref_by);
         stmt_update_ref_by_fig.bind(1, ref_by_str);
         stmt_update_ref_by_fig.bind(2, fig_id);
@@ -1311,59 +1444,58 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
     }
     cout << "done!" << endl;
 
-    // ========== delete from labels.ref_by and figures.ref_by ===========
-    cout << "deleting from labels.ref_by and figures.ref_by..." << endl;
+    // ========== delete from labels.ref_by ===========
+    cout << "delete from labels.ref_by" << endl;
     Str type, fig_id;
     for (auto &e : label_del_ref_bys) {
         auto &label = e.first;
-        type = label_type(label);
-        if (type == "fig") {
-            fig_id = label_id(e.first);
-            auto &by_entries = e.second;
-            ref_by.clear();
-            try {
-                ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
-            }
-            catch (const std::exception &e) {
-                if ((Long)Str(e.what()).find("row not found") >= 0)
-                    continue; // label deleted
-            }
-            parse(ref_by, ref_by_str);
-            for (auto &by_entry : by_entries)
-                ref_by.erase(by_entry);
-            join(ref_by_str, ref_by);
-            stmt_update_ref_by_fig.bind(1, ref_by_str);
-            stmt_update_ref_by_fig.bind(2, fig_id);
-            stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
+        auto &by_entries = e.second;
+        try {
+            ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
         }
-        else {
-            auto &by_entries = e.second;
-            ref_by.clear();
-            try {
-                ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
-            }
-            catch (const std::exception &e) {
-                if ((Long)Str(e.what()).find("row not found") >= 0)
-                    continue; // label deleted
-            }
-            parse(ref_by, ref_by_str);
-            for (auto &by_entry: by_entries)
-                ref_by.erase(by_entry);
-            join(ref_by_str, ref_by);
-            stmt_update_ref_by.bind(1, ref_by_str);
-            stmt_update_ref_by.bind(2, label);
-            stmt_update_ref_by.exec();
-            stmt_update_ref_by.reset();
+        catch (const std::exception &e) {
+            if ((Long)Str(e.what()).find("row not found") >= 0)
+                continue; // label deleted
         }
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry: by_entries)
+            ref_by.erase(by_entry);
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by.bind(1, ref_by_str);
+        stmt_update_ref_by.bind(2, label);
+        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
+    }
+
+    // ========== delete from figures.ref_by ===========
+    cout << "delete from figures.ref_by" << endl;
+    for (auto &e : fig_del_ref_bys) {
+        auto &fig_id = e.first;
+        auto &by_entries = e.second;
+        try {
+            ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+        }
+        catch (const std::exception &e) {
+            if ((Long)Str(e.what()).find("row not found") >= 0)
+                continue; // label deleted
+        }
+        parse(ref_by, ref_by_str);
+        for (auto &by_entry : by_entries)
+            ref_by.erase(by_entry);
+        join(ref_by_str, ref_by);
+        stmt_update_ref_by_fig.bind(1, ref_by_str);
+        stmt_update_ref_by_fig.bind(2, fig_id);
+        stmt_update_ref_by_fig.exec(); stmt_update_ref_by_fig.reset();
     }
     cout << "done!" << endl;
 
-    // =========== updating entry.refs =================
-    cout << "updating entries.refs..." << endl;
+    // =========== add & delete entries.refs =================
+    cout << "add & delete entries.refs ..." << endl;
     Str ref_str;
     set<Str> refs;
-    SQLite::Statement stmt_select_entry_refs(db_rw, R"(SELECT "refs" FROM "entries" WHERE "id"=?)");
-    SQLite::Statement stmt_update_entry_refs(db_rw, R"(UPDATE "entries" SET "refs"=? WHERE "id"=?)");
+    SQLite::Statement stmt_select_entry_refs(db_rw,
+        R"(SELECT "refs" FROM "entries" WHERE "id"=?)");
+    SQLite::Statement stmt_update_entry_refs(db_rw,
+        R"(UPDATE "entries" SET "refs"=? WHERE "id"=?)");
     for (auto &e : entry_add_refs) {
         auto &entry = e.first;
         auto &new_refs = e.second;
