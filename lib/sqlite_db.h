@@ -1541,7 +1541,7 @@ inline void arg_fix_db()
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     Str refs_str, entry;
     set<Str> refs;
-    unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by;
+    unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by, bib_ref_by;
 
     // get all labels.id and figures.id from database, to detect unused ones
     unordered_set<Str> db_figs_unused, db_labels_unused;
@@ -1590,19 +1590,6 @@ inline void arg_fix_db()
             stmt_update_figs_entry.reset();
         }
     }
-
-    // delete unused figures and labels
-    SQLite::Statement stmt_fig_mark_del(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
-    for (auto &fig_id : db_figs_unused) {
-        stmt_fig_mark_del.bind(1, fig_id);
-        stmt_fig_mark_del.exec(); stmt_fig_mark_del.reset();
-    }
-    SQLite::Statement stmt_del_label(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
-    for (auto &label : db_labels_unused) {
-        stmt_del_label.bind(1, label);
-        stmt_del_label.exec(); stmt_del_label.reset();
-    }
-
     cout << "done!" << endl;
 
     // === regenerate "figures.ref_by", "labels.ref_by" from "entries.refs" ===========
@@ -1645,5 +1632,31 @@ inline void arg_fix_db()
         stmt_update_labels_ref_by.reset();
     }
     cout << "done!" << endl;
+
+    // === regenerate "bibliography.ref_by" from "entries.bibs" =====
+    set<Str> bibs;
+    exec(R"(UPDATE "bibliography" SET "ref_by"='';)", db_rw);
+    cout << R"(regenerate "bibliography.ref_by"  from "entries.bibs ...")" << endl;
+    SQLite::Statement stmt_select_bibs(db_rw, R"(SELECT "id", "bibs" FROM "entries" WHERE "bibs" != '';)");
+    while (stmt_select_bibs.executeStep()) {
+        entry = (const char*)stmt_select_bibs.getColumn(0);
+        parse(bibs, stmt_select_bibs.getColumn(1));
+        for (auto &bib : bibs) {
+            bib_ref_by[bib].insert(entry);
+        }
+    }
+
+    SQLite::Statement stmt_update_bib_ref_by(db_rw, R"(UPDATE "bibliography" SET "ref_by"=? WHERE "id"=?;)");
+    for (auto &e : bib_ref_by) {
+        join(ref_by_str, e.second);
+        stmt_update_bib_ref_by.bind(1, ref_by_str);
+        stmt_update_bib_ref_by.bind(2, e.first); // bib_id
+        stmt_update_bib_ref_by.exec();
+        if (!stmt_update_bib_ref_by.getChanges())
+            throw internal_err("数据库 figures 表格中未找到： " + e.first);
+        stmt_update_bib_ref_by.reset();
+    }
+    cout << "done!" << endl;
+
     transaction.commit();
 }

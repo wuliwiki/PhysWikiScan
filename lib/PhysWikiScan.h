@@ -406,6 +406,8 @@ inline void arg_history(Str_I path)
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
     Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
     Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
+    unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
+    unordered_map<Str, unordered_set<Str>> &entry_del_bibs,
     Pentry_O pentry, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
@@ -530,7 +532,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     // replace \upref{} with link icon
     upref(str, entry);
     href(str); // hyperlinks
-    cite(str, db_read); // citation
+    cite(entry_add_bibs, entry_del_bibs, str, entry, db_read); // citation
     
     // footnote
     footnote(str, entry, gv::url);
@@ -585,6 +587,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     unordered_map<Str, pair<Str, Pentry>> entry_info;
     vector<Node> nodes;
     Str pentry_str, db_pentry_str;
+    unordered_map<Str, unordered_set<Str>> entry_add_bibs, entry_del_bibs;
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
@@ -598,7 +601,8 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         // =================================================================
         PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
             fig_ids, fig_orders, fig_ext_hash, isdraft, keywords,
-            labels, label_orders, pentry, entry, rules, db_read);
+            labels, label_orders, entry_add_bibs, entry_del_bibs,
+            pentry, entry, rules, db_read);
         // ===================================================================
         // save html file
         // TODO: mark redundant pentry with a slightly different color
@@ -653,9 +657,8 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
     }
 
-    // TODO: do this
-    // unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
-    // db_update_entry_bibs(entry_add_bibs, entry_del_bibs);
+    // update entries.bibs & bibliography.ref_by
+    db_update_entry_bibs(entry_add_bibs, entry_del_bibs);
 
     for (auto &e : img_to_delete)
         file_remove(e);

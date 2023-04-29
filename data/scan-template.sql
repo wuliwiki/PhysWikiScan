@@ -107,7 +107,7 @@ CREATE TABLE "figures" (
 );
 
 -- 防止 FOREIGN KEY 报错
-INSERT INTO "figures" ("id", "captio") VALUES ('', 0, '无', '', '', '');
+INSERT INTO "figures" ("id", "caption") VALUES ('', 0, '无', '', '', '');
 
 -- 图片文件（包括历史版本)
 CREATE TABLE "images" (

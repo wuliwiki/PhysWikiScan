@@ -1,21 +1,36 @@
 #pragma once
 
 // replace "\cite{}" with `[?]` cytation linke
-inline Long cite(Str_IO str, SQLite::Database &db_read)
+inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
+    unordered_map<Str, unordered_set<Str>> &entry_del_bibs, Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
+    // get "entries.bibs" for entry to detect deletion
+    unordered_set<Str> db_bibs;
+    SQLite::Statement stmt_select0(db_read,
+        R"(SELECT "bibs" FROM "entries" WHERE "id"=?;)");
+    stmt_select0.bind(1, entry);
+    if (!stmt_select0.executeStep())
+        throw internal_err(SLS_WHERE);
+    parse(db_bibs, stmt_select0.getColumn(0));
+
     SQLite::Statement stmt_select(db_read,
-                                  R"(SELECT "order", "details" from "bibliography" WHERE "id"=?;)");
+        R"(SELECT "order", "details" FROM "bibliography" WHERE "id"=?;)");
     Long ind0 = 0, N = 0;
-    Str bib_label;
+    Str bib_id;
+    auto &add_bibs = entry_add_bibs[entry];
     while (1) {
         ind0 = find_command(str, "cite", ind0);
         if (ind0 < 0)
-            return N;
+            break;
         ++N;
-        command_arg(bib_label, str, ind0);
-        stmt_select.bind(1, bib_label);
+        command_arg(bib_id, str, ind0);
+        stmt_select.bind(1, bib_id);
         if (!stmt_select.executeStep())
-            throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_label);
+            throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
+        if (!db_bibs.count(bib_id)) // new \cite{}
+            add_bibs.insert(bib_id);
+        else
+            db_bibs.erase(bib_id);
         Long ibib = (int)stmt_select.getColumn(0);
         // bib_detail = (const char*)stmt_select.getColumn(1);
         stmt_select.reset();
@@ -23,6 +38,13 @@ inline Long cite(Str_IO str, SQLite::Database &db_read)
         str.replace(ind0, ind1 - ind0, " <a href=\"" + gv::url + "bibliography.html#"
             + num2str(ibib+1) + "\">[" + num2str(ibib+1) + "]</a> ");
     }
+
+    // deleted \cite{}
+    auto &del_bibs = entry_del_bibs[entry];
+    for (auto &del : db_bibs)
+        del_bibs.insert(del);
+
+    return N;
 }
 
 inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
