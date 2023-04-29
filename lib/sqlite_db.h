@@ -205,11 +205,12 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 // each node of the tree is a part of an entry0 (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
 // nodes[0] will be for `entry0`
-// nodes[i], tree[i], titles[i], pentries[i] corresponds
+// nodes[i], tree[i] corresponds
+// pentry_raw0[i][j].tilde will be updated on output
 inline void db_get_tree1(vector<DGnode> &tree,
     vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
     unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
-    Str_I entry0, Str_I title0, Pentry_I pentry_raw0, // use the last i_node as tree root
+    Pentry_IO pentry_raw0, Str_I entry0, Str_I title0, // use the last i_node as tree root
     SQLite::Database &db_read)
 {
     tree.clear(); nodes.clear(); entry_info.clear();
@@ -325,6 +326,14 @@ inline void db_get_tree1(vector<DGnode> &tree,
         SLS_WARN(ss.str());
     }
     dag_inv(tree);
+
+    // add tilde to pentry_raw
+    auto &pentry0 = get<1>(entry_info[entry0]);
+    for (Long i = 0; i < size(pentry_raw0); ++i) {
+        auto &pentry1 = pentry0[i], &pentry_raw1 = pentry_raw0[i];
+        for (Long j = 0; j < size(pentry_raw1); ++j)
+            pentry_raw1[j].tilde = pentry1[j].tilde;
+    }
 }
 
 // calculate author list of an entry, based on "history" table counts in db_read
