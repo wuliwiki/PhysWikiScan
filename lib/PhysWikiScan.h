@@ -643,17 +643,17 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
 
         // check dependency tree and auto mark redundant pentry with ~
-        db_get_tree1(tree, nodes, entry_info, entry,
-                     titles[i], pentry, db_read);
+        db_get_tree1(tree, nodes, entry_info, pentry,
+                     entry, titles[i], db_read);
         // update entries.pentry if changed
         db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
         join_pentry(pentry_str, get<1>(entry_info[entry]));
-        if (pentry_str == db_pentry_str) {
+        if (pentry_str != db_pentry_str) {
             SQLite::Statement stmt_update(db_rw,
-                                          R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
+                R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
             stmt_update.bind(1, pentry_str);
-            stmt_update.exec();
-            stmt_update.reset();
+            stmt_update.bind(2, entry);
+            stmt_update.exec(); stmt_update.reset();
         }
     }
 
