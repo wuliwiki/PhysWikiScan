@@ -54,25 +54,25 @@ inline Bool is_draft(Str_I str)
 
 // get dependent entries (id) from \pentry{}
 // will ignore \pentry{} with no \upref{} or \upref0{}
-inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read)
+inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
     Bool star;
     Long ind0 = -1, ikey, order;
     Str temp, depEntry;
-    v_pentries.clear();
+    pentry_raw.clear();
     while (1) {
         ind0 = find_command(str, "pentry", ind0+1);
         if (ind0 < 0)
             break;
-        if (v_pentries.empty() || !v_pentries.back().empty())
-            v_pentries.emplace_back();
-        auto &pentries = v_pentries.back();
+        if (pentry_raw.empty() || !pentry_raw.back().empty())
+            pentry_raw.emplace_back();
+        auto &pentry1 = pentry_raw.back();
         command_arg(temp, str, ind0, 0, 't');
         Long ind1 = 0, ind2 = 0;
         Bool first_upref = true;
         while (1) {
             ind1 = find(ikey, temp, {"\\upref", "\\upref0"}, ind2);
-            if (ikey == 1) star = true;
+            star = (ikey == 1);
             if (ind1 < 0)
                 break;
             if (!first_upref)
@@ -89,16 +89,16 @@ inline void get_pentry(Pentry_O v_pentries, Str_I str, SQLite::Database &db_read
                 order = 0;
             if (!exist("entries", "id", depEntry, db_read))
                 throw scan_err(u8R"(\pentry{} 中 \upref 引用的词条未找到: )" + depEntry + ".tex");
-            for (auto &e : pentries)
+            for (auto &e : pentry1)
                 if (depEntry == e.entry)
                     throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + depEntry + ".tex");
-            pentries.emplace_back(depEntry, order, star, false);
+            pentry1.emplace_back(depEntry, order, star, false); // tilde always false
             ind2 = skip_command(temp, ind1, 1);
             first_upref = false;
         }
     }
-    if (!v_pentries.empty() && v_pentries.back().empty())
-        v_pentries.pop_back();
+    if (!pentry_raw.empty() && pentry_raw.back().empty())
+        pentry_raw.pop_back();
 }
 
 // get keywords from the comment in the second line

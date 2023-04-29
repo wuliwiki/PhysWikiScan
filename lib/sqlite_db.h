@@ -209,7 +209,7 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 inline void db_get_tree1(vector<DGnode> &tree,
     vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
     unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
-    Pentry_IO pentry0, Str_I entry0, Str_I title0, // use the last i_node as tree root
+    Str_I entry0, Str_I title0, Pentry_I pentry_raw0, // use the last i_node as tree root
     SQLite::Database &db_read)
 {
     tree.clear(); nodes.clear(); entry_info.clear();
@@ -217,13 +217,13 @@ inline void db_get_tree1(vector<DGnode> &tree,
         R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
 
     Str pentry_str;
-    Long i_node = size(pentry0);
+    Long i_node = size(pentry_raw0);
     if (i_node == 0) return; // no pentry
     nodes.emplace_back(entry0, i_node);
     deque<Node> q; // nodes to search
     q.emplace_back(entry0, i_node);
     entry_info[entry0].first = title0;
-    entry_info[entry0].second = pentry0;
+    entry_info[entry0].second = pentry_raw0;
 
     // broad first search (BFS) to get all nodes involved
     while (!q.empty()) {
@@ -249,7 +249,6 @@ inline void db_get_tree1(vector<DGnode> &tree,
             }
         }
     }
-    sort(nodes);
 
     // construct tree
     // every node has a non-zero i_node now
@@ -302,6 +301,7 @@ inline void db_get_tree1(vector<DGnode> &tree,
             Long i_red = alt_path.back(); // node[i_red] is redundant
             auto &node_red = nodes[i_red];
 
+            auto &pentry0 = get<1>(entry_info[entry0]);
             auto &pentry1 = pentry0[nodes[0].i_node-1];
             bool found = false;
             for (auto &e : pentry1) {

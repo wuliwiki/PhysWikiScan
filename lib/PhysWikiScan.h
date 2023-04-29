@@ -408,7 +408,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
     unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
     unordered_map<Str, unordered_set<Str>> &entry_del_bibs,
-    Pentry_O pentry, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+    Pentry_O pentry_raw, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
     read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -515,7 +515,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     // process figure environments
     FigureEnvironment(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
     // get dependent entries from \pentry{}
-    get_pentry(pentry, str, db_read);
+    get_pentry(pentry_raw, str, db_read);
     // issues environment
     issuesEnv(str);
     addTODO(str);
@@ -579,7 +579,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     unordered_set<Str> update_entries;
     vecLong fig_orders, label_orders;
     vecStr keywords, fig_ids, labels;
-    Pentry pentry;
+    Pentry pentry_raw;
     vector<unordered_map<Str, Str>> fig_ext_hash;
     Long N0 = size(entries);
     unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
@@ -602,7 +602,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
             fig_ids, fig_orders, fig_ext_hash, isdraft, keywords,
             labels, label_orders, entry_add_bibs, entry_del_bibs,
-            pentry, entry, rules, db_read);
+            pentry_raw, entry, rules, db_read);
         // ===================================================================
         // save html file
         // TODO: mark redundant pentry with a slightly different color
@@ -643,8 +643,8 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         }
 
         // check dependency tree and auto mark redundant pentry with ~
-        db_get_tree1(tree, nodes, entry_info, pentry,
-                     entry, titles[i], db_read);
+        db_get_tree1(tree, nodes, entry_info,
+                     entry, titles[i], pentry_raw, db_read);
         // update entries.pentry if changed
         db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
         join_pentry(pentry_str, get<1>(entry_info[entry]));
