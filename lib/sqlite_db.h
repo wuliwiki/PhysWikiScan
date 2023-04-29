@@ -450,10 +450,11 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
         info.order = (int)stmt_select.getColumn(1);
         info.detail = (const char*)stmt_select.getColumn(2);
         const Str &ref_by_str = (const char*)stmt_select.getColumn(3);
+        parse(info.ref_by, ref_by_str);
         if (search(id, bib_labels) < 0) {
-            SLS_WARN(u8"检测到删除文献（将删除）： " + to_string(info.order) + ". " + id);
             if (!info.ref_by.empty())
                 throw scan_err(u8"检测到删除的文献： " + id + u8"， 但被以下词条引用： " + ref_by_str);
+            SLS_WARN(u8"检测到删除文献（将删除）： " + to_string(info.order) + ". " + id);
             stmt_delete.bind(1, id);
             stmt_delete.exec(); stmt_delete.reset();
         }
@@ -1296,7 +1297,7 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_set<Str>> &e
         auto &by_entries = e.second;
         ref_by.clear();
         try {
-            ref_by_str = get_text("labels", "id", bib, "ref_by", db_rw);
+            ref_by_str = get_text("bibliography", "id", bib, "ref_by", db_rw);
         }
         catch (const std::exception &e) {
             if ((Long)Str(e.what()).find("row not found") >= 0)

@@ -17,7 +17,6 @@ inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
         R"(SELECT "order", "details" FROM "bibliography" WHERE "id"=?;)");
     Long ind0 = 0, N = 0;
     Str bib_id;
-    auto &add_bibs = entry_add_bibs[entry];
     while (1) {
         ind0 = find_command(str, "cite", ind0);
         if (ind0 < 0)
@@ -27,8 +26,10 @@ inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
         stmt_select.bind(1, bib_id);
         if (!stmt_select.executeStep())
             throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-        if (!db_bibs.count(bib_id)) // new \cite{}
-            add_bibs.insert(bib_id);
+        if (!db_bibs.count(bib_id)) { // new \cite{}
+            SLS_WARN(u8"发现新的文献引用（将添加）： " + bib_id);
+            entry_add_bibs[entry].insert(bib_id);
+        }
         else
             db_bibs.erase(bib_id);
         Long ibib = (int)stmt_select.getColumn(0);
@@ -40,9 +41,13 @@ inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
     }
 
     // deleted \cite{}
-    auto &del_bibs = entry_del_bibs[entry];
-    for (auto &del : db_bibs)
-        del_bibs.insert(del);
+    if (!db_bibs.empty()) {
+        auto &del_bibs = entry_del_bibs[entry];
+        for (auto &del: db_bibs) {
+            SLS_WARN(u8"发现文献引用被删除（将移除）： " + bib_id);
+            del_bibs.insert(del);
+        }
+    }
 
     return N;
 }
