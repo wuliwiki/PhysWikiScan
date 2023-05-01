@@ -1003,6 +1003,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     }
 
     // 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
+    // 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
     Str ref_by_str;
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
     for (Long i = 0; i < size(db_figs_used); ++i) {
@@ -1166,6 +1167,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     }
 
     // 检查被删除的标签（如果只被本词条引用， 就留给 \autoref() 报错）
+    // 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
     Str ref_by_str;
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
     for (Long i = 0; i < size(db_labels_used); ++i) {
