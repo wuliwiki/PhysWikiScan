@@ -911,11 +911,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     db_figs_used.resize(db_figs.size(), false);
     Str figs_str, image, image_alt;
     set<Str> new_figs, figs;
-    vector<pair<Str,Long>> update; // {id, order}
+    // fig orders set to negative to avoid conflict
+    vector<pair<Str,Long>> fig_order_neg; // {id, order}
 
     for (Long i = 0; i < size(entries); ++i) {
         entry = entries[i];
-        new_figs.clear(); update.clear();
+        new_figs.clear();
         for (Long j = 0; j < size(entry_figs[i]); ++j) {
             id = entry_figs[i][j]; order = entry_fig_orders[i][j];
             Long ind = search(id, db_figs);
@@ -937,11 +938,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                     to_string(order));
                 stmt_insert.bind(1, id);
                 stmt_insert.bind(2, entry);
-                stmt_insert.bind(3, int(order));
+                stmt_insert.bind(3, -(int)order);
                 stmt_insert.bind(4, image);
                 stmt_insert.bind(5, image_alt);
                 stmt_insert.exec(); stmt_insert.reset();
                 new_figs.insert(id);
+                fig_order_neg.emplace_back(id, order);
                 continue;
             }
             db_figs_used[ind] = true;
@@ -980,14 +982,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                 stmt_update.bind(4, image_alt);
                 stmt_update.bind(5, id);
                 stmt_update.exec(); stmt_update.reset();
-                update.emplace_back(id, order);
+                fig_order_neg.emplace_back(id, order);
             }
-        }
-        // set label orders back to positive
-        for (auto &e : update) {
-            stmt_update0.bind(1, int(e.second)); // order
-            stmt_update0.bind(2, e.first); // id
-            stmt_update0.exec(); stmt_update0.reset();
         }
 
         // add entries.figures
@@ -1013,6 +1009,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         if (!db_figs_used[i]) {
             if (db_fig_ref_bys[i].empty() ||
                 (db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == entry)) {
+                SLS_WARN(u8"检测到 figure 被删除（将从数据库删除）： " + db_figs[i]);
                 // delete from "figures"
                 stmt_delete.bind(1, db_figs[i]);
                 stmt_delete.exec(); stmt_delete.reset();
@@ -1032,6 +1029,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
                 throw scan_err(u8"检测到 figure 被删除： " + db_figs[i] + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
+    }
+
+    // set label orders back to positive
+    for (auto &e : fig_order_neg) {
+        stmt_update0.bind(1, (int)e.second); // order
+        stmt_update0.bind(2, e.first); // id
+        stmt_update0.exec(); stmt_update0.reset();
     }
     transaction.commit();
     // cout << "done!" << endl;
@@ -1093,11 +1097,11 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     db_labels_used.resize(db_labels.size(), false);
     Str labels_str;
     set<Str> new_labels, labels;
-    vector<pair<Str,Long>> update; // {label, order}
+    // {label, order}, negated label order， to avoid UNIQUE constraint
+    vector<pair<Str,Long>> label_order_neg;
     for (Long j = 0; j < size(entries); ++j) {
         entry = entries[j];
         new_labels.clear();
-        update.clear();
         for (Long i = 0; i < size(entry_labels[j]); ++i) {
             label = entry_labels[j][i];
             order = entry_label_orders[j][i];
@@ -1112,19 +1116,22 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_insert.bind(1, label);
                 stmt_insert.bind(2, type);
                 stmt_insert.bind(3, entry);
-                stmt_insert.bind(4, int(order));
+                stmt_insert.bind(4, -(int)order);
                 stmt_insert.exec(); stmt_insert.reset();
                 new_labels.insert(label);
+                label_order_neg.emplace_back(label, order);
                 continue;
             }
             db_labels_used[ind] = true;
             bool changed = false;
             if (entry != db_label_entries[ind]) {
-                throw scan_err("label " + label + u8" 的词条发生改变（暂时不允许，请使用新的标签）：" + db_label_entries[ind] + " -> " + entry);
+                throw scan_err("label " + label + u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+                    + db_label_entries[ind] + " -> " + entry);
                 changed = true;
             }
             if (order != db_label_orders[ind]) {
-                SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）：" + to_string(db_label_orders[ind]) + " -> " + to_string(order));
+                SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）："
+                    + to_string(db_label_orders[ind]) + " -> " + to_string(order));
                 changed = true;
                 // order change means other ref_by entries needs to be updated with autoref() as well.
                 if (!gv::is_entire) {
@@ -1138,14 +1145,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
                 stmt_update.bind(2, -(int)order); // -order to avoid UNIQUE constraint
                 stmt_update.bind(3, label);
                 stmt_update.exec(); stmt_update.reset();
-                update.emplace_back(label, order);
+                label_order_neg.emplace_back(label, order);
             }
-        }
-        // set label orders back to positive
-        for (auto &e : update) {
-            stmt_update0.bind(1, int(e.second)); // order
-            stmt_update0.bind(2, e.first); // label
-            stmt_update0.exec(); stmt_update0.reset();
         }
 
         // add to entries.labels
@@ -1164,21 +1165,23 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
         }
     }
 
-    // 检查被删除的标签（如果只被本词条引用， 就留给 autoref() 报错）
+    // 检查被删除的标签（如果只被本词条引用， 就留给 \autoref() 报错）
     Str ref_by_str;
     SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
     for (Long i = 0; i < size(db_labels_used); ++i) {
         if (!db_labels_used[i]) {
+            auto &db_label = db_labels[i];
             if (db_label_ref_bys[i].empty() ||
                 (db_label_ref_bys[i].size() == 1 && db_label_ref_bys[i][0] == entry)) {
+                SLS_WARN(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
                 // delete from "labels"
-                stmt_delete.bind(1, db_labels[i]);
+                stmt_delete.bind(1, db_label);
                 stmt_delete.exec(); stmt_delete.reset();
                 // delete from "entries.labels"
                 stmt_select0.bind(1, db_label_entries[i]);
                 SLS_ASSERT(stmt_select0.executeStep());
                 parse(labels, stmt_select0.getColumn(0));
-                labels.erase(db_labels[i]);
+                labels.erase(db_label);
                 stmt_select0.reset();
                 join(labels_str, labels);
                 stmt_update2.bind(1, labels_str);
@@ -1187,9 +1190,16 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
             }
             else {
                 join(ref_by_str, db_label_ref_bys[i], ", ");
-                throw scan_err(u8"检测到 label 被删除： " + db_labels[i] + u8"\n但是被这些词条引用： " + ref_by_str);
+                throw scan_err(u8"检测到 label 被删除： " + db_label + u8"\n但是被这些词条引用： " + ref_by_str);
             }
         }
+    }
+
+    // set label orders back to positive
+    for (auto &e : label_order_neg) {
+        stmt_update0.bind(1, int(e.second)); // order
+        stmt_update0.bind(2, e.first); // label
+        stmt_update0.exec(); stmt_update0.reset();
     }
     transaction.commit();
     // cout << "done!" << endl;

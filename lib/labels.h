@@ -492,7 +492,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order, 
         stmt_insert.bind(1, label);
         stmt_insert.bind(2, type);
         stmt_insert.bind(3, entry);
-        stmt_insert.bind(4, int(order));
+        stmt_insert.bind(4, (int)order);
         stmt_insert.exec(); stmt_insert.reset();
 
         // update "entries.refs"
