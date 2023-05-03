@@ -512,8 +512,17 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order, 
 
 // process upref
 // path must end with '\\'
-inline Long upref(Str_IO str, Str_I entry)
+inline Long upref(unordered_map<Str, Bool> &uprefs_change, Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
+    uprefs_add.clear(); uprefs_del.clear();
+    SQLite::Statement stmt_select(db_read,
+        R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
+    stmt_select.bind(1, entry);
+    if (!stmt_select.executeStep())
+        throw internal_err(SLS_WHERE);
+    parse(uprefs_del, stmt_select.getColumn(0));
+
+    uprefs.clear();
     Long ind0 = 0, right, N = 0;
     Str entry1;
     while (1) {
@@ -532,7 +541,16 @@ inline Long upref(Str_IO str, Str_I entry)
                     "<span class = \"icon\"><a href = \""
                     + gv::url + entry1 +
                     ".html\" target = \"_blank\"><i class = \"fa fa-external-link\"></i></a></span>");
+        uprefs.insert(entry1);
         ++N;
+
+        // db
+        if (!uprefs_del.count(entry1)) {
+            SLS_WARN(u8"检测到新增的 upref（将添加）：" + entry1);
+            uprefs_add.insert(entry1);
+        }
+        else
+            uprefs_del.erase(entry1);
     }
     return N;
 }

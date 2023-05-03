@@ -37,9 +37,13 @@ CREATE TABLE "entries" (
 
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
+
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"	TEXT NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
-	-- "files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
+	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
+	"uprefs"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的其他词条（所有的 upref）
+	
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条列为 "uprefs"（为空才能删除本词条）
 
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),

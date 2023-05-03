@@ -406,8 +406,7 @@ inline void arg_history(Str_I path)
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
     Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
     Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
-    unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
-    unordered_map<Str, unordered_set<Str>> &entry_del_bibs,
+    unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
     Pentry_O pentry_raw, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
     Str str;
@@ -530,9 +529,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     Command2Tag("textsl", "<i>", "</i>", str);
     pay2div(str); // deal with "\pay" "\paid" pseudo command
     // replace \upref{} with link icon
-    upref(str, entry);
+    upref(uprefs_change, str, entry);
     href(str); // hyperlinks
-    cite(entry_add_bibs, entry_del_bibs, str, entry, db_read); // citation
+    cite(entry_bibs_change, entry_del_bibs, str, entry, db_read); // citation
     
     // footnote
     footnote(str, entry, gv::url);
@@ -586,8 +585,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     vector<DGnode> tree;
     unordered_map<Str, pair<Str, Pentry>> entry_info;
     vector<Node> nodes;
+    unordered_map<Str, set<Str>> uprefs;
     Str pentry_str, db_pentry_str;
-    unordered_map<Str, unordered_set<Str>> entry_add_bibs, entry_del_bibs;
+    unordered_map<Str, unordered_map<Str, Bool>> entry_bibs_change;
+    unordered_map<Str, unordered_map<Str, Bool>> entry_uprefs_change; // entry -> (upref -> [0]add/[1]delete)
 
     for (Long i = 0; i < size(entries); ++i) {
         auto &entry = entries[i];
@@ -600,8 +601,10 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 
         // =================================================================
         PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-            fig_ids, fig_orders, fig_ext_hash, isdraft, keywords,
-            labels, label_orders, entry_add_bibs, entry_del_bibs,
+            fig_ids, fig_orders,
+            fig_ext_hash, isdraft, keywords,
+            labels, label_orders, entry_uprefs_add[entry], entry_uprefs_del[entry],
+            entry_bibs_change,
             pentry_raw, entry, rules, db_read);
         // ===================================================================
         // save html file
@@ -630,7 +633,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
         db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
                           {fig_ext_hash}, db_rw);
         db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
-
+        db_update_uprefs(uprefs, entry, db_rw);
 
         // order change means `update_entries` needs to be updated with autoref() as well.
         // but just in case, we also run 1st round again for them
@@ -658,7 +661,7 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
     }
 
     // update entries.bibs & bibliography.ref_by
-    db_update_entry_bibs(entry_add_bibs, entry_del_bibs);
+    db_update_entry_bibs(entry_bibs_change);
 
     for (auto &e : img_to_delete)
         file_remove(e);

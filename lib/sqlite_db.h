@@ -1265,18 +1265,18 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // update entries.bibs and bibliography.ref_by
-inline void db_update_entry_bibs(const unordered_map<Str, unordered_set<Str>> &entry_add_bibs, // entry -> bibs
-                           unordered_map<Str, unordered_set<Str>> &entry_del_bibs)
+inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Bool>> &entry_bibs_change)
 {
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
 
     // convert arguments
-    unordered_map<Str, set<Str>> bib_del_ref_bys; // bibliography.id -> ref_by
-    for (auto &e : entry_del_bibs) {
+    unordered_map<Str, unordered_map<Str, Bool>> bib_ref_bys_change; // bibliography.id -> ref_by
+    for (auto &e : entry_bibs_change) {
         auto &entry = e.first;
         for (auto &bib: e.second)
-            bib_del_ref_bys[bib].insert(entry);
+            if (bib.second)
+                bib_del_ref_bys[bib].insert(entry);
     }
 
     unordered_map<Str, unordered_set<Str>> bib_add_ref_bys; // bibliography.id -> ref_by
@@ -1383,6 +1383,32 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_set<Str>> &e
         stmt_update_entry_bibs.exec(); stmt_update_entry_bibs.reset();
     }
     cout << "done!" << endl;
+    transaction.commit();
+}
+
+// update entries.uprefs, entries.ref_by, figures.ref_by
+inline void db_update_uprefs(const set<Str> &uprefs, Str_I entry, SQLite::Database &db_rw)
+{
+    SQLite::Transaction transaction(db_rw);
+    unordered_set<Str> uprefs_del;
+    SQLite::Statement stmt_select(db_rw,
+        R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_select2(db_rw,
+        R"(SELECT "ref_by" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_update(db_rw,
+        R"(UPDATE "entries" SET "uprefs"=? WHERE "id"=?;)");
+    Str ref_by_str;
+    set<Str> ref_by;
+    stmt_select.bind(1, entry);
+    if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+    parse(uprefs_del, stmt_select.getColumn(0));
+    for (auto &upref : uprefs) {
+        if (uprefs_del.count(upref))
+            uprefs_del.erase(upref);
+        else {
+            SLS_WARN(u8"检测到新增的 upref（将添加）：" + upref);
+        }
+    }
     transaction.commit();
 }
 
