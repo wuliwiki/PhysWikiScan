@@ -30,6 +30,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * 支持 g++8.3 及以上版本编译器
 * 在 linux 系统中（g++ 编译器）， 用 `make` 编译， `make clean` 清空编译产生的文件。
 * 可以用 CLion 导入 CMakeLists.txt 编译调试。
+* `SLISC/` 中的代码来自 [SLISC](https://github.com/MacroUniverse/SLISC) 仓库。
 
 ## BUG
 * `\begin{example}{}` 或类似环境下面如果多空一行， html 也会空间过大

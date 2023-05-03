@@ -1,5 +1,16 @@
 #pragma once
 
+// add or delete elements from a set
+template <class T>
+inline void change_set(set<T> &s, const unordered_map<T, bool> &change)
+{
+    for (auto &e : change)
+        if (e.second)
+            s.insert(e.first);
+        else
+            s.erase(e.first);
+}
+
 // get table of content info from db "chapters", in ascending "order"
 inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
                             SQLite::Database &db)
@@ -1271,65 +1282,27 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
     SQLite::Transaction transaction(db_rw);
 
     // convert arguments
-    unordered_map<Str, unordered_map<Str, Bool>> bib_ref_bys_change; // bibliography.id -> ref_by
+    unordered_map<Str, unordered_map<Str, Bool>> bib_ref_bys_change; // bib -> (entry -> [1]add/[0]del)
     for (auto &e : entry_bibs_change) {
         auto &entry = e.first;
         for (auto &bib: e.second)
-            if (bib.second)
-                bib_del_ref_bys[bib].insert(entry);
+            bib_ref_bys_change[bib.first][entry] = bib.second;
     }
 
-    unordered_map<Str, unordered_set<Str>> bib_add_ref_bys; // bibliography.id -> ref_by
-    for (auto &e : entry_add_bibs) {
-        auto &entry = e.first;
-        for (auto &bib: e.second) {
-            bib_add_ref_bys[bib].insert(entry);
-        }
-    }
-
-    // =========== add & delete bibliography.ref_by =================
+    // =========== change bibliography.ref_by =================
     cout << "add & delete bibliography.ref_by..." << endl;
     SQLite::Statement stmt_update_ref_by(db_rw,
         R"(UPDATE "bibliography" SET "ref_by"=? WHERE "id"=?;)");
     Str ref_by_str;
     set<Str> ref_by;
 
-    for (auto &e : bib_add_ref_bys) {
+    for (auto &e : bib_ref_bys_change) {
         auto &bib = e.first;
         auto &by_entries = e.second;
         ref_by.clear();
         ref_by_str = get_text("bibliography", "id", bib, "ref_by", db_rw);
         parse(ref_by, ref_by_str);
-        for (auto &by_entry : by_entries)
-            ref_by.insert(by_entry);
-        if (bib_del_ref_bys.count(bib)) {
-            for (auto &by_entry: bib_del_ref_bys[bib])
-                ref_by.erase(by_entry);
-            bib_del_ref_bys.erase(bib);
-        }
-        join(ref_by_str, ref_by);
-        stmt_update_ref_by.bind(1, ref_by_str);
-        stmt_update_ref_by.bind(2, bib);
-        stmt_update_ref_by.exec(); stmt_update_ref_by.reset();
-    }
-    cout << "done!" << endl;
-
-    // ========== delete from bibliography.ref_by ===========
-    cout << "delete from bibliography.ref_by ..." << endl;
-    for (auto &e : bib_del_ref_bys) {
-        auto &bib = e.first;
-        auto &by_entries = e.second;
-        ref_by.clear();
-        try {
-            ref_by_str = get_text("bibliography", "id", bib, "ref_by", db_rw);
-        }
-        catch (const std::exception &e) {
-            if ((Long)Str(e.what()).find("row not found") >= 0)
-                continue; // bibliography.id deleted
-        }
-        parse(ref_by, ref_by_str);
-        for (auto &by_entry: by_entries)
-            ref_by.erase(by_entry);
+        change_set(ref_by, by_entries);
         join(ref_by_str, ref_by);
         stmt_update_ref_by.bind(1, ref_by_str);
         stmt_update_ref_by.bind(2, bib);
@@ -1346,37 +1319,20 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
     SQLite::Statement stmt_update_entry_bibs(db_rw,
         R"(UPDATE "entries" SET "bibs"=? WHERE "id"=?)");
 
-    for (auto &e : entry_add_bibs) {
+    for (auto &e : entry_bibs_change) {
         auto &entry = e.first;
-        auto &new_bibs = e.second;
+        auto &bibs_changed = e.second;
         stmt_select_entry_bibs.bind(1, entry);
         if (!stmt_select_entry_bibs.executeStep())
             throw internal_err("entry 找不到： " + entry);
         parse(bibs, stmt_select_entry_bibs.getColumn(0));
         stmt_select_entry_bibs.reset();
-        bibs.insert(new_bibs.begin(), new_bibs.end());
-        if (entry_del_bibs.count(entry)) {
-            for (auto &bib: entry_del_bibs[entry])
-                bibs.erase(bib);
-            entry_del_bibs.erase(entry);
+        for (auto &bib : bibs_changed) {
+            if (bib.second)
+                bibs.insert(bib.first);
+            else
+                bibs.erase(bib.first);
         }
-        join(bibs_str, bibs);
-        stmt_update_entry_bibs.bind(1, bibs_str);
-        stmt_update_entry_bibs.bind(2, entry);
-        stmt_update_entry_bibs.exec(); stmt_update_entry_bibs.reset();
-    }
-
-    cout << "delete entry.bibs ..." << endl;
-    for (auto &e : entry_del_bibs) {
-        auto &entry = e.first;
-        auto &del_bibs = e.second;
-        stmt_select_entry_bibs.bind(1, entry);
-        if (!stmt_select_entry_bibs.executeStep())
-            throw internal_err("entry 找不到： " + entry);
-        parse(bibs, stmt_select_entry_bibs.getColumn(0));
-        stmt_select_entry_bibs.reset();
-        for (auto &bib : del_bibs)
-            bibs.erase(bib);
         join(bibs_str, bibs);
         stmt_update_entry_bibs.bind(1, bibs_str);
         stmt_update_entry_bibs.bind(2, entry);
@@ -1386,11 +1342,14 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
     transaction.commit();
 }
 
-// update entries.uprefs, entries.ref_by, figures.ref_by
-inline void db_update_uprefs(const set<Str> &uprefs, Str_I entry, SQLite::Database &db_rw)
+// update entries.uprefs, entries.ref_by
+inline void db_update_uprefs(
+        const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change)
 {
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
-    unordered_set<Str> uprefs_del;
+
+    cout << "updating entries.uprefs ..." << endl;
     SQLite::Statement stmt_select(db_rw,
         R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_select2(db_rw,
@@ -1398,17 +1357,19 @@ inline void db_update_uprefs(const set<Str> &uprefs, Str_I entry, SQLite::Databa
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "entries" SET "uprefs"=? WHERE "id"=?;)");
     Str ref_by_str;
-    set<Str> ref_by;
-    stmt_select.bind(1, entry);
-    if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
-    parse(uprefs_del, stmt_select.getColumn(0));
-    for (auto &upref : uprefs) {
-        if (uprefs_del.count(upref))
-            uprefs_del.erase(upref);
-        else {
-            SLS_WARN(u8"检测到新增的 upref（将添加）：" + upref);
-        }
+    set<Str> uprefs, ref_by;
+    for (auto &e : entry_uprefs_change) {
+        stmt_select.bind(1, e.first);
+        if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+        parse(uprefs, stmt_select.getColumn(0));
+        change_set(uprefs, e.second);
     }
+    cout << "updating entries.ref_by ..." << endl;
+    unordered_map<Str, unordered_map<Str, Bool>> entry_ref_bys_change;
+    for (auto &e : entry_uprefs_change)
+        for (auto &ref : e.second)
+            entry_ref_bys_change[ref.first][e.first] = ref.second;
+
     transaction.commit();
 }
 

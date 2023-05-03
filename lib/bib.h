@@ -1,8 +1,8 @@
 #pragma once
 
 // replace "\cite{}" with `[?]` cytation linke
-inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
-    unordered_map<Str, unordered_set<Str>> &entry_del_bibs, Str_IO str, Str_I entry, SQLite::Database &db_read)
+inline Long cite(unordered_map<Str, Bool> &bibs_change,
+    Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
     // get "entries.bibs" for entry to detect deletion
     unordered_set<Str> db_bibs;
@@ -28,7 +28,7 @@ inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
             throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
         if (!db_bibs.count(bib_id)) { // new \cite{}
             SLS_WARN(u8"发现新的文献引用（将添加）： " + bib_id);
-            entry_add_bibs[entry].insert(bib_id);
+            bibs_change[bib_id] = true;
         }
         else
             db_bibs.erase(bib_id);
@@ -41,14 +41,10 @@ inline Long cite(unordered_map<Str, unordered_set<Str>> &entry_add_bibs,
     }
 
     // deleted \cite{}
-    if (!db_bibs.empty()) {
-        auto &del_bibs = entry_del_bibs[entry];
-        for (auto &del: db_bibs) {
-            SLS_WARN(u8"发现文献引用被删除（将移除）： " + bib_id);
-            del_bibs.insert(del);
-        }
+    for (auto &bib_del : db_bibs) {
+        SLS_WARN(u8"发现文献引用被删除（将移除）： " + bib_del);
+        bibs_change[bib_del] = false;
     }
-
     return N;
 }
 
