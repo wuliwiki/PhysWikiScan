@@ -291,8 +291,7 @@ int main(int argc, char *argv[]) {
             cerr << u8"内部错误： 命令不合法" << endl;
             return 0;
         }
-
-        // PhysWikiCheck("../PhysWiki/contents/");
+        
         cout.precision(3);
         cout << "done! time (s): " << timer.toc() << endl;
         if (argc <= 1) {
