@@ -1352,23 +1352,43 @@ inline void db_update_uprefs(
     cout << "updating entries.uprefs ..." << endl;
     SQLite::Statement stmt_select(db_rw,
         R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
-    SQLite::Statement stmt_select2(db_rw,
-        R"(SELECT "ref_by" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "entries" SET "uprefs"=? WHERE "id"=?;)");
-    Str ref_by_str;
+    Str str;
     set<Str> uprefs, ref_by;
     for (auto &e : entry_uprefs_change) {
         stmt_select.bind(1, e.first);
         if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
         parse(uprefs, stmt_select.getColumn(0));
+        stmt_select.reset();
         change_set(uprefs, e.second);
+        join(str, uprefs);
+        stmt_update.bind(1, str);
+        stmt_update.bind(2, e.first);
+        stmt_update.exec(); stmt_update.reset();
     }
+
     cout << "updating entries.ref_by ..." << endl;
     unordered_map<Str, unordered_map<Str, Bool>> entry_ref_bys_change;
     for (auto &e : entry_uprefs_change)
         for (auto &ref : e.second)
             entry_ref_bys_change[ref.first][e.first] = ref.second;
+
+    SQLite::Statement stmt_select2(db_rw,
+        R"(SELECT "ref_by" FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_update2(db_rw,
+        R"(UPDATE "entries" SET "ref_by"=? WHERE "id"=?;)");
+    for (auto &e : entry_ref_bys_change) {
+        stmt_select2.bind(1, e.first);
+        if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+        parse(ref_by, stmt_select2.getColumn(0));
+        stmt_select2.reset();
+        change_set(ref_by, e.second);
+        join(str, ref_by);
+        stmt_update2.bind(1, str);
+        stmt_update2.bind(2, e.first);
+        stmt_update2.exec(); stmt_update2.reset();
+    }
 
     transaction.commit();
 }
