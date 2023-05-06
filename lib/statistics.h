@@ -21,9 +21,9 @@ inline void all_commands(vecStr_O commands, Str_I in_path)
     }
 }
 
+// count number of Chinese characters (including punc)
 inline void word_count()
 {
-    // count number of Chinese characters (including punc)
     vecStr entries;
     Str str;
     Long N = 0;

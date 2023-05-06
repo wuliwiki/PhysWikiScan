@@ -194,7 +194,7 @@ inline void table_of_contents(
         if (ikey == 2) {
             // ============ found "\entry" ==============
             if (last_command != 'e' && last_command != 'c')
-                throw scan_err(u8"main.tex 中 \\entry{}{} 必须在 \\chapter{} 或者其他 \\entry{}{} 之后： " + title);
+                throw scan_err(u8R"(main.tex 中 \entry{}{} 必须在 \chapter{} 或者其他 \entry{}{} 之后： )" + title);
 
             // parse \entry{title}{entry}
             command_arg(title, str, ind1);
@@ -235,7 +235,7 @@ inline void table_of_contents(
 
             // insert entry into html table of contents
             class_draft = (is_draft.back()) ? "class=\"draft\" " : "";
-            ind0 = insert(html, "<a " + class_draft + "href = \"" + gv::url + entry + ".html" + "\" target = \"_blank\">"
+            ind0 = insert(html, "<a " + class_draft + "href = \"" + gv::url + entry + R"(.html" target = "_blank">)"
                                + title + u8"</a>　\n", ind0);
 
             entry_part.push_back(partNo);
@@ -248,7 +248,7 @@ inline void table_of_contents(
             command_arg(title, str, ind1);
             replace(title, "\\ ", " ");
             if (last_command != 'p' && last_command != 'e') 
-                throw scan_err(u8"main.tex 中 \\chapter{} 必须在 \\entry{}{} 或者 \\part{} 之后， 不允许空的 \\chapter{}： " + title);
+                throw scan_err(u8R"(main.tex 中 \chapter{} 必须在 \entry{}{} 或者 \part{} 之后， 不允许空的 \chapter{}： )" + title);
             if (chap_ids.size() > 1)
                 chap_entry_last.push_back(entries.back());
             // get chapter id from label cpt_xxx, where xxx is id
@@ -279,7 +279,7 @@ inline void table_of_contents(
             if (part_ids.size() > 1)
                 part_chap_last.push_back(chap_ids.back());
             if (last_command != 'e' && last_command != 'n')
-                throw scan_err(u8"main.tex 中 \\part{} 必须在 \\entry{} 之后或者目录开始， 不允许空的 \\chapter{} 或 \\part{}： " + title);
+                throw scan_err(u8R"(main.tex 中 \part{} 必须在 \entry{} 之后或者目录开始， 不允许空的 \chapter{} 或 \part{}： )" + title);
             // get part id from label prt_xxx, where xxx is id
             Long ind_label = find_command(str, "label", ind1);
             Long ind_LF = str.find(U'\n', ind1);
@@ -302,7 +302,7 @@ inline void table_of_contents(
         else if (ikey == 3) {
             // =========  found "\bibli" ==========
             title = u8"参考文献";
-            ind0 = insert(html, "<a href = \"" + gv::url + "bibliography.html\" target = \"_blank\">"
+            ind0 = insert(html, "<a href = \"" + gv::url + R"(bibliography.html" target = "_blank">)"
                 + title + u8"</a>　\n", ind0);
             ++ind1;
         }

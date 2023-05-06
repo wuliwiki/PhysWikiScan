@@ -1218,63 +1218,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
     // cout << "done!" << endl;
 }
 
-// generate json file containing dependency tree
-// empty elements of 'titles' will be ignored
-inline Long dep_json(SQLite::Database &db_read)
-{
-    vecStr entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
-    vector<DGnode> tree;
-    db_get_parts(part_ids, part_names, db_read);
-    db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
-    db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
-
-    Str str;
-    // write part names
-    str += "{\n  \"parts\": [\n";
-    for (Long i = 0; i < size(part_names); ++i)
-        str += R"(    {"name": ")" + part_names[i] + "\"},\n";
-    str.pop_back(); str.pop_back();
-    str += "\n  ],\n";
-    // write chapter names
-    str += "  \"chapters\": [\n";
-    for (Long i = 0; i < size(chap_names); ++i)
-        str += R"(    {"name": ")" + chap_names[i] + "\"},\n";
-    str.pop_back(); str.pop_back();
-    str += "\n  ],\n";
-    // write entries
-    str += "  \"nodes\": [\n";
-    for (Long i = 0; i < size(titles); ++i) {
-        if (titles[i].empty())
-            continue;
-        str += R"(    {"id": ")" + entries[i] + "\"" +
-               ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
-               ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
-               R"(, "title": ")" + titles[i] + "\""
-            ", \"url\": \"../online/" +
-            entries[i] + ".html\"},\n";
-    }
-    str.pop_back(); str.pop_back();
-    str += "\n  ],\n";
-
-    // write links
-    str += "  \"links\": [\n";
-    Long Nedge = 0;
-    for (Long i = 0; i < size(tree); ++i) {
-        for (auto &j : tree[i]) {
-            str += R"(    {"source": ")" + entries[i] + "\", ";
-            str += R"("target": ")" + entries[j] + "\", ";
-            str += "\"value\": 1},\n";
-            ++Nedge;
-        }
-    }
-    if (Nedge > 0) {
-        str.pop_back(); str.pop_back();
-    }
-    str += "\n  ]\n}\n";
-    write(str, gv::path_out + "../tree/data/dep.json");
-    return 0;
-}
-
 // update entries.bibs and bibliography.ref_by
 inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Bool>> &entry_bibs_change)
 {
@@ -1568,6 +1511,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 
 // make db consistent
 // (regenerate derived fields)
+// TODO: fix other generated field, i.e. entries.ref_by
 inline void arg_fix_db()
 {
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);

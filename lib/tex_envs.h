@@ -7,8 +7,8 @@
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
 // fig_ext_hash[i] maps the file extension to file hash
-inline Long FigureEnvironment(unordered_set<Str> &img_to_delete, vector<unordered_map<Str, Str>> &fig_ext_hash, Str_IO str, Str_I entry,
-                              vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
+inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<Str, Str>> &fig_ext_hash, Str_IO str, Str_I entry,
+                       vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
 {
     fig_ext_hash.clear();
     Long N = 0;

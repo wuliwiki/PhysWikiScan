@@ -512,7 +512,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     // process example and exercise environments
     theorem_like_env(str);
     // process figure environments
-    FigureEnvironment(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
+    figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
     // get dependent entries from \pentry{}
     get_pentry(pentry_raw, str, db_read);
     // issues environment
@@ -687,6 +687,63 @@ inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Da
     cout << endl; cout.flush();
 
     db_update_refs(entry_add_refs, entry_del_refs);
+}
+
+// generate json file containing dependency tree
+// empty elements of 'titles' will be ignored
+inline Long dep_json(SQLite::Database &db_read)
+{
+    vecStr entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
+    vector<DGnode> tree;
+    db_get_parts(part_ids, part_names, db_read);
+    db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
+    db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
+
+    Str str;
+    // write part names
+    str += "{\n  \"parts\": [\n";
+    for (Long i = 0; i < size(part_names); ++i)
+        str += R"(    {"name": ")" + part_names[i] + "\"},\n";
+    str.pop_back(); str.pop_back();
+    str += "\n  ],\n";
+    // write chapter names
+    str += "  \"chapters\": [\n";
+    for (Long i = 0; i < size(chap_names); ++i)
+        str += R"(    {"name": ")" + chap_names[i] + "\"},\n";
+    str.pop_back(); str.pop_back();
+    str += "\n  ],\n";
+    // write entries
+    str += "  \"nodes\": [\n";
+    for (Long i = 0; i < size(titles); ++i) {
+        if (titles[i].empty())
+            continue;
+        str += R"(    {"id": ")" + entries[i] + "\"" +
+               ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
+               ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
+               R"(, "title": ")" + titles[i] + "\""
+                                               ", \"url\": \"../online/" +
+               entries[i] + ".html\"},\n";
+    }
+    str.pop_back(); str.pop_back();
+    str += "\n  ],\n";
+
+    // write links
+    str += "  \"links\": [\n";
+    Long Nedge = 0;
+    for (Long i = 0; i < size(tree); ++i) {
+        for (auto &j : tree[i]) {
+            str += R"(    {"source": ")" + entries[i] + "\", ";
+            str += R"("target": ")" + entries[j] + "\", ";
+            str += "\"value\": 1},\n";
+            ++Nedge;
+        }
+    }
+    if (Nedge > 0) {
+        str.pop_back(); str.pop_back();
+    }
+    str += "\n  ]\n}\n";
+    write(str, gv::path_out + "../tree/data/dep.json");
+    return 0;
 }
 
 // like PhysWikiOnline, but convert only specified files
