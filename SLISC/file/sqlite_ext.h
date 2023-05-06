@@ -6,6 +6,7 @@
 #include <SQLiteCpp/Statement.h>
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Transaction.h>
+#include "../util/STL_util.h"
 #include "../arith/scalar_arith.h"
 #include "../str/unicode.h"
 
@@ -135,7 +136,7 @@ inline void get_row(vecLong_O data, Str_I table, Str_I field, Str_I val, vecStr_
 	cmd += " FROM " + table + " WHERE " + field + " = '" + val + "';";
 	if (stmt.executeStep()) {
 		for (Long i = 0; i < size(fields_out); ++i)
-			data.push_back((int)stmt.getColumn(i));
+			data.push_back(stmt.getColumn(i).getInt64());
 	}
 }
 
@@ -175,16 +176,12 @@ struct SQLiteColumnInfo {
     Bool notnull;  // Column is NOT NULL
 };
 
-// table info
-struct SQLiteTableInfo : vector<SQLiteColumnInfo> {
-
-};
-
 // if db_old has a table and a field of the same name, type as in db_new of the table remains
 // the same, then copy those data from db_old to db_new
 // all data from db_new tables will be cleared first!
 inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
 {
+    Str tmp;
     unordered_set<Str> tables;
     table_list(tables, db_new);
     unordered_map<Str, Str> col_info_old; // col_name -> col_type
@@ -221,7 +218,8 @@ inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
         for (auto &col : col_to_cp)
             cols_str += "\"" + col + "\", ";
         cols_str.pop_back(); cols_str.pop_back();
-        SQLite::Statement stmt_select(db_old, "SELECT " + cols_str + " from \"" + table + "\"");
+        tmp.clear(); tmp << "SELECT " << cols_str << " from \"" << table << "\"";
+        SQLite::Statement stmt_select(db_old, tmp);
 
         while (stmt_select.executeStep()) {
             vals_str.clear();
@@ -231,8 +229,8 @@ inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
                 vals_str += '\'';
             }
             stmt_select.reset();
-            SQLite::Statement stmt_insert(db_new,
-                "INSERT INTO \"" + table + "\" (" + cols_str + ") VALUES (" + vals_str + ");");
+            tmp.clear(); tmp << "INSERT INTO \"" << table << "\" (" << cols_str << ") VALUES (" << vals_str << ");";
+            SQLite::Statement stmt_insert(db_new, tmp);
             stmt_insert.exec(); stmt_insert.reset();
         }
     }

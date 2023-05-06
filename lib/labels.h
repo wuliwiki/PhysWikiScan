@@ -1,4 +1,5 @@
 #pragma once
+#include "../SLISC/util/STL_util.h"
 
 // get label type (eq, fig, ...)
 inline Str label_type(Str_I label)
@@ -38,7 +39,7 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
     Str type; // "eq", "fig", "ex", "sub"...
     Str envName; // "equation" or "figure" or "example"...
     Long idN{}; // convert to idNum
-    Str label, fig_id;
+    Str label, fig_id, tmp;
     fig_ids.clear(); fig_orders.clear();
     labels.clear(); label_orders.clear();
     while (1) {
@@ -104,10 +105,12 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
         // check label format and save label
         ind0 = expect(str, "{", ind5 + 6);
         ind3 = expect(str, type + '_' + entry, ind0);
-        if (ind3 < 0)
-            throw scan_err("label " + str.substr(ind0, 20)
-                + u8"... 格式错误， 是否为 \"" + type + '_' + entry + u8"\"？");
-        ind3 = str.find("}", ind3);
+        if (ind3 < 0) {
+            tmp.clear(); tmp << "label " << str.substr(ind0, 20)
+                << u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
+            throw scan_err(tmp);
+        }
+        ind3 = str.find('}', ind3);
         
         label = str.substr(ind0, ind3 - ind0);
         trim(label);
@@ -203,8 +206,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
     Bool inEq;
     Str entry1, label0, fig_id, type, kind, newtab, file;
     vecStr envNames{"equation", "align", "gather"};
-    Str db_ref_by_str;
-    Str ref_by_str;
+    Str db_ref_by_str, ref_by_str, tmp;
     set<Str> ref_by;
 
     SQLite::Statement stmt_select(db_read,
@@ -313,8 +315,10 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
         if (!inEq)
             str.insert(ind3 + 1, " </a>");
         str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
-        if (!inEq)
-            str.insert(ind3 + 1, "<a href = \"" + file + "#" + label0 + "\" " + newtab + ">");
+        if (!inEq) {
+            tmp.clear(); tmp << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
+            str.insert(ind3 + 1, tmp);
+        }
         str.erase(ind0, ind3 - ind0 + 1);
         ++N;
     }
@@ -328,7 +332,7 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
     for (Long num = 1; ; ++num) {
         Long ind0 = 0;
         while (1) {
-            label = envName + "_" + entry + "_" + num2str(num);
+            label = envName; label << '_' << entry << '_' << num2str(num);
             ind0 = find_command(str, "label", ind0);
             if (ind0 < 0)
                 return; // label is unique
@@ -526,7 +530,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
     vecBool db_uprefs_visited(db_uprefs.size(), false);
 
     Long ind0 = 0, right, N = 0;
-    Str entry1;
+    Str entry1, tmp;
     while (1) {
         ind0 = find_command(str, "upref", ind0);
         if (ind0 < 0)
@@ -539,10 +543,10 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
             throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
         }
         right = skip_command(str, ind0, 1);
-        str.replace(ind0, right - ind0,
-                    R"(<span class = "icon"><a href = ")"
-                    + gv::url + entry1 +
-                    R"(.html" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)");
+        tmp = R"(<span class = "icon"><a href = ")";
+        tmp << gv::url << entry1
+            << R"(.html" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
+        str.replace(ind0, right - ind0, tmp);
         ++N;
 
         // db
@@ -580,7 +584,8 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
             width -= 40;
         if (index_in_env(iname, intvEnvOut.L(i), { "itemize", "enumerate" }, str))
             width -= 40;
-        Str strLeft = "<div class=\"eq\"><div class = \"w3-cell\" style = \"width:" + num2str32(width) + "px\">\n\\begin{" + nameEnv + "}";
+        Str strLeft = R"(<div class="eq"><div class = "w3-cell" style = "width:)";
+        strLeft << num2str(width) << "px\">\n\\begin{" << nameEnv << '}';
         Str strRight = "\\end{" + nameEnv + "}\n</div></div>";
         str.replace(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i), strRight);
         str.replace(intvEnvOut.L(i), intvEnvIn.L(i) - intvEnvOut.L(i), strLeft);

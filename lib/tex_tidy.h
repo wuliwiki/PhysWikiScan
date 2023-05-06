@@ -161,7 +161,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 {
     Long ind0 = 0, N = 0;
-    Str label, entry1, entry2;
+    Str label, entry1, entry2, tmp;
     while (1) {
         ind0 = find_command(str, "autoref", ind0);
         if (ind0 < 0)
@@ -190,8 +190,10 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
         if (ind2 < 0)
             throw scan_err(u8"\\autoref{} 后面不应该有单独的 ~");
         command_arg(entry1, str, ind2 - 6);
-        if (label_entry_old(label) != entry1)
-            throw scan_err("\\autoref{" + label + "}~\\upref{" + entry1 + u8"} 不一致， 请使用“外部引用”按钮");
+        if (label_entry_old(label) != entry1) {
+            tmp.clear(); tmp << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
+            throw scan_err(tmp);
+        }
         str.erase(ind1-1, 1); // delete ~
         ind0 = ind2;
     }
@@ -348,9 +350,9 @@ inline Long chinese_double_quote_space(Str_IO str)
             }
         }
     }
-    for (Long i = inds.size() - 1; i >= 0; --i)
+    for (Long i = size(inds) - 1; i >= 0; --i)
         str.insert(str.begin() + inds[i], ' ');
-    return inds.size();
+    return size(inds);
 }
 
 inline Long inline_eq_space(Str_IO str)
@@ -382,7 +384,7 @@ inline void add_space_around_inline_eq(Str_I path_in)
     file_list_ext(names, path_in + "contents/", "tex", false);
     
     //RemoveNoEntry(names);
-    if (names.size() <= 0) return;
+    if (names.empty()) return;
     //names.resize(0); names.push_back("Sample"));
     
     for (unsigned i{}; i < names.size(); ++i) {

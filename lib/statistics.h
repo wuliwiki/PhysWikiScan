@@ -10,7 +10,7 @@ inline void all_commands(vecStr_O commands, Str_I in_path)
         read(str, in_path + fnames[i]);
         Long ind0 = 0;
         while (1) {
-            ind0 = str.find("\\", ind0);
+            ind0 = str.find('\\', ind0);
             if (ind0 < 0)
                 break;
             command_name(name, str, ind0);

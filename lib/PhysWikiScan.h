@@ -24,9 +24,9 @@ class scan_err : public std::exception
 private:
     Str m_msg;
 public:
-    explicit scan_err(Str_I msg): m_msg(msg) {}
+    explicit scan_err(Str msg): m_msg(std::move(msg)) {}
 
-    const char* what() const noexcept {
+    const char* what() const noexcept override {
         return m_msg.c_str();
     }
 };

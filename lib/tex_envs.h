@@ -28,7 +28,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
         Long ind_label = str.rfind(tmp1, intvFig.L(i));
         if (ind_label < 0 || (i-1 >= 0 && ind_label < intvFig.R(i-1)))
             throw scan_err(u8"图片必须有标签， 请使用上传图片按钮。");
-        ind_label += tmp1.size();
+        ind_label += size(tmp1);
         Long ind_label_end = str.find(U'\"', ind_label);
         SLS_ASSERT(ind_label_end > 0);
         Str id = str.substr(ind_label, ind_label_end - ind_label);
@@ -43,7 +43,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 
         // get file name of figure
         Long indName1 = str.find("figures/", ind0) + 8;
-        Long indName2 = str.find("}", ind0) - 1;
+        Long indName2 = str.find('}', ind0) - 1;
         if (indName1 < 0 || indName2 < 0) {
             throw scan_err(u8"读取图片名错误");
         }
@@ -51,22 +51,22 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
         trim(figName);
 
         // get format (png or svg)
-        Long Nname = figName.size();
+        Long Nname = size(figName);
         if (figName.substr(Nname - 4, 4) == ".png") {
             format = "png";
             figName = figName.substr(0, Nname - 4);
-            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            fname_in.clear(); fname_in << gv::path_in << "figures/" << figName << "." << format;
             if (!file_exist(fname_in))
                 throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
             fig_hash = sha1sum_f(fname_in).substr(0, 16);
             fig_ext_hash[i][format] = fig_hash;
             // rename figure files with hash
-            fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+            fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
             if (figName != fig_hash) {
                 file_copy(fname_in2, fname_in, true);
                 img_to_delete.insert(fname_in);
                 // modify .tex file
-                tex_fname = gv::path_in + "contents/" + entry + ".tex";
+                tex_fname.clear(); tex_fname << gv::path_in << "contents/" << entry << ".tex";
                 read(str_mod, tex_fname);
                 replace(str_mod, figName + "." + format, fig_hash + "." + format);
                 write(str_mod, tex_fname);
@@ -76,18 +76,18 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
             figName = figName.substr(0, Nname - 4);
             // ==== pdf ====
             format = "pdf";
-            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            fname_in.clear(); fname_in << gv::path_in << "figures/" << figName << "." << format;
             if (!file_exist(fname_in))
                 throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
             fig_hash = sha1sum_f(fname_in).substr(0, 16);
             fig_ext_hash[i][format] = fig_hash;
             // rename figure files with hash
-            fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+            fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
             if (figName != fig_hash) {
                 file_copy(fname_in2, fname_in, true);
                 img_to_delete.insert(fname_in);
                 // modify .tex file
-                tex_fname = gv::path_in + "contents/" + entry + ".tex";
+                tex_fname.clear(); tex_fname << gv::path_in << "contents/" << entry << ".tex";
                 read(str_mod, tex_fname);
                 replace(str_mod, figName + "." + format, fig_hash + "." + format);
                 write(str_mod, tex_fname);
@@ -95,14 +95,14 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 
             // ==== svg =====
             format = "svg";
-            fname_in = gv::path_in + "figures/" + figName + "." + format;
+            fname_in.clear(); fname_in << gv::path_in << "figures/" << figName << "." << format;
             if (file_exist(fname_in)) {
                 // svg and pdf hashes (or old file name rule) are still the same (old standard)
                 read(tmp, fname_in);
                 CRLF_to_LF(tmp);
                 fig_hash = sha1sum(tmp).substr(0, 16);
                 fig_ext_hash[i][format] = fig_hash;
-                fname_in2 = gv::path_in + "figures/" + fig_hash + "." + format;
+                fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
                 // rename figure files with hash
                 if (figName != fig_hash) {
                     file_copy(fname_in2, fname_in, true);
@@ -114,13 +114,13 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
                 svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
                 fig_hash = svg_file.substr(0, svg_file.find('.'));
                 fig_ext_hash[i][format] = fig_hash;
-                fname_in2 = gv::path_in + "figures/" + svg_file;
+                fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << svg_file;
             }
         }
         else
             throw internal_err(u8"图片格式暂不支持：" + figName);
 
-        fname_out = gv::path_out + fig_hash + "." + format;
+        fname_out.clear(); fname_out << gv::path_out << fig_hash << "." << format;
         file_copy(fname_out, fname_in2, true);
 
         // get caption of figure
@@ -133,13 +133,14 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
             throw scan_err(u8"图片标题中不能添加 \\footnote{}");
         // insert html code
         widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);
-        href = gv::url + fig_hash + "." + format;
-        str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1,
-            "<div class = \"w3-content\" style = \"max-width:" + widthPt + "em;\">\n"
-            + "<a href=\"" + href + "\" target = \"_blank\"><img src = \"" + href
-            + "\" alt = \"" + (gv::is_eng?"Fig":u8"图") + "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> "
-            + (gv::is_eng ? "Fig. " : u8"图 ") + figNo
-            + u8"：" + caption + "</div>");
+        href.clear(); href << gv::url << fig_hash << "." << format;
+        tmp.clear(); tmp << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
+                "<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
+                << "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
+                << "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> "
+                << (gv::is_eng ? "Fig. " : u8"图 ") << figNo
+                << u8"：" << caption << "</div>";
+        str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1, tmp);
         ++N;
     }
     return N;
@@ -151,7 +152,7 @@ inline Long theorem_like_env(Str_IO str)
 {
     Long N, N_tot = 0, ind0;
     Intvs intvIn, intvOut;
-    Str env_title, env_num;
+    Str env_title, env_num, tmp;
     vecStr envNames = {"definition", "lemma", "theorem",
         "corollary", "example", "exercise"};
     vecStr envCnNames;
@@ -181,11 +182,11 @@ inline Long theorem_like_env(Str_IO str)
             // replace
             str.replace(ind2, ind3 - ind2, "</div>\n");
             // str.replace(ind1, ind2 - ind1, temp);
-            str.replace(ind0, ind1 - ind0, "<div class = \"w3-panel "
-                + envBorderColors[i]
-                + " w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
-                + envCnNames[i] + " "
-                + env_num + u8"</b>　" + env_title + "</h3>\n");
+            tmp.clear(); tmp << "<div class = \"w3-panel " << envBorderColors[i]
+                    << " w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
+                    << envCnNames[i] << " "
+                    << env_num << u8"</b>　" << env_title << "</h3>\n";
+            str.replace(ind0, ind1 - ind0, tmp);
         }
     }
     return N_tot;

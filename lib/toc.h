@@ -7,12 +7,12 @@ inline Long ignore_entries(vecStr_IO names)
 {
     Long i{}, j{}, N{}, Nnames{}, Nnames0;
     vecStr names0; // names to remove
-    names0.push_back("FrontMatters");
-    names0.push_back("FrontMattersSample");
-    names0.push_back("bibliography");
+    names0.emplace_back("FrontMatters");
+    names0.emplace_back("FrontMattersSample");
+    names0.emplace_back("bibliography");
     // add other names here
-    Nnames = names.size();
-    Nnames0 = names0.size();
+    Nnames = size(names);
+    Nnames0 = size(names0);
     for (i = 0; i < Nnames; ++i) {
         for (j = 0; j < Nnames0; ++j) {
             if (names[i] == names0[j]) {
@@ -34,7 +34,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
     entries.clear(); titles.clear();
     file_list_ext(entries, gv::path_in + "contents/", Str("tex"), false);
     ignore_entries(entries);
-    if (entries.size() == 0)
+    if (entries.empty())
         throw internal_err(u8"未找到任何词条");
     sort_case_insens(entries);
 
@@ -168,9 +168,9 @@ inline void table_of_contents(
     chap_entry_first.clear(); chap_entry_last.clear();
     entries.clear(); titles.clear(); is_draft.clear(); entry_part.clear(); entry_chap.clear();
 
-    part_ids.push_back(""); part_names.push_back(u8"无"); part_chap_first.push_back(""); part_chap_last.push_back("");
-    chap_ids.push_back(""); chap_names.push_back(u8"无");  chap_part.push_back(0);
-    chap_entry_first.push_back(""); chap_entry_last.push_back("");
+    part_ids.emplace_back(""); part_names.emplace_back(u8"无"); part_chap_first.emplace_back(""); part_chap_last.emplace_back("");
+    chap_ids.emplace_back(""); chap_names.emplace_back(u8"无");  chap_part.push_back(0);
+    chap_entry_first.emplace_back(""); chap_entry_last.emplace_back("");
 
     read(str, gv::path_in + "main.tex");
     CRLF_to_LF(str);
@@ -185,7 +185,7 @@ inline void table_of_contents(
     if (str.empty()) str = " ";
 
     char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
-    Str db_title;
+    Str db_title, tmp;
 
     while (1) {
         ind1 = find(ikey, str, keys, ind1);
@@ -215,8 +215,8 @@ inline void table_of_contents(
             if (!stmt_select.executeStep()) {
                 SLS_WARN(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
                 {
-                    vecStr titles;
-                    entries_titles(entries, titles);
+                    vecStr titles_tmp;
+                    entries_titles(entries, titles_tmp);
                     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
                     db_check_add_entry_simulate_editor(entries, db_rw);
                 }
@@ -235,8 +235,9 @@ inline void table_of_contents(
 
             // insert entry into html table of contents
             class_draft = (is_draft.back()) ? "class=\"draft\" " : "";
-            ind0 = insert(html, "<a " + class_draft + "href = \"" + gv::url + entry + R"(.html" target = "_blank">)"
-                               + title + u8"</a>　\n", ind0);
+            tmp.clear(); tmp << "<a " << class_draft << "href = \"" << gv::url << entry << R"(.html" target = "_blank">)"
+                    << title << u8"</a>　\n";
+            ind0 = insert(html, tmp, ind0);
 
             entry_part.push_back(partNo);
             entry_chap.push_back(chapNo_tot);
@@ -302,8 +303,9 @@ inline void table_of_contents(
         else if (ikey == 3) {
             // =========  found "\bibli" ==========
             title = u8"参考文献";
-            ind0 = insert(html, "<a href = \"" + gv::url + R"(bibliography.html" target = "_blank">)"
-                + title + u8"</a>　\n", ind0);
+            tmp.clear(); tmp << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
+                    << title << u8"</a>　\n";
+            ind0 = insert(html, tmp, ind0);
             ++ind1;
         }
     }
