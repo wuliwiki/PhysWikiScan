@@ -521,15 +521,16 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
     stmt_select.bind(1, entry);
     if (!stmt_select.executeStep())
         throw internal_err(SLS_WHERE);
-    unordered_set<Str> db_uprefs;
+    vecStr db_uprefs;
     parse(db_uprefs, stmt_select.getColumn(0));
+    vecBool db_uprefs_visited(db_uprefs.size(), false);
 
     Long ind0 = 0, right, N = 0;
     Str entry1;
     while (1) {
         ind0 = find_command(str, "upref", ind0);
         if (ind0 < 0)
-            return N;
+            break;
         command_arg(entry1, str, ind0);
         if (entry1 == entry)
             throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
@@ -545,16 +546,21 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
         ++N;
 
         // db
-        if (!db_uprefs.count(entry1)) {
-            SLS_WARN(u8"检测到新增的 upref（将添加）：" + entry1);
-            uprefs_change[entry1] = true;
+        Long ind = search(entry1, db_uprefs);
+        if (ind < 0) {
+            if (!uprefs_change.count(entry1)) {
+                SLS_WARN(u8"检测到新增的 upref（将添加）：" + entry1);
+                uprefs_change[entry1] = true;
+            }
         }
         else
-            db_uprefs.erase(entry1);
+            db_uprefs_visited[ind] = true;
     }
-    for (auto &e : db_uprefs) {
-        SLS_WARN(u8"检测到删除的 upref（将删除）：" + e);
-        uprefs_change[e] = false;
+    for (Long i = 0; i < size(db_uprefs); ++i) {
+        if (!db_uprefs_visited[i]) {
+            SLS_WARN(u8"检测到删除的 upref（将删除）：" + db_uprefs[i]);
+            uprefs_change[db_uprefs[i]] = false;
+        }
     }
     return N;
 }
