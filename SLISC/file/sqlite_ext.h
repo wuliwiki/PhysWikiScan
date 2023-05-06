@@ -146,4 +146,96 @@ inline void table_clear(Str_I table, SQLite::Database &db)
 	exec(cmd, db);
 }
 
+// list all user tables of a db
+inline void table_list(unordered_set<Str> &tables, SQLite::Database &db)
+{
+    tables.clear();
+    SQLite::Statement stmt(db,
+    R"(SELECT "name" FROM "sqlite_master" WHERE "type"='table' AND "name" NOT LIKE 'sqlite_%' ORDER BY "name";)");
+    while (stmt.executeStep())
+        tables.insert(stmt.getColumn(0));
+}
+
+// check if a table exists
+inline bool table_exist(Str_I table, SQLite::Database &db)
+{
+    SQLite::Statement stmt(db,
+        R"(SELECT COUNT(*) FROM "sqlite_master" WHERE "type"='table' AND "name"=?;)");
+    stmt.bind(1, table);
+    SLS_ASSERT(stmt.executeStep());
+    return stmt.getColumn(0).getInt();
+}
+
+// column info
+struct SQLiteColumnInfo {
+    Str name;      // Column name
+    Str type;      // Column data type
+    Str dft_val;   // Default value (as a string, empty if no default value)
+    Bool pk;       // Column is Primary Key
+    Bool notnull;  // Column is NOT NULL
+};
+
+// table info
+struct SQLiteTableInfo : vector<SQLiteColumnInfo> {
+
+};
+
+// if db_old has a table and a field of the same name, type as in db_new of the table remains
+// the same, then copy those data from db_old to db_new
+// all data from db_new tables will be cleared first!
+inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
+{
+    unordered_set<Str> tables;
+    table_list(tables, db_new);
+    unordered_map<Str, Str> col_info_old; // col_name -> col_type
+    vecStr col_to_cp;
+    Str cols_str, vals_str;
+
+    SQLite::Statement stmt_col_old(db_old, "PRAGMA table_info(?);");
+    SQLite::Statement stmt_col_new(db_new, "PRAGMA table_info(?);");
+
+    for (auto &table : tables) {
+        table_clear(table, db_new);
+        if (!table_exist(table, db_old))
+            continue;
+
+        // compare cols, get the cols to copy
+        stmt_col_old.bind(1, table);
+        while (stmt_col_old.executeStep()) {
+            col_info_old[stmt_col_old.getColumn(1)] =
+                    stmt_col_old.getColumn(2).getString();
+        }
+        stmt_col_old.reset();
+
+        stmt_col_new.bind(1, table);
+        col_to_cp.clear();
+        while (stmt_col_new.executeStep()) {
+            const char *col_name = stmt_col_new.getColumn(1);
+            const char *col_type = stmt_col_new.getColumn(2);
+            if (col_info_old.count(col_name) && col_info_old[col_name] == col_type)
+                col_to_cp.emplace_back(col_name);
+        }
+        stmt_col_new.reset();
+
+        // copy columns in col_to_cp
+        for (auto &col : col_to_cp)
+            cols_str += "\"" + col + "\", ";
+        cols_str.pop_back(); cols_str.pop_back();
+        SQLite::Statement stmt_select(db_old, "SELECT " + cols_str + " from \"" + table + "\"");
+
+        while (stmt_select.executeStep()) {
+            vals_str.clear();
+            for (int i = 0; i < size(col_to_cp); ++i) {
+                vals_str += '\'';
+                vals_str += stmt_select.getColumn(i).getText();
+                vals_str += '\'';
+            }
+            stmt_select.reset();
+            SQLite::Statement stmt_insert(db_new,
+                "INSERT INTO \"" + table + "\" (" + cols_str + ") VALUES (" + vals_str + ");");
+            stmt_insert.exec(); stmt_insert.reset();
+        }
+    }
+}
+
 } // namespace slisc
