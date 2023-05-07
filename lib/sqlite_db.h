@@ -725,12 +725,13 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     SQLite::Statement stmt_insert_auth(db_rw,
         R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
 
-    Str fpath;
+    Str fpath, tmp;
 
     for (Long i = 0; i < size(fnames); ++i) {
         auto &fname = fnames[i];
         fpath = path + fname + ".tex";
-        sha1 = sha1sum_f(fpath).substr(0, 16);
+        read(tmp, fpath); CRLF_to_LF(tmp);
+        sha1 = sha1sum(tmp).substr(0, 16);
         bool sha1_exist = db_history.count(sha1);
 
         // fname = YYYYMMDDHHMM_[name]_[entry].tex
