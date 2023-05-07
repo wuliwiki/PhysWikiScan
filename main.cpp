@@ -265,8 +265,12 @@ int main(int argc, char *argv[]) {
                 path = "../PhysWiki-backup/";
             arg_history(path);
         }
-        else if (args[0] == "--fix-db" && args.size() == 1) {
+        else if (args[0] == "--fix-db" && size(args) == 1) {
             arg_fix_db();
+        }
+        else if (args[0] == "--migrate-db" && size(args) == 3) {
+            // copy old database to a new database with different schema
+            migrate_db(args[2], args[1]);
         }
         else if (args[0] == "--hide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";

@@ -179,8 +179,10 @@ struct SQLiteColumnInfo {
 // if db_old has a table and a field of the same name, type as in db_new of the table remains
 // the same, then copy those data from db_old to db_new
 // all data from db_new tables will be cleared first!
-inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
+inline void migrate_db(Str_I file_db_new, Str_I file_db_old)
 {
+    SQLite::Database db_old(file_db_old, SQLite::OPEN_READWRITE);
+    SQLite::Database db_new(file_db_new, SQLite::OPEN_READWRITE);
     Str tmp;
     unordered_set<Str> tables;
     table_list(tables, db_new);
@@ -188,8 +190,9 @@ inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
     vecStr col_to_cp;
     Str cols_str, vals_str;
 
-    SQLite::Statement stmt_col_old(db_old, "PRAGMA table_info(?);");
-    SQLite::Statement stmt_col_new(db_new, "PRAGMA table_info(?);");
+    // attach db_new to db_old
+    tmp = "ATTACH DATABASE '"; tmp << file_db_new << "' AS db_new";
+    db_old.exec(tmp);
 
     for (auto &table : tables) {
         table_clear(table, db_new);
@@ -197,14 +200,13 @@ inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
             continue;
 
         // compare cols, get the cols to copy
-        stmt_col_old.bind(1, table);
+        SQLite::Statement stmt_col_old(db_old, "PRAGMA table_info(" + table + ");");
+        SQLite::Statement stmt_col_new(db_new, "PRAGMA table_info(" + table + ");");
         while (stmt_col_old.executeStep()) {
             col_info_old[stmt_col_old.getColumn(1)] =
                     stmt_col_old.getColumn(2).getString();
         }
         stmt_col_old.reset();
-
-        stmt_col_new.bind(1, table);
         col_to_cp.clear();
         while (stmt_col_new.executeStep()) {
             const char *col_name = stmt_col_new.getColumn(1);
@@ -213,26 +215,15 @@ inline void migrate_db(SQLite::Database &db_new, SQLite::Database &db_old)
                 col_to_cp.emplace_back(col_name);
         }
         stmt_col_new.reset();
-
-        // copy columns in col_to_cp
+        cols_str.clear();
         for (auto &col : col_to_cp)
             cols_str += "\"" + col + "\", ";
         cols_str.pop_back(); cols_str.pop_back();
-        tmp.clear(); tmp << "SELECT " << cols_str << " from \"" << table << "\"";
-        SQLite::Statement stmt_select(db_old, tmp);
 
-        while (stmt_select.executeStep()) {
-            vals_str.clear();
-            for (int i = 0; i < size(col_to_cp); ++i) {
-                vals_str += '\'';
-                vals_str += stmt_select.getColumn(i).getText();
-                vals_str += '\'';
-            }
-            stmt_select.reset();
-            tmp.clear(); tmp << "INSERT INTO \"" << table << "\" (" << cols_str << ") VALUES (" << vals_str << ");";
-            SQLite::Statement stmt_insert(db_new, tmp);
-            stmt_insert.exec(); stmt_insert.reset();
-        }
+        // copy columns in col_to_cp
+        tmp = "INSERT INTO db_new."; tmp << table << " (" << cols_str << ") SELECT "
+            << cols_str << " FROM \"" << table << "\";";
+        db_old.exec(tmp);
     }
 }
 
