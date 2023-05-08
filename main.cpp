@@ -272,6 +272,9 @@ int main(int argc, char *argv[]) {
             // copy old database to a new database with different schema
             migrate_db(args[2], args[1]);
         }
+        else if (args[0] == "--migrate-user-db" && size(args) == 1) {
+            migrate_user_db();
+        }
         else if (args[0] == "--hide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";
             read(str, fname);
