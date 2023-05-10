@@ -95,10 +95,10 @@ Long read_path_file(vecStr_O paths_in, vecStr_O paths_out, vecStr_O paths_data, 
 // get path and remove --path options from args
 void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_IO args)
 {
-    Long N = args.size();
+    Long N = size(args);
 
     // directly specify path (depricated)
-    if (args.size() > 3 && args[N - 4] == "--path-in-out-data") {
+    if (N > 3 && args[N - 4] == "--path-in-out-data") {
         path_in = args[N - 3];
         path_out = args[N - 2];
         path_data = args[N - 1];
@@ -121,13 +121,34 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
     vecStr paths_in, paths_out, paths_data, urls;
     read_path_file(paths_in, paths_out, paths_data, urls);
 
-    if (args.size() > 1 && args[N - 2] == "--path") {
-        Llong i = str2Llong(args[N - 1]);
-        path_in = paths_in[i];
-        path_out = paths_out[i];
-        path_data = paths_data[i];
-        url = urls[i];
+    if (N > 1 && args[N - 2] == "--path") {
+        Llong i_path;
+        if (str2int(i_path, args.back()) == size(args.back())
+            && i_path < size(paths_in)) {
+            path_in = paths_in[i_path];
+            path_out = paths_out[i_path];
+            path_data = paths_data[i_path];
+            url = urls[i_path];
+        }
+        else { // set path to user note folder
+            Str sub_folder;
+            Str &user = args.back();
+            if (size(user) > 8 && user.substr(user.size()-8) == "/online/") {
+                user.erase(user.size()-8); sub_folder = "/online/";
+            }
+            else if (size(user) > 9 && user.substr(user.size()-9) == "/changed/") {
+                user.erase(user.size()-9); sub_folder = "/changed/";
+            }
+            else
+                sub_folder = "/changed/";
+
+            path_in = "../user-notes/"; path_in << user << '/';
+            path_out = "../user-notes/"; path_out << user << sub_folder;
+            path_data = "../user-notes/"; path_data << user << "/cmd_data/";
+            url = "https://wuli.wiki/user/"; url << user << sub_folder;
+        }
         args.pop_back(); args.pop_back();
+        return;
     }
     else { // default path
         path_in = paths_in[0];
