@@ -277,9 +277,10 @@ inline void folder_list_full(vecStr_O folders, Str_I path, Bool_I append = false
 	for (Long i = 0; i < size(names); ++i)
 		folders.push_back(path + names[i]);
 }
+
 #else
 
-// get list of direct sub-folders, including path, ending with `/`
+// list direct sub-folders, including path, ending with `/`
 inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
 {
     if (!append)
@@ -299,7 +300,7 @@ inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
     sort(folders);
 }
 
-// get list of direct sub-folders, not including path, ending with `/`
+// get a list of direct sub-folders, not including path, ending with `/`
 inline void folder_list(vecStr_O folders, Str_I path, bool append = false)
 {
     folder_list_full(folders, path, append);

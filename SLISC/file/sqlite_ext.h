@@ -9,7 +9,6 @@
 #include "../util/STL_util.h"
 #include "../arith/scalar_arith.h"
 #include "../str/unicode.h"
-#include "../file/file.h"
 
 namespace slisc {
 
