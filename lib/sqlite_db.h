@@ -1657,10 +1657,15 @@ inline void migrate_user_db() {
     vecStr folders;
     folder_list_full(folders, "../user-notes/");
     for (auto &folder: folders) {
+        if (!file_exist(folder + "main.tex") || folder == "../user-notes/note-template/")
+            continue;
         file_old = folder + "cmd_data/scan-old.db";
         file = folder + "cmd_data/scan.db";
-        file_move(file_old, file);
-        file_copy(file, "../user-notes/note-template/cmd_data/scan.db");
+        if (!file_exist(file))
+            SLS_ERR("file not found:" + file);
+        cout << "migrating " << file << endl;
+        file_move(file_old, file, true);
+        file_copy(file, "../user-notes/note-template/cmd_data/scan.db", true);
         migrate_db(file, file_old);
         file_remove(file_old);
     }

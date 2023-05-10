@@ -291,7 +291,7 @@ inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
         getline(iss, name);
         if (iss.eof())
             break;
-        folders.push_back(name);
+        folders.push_back(name + '/');
     }
     sort(folders);
 }
