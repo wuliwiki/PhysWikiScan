@@ -89,7 +89,7 @@ Long read_path_file(vecStr_O paths_in, vecStr_O paths_out, vecStr_O paths_data, 
         if (ind0 < 0)
             break;
     }
-    return paths_in.size();
+    return size(paths_in);
 }
 
 // get path and remove --path options from args
@@ -166,11 +166,11 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
     file_list_ext(names, path_in + "contents/", "tex", false);
 
     //RemoveNoEntry(names);
-    if (names.size() <= 0) return;
+    if (names.empty()) return;
     //names.resize(0); names.push_back("Sample"));
 
     vecStr skip_list = { "Sample", "edTODO" };
-    for (unsigned i{}; i < names.size(); ++i) {
+    for (Long i = 0; i < size(names); ++i) {
         cout << i << " ";
         cout << names[i] << "...";
         if (search(names[i], skip_list) >= 0)
@@ -253,7 +253,7 @@ int main(int argc, char *argv[]) {
             Str label;
             Str fname = gv::path_data + "autoref.txt";
             file_remove(fname);
-            Long ret = check_add_label(label, args[1], args[2], atoi(args[3].c_str()), true);
+            Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), true);
             vecStr output;
             if (ret == 0) // added
                 output = {label, "added"};
@@ -324,7 +324,7 @@ int main(int argc, char *argv[]) {
         cout << "done! time (s): " << timer.toc() << endl;
         if (argc <= 1) {
             cout << u8"按任意键退出..." << endl;
-            char c = getchar();
+            char c = (char)getchar();
             ++c;
         }
     }
