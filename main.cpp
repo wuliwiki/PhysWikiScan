@@ -135,10 +135,10 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
             Str &user = args.back();
             if (user.back() != '/') user += '/';
             if (size(user) > 8 && user.substr(user.size()-8) == "/online/") {
-                user.erase(user.size()-8); sub_folder = "online/";
+                user.erase(user.size()-7); sub_folder = "online/";
             }
             else if (size(user) > 9 && user.substr(user.size()-9) == "/changed/") {
-                user.erase(user.size()-9); sub_folder = "changed/";
+                user.erase(user.size()-8); sub_folder = "changed/";
             }
             else
                 sub_folder = "changed/";
@@ -336,7 +336,7 @@ int main(int argc, const char *argv[]) {
         }
     }
     catch (const std::exception &e) {
-        cerr << e.what() << endl;
+        cerr << Str(u8"错误：") + e.what() << endl;
         return 0;
     }
     catch (...) {

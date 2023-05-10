@@ -189,7 +189,9 @@ inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
 	if (!append)
 		fnames.clear();
 	// save a list of all files (no folder) to temporary file
-	std::istringstream iss(exec_str(("ls -p " + path + " | grep -v /").c_str()));
+    Str path1 = path;
+    replace(path1, "\"", "\"");
+	std::istringstream iss(exec_str("ls -p \"" + path1 + "\" | grep -v /"));
 	
 	// read the temporary file
 	Str name;
@@ -295,6 +297,17 @@ inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
         folders.push_back(name + '/');
     }
     sort(folders);
+}
+
+// get list of direct sub-folders, not including path, ending with `/`
+inline void folder_list(vecStr_O folders, Str_I path, bool append = false)
+{
+    folder_list_full(folders, path, append);
+    for (auto &folder : folders) {
+        Long i = folder.find_last_of('/', folder.size()-2);
+        if (i >= 0)
+            folder.erase(0, i+1);
+    }
 }
 
 #endif

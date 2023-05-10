@@ -565,7 +565,7 @@ inline void db_update_parts_chapters(
     // insert chapters
     cout << "inserting chapters to db_rw..." << endl;
     SQLite::Statement stmt_insert_chap(db_rw,
-                                       R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
+        R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
 
     for (Long i = 0; i < size(chap_name); ++i) {
         // cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;

@@ -815,14 +815,16 @@ int main(int argc, const char *argv[]);
 inline void all_users(Str_I sub_folder) {
     Str file_old, file;
     vecStr folders;
-    folder_list_full(folders, "../user-notes/");
-    const int argc = 3;
-    const char *argv[3]; argv[0] = "."; argv[1] = "--path";
+    folder_list(folders, "../user-notes/");
+    const int argc = 4;
+    const char *argv[4];
+    argv[0] = "PhysWikiScan"; argv[1] = "."; argv[2] = "--path";
     for (auto &folder: folders) {
-        if (!file_exist(folder + "main.tex"))
+        if (!file_exist("../user-notes/" + folder + "main.tex"))
             continue;
-        argv[2] = (folder + sub_folder).c_str();
-        cout << argv[2] << endl;
+        folder += sub_folder;
+        argv[3] = folder.c_str();
+        cout << argv[3] << endl;
         main(argc, argv);
     }
 }

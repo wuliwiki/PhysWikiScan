@@ -143,6 +143,39 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
     cout << endl;
 }
 
+// auto add `\label{prt_xxx}` and `\label{cpt_xxx}` to main.tex
+inline void auto_add_toc_labels_prt_cpt()
+{
+    Str str;
+    read(str, gv::path_in + "main.tex");
+    CRLF_to_LF(str);
+    for (auto &type : {"part", "chapter"}) {
+        Long ind = 0;
+        while (1) {
+            ind = find_command(str, type, ind);
+            if (ind < 0) break;
+            ind = skip_command(str, ind, 1);
+            Long ind_label = find_command(str, "label", ind);
+            Long ind_LF = str.find('\n', ind);
+            if (ind_label < 0 || ind_label > ind_LF) {
+                stringstream ss;
+                for (Long i = 16; i < 1000000; ++i) {
+                    ss.str("");
+                    ss.clear();
+                    ss << std::hex << i;
+                    if ((Long) str.find(ss.str()) < 0)
+                        break;
+                }
+                if (strcmp(type, "part") == 0)
+                    str.insert(ind, " \\label{prt_" + ss.str() + '}');
+                else
+                    str.insert(ind, " \\label{cpt_" + ss.str() + '}');
+            }
+        }
+    }
+    write(str, gv::path_in + "main.tex");
+}
+
 // create table of content from main.tex
 // path must end with '/'
 // titles[i] is the chinese title of entries[i].tex from first line of comment
@@ -185,7 +218,7 @@ inline void table_of_contents(
     if (str.empty()) str = " ";
 
     char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
-    Str db_title, tmp;
+    Str db_title, label, tmp;
 
     while (1) {
         ind1 = find(ikey, str, keys, ind1);
@@ -254,10 +287,12 @@ inline void table_of_contents(
                 chap_entry_last.push_back(entries.back());
             // get chapter id from label cpt_xxx, where xxx is id
             Long ind_label = find_command(str, "label", ind1);
-            Long ind_LF = str.find(U'\n', ind1);
-            if (ind_label < 0 || ind_label > ind_LF)
-                throw scan_err(u8"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}");
-            Str label; command_arg(label, str, ind_label);
+            Long ind_LF = str.find('\n', ind1);
+            if (ind_label < 0 || ind_label > ind_LF) {
+                auto_add_toc_labels_prt_cpt();
+                throw scan_err(u8"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}， 已经自动添加， 请重新打开 main.tex");
+            }
+            command_arg(label, str, ind_label);
             chap_ids.push_back(label_id(label));
             if (last_command == 'p')
                 part_chap_first.push_back(chap_ids.back());
@@ -283,10 +318,14 @@ inline void table_of_contents(
                 throw scan_err(u8R"(main.tex 中 \part{} 必须在 \entry{} 之后或者目录开始， 不允许空的 \chapter{} 或 \part{}： )" + title);
             // get part id from label prt_xxx, where xxx is id
             Long ind_label = find_command(str, "label", ind1);
-            Long ind_LF = str.find(U'\n', ind1);
-            if (ind_label < 0 || ind_label > ind_LF)
-                throw scan_err(u8"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}");
-            Str label; command_arg(label, str, ind_label);
+            Long ind_LF = str.find('\n', ind1);
+            if (ind_label < 0 || ind_label > ind_LF) {
+                auto_add_toc_labels_prt_cpt();
+                throw scan_err(u8"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}， 已经自动添加， 请重新打开 main.tex");
+            }
+            command_arg(label, str, ind_label);
+            if (label.substr(0, 4) != "prt_")
+                throw scan_err(u8"\\label wrong format (should be \"prt_xxx\"): " + label);
             part_ids.push_back(label_id(label));
             // insert part into html table of contents
             ++partNo;
@@ -302,6 +341,8 @@ inline void table_of_contents(
         }
         else if (ikey == 3) {
             // =========  found "\bibli" ==========
+            if (last_command != 'e')
+                throw scan_err(u8"\\bibli 必须放在最后, 且不允许空的 \\chapter{}");
             title = u8"参考文献";
             tmp.clear(); tmp << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
                     << title << u8"</a>　\n";
