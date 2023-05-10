@@ -808,3 +808,21 @@ inline void PhysWikiOnline()
         }
     }
 }
+
+// recompile every user in user-notes
+int main(int argc, const char *argv[]);
+
+inline void all_users(Str_I sub_folder) {
+    Str file_old, file;
+    vecStr folders;
+    folder_list_full(folders, "../user-notes/");
+    const int argc = 3;
+    const char *argv[3]; argv[0] = "."; argv[1] = "--path";
+    for (auto &folder: folders) {
+        if (!file_exist(folder + "main.tex"))
+            continue;
+        argv[2] = (folder + sub_folder).c_str();
+        cout << argv[2] << endl;
+        main(argc, argv);
+    }
+}

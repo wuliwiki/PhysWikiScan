@@ -4,7 +4,7 @@
 #include "lib/PhysWikiScan.h"
 
 // get arguments
-void get_args(vecStr_O args, Int_I argc, char *argv[])
+void get_args(vecStr_O args, Int_I argc, const char *argv[])
 {
     args.clear();
     if (argc > 1) {
@@ -133,18 +133,19 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
         else { // set path to user note folder
             Str sub_folder;
             Str &user = args.back();
+            if (user.back() != '/') user += '/';
             if (size(user) > 8 && user.substr(user.size()-8) == "/online/") {
-                user.erase(user.size()-8); sub_folder = "/online/";
+                user.erase(user.size()-8); sub_folder = "online/";
             }
             else if (size(user) > 9 && user.substr(user.size()-9) == "/changed/") {
-                user.erase(user.size()-9); sub_folder = "/changed/";
+                user.erase(user.size()-9); sub_folder = "changed/";
             }
             else
-                sub_folder = "/changed/";
+                sub_folder = "changed/";
 
-            path_in = "../user-notes/"; path_in << user << '/';
+            path_in = "../user-notes/"; path_in << user;
             path_out = "../user-notes/"; path_out << user << sub_folder;
-            path_data = "../user-notes/"; path_data << user << "/cmd_data/";
+            path_data = "../user-notes/"; path_data << user << "cmd_data/";
             url = "https://wuli.wiki/user/"; url << user << sub_folder;
         }
         args.pop_back(); args.pop_back();
@@ -193,7 +194,7 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
     }
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
     using namespace slisc;
     Timer timer;
     vecStr args;
@@ -295,6 +296,12 @@ int main(int argc, char *argv[]) {
         }
         else if (args[0] == "--migrate-user-db" && size(args) == 1) {
             migrate_user_db();
+        }
+        else if (args[0] == "--all-users" && size(args) == 1) {
+            all_users("changed/");
+        }
+        else if (args[0] == "--all-users-online" && size(args) == 1) {
+            all_users("online/");
         }
         else if (args[0] == "--hide" && args.size() > 1) {
             Str str, fname = gv::path_in + "contents/" + args[1] + ".tex";

@@ -19,11 +19,12 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --fix-db` 重新生成数据库中标记为【生成】的数据（用于 debug）。
 * `PhysWikiScan --migrate-db /path/data1.db /path/data2.db` 用于把某个旧的数据库迁移到新格式的数据库中， `data2.db` 将被覆盖。
 * `PhysWikiScan --migrate-user-db` 用于把 `../user-notes/用户名/cmd_data/scan.db` 转换为 `../user-notes/note-template/cmd_data/scan.db` 的格式。
+* `PhysWikiScan --all-users` 编译所有用户的笔记， 输出到 `changed` 文件夹。 用 `--all-users-online` 输出到 `online` 文件夹。
 * 脚本 `db_dump.sh` 用于备份数据库， `db_restore.sh` 用于恢复（需要安装 `sqlite3`）。
 * 在 `set_path.txt` 中设置输入路径和输出路径。
 * 输入路径可以是 `PhysWiki` 文件夹， 只会读取所有 `tex` 文件和 `m` 文件。 `main.tex` 文件用于生成目录。
 * 在命令最后放 `--path 数字` 可以指定 `set_path.txt` 中的某套路径和 url 设置。
-* 在命令最后放 `--path "用户名"` 或者 `用户名/changed/` 可以指定某个用户笔记文件夹（`../user-notes/用户名/changed/`）， 使用 `用户名/online/` 则可以把子目录 `/changed/` 改为 `/online/`（发布）。
+* 在命令最后放 `--path "用户名"` 或者 `用户名/changed` 可以指定某个用户笔记文件夹（`../user-notes/用户名/changed`）， 使用 `用户名/online` 则可以把子目录 `/changed` 改为 `/online`（发布）。 最后可以加一个 `/` 也可以不加。
 * 若不指定 `--path` 则默认使用 `--path 0`。
 * 也可以通过 `--path-in-out-data-url 输入路径 输出路径 数据文件路径 url` 来指定输入，输出路径，和数据文件路径，网页所在 url 路径（如 `http://wuli.wiki/online/`， 也可以为空， 用于词条，公式，图片，脚注等链接）。 该选项必须出现在命令最后， 不能和 `--path` 混用。
 * 路径可以是绝对路径或相对路径（相对于当前路径）

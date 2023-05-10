@@ -277,6 +277,7 @@ inline void folder_list_full(vecStr_O folders, Str_I path, Bool_I append = false
 }
 #else
 
+// get list of direct sub-folders, including path, ending with `/`
 inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
 {
     if (!append)
