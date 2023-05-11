@@ -877,15 +877,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 {
     // cout << "updating db for figures environments..." << endl;
     update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
-    Str entry, id, ext, tmp;
+    Str id, tmp;
     Long order;
     SQLite::Transaction transaction(db_rw);
     SQLite::Statement stmt_select0(db_rw,
         R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_select1(db_rw,
         R"(SELECT "order", "ref_by", "image", "image_alt" FROM "figures" WHERE "id"=?;)");
-    SQLite::Statement stmt_select2(db_rw,
-        R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
     SQLite::Statement stmt_update0(db_rw,
@@ -903,7 +901,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     vector<vecStr> db_fig_ref_bys;
     set<Str> db_entry_figs;
     for (Long j = 0; j < size(entries); ++j) {
-        entry = entries[j];
+        auto &entry = entries[j];
         stmt_select0.bind(1, entry);
         if (!stmt_select0.executeStep())
             throw scan_err("词条不存在： " + entry);
@@ -930,7 +928,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
     vector<pair<Str,Long>> fig_order_neg; // {id, order}
 
     for (Long i = 0; i < size(entries); ++i) {
-        entry = entries[i];
+        auto &entry = entries[i];
         new_figs.clear();
         for (Long j = 0; j < size(entry_figs[i]); ++j) {
             id = entry_figs[i][j]; order = entry_fig_orders[i][j];
@@ -1007,11 +1005,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
         }
 
         // add entries.figures
-        stmt_select2.bind(1, entry);
+        stmt_select0.bind(1, entry);
         if (!new_figs.empty()) {
-            if (!stmt_select2.executeStep())
+            if (!stmt_select0.executeStep())
                 throw internal_err("db_update_labels(): entry 不存在： " + entry);
-            parse(figs, stmt_select2.getColumn(0));
+            parse(figs, stmt_select0.getColumn(0));
             for (auto &e : new_figs)
                 figs.insert(e);
             join(figs_str, figs);
@@ -1019,21 +1017,21 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             stmt_update2.bind(2, entry);
             stmt_update2.exec(); stmt_update2.reset();
         }
-        stmt_select2.reset();
+        stmt_select0.reset();
     }
 
     // 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
     // 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
     Str ref_by_str;
-    SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
+    SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "entry"='' WHERE "id"=?;)");
     for (Long i = 0; i < size(db_figs_used); ++i) {
         if (!db_figs_used[i]) {
             if (db_fig_ref_bys[i].empty() ||
-                (db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == entry)) {
-                SLS_WARN(u8"检测到 figure 被删除（将从数据库删除）： " + db_figs[i]);
-                // delete from "figures"
-                stmt_delete.bind(1, db_figs[i]);
-                stmt_delete.exec(); stmt_delete.reset();
+                (db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
+                SLS_WARN(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 将标记未使用");
+                // set "figures.entry" = ''
+                stmt_update3.bind(1, db_figs[i]);
+                stmt_update3.exec(); stmt_update3.reset();
                 // delete from "entries.figures"
                 stmt_select0.bind(1, db_fig_entries[i]);
                 SLS_ASSERT(stmt_select0.executeStep());
@@ -1047,7 +1045,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
             }
             else {
                 join(ref_by_str, db_fig_ref_bys[i], ", ");
-                throw scan_err(u8"检测到 figure 被删除： " + db_figs[i] + u8"\n但是被这些词条引用： " + ref_by_str);
+                throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些词条引用（请撤销删除）： " + ref_by_str);
             }
         }
     }
