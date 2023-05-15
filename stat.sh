@@ -10,7 +10,7 @@ SELECT COUNT(1) FROM history WHERE \
 author IN ( \
     SELECT id \
     FROM authors \
-    WHERE name LIKE '${author}' \
+    WHERE name = '${author}' \
 ) AND \
 time >= ${time1} AND \
 time <= ${time2} \
