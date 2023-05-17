@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../SLISC/str/str.h"
+
 // add or delete elements from a set
 template <class T>
 inline void change_set(set<T> &s, const unordered_map<T, bool> &change)
@@ -1667,4 +1669,97 @@ inline void migrate_user_db() {
         migrate_db(file, file_old);
         file_remove(file_old);
     }
+}
+
+// `git diff --no-index --word-diff-regex=. file1.tex file2.tex`
+// then search for each `{+..+}` and `{-..-}`
+inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
+{
+    Str str;
+    // check if git is installed
+    static bool checked = false;
+    if (!checked) {
+        str = exec_str("which git");
+        trim(str, " \n");
+        if (str.empty())
+            throw std::runtime_error("git binary not found!");
+    }
+    if (!file_exist(file1))
+        throw std::runtime_error("file not found: " + file1);
+    if (!file_exist(file2))
+        throw std::runtime_error("file not found: " + file2);
+    str = "git diff --no-index --word-diff-regex=. ";
+    str << '"' << file1 << "\" \"" << file2 << '"';
+    str = exec_str(str);
+    add = del = 0;
+    if (str.empty()) return;
+    // parse git output, find addition
+    Long ind = -1;
+    while (1) {
+        ind = str.find("{+", ind+1);
+        if (ind < 0) break;
+        ind += 2;
+        Long ind1 = str.find("+}", ind);
+        if (ind1 < 0) throw std::runtime_error("no matching +}!");
+        add += ind1 - ind;
+    }
+    // parse git output, find deletion
+    ind = -1;
+    while (1) {
+        ind = str.find("{-", ind+1);
+        if (ind < 0) break;
+        ind += 2;
+        Long ind1 = str.find("-}", ind);
+        if (ind1 < 0) throw std::runtime_error("no matching -}!");
+        del += ind1 - ind;
+    }
+}
+
+// calculate "history.add" and "history.del", with output of
+inline void history_add_del(SQLite::Database &db_read) {
+    SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "entries";)");
+    vecStr entries;
+    while (stmt_select.executeStep())
+        entries.push_back(stmt_select.getColumn(0));
+
+    SQLite::Statement stmt_select2(db_read,
+        R"(SELECT "hash", "time", "author" FROM "history" WHERE "entry"=? ORDER BY "time";)");
+    Str fname_old, fname;
+    unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
+    for (auto &entry : entries) {
+        fname_old.clear(); fname.clear();
+        stmt_select2.bind(1, entry);
+        while (stmt_select2.executeStep()) {
+            fname_old = fname;
+            fname = "../PhysWiki-backup/";
+            fname << stmt_select2.getColumn(1).getString() << '_';
+            fname << stmt_select2.getColumn(2).getString() << '_';
+            fname << entry << ".tex";
+            if (!file_exist(fname)) continue;
+            const char *hash = stmt_select2.getColumn(0);
+            if (fname_old.empty()) // first backup
+                hist_add_del[hash] = make_pair(file_size(fname), 0);
+            else {
+                auto &e = hist_add_del[hash];
+                Long &add = e.first, &del = e.second;
+                file_add_del(add, del, fname_old, fname);
+            }
+        }
+        stmt_select2.reset();
+    }
+
+    // update db "history.add/del"
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
+    SQLite::Statement stmt_update(db_rw,
+        R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
+    for (auto &e : hist_add_del) {
+        auto &hash = e.first;
+        auto &add_del = e.second;
+        stmt_update.bind(1, (int)add_del.first);
+        stmt_update.bind(2, (int)add_del.second);
+        stmt_update.bind(3, hash);
+        stmt_update.exec(); stmt_update.reset();
+    }
+    transaction.commit();
 }
