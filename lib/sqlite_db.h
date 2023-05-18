@@ -1,5 +1,5 @@
 #pragma once
-
+#include <regex>
 #include "../SLISC/str/str.h"
 
 // add or delete elements from a set
@@ -1673,10 +1673,13 @@ inline void migrate_user_db() {
 
 // `git diff --no-index --word-diff-regex=. file1.tex file2.tex`
 // then search for each `{+..+}` and `{-..-}`
-inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
+inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 {
-    Str str, str1, str2;
-    // check if git is installed
+    if (str1 == str2) {
+        add = del = 0; return;
+    }
+    Str str;
+    // check if git is installed (only once)
     static bool checked = false;
     if (!checked) {
         str = exec_str("which git");
@@ -1684,9 +1687,26 @@ inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
         if (str.empty())
             throw std::runtime_error("git binary not found!");
     }
-    str = "git diff --no-index --word-diff-regex=. ";
+
+    // replace "{+", "+}", "[-", "-]" to avoid conflict
+    static const Str file1 = "file_add_del_tmp_file1.txt",
+        file2 = "file_add_del_tmp_file2.txt",
+        file_diff = "file_add_del_git_diff_output.txt";
+    Long Nrep;
+    replace(str1, "{+", u8"{➕"); replace(str1, "+}", u8"➕}");
+    replace(str1, "[-", u8"[➖"); replace(str1, "-]", u8"➖]");
+    write(str1, file1);
+
+    replace(str2, "{+", u8"{➕"); replace(str2, "+}", u8"➕}");
+    replace(str2, "[-", u8"[➖"); replace(str2, "-]", u8"➖]");
+    write(str2, file2);
+
+    str = "git diff --no-index --word-diff-regex='(.|\\n)' ";
     str << '"' << file1 << "\" \"" << file2 << '"';
     str = exec_str(str);
+#ifndef NDEBUG
+    write(str, file_diff);
+#endif
     add = del = 0;
     if (str.empty()) return;
     // parse git output, find addition
@@ -1697,7 +1717,9 @@ inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
         ind += 2;
         Long ind1 = str.find("+}", ind);
         if (ind1 < 0) {
-            write(str1, file1); write(str2, file2);
+#ifdef NDEBUG
+            file_rm(file1); file_rm(file2); file_rm(file_diff);
+#endif
             throw std::runtime_error("matching +} not found!");
         }
         add += u8count(str, ind, ind1);
@@ -1710,19 +1732,22 @@ inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
         ind += 2;
         Long ind1 = str.find("-]", ind);
         if (ind1 < 0) {
-            write(str1, file1); write(str2, file2);
+#ifdef NDEBUG
+            file_rm(file1); file_rm(file2); file_rm(file_diff);
+#endif
             throw std::runtime_error("matching -] not found!");
         }
         del += u8count(str, ind, ind1);
     }
 
-    // restore files
-    write(str1, file1); write(str2, file2);
-
     // debug
 //    if (add == 44 && del == 52) {
 //        cout << "\n\n\n" + str << endl;
 //    }
+
+#ifdef NDEBUG
+    file_rm(file1); file_rm(file2); file_rm(file_diff);
+#endif
 }
 
 // calculate "history.add" and "history.del", with output of
@@ -1736,8 +1761,9 @@ inline void history_add_del(SQLite::Database &db_read) {
         R"(SELECT "hash", "time", "authors"."name", "add", "del" FROM "history"
             JOIN "authors" ON "history"."author" = "authors"."id"
             WHERE "entry"=? ORDER BY "time";)");
-    Str fname_old, fname, str;
+    Str fname_old, fname, str, str_old;
     unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
+    std::regex ws_re(u8"[ \f\n\r\t\v　]");
     for (auto &entry : entries) {
         fname_old.clear(); fname.clear();
         stmt_select2.bind(1, entry);
@@ -1762,16 +1788,20 @@ inline void history_add_del(SQLite::Database &db_read) {
                 auto &e = hist_add_del[hash];
                 Long &add = e.first, &del = e.second;
                 cout << fname << endl;
-                file_add_del(add, del, fname_old, fname);
-                read(str, fname); Long Nchar = u8count(str);
-                read(str, fname_old); Long Nchar_old = u8count(str);
+                read(str_old, fname_old); read(str, fname);
+                // remove all space, tab, return etc
+                std::string result = std::regex_replace(str, ws_re, "");
+                file_add_del(add, del, str_old, str);
+                Long Nchar = u8count(str), Nchar_old = u8count(str_old);
                 Long net_add = Nchar - Nchar_old;
-                if (abs(Doub(net_add - (add - del)) / Doub(max(add, del))) > 0.04) {
+                if (abs(net_add - (add - del)) != 0) {
                     Str tmp = "something wrong (rel err > 4%: net_add = ";
                     tmp << to_string(net_add) <<
                            ", add = " << to_string(add) << ", del = " << to_string(del) <<
                            ", add-del = " << to_string(add - del);
-                    throw std::runtime_error(tmp);
+                    SLS_WARN(tmp);
+                    file_add_del(add, del, str_old, str); // debug
+                    // throw std::runtime_error(tmp);
                 }
             }
         }

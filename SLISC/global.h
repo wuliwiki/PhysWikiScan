@@ -195,6 +195,8 @@ using std::sqrt; using std::sin; using std::cos; using std::tan;
 using std::exp; using std::log; using std::log10;
 using std::expm1; using std::log1p; using std::hypot;
 using std::sinh; using std::cosh; using std::tanh;
+using std::runtime_error;
+
 
 // Scalar types
 

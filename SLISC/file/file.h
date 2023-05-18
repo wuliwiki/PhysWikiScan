@@ -531,6 +531,8 @@ inline void open_bin(ofstream &fout, Str_I fname)
 #else
 	fout.open(utf82wstr(fname), std::ios::out | std::ios::binary);
 #endif
+    if (!fout)
+        throw runtime_error("failed to open file: " + fname);
 }
 
 // open binary file to read
@@ -545,6 +547,8 @@ inline void open_bin(ifstream &fin, Str_I fname)
 #else
 	fin.open(utf82wstr(fname), std::ios::in | std::ios::binary);
 #endif
+    if (!fin)
+        throw runtime_error("failed to open file: " + fname);
 }
 
 // write binary file (once)
