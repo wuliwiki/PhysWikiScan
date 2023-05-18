@@ -51,3 +51,4 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * 检查词条名， `\subsection{}` 和 `\subsubsection{}` 中是否有空格， 提示应该替换成 `\ `
 * 不要试图追踪错误的行号！太难了，不值得。 用内容定位足够了。（浪费了一天）
 * 目标是最终完全不需要使用 `./PhysWikiScan .` 命令， 每次用 `--entry` 都更新数据库中所有必要的数据。
+* 添加命令 `--delete 词条id` 只有满足以下条件的词条可以删除（否则提示为什么不能删除）： `entries.ref_by` 为空， `figures` 对应的 `figures.ref_by` 为空， `labels` 对应的 `labels.ref_by` 为空。 删除后更新 `entries.deleted`。

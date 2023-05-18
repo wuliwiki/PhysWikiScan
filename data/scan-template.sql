@@ -12,11 +12,13 @@ CREATE TABLE "entries" (
 	"chapter"	TEXT NOT NULL DEFAULT '', -- 章
 	"order"	INTEGER NOT NULL DEFAULT 0, -- 目录中出现的顺序（从 1 开始，全局编号，0 代表不在目录中）
 
-	-- [CC] CC BY-SA 3.0 [Xiao] 小时科技版权 [Use] 作者版权和署名权，百科永久使用和修改权
-	-- [Copy] 经作者同意转载（不可编辑） [Deri] 经作者同意转载（可编辑）
+	-- [Xiao] 小时科技版权，作者署名权（见 licens.tex）
+	-- [Use] 作者版权，百科永久使用和修改权（见 licens.tex）， 若转载需注明来源如 "Use https://xxxx.com/xxx"
+	-- [CCBYSA3] CC BY-SA 3.0 开源协议（和维基百科相同）
+	-- [Copy] 经作者同意或根据协议转载（不可修改）需注明来源如 "Copy https://xxxx.com/xxx"
 	"license"	TEXT NOT NULL DEFAULT '',
 
-	-- [Wiki] 百科（综述） [Map] 导航 [Tutor] 教程（类似教材） [Art] 文章（类似论文） [Note] 笔记总结
+	-- [Wiki] 百科（综述） [Tutor] 教程（类似教材） [Art] 文章（类似论文） [Note] 笔记总结 [Map] 导航
 	"type"  TEXT NOT NULL DEFAULT '',
 
 	"keys" TEXT NOT NULL DEFAULT '', -- "关键词1|...|关键词N"
@@ -33,7 +35,7 @@ CREATE TABLE "entries" (
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
 	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authors.id] 是否正在被占用（审核发布后解除）
-	"last_mod"	TEXT NOT NULL DEFAULT '', -- 最后修改时间 YYYYMMDDHHMM
+	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布时间 YYYYMMDDHHMM
 
 	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
@@ -43,7 +45,7 @@ CREATE TABLE "entries" (
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
 	"uprefs"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的其他词条（所有的 upref）
 	
-	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条列为 "uprefs"（为空才能删除本词条）
+	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条列为 "uprefs"， 包括 pentry 中的（为空才能删除本词条）
 
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
@@ -207,12 +209,14 @@ CREATE TABLE "history" (
 
 -- 审稿记录
 CREATE TABLE "review" (
-	"time"	TEXT NOT NULL, -- 审稿提交时间
+	"time"	TEXT NOT NULL, -- 审稿提交时间 YYYYMMDDHHMM
 	"refID"	INTEGER NOT NULL, -- 审稿人 ID
 	"entry"	TEXT NOT NULL, -- 词条
+	"hash" TEXT NOT NULL, -- history.hash
 	"author"	INTEGER NOT NULL, -- 作者
 	"action"	TEXT NOT NULL DEFAULT '', -- [Pub] 发布 [Udo] 撤回 [Fix] 继续完善
 	"comment"	TEXT NOT NULL DEFAULT '', -- 意见（也可以直接修改正文或在正文中评论）
+	FOREIGN KEY("hash") REFERENCES "history"("hash"),
 	FOREIGN KEY("refID") REFERENCES "authors"("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
