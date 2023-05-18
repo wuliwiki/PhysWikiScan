@@ -1675,7 +1675,7 @@ inline void migrate_user_db() {
 // then search for each `{+..+}` and `{-..-}`
 inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
 {
-    Str str;
+    Str str, str1, str2;
     // check if git is installed
     static bool checked = false;
     if (!checked) {
@@ -1684,10 +1684,6 @@ inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
         if (str.empty())
             throw std::runtime_error("git binary not found!");
     }
-    if (!file_exist(file1))
-        throw std::runtime_error("file not found: " + file1);
-    if (!file_exist(file2))
-        throw std::runtime_error("file not found: " + file2);
     str = "git diff --no-index --word-diff-regex=. ";
     str << '"' << file1 << "\" \"" << file2 << '"';
     str = exec_str(str);
@@ -1700,49 +1696,83 @@ inline void file_add_del(Long_O add, Long_O del, Str_I file1, Str_I file2)
         if (ind < 0) break;
         ind += 2;
         Long ind1 = str.find("+}", ind);
-        if (ind1 < 0) throw std::runtime_error("no matching +}!");
-        add += ind1 - ind;
+        if (ind1 < 0) {
+            write(str1, file1); write(str2, file2);
+            throw std::runtime_error("matching +} not found!");
+        }
+        add += u8count(str, ind, ind1);
     }
     // parse git output, find deletion
     ind = -1;
     while (1) {
-        ind = str.find("{-", ind+1);
+        ind = str.find("[-", ind+1);
         if (ind < 0) break;
         ind += 2;
-        Long ind1 = str.find("-}", ind);
-        if (ind1 < 0) throw std::runtime_error("no matching -}!");
-        del += ind1 - ind;
+        Long ind1 = str.find("-]", ind);
+        if (ind1 < 0) {
+            write(str1, file1); write(str2, file2);
+            throw std::runtime_error("matching -] not found!");
+        }
+        del += u8count(str, ind, ind1);
     }
+
+    // restore files
+    write(str1, file1); write(str2, file2);
+
+    // debug
+//    if (add == 44 && del == 52) {
+//        cout << "\n\n\n" + str << endl;
+//    }
 }
 
 // calculate "history.add" and "history.del", with output of
 inline void history_add_del(SQLite::Database &db_read) {
-    SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "entries";)");
+    SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
     vecStr entries;
     while (stmt_select.executeStep())
         entries.push_back(stmt_select.getColumn(0));
 
     SQLite::Statement stmt_select2(db_read,
-        R"(SELECT "hash", "time", "author" FROM "history" WHERE "entry"=? ORDER BY "time";)");
-    Str fname_old, fname;
+        R"(SELECT "hash", "time", "authors"."name", "add", "del" FROM "history"
+            JOIN "authors" ON "history"."author" = "authors"."id"
+            WHERE "entry"=? ORDER BY "time";)");
+    Str fname_old, fname, str;
     unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
     for (auto &entry : entries) {
         fname_old.clear(); fname.clear();
         stmt_select2.bind(1, entry);
+        bool fname_exist = true;
         while (stmt_select2.executeStep()) {
-            fname_old = fname;
+            if (fname_exist) fname_old = fname;
             fname = "../PhysWiki-backup/";
             fname << stmt_select2.getColumn(1).getString() << '_';
             fname << stmt_select2.getColumn(2).getString() << '_';
             fname << entry << ".tex";
-            if (!file_exist(fname)) continue;
+            if (!file_exist(fname)) {
+                fname_exist = false; continue;
+            }
+            fname_exist = true;
             const char *hash = stmt_select2.getColumn(0);
             if (fname_old.empty()) // first backup
                 hist_add_del[hash] = make_pair(file_size(fname), 0);
             else {
+                int db_add = stmt_select2.getColumn(3);
+                int db_del = stmt_select2.getColumn(4);
+                if (db_add != -1 && db_del != -1) continue;
                 auto &e = hist_add_del[hash];
                 Long &add = e.first, &del = e.second;
+                cout << fname << endl;
                 file_add_del(add, del, fname_old, fname);
+                read(str, fname); Long Nchar = u8count(str);
+                read(str, fname_old); Long Nchar_old = u8count(str);
+                Long net_add = Nchar - Nchar_old;
+                if (abs(Doub(net_add - (add - del)) / Doub(max(add, del))) > 0.04) {
+                    Str tmp = "something wrong (rel err > 4%: net_add = ";
+                    tmp << to_string(net_add) <<
+                           ", add = " << to_string(add) << ", del = " << to_string(del) <<
+                           ", add-del = " << to_string(add - del);
+                    throw std::runtime_error(tmp);
+                }
             }
         }
         stmt_select2.reset();

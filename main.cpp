@@ -287,6 +287,10 @@ int main(int argc, const char *argv[]) {
                 path = "../PhysWiki-backup/";
             arg_history(path);
         }
+        else if (args[0] == "--history-add-del" && args.size() == 1) {
+            SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+            history_add_del(db_read);
+        }
         else if (args[0] == "--fix-db" && size(args) == 1) {
             arg_fix_db();
         }
