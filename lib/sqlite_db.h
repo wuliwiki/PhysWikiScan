@@ -56,7 +56,7 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
     SQLite::Statement stmt_select(
             db,
             R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
-    Str pentry_str;
+    Str pentry_str, tmp;
     vector<vecStr> pentries;
 
     while (stmt_select.executeStep()) {
@@ -75,7 +75,9 @@ inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
         for (auto &pentry : pentries[i]) {
             Long from = search(pentry, entries);
             if (from < 0) {
-                throw internal_err(u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： " + pentry + " -> " + entries[i]);
+                tmp = u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： ";
+                tmp << pentry << " -> " << entries[i];
+                throw internal_err(tmp);
             }
             tree[from].push_back(i);
         }
@@ -296,7 +298,7 @@ inline void db_get_tree1(vector<DGnode> &tree,
         for (auto ind : cycle) {
             auto &entry = nodes[ind].entry;
             auto &title = entry_info[entry].first;
-            msg += to_string(ind) + "." + title + " (" + entry + ") -> ";
+            msg << to_string(ind) << "." << title << " (" << entry << ") -> ";
         }
         throw scan_err(msg);
     }
@@ -384,12 +386,14 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 {
     SQLite::Statement stmt_insert(db_rw,
         R"(INSERT INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
+    Str tmp;
     for (auto &entry : entries) {
         if (!exist("entries", "id", entry, db_rw)) {
             SLS_WARN(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
             // 从 tex 文件获取标题
             Str str;
-            read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
+            tmp = gv::path_in; tmp << "contents/" << entry << ".tex";
+            read(str, tmp); // read tex file
             CRLF_to_LF(str);
             Str title;
             get_title(title, str);
@@ -469,6 +473,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
     SQLite::Statement stmt_delete(db,
         R"(DELETE FROM "bibliography" WHERE "id"=?;)");
     unordered_map<Str, BibInfo> db_bib_info; // id -> (order, details, ref_by)
+    Str tmp;
     while (stmt_select.executeStep()) {
         const Str &id = (const char*)stmt_select.getColumn(0);
         auto &info = db_bib_info[id];
@@ -477,9 +482,12 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
         const Str &ref_by_str = (const char*)stmt_select.getColumn(3);
         parse(info.ref_by, ref_by_str);
         if (search(id, bib_labels) < 0) {
-            if (!info.ref_by.empty())
-                throw scan_err(u8"检测到删除的文献： " + id + u8"， 但被以下词条引用： " + ref_by_str);
-            SLS_WARN(u8"检测到删除文献（将删除）： " + to_string(info.order) + ". " + id);
+            if (!info.ref_by.empty()) {
+                tmp = u8"检测到删除的文献： "; tmp << id << u8"， 但被以下词条引用： " << ref_by_str;
+                throw scan_err(tmp);
+            }
+            tmp = u8"检测到删除文献（将删除）： "; tmp << to_string(info.order) << ". " << id;
+            SLS_WARN(tmp);
             stmt_delete.bind(1, id);
             stmt_delete.exec(); stmt_delete.reset();
         }
@@ -1675,6 +1683,13 @@ inline void migrate_user_db() {
 // then search for each `{+..+}` and `{-..-}`
 inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 {
+    std::regex rm_s(u8"\\s");
+    // remove all space, tab, return etc
+    str1 = std::regex_replace(str1, rm_s, "");
+    str2 = std::regex_replace(str2, rm_s, "");
+    SLS_ASSERT(utf8::is_valid(str1));
+    SLS_ASSERT(utf8::is_valid(str2));
+
     if (str1 == str2) {
         add = del = 0; return;
     }
@@ -1692,7 +1707,6 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
     static const Str file1 = "file_add_del_tmp_file1.txt",
         file2 = "file_add_del_tmp_file2.txt",
         file_diff = "file_add_del_git_diff_output.txt";
-    Long Nrep;
     replace(str1, "{+", u8"{➕"); replace(str1, "+}", u8"➕}");
     replace(str1, "[-", u8"[➖"); replace(str1, "-]", u8"➖]");
     write(str1, file1);
@@ -1701,7 +1715,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
     replace(str2, "[-", u8"[➖"); replace(str2, "-]", u8"➖]");
     write(str2, file2);
 
-    str = "git diff --no-index --word-diff-regex='(.|\\n)' ";
+    str = "git diff --no-index --word-diff-regex=. ";
     str << '"' << file1 << "\" \"" << file2 << '"';
     str = exec_str(str);
 #ifndef NDEBUG
@@ -1723,6 +1737,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
             throw std::runtime_error("matching +} not found!");
         }
         add += u8count(str, ind, ind1);
+        ind = ind1 + 1;
     }
     // parse git output, find deletion
     ind = -1;
@@ -1738,12 +1753,20 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
             throw std::runtime_error("matching -] not found!");
         }
         del += u8count(str, ind, ind1);
+        ind = ind1 + 1;
     }
 
-    // debug
-//    if (add == 44 && del == 52) {
-//        cout << "\n\n\n" + str << endl;
-//    }
+    // check
+    Long Nchar1 = u8count(str1), Nchar2 = u8count(str2);
+    Long net_add = Nchar2 - Nchar1;
+    if (abs(net_add - (add - del)) != 0) {
+        Str tmp = "something wrong (rel err > 4%: net_add = ";
+        tmp << to_string(net_add) <<
+            ", add = " << to_string(add) << ", del = " << to_string(del) <<
+            ", add-del = " << to_string(add - del);
+        SLS_WARN(tmp);
+        // throw std::runtime_error(tmp);
+    }
 
 #ifdef NDEBUG
     file_rm(file1); file_rm(file2); file_rm(file_diff);
@@ -1752,6 +1775,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 
 // calculate "history.add" and "history.del", with output of
 inline void history_add_del(SQLite::Database &db_read) {
+    cout << "calculating history.add/del..." << endl;
     SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
     vecStr entries;
     while (stmt_select.executeStep())
@@ -1763,7 +1787,6 @@ inline void history_add_del(SQLite::Database &db_read) {
             WHERE "entry"=? ORDER BY "time";)");
     Str fname_old, fname, str, str_old;
     unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
-    std::regex ws_re(u8"[ \f\n\r\t\v　]");
     for (auto &entry : entries) {
         fname_old.clear(); fname.clear();
         stmt_select2.bind(1, entry);
@@ -1789,26 +1812,15 @@ inline void history_add_del(SQLite::Database &db_read) {
                 Long &add = e.first, &del = e.second;
                 cout << fname << endl;
                 read(str_old, fname_old); read(str, fname);
-                // remove all space, tab, return etc
-                std::string result = std::regex_replace(str, ws_re, "");
+                // compare str and str_old
                 file_add_del(add, del, str_old, str);
-                Long Nchar = u8count(str), Nchar_old = u8count(str_old);
-                Long net_add = Nchar - Nchar_old;
-                if (abs(net_add - (add - del)) != 0) {
-                    Str tmp = "something wrong (rel err > 4%: net_add = ";
-                    tmp << to_string(net_add) <<
-                           ", add = " << to_string(add) << ", del = " << to_string(del) <<
-                           ", add-del = " << to_string(add - del);
-                    SLS_WARN(tmp);
-                    file_add_del(add, del, str_old, str); // debug
-                    // throw std::runtime_error(tmp);
-                }
             }
         }
         stmt_select2.reset();
     }
 
     // update db "history.add/del"
+    cout << "\n\nupdating db history.add/del..." << endl;
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
     SQLite::Statement stmt_update(db_rw,
@@ -1821,5 +1833,7 @@ inline void history_add_del(SQLite::Database &db_read) {
         stmt_update.bind(3, hash);
         stmt_update.exec(); stmt_update.reset();
     }
+    cout << "committing transaction..." << endl;
     transaction.commit();
+    cout << "done." << endl;
 }
