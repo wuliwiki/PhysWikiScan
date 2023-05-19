@@ -278,7 +278,7 @@ int main(int argc, const char *argv[]) {
         }
         else if (args[0] == "--bib")
             arg_bib();
-        else if (args[0] == "--history" && args.size() <= 2) {
+        else if (args[0] == "--history-all" && args.size() <= 2) {
             Str path;
             if (args.size() == 2) {
                 path = args[1];
@@ -286,10 +286,12 @@ int main(int argc, const char *argv[]) {
             } else
                 path = "../PhysWiki-backup/";
             arg_history(path);
-        }
-        else if (args[0] == "--history-add-del" && args.size() == 1) {
+
             SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
             history_add_del(db_read);
+        }
+        else if (args[0] == "--history" && args.size() == 2) {
+            Str path = "../PhysWiki-backup/";
         }
         else if (args[0] == "--fix-db" && size(args) == 1) {
             arg_fix_db();
@@ -332,7 +334,7 @@ int main(int argc, const char *argv[]) {
         }
         
         cout.precision(3);
-        cout << "done! time (s): " << timer.toc() << endl;
+        cout << "all done! time (s): " << timer.toc() << endl;
         if (argc <= 1) {
             cout << u8"按任意键退出..." << endl;
             char c = (char)getchar();
@@ -341,10 +343,11 @@ int main(int argc, const char *argv[]) {
     }
     catch (const std::exception &e) {
         cerr << Str(u8"错误：") + e.what() << endl;
-        return 0;
+        exit(1);
     }
     catch (...) {
         cerr << u8"内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！" << endl;
+        exit(1);
     }
 
     return 0;

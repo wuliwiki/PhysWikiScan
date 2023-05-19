@@ -749,28 +749,41 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         sha1 = sha1sum(tmp).substr(0, 16);
         bool sha1_exist = db_history.count(sha1);
 
-        // fname = YYYYMMDDHHMM_[name]_[entry].tex
+        // fname = YYYYMMDDHHMM_authorID_entry.tex
         time = fname.substr(0, 12);
         Long ind = fname.rfind('_');
         author = fname.substr(13, ind-13);
         Long authorID;
-        if (db_author_to_id.count(author))
-            authorID = db_author_to_id[author];
-        else if (new_authors.count(author))
-            authorID = new_authors[author];
-        else {
-            authorID = ++author_id_max;
-            SLS_WARN(u8"备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
-            new_authors[author] = author_id_max;
-            stmt_insert_auth.bind(1, int(author_id_max));
-            stmt_insert_auth.bind(2, author);
-            stmt_insert_auth.exec(); stmt_insert_auth.reset();
+        if (sha1_exist) {
+            authorID = str2Llong(author);
         }
+        else {
+            // editor is still saving using old `YYYYMMDDHHMM_author_entry` format for now
+            // TODO: delete this block after editor use `YYYYMMDDHHMM_authorID_entry` format
+            if (db_author_to_id.count(author))
+                authorID = db_author_to_id[author];
+            else if (new_authors.count(author))
+                authorID = new_authors[author];
+            else {
+                authorID = ++author_id_max;
+                SLS_WARN(u8"备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
+                new_authors[author] = author_id_max;
+                stmt_insert_auth.bind(1, int(author_id_max));
+                stmt_insert_auth.bind(2, author);
+                stmt_insert_auth.exec();
+                stmt_insert_auth.reset();
+            }
+            // rename to new format
+            tmp = path; tmp << time << '_' << to_string(authorID) << '_' << entry << ".tex";
+            SLS_WARN("moving " + fpath + " -> " + tmp);
+            file_move(tmp, fpath);
+        }
+
         author_contrib[authorID] += 5;
         entry = fname.substr(ind+1);
         if (entries.count(entry) == 0 &&
                             entries_deleted_inserted.count(entry) == 0) {
-            SLS_WARN(u8"备份文件中的词条不在数据库中（将添加）： " + entry);
+            SLS_WARN(u8"备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
             stmt_insert_entry.bind(1, entry);
             stmt_insert_entry.exec(); stmt_insert_entry.reset();
             entries_deleted_inserted.insert(entry);
@@ -780,7 +793,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
             auto &time_author_entry = db_history[sha1];
             if (get<0>(time_author_entry) != time)
                 SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
-            if (db_id_to_author[get<1>(time_author_entry)] != author)
+            if (get<1>(time_author_entry) != authorID)
                 SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
                          to_string(get<1>(time_author_entry)) + "." + db_id_to_author[get<1>(time_author_entry)]);
             if (get<2>(time_author_entry) != entry)
@@ -794,10 +807,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
             stmt_insert.bind(3, int(authorID));
             stmt_insert.bind(4, entry);
             stmt_insert.exec();
-            if (!stmt_insert.getChanges()) {
-                SLS_WARN("重复的 sha1 （将删除）: " + fname + ".tex");
-                file_remove(fpath);
-            }
+            if (!stmt_insert.getChanges())
+                throw internal_err("重复的 sha1 （不应该呀，已经检查过了）: " + fname + ".tex");
             stmt_insert.reset();
         }
     }

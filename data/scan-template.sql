@@ -247,7 +247,7 @@ CREATE TABLE "authors" (
 	"hide"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 不出现在文章作者列表
 	"aka"	INTEGER NOT NULL DEFAULT -1, -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
 	"contrib"	INTEGER NOT NULL DEFAULT 0, -- 贡献的分钟数（折算）
-	"recent_entries"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 最近 10 个编辑的词条（按时间从新到老）
+	"recent_entries"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 所有编辑的词条（按时间从新到老排序，不能重复）
 	"referee"	TEXT NOT NULL DEFAULT '', -- "part:part1 sub:math sub:phys" 哪些部分/学科的审稿人
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")
