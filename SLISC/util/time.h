@@ -9,11 +9,13 @@
 
 namespace slisc {
 
+using std::time_t;
+
 // get current system time "hh:mm:ss"
 inline Str hhmmss()
 {
 	auto p = std::chrono::system_clock::now();
-	std::time_t t = std::chrono::system_clock::to_time_t(p);
+	time_t t = std::chrono::system_clock::to_time_t(p);
 #ifdef SLS_USE_MSVC
 	Str str; str.resize(50);
 	ctime_s(&str[0], str.size(), &t);
@@ -81,6 +83,93 @@ public:
 		return t.count();
 	}
 };
+
+// get current machine time (not necessarily correct)
+// ref: https://en.cppreference.com/w/cpp/chrono/c/tm
+// [year]   tm::tm_year + 1900;
+// [month]  tm::tm_mon + 1;
+// [day]    tm::tm_mday;
+// [monday] tm::tm_wday
+// [hour]   tm::tm_hour;
+// [min]    tm::tm_min;
+// [sec]    tm::tm_sec;
+// [string] put_time(&tm_val, "%c %Z")
+// [epoch] time_t mktime(&tm_val);
+inline std::tm local_time()
+{
+    time_t now = std::time(nullptr);
+    return *std::localtime(&now);
+}
+
+// get UTC/GMT time (not necessarily correct)
+inline std::tm utc_time()
+{
+    time_t now = std::time(nullptr);
+    return *std::gmtime(&now);
+}
+
+// time zone in minutes (e.g. UTF+8 returns 480)
+// time zones are not always in integer numbers
+inline int time_zone()
+{
+    time_t now = std::time(nullptr);
+    std::tm local_tm = *std::localtime(&now);
+    std::tm utc_tm = *std::gmtime(&now);
+	int minutes = local_tm.tm_hour*60 + local_tm.tm_min
+				- (utc_tm.tm_hour*60 + utc_tm.tm_min);
+
+	if (local_tm.tm_year != utc_tm.tm_year) {
+		if (local_tm.tm_year < utc_tm.tm_year)
+			return minutes - 24*60;
+		else
+			return minutes + 24*60;
+	}
+	else if (local_tm.tm_mon != utc_tm.tm_mon) {
+		if (local_tm.tm_mon < utc_tm.tm_mon)
+			return minutes - 24*60;
+		else
+			return minutes + 24*60;
+	}
+	else if (local_tm.tm_mday != utc_tm.tm_mday) {
+		if (local_tm.tm_mday < utc_tm.tm_mday)
+			return minutes - 24*60;
+		else
+			return minutes + 24*60;
+	}
+	else
+		return minutes;
+}
+
+inline std::tm str2tm(Str_I str)
+{
+	Long N = size(str);
+    std::tm t = {};
+    std::istringstream ss(str);
+	if (N == 12)
+		ss >> std::get_time(&t, "%Y%m%d%H%M");
+	else if (N == 14)
+    	ss >> std::get_time(&t, "%Y%m%d%H%M%S");
+	else
+		throw std::runtime_error("str2time(): wrong size(str): " + to_string(N));
+    if (ss.fail()) {
+        throw std::runtime_error(SLS_WHERE);
+	}
+	return t;
+}
+
+inline time_t str2time_t(Str_I str)
+{
+	std::tm t = str2tm(str);
+	return mktime(&t);
+}
+
+inline void time_t2yyyymmddhhmm(Str_O str, time_t time)
+{
+	std::tm * ptm = localtime(&time);
+    stringstream ss;
+    ss << std::put_time(ptm, "%Y%m%d%H%M");
+    str = std::move(ss.str());
+}
 
 // timer for cpu time (scales with cpu cores)
 class CPUTimer
