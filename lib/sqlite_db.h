@@ -842,6 +842,37 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     cout << "done." << endl;
 }
 
+// update "history.last" for all table
+inline void db_update_history_last(SQLite::Database &db_read)
+{
+    SQLite::Statement stmt_select(db_read,
+        R"(SELECT "hash", "time", "entry" FROM "history";)");
+    unordered_map<Str, map<Str, Str>> entry2time_hash; // entry -> (time -> hash)
+    while (stmt_select.executeStep()) {
+        entry2time_hash[stmt_select.getColumn(2)]
+            [stmt_select.getColumn(1).getString()] =
+                stmt_select.getColumn(0).getString();
+    }
+
+    // update db
+    SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+    SQLite::Transaction transaction(db_rw);
+    SQLite::Statement stmt_update(db_rw,
+        R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
+    Str last_hash;
+    for (auto &e : entry2time_hash) {
+        last_hash.clear();
+        for (auto &time_hash : e.second) {
+            auto &hash = time_hash.second;
+            stmt_update.bind(1, last_hash);
+            stmt_update.bind(2, hash);
+            stmt_update.exec(); stmt_update.reset();
+            last_hash = hash;
+        }
+    }
+    transaction.commit();
+}
+
 // db table "images"
 inline void db_update_images(Str_I entry, vecStr_I fig_ids,
     const vector<unordered_map<Str,Str>> & fig_ext_hash, SQLite::Database &db_rw)

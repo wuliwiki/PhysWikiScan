@@ -35,7 +35,6 @@ CREATE TABLE "entries" (
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
 	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authors.id] 是否正在被占用（审核发布后解除）
-	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布时间 YYYYMMDDHHMM
 	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布 (review.hash)
 	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份 (history.hash)
 
@@ -119,7 +118,7 @@ CREATE TABLE "figures" (
 );
 
 -- 防止 FOREIGN KEY 报错
-INSERT INTO "figures" ("id", "caption") VALUES ('', 0, '无', '', '', '');
+INSERT INTO "figures" ("id", "caption") VALUES ('', '无');
 
 -- 图片文件（包括历史版本)
 CREATE TABLE "images" (
@@ -206,7 +205,7 @@ CREATE TABLE "history" (
 	"entry"	TEXT NOT NULL, -- 词条
 	"add"	INTEGER NOT NULL DEFAULT -1, -- 新增字符数（-1: 未知）
 	"del"	INTEGER NOT NULL DEFAULT -1, -- 减少字符数（-1: 未知）
-	"last"	TEXT NOT NULL DEFAULT '', -- 本词条上次备份的 hash
+	"last"	TEXT NOT NULL DEFAULT '', -- 本词条上次备份的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("last") REFERENCES "history"("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
@@ -222,7 +221,7 @@ CREATE TABLE "review" (
 	"author"	INTEGER NOT NULL, -- 作者
 	"action"	TEXT NOT NULL DEFAULT '', -- [Pub] 发布 [Udo] 撤回 [Fix] 继续完善
 	"comment"	TEXT NOT NULL DEFAULT '', -- 意见（也可以直接修改正文或在正文中评论）
-	"last" TEXT UNIQUE NOT NULL DEFAULT '', -- 该词条上次审稿的 hash
+	"last" TEXT UNIQUE NOT NULL DEFAULT '', -- 该词条上次审稿的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("hash") REFERENCES "history"("hash"),
 	FOREIGN KEY("last") REFERENCES "review"("hash"),

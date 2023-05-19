@@ -290,6 +290,10 @@ int main(int argc, const char *argv[]) {
             SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
             history_add_del(db_read);
         }
+        else if (args[0] == "--history-last-all" && args.size() == 1) {
+            SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+            db_update_history_last(db_read);
+        }
         else if (args[0] == "--history" && args.size() == 2) {
             Str path = "../PhysWiki-backup/";
         }

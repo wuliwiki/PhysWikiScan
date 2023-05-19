@@ -202,6 +202,7 @@ inline void migrate_db(Str_I file_db_new, Str_I file_db_old)
         // compare cols, get the cols to copy
         SQLite::Statement stmt_col_old(db_old, "PRAGMA table_info(" + table + ");");
         SQLite::Statement stmt_col_new(db_new, "PRAGMA table_info(" + table + ");");
+        col_info_old.clear();
         while (stmt_col_old.executeStep()) {
             col_info_old[stmt_col_old.getColumn(1)] =
                     stmt_col_old.getColumn(2).getString();
