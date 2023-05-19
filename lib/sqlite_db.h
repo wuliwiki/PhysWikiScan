@@ -1793,8 +1793,7 @@ inline void history_add_del(SQLite::Database &db_read) {
         entries.push_back(stmt_select.getColumn(0));
 
     SQLite::Statement stmt_select2(db_read,
-        R"(SELECT "hash", "time", "authors"."name", "add", "del" FROM "history"
-            JOIN "authors" ON "history"."author" = "authors"."id"
+        R"(SELECT "hash", "time", "author", "add", "del" FROM "history"
             WHERE "entry"=? ORDER BY "time";)");
     Str fname_old, fname, str, str_old;
     unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
@@ -1806,7 +1805,7 @@ inline void history_add_del(SQLite::Database &db_read) {
             if (fname_exist) fname_old = fname;
             fname = "../PhysWiki-backup/";
             fname << stmt_select2.getColumn(1).getString() << '_';
-            fname << stmt_select2.getColumn(2).getString() << '_';
+            fname << to_string((int)stmt_select2.getColumn(2)) << '_';
             fname << entry << ".tex";
             if (!file_exist(fname)) {
                 fname_exist = false; continue;
