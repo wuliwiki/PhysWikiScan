@@ -682,13 +682,13 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
     SQLite::Statement stmt_select(db_rw, R"(SELECT "hash", "time", "author", "entry" FROM "history")");
 
-    //            hash        time author entry
-    unordered_map<Str,  tuple<Str, Long,  Str>> db_history;
+    //            hash        time author entry  file-exist
+    unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
     while (stmt_select.executeStep()) {
         Long author_id = (int) stmt_select.getColumn(2);
         db_history[stmt_select.getColumn(0)] =
-            tuple<Str, Long, Str>(stmt_select.getColumn(1),
-                author_id , stmt_select.getColumn(3));
+            make_tuple(stmt_select.getColumn(1).getString(),
+                author_id , stmt_select.getColumn(3).getString(), false);
     }
 
     cout << "there are already " << db_history.size() << " backup (history) records in database." << endl;
@@ -725,7 +725,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
     db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
 
     SQLite::Statement stmt_insert(db_rw,
-        R"(INSERT OR IGNORE INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+        R"(INSERT INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
     vecStr entries0;
     get_column(entries0, "entries", "id", db_rw);
@@ -749,9 +749,10 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         sha1 = sha1sum(tmp).substr(0, 16);
         bool sha1_exist = db_history.count(sha1);
 
-        // fname = YYYYMMDDHHMM_authorID_entry.tex
+        // fname = YYYYMMDDHHMM_authorID_entry
         time = fname.substr(0, 12);
         Long ind = fname.rfind('_');
+        entry = fname.substr(ind+1);
         author = fname.substr(13, ind-13);
         Long authorID;
         if (sha1_exist) {
@@ -774,13 +775,13 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
                 stmt_insert_auth.reset();
             }
             // rename to new format
-            tmp = path; tmp << time << '_' << to_string(authorID) << '_' << entry << ".tex";
+            fname = time; fname << '_' << to_string(authorID) << '_' << entry;
+            tmp = path; tmp << fname << ".tex";
             SLS_WARN("moving " + fpath + " -> " + tmp);
             file_move(tmp, fpath);
         }
 
         author_contrib[authorID] += 5;
-        entry = fname.substr(ind+1);
         if (entries.count(entry) == 0 &&
                             entries_deleted_inserted.count(entry) == 0) {
             SLS_WARN(u8"备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
@@ -790,15 +791,15 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
         }
 
         if (sha1_exist) {
-            auto &time_author_entry = db_history[sha1];
-            if (get<0>(time_author_entry) != time)
-                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry));
-            if (get<1>(time_author_entry) != authorID)
+            auto &time_author_entry_fexist = db_history[sha1];
+            if (get<0>(time_author_entry_fexist) != time)
+                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry_fexist));
+            if (get<1>(time_author_entry_fexist) != authorID)
                 SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
-                         to_string(get<1>(time_author_entry)) + "." + db_id_to_author[get<1>(time_author_entry)]);
-            if (get<2>(time_author_entry) != entry)
-                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry));
-            db_history.erase(sha1);
+                         to_string(get<1>(time_author_entry_fexist)) + "." + db_id_to_author[get<1>(time_author_entry_fexist)]);
+            if (get<2>(time_author_entry_fexist) != entry)
+                SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry_fexist));
+            get<3>(time_author_entry_fexist) = true;
         }
         else {
             SLS_WARN(u8"数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
@@ -806,18 +807,17 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
             stmt_insert.bind(2, time);
             stmt_insert.bind(3, int(authorID));
             stmt_insert.bind(4, entry);
-            stmt_insert.exec();
-            if (!stmt_insert.getChanges())
-                throw internal_err("重复的 sha1 （不应该呀，已经检查过了）: " + fname + ".tex");
+            try { stmt_insert.exec(); }
+            catch (std::exception &e) { throw internal_err(Str(e.what()) + SLS_WHERE); }
             stmt_insert.reset();
+            db_history[sha1] = make_tuple(time, authorID, entry, true);
         }
     }
 
-    if (!db_history.empty()) {
-        SLS_WARN(u8"以下数据库中记录的备份无法找到对应文件： ");
-        for (auto &row : db_history) {
-            cout << row.first << ", " << get<0>(row.second) << ", " <<
-                get<1>(row.second) << ", " << get<2>(row.second) << endl;
+    for (auto &row : db_history) {
+        if (!get<3>(row.second)) {
+            cout << u8"数据库 history 中文件不存在：" << row.first << ", " << get<0>(row.second) << ", " <<
+                 get<1>(row.second) << ", " << get<2>(row.second) << endl;
         }
     }
     cout << "\ndone." << endl;
