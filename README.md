@@ -15,7 +15,9 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会自动跳过该词条）
 * `PhysWikiScan ,` 批量把正文中汉字两边的英文标点变为中文（有少量 bug，碰到会跳过该词条）
 * `PhysWikiScan --wc` 统计中文字符数（含标点）
-* `PhysWikiScan --history` 把 `../PhysWiki-backup/*.tex` 备份文件信息更新到数据库。 更新数据库中的词条作者列表。
+* `PhysWikiScan --history-all` 把 `../PhysWiki-backup/*.tex` 备份文件信息更新到数据库。 更新数据库中的词条作者列表。
+* `PhysWikiScan --history-last-all` 更新数据库 history.last
+* `PhysWikiScan --author-char-stat 用户名 yyyymmddhhmm yyyymmddhhmm` 统计某个作者在某段时间内（包括）的字符数增减（数据库 history.add/del）
 * `PhysWikiScan --fix-db` 重新生成数据库中标记为【生成】的数据（用于 debug）。
 * `PhysWikiScan --migrate-db /path/data1.db /path/data2.db` 用于把某个旧的数据库迁移到新格式的数据库中， `data2.db` 将被覆盖。
 * `PhysWikiScan --migrate-user-db` 用于把 `../user-notes/用户名/cmd_data/scan.db` 转换为 `../user-notes/note-template/cmd_data/scan.db` 的格式。

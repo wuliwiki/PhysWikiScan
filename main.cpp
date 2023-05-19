@@ -297,6 +297,10 @@ int main(int argc, const char *argv[]) {
         else if (args[0] == "--history" && args.size() == 2) {
             Str path = "../PhysWiki-backup/";
         }
+        else if (args[0] == "--author-char-stat" && args.size() == 4) {
+            SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+            author_char_stat(args[1], args[2], args[3], db_read);
+        }
         else if (args[0] == "--fix-db" && size(args) == 1) {
             arg_fix_db();
         }

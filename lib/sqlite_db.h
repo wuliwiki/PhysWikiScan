@@ -873,6 +873,32 @@ inline void db_update_history_last(SQLite::Database &db_read)
     transaction.commit();
 }
 
+// sum history.add and history.del for an author for a given time period
+inline void author_char_stat(Str_I author, Str_I time_start, Str_I time_end, SQLite::Database &db_read)
+{
+    SQLite::Statement stmt_author(db_read,
+        R"(SELECT "id" FROM "authors" WHERE "name"=?;)");
+    stmt_author.bind(1, author);
+    if (!stmt_author.executeStep())
+        throw scan_err(u8"数据库中找不到作者： " + author);
+    Long authorID = (int)stmt_author.getColumn(0);
+    Str tmp = R"(SELECT SUM("add"), SUM("del") FROM "history" WHERE "author"=)";
+    tmp << authorID << R"( AND "time" >= ')" << time_start << R"(' AND "time" <= ')" << time_end << "';";
+    cout << "SQL command:\n" << tmp << endl;
+    SQLite::Statement stmt_select(db_read, tmp);
+    if (!stmt_select.executeStep())
+        throw internal_err(SLS_WHERE);
+
+    auto data = stmt_select.getColumn(0);
+    Long tot_add = data.isNull() ? 0 : data.getInt64();
+
+    data = stmt_select.getColumn(1);
+    Long tot_del = data.isNull() ? 0 : data.getInt64();
+
+    cout << "total add = " << tot_add << endl;
+    cout << "total del = " << tot_del << endl;
+}
+
 // db table "images"
 inline void db_update_images(Str_I entry, vecStr_I fig_ids,
     const vector<unordered_map<Str,Str>> & fig_ext_hash, SQLite::Database &db_rw)
