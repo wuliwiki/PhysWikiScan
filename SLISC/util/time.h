@@ -140,6 +140,19 @@ inline int time_zone()
 		return minutes;
 }
 
+// check if daylight saving time is in effect
+inline int is_daylight_saving()
+{
+    static int ret = INT_MIN;
+    if (ret == INT_MIN) {
+        std::time_t t = std::time(nullptr); // get current time
+        std::tm *now = std::localtime(&t);  // convert to local time
+        ret = now->tm_isdst;
+    }
+    return ret;
+}
+
+// convert a string to std::tm
 inline std::tm str2tm(Str_I str)
 {
 	Long N = size(str);
@@ -154,6 +167,7 @@ inline std::tm str2tm(Str_I str)
     if (ss.fail()) {
         throw std::runtime_error(SLS_WHERE);
 	}
+    t.tm_isdst = is_daylight_saving();
 	return t;
 }
 
@@ -165,7 +179,7 @@ inline time_t str2time_t(Str_I str)
 
 inline void time_t2yyyymmddhhmm(Str_O str, time_t time)
 {
-	std::tm * ptm = localtime(&time);
+	std::tm *ptm = localtime(&time);
     stringstream ss;
     ss << std::put_time(ptm, "%Y%m%d%H%M");
     str = std::move(ss.str());

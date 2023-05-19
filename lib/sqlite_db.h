@@ -1920,13 +1920,17 @@ inline void history_normalize(SQLite::Database &db_read)
     }
 
     time_t t1, t2, t;
+    Str *time2_last;
     for (auto &e5 : entry_author_time_hash_time2) {
+        t1 = t2 = 0;
         for (auto &e4 : e5.second) {
             t1 = t2 = 0;
-            Str *time2_last = nullptr;
+            time2_last = nullptr;
             for (auto &time_hash_time2 : e4.second) {
                 t = str2time_t(time_hash_time2.first);
-                if (!t1) // t is 1st backup in a session
+                if (t <= t1) // t1 is a resume of a session
+                    *time2_last = "d";
+                else if (!t1) // t is 1st backup in a session
                     t1 = t;
                 else if (!t2) { // t is 2nd backup
                     here:
@@ -1934,12 +1938,13 @@ inline void history_normalize(SQLite::Database &db_read)
                         t2 = t;
                     else if (t - t1 > 300) {
                         if (t - t1 < 1800) {
-                            t1 += (t - t1) / 300 * 300;
-                            if (t1 != t)
+                            if ((t - t1) % 300) {
+                                t1 += ((t - t1) / 300 + 1) * 300;
                                 time_t2yyyymmddhhmm(time_hash_time2.second.second, t1);
+                            }
                         }
                         else // end of 30min session
-                            t1 = 0;
+                            t1 = t;
                     }
                     else // t - t1 == 300
                         t1 = t;
@@ -1950,9 +1955,9 @@ inline void history_normalize(SQLite::Database &db_read)
                         *time2_last = "d";
                     }
                     else if (t - t1 > 300) {
-                        t2 += ((t2 - t1) / 300 + 1) * 300;
-                        time_t2yyyymmddhhmm(*time2_last, t2);
-                        t1 = t2; t2 = 0;
+                        t1 += 300;
+                        time_t2yyyymmddhhmm(*time2_last, t1);
+                        t2 = 0;
                         goto here; // I know, but this is actually cleaner
                     }
                     else { // t - t1 == 300
@@ -1963,18 +1968,20 @@ inline void history_normalize(SQLite::Database &db_read)
                 time2_last = &time_hash_time2.second.second;
             }
         }
+        if (t2 > 0)
+            time_t2yyyymmddhhmm(*time2_last, t1+300);
     }
 
     // remove or rename files, and update db
     SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
     SQLite::Transaction transaction(db_rw);
-    SQLite::Statement stmd_select(db_rw,
-        R"(SELECT "author", "entry" WHERE "hash"=?;)");
-    SQLite::Statement stmd_update(db_rw,
+    SQLite::Statement stmt_select2(db_rw,
+        R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
+    SQLite::Statement stmt_update(db_rw,
         R"(UPDATE "history" SET "time"=? WHERE "hash"=?;)");
-    SQLite::Statement stmd_delete(db_rw,
+    SQLite::Statement stmt_delete(db_rw,
         R"(DELETE FROM "history" WHERE "hash"=?;)");
-    Str fname_old, fname_new;
+    Str fname, fname_new;
     for (auto &e5 : entry_author_time_hash_time2) {
         for (auto &e4: e5.second) {
             for (auto &time_hash_time2: e4.second) {
@@ -1985,28 +1992,30 @@ inline void history_normalize(SQLite::Database &db_read)
                 auto &hash = time_hash_time2.second.first;
 
                 // rename or rename backup file, update db
-                stmd_select.bind(1, hash);
-                stmd_select.executeStep();
-                Long authorID = stmd_select.getColumn(0).getInt64();
-                const char *entry = stmd_select.getColumn(1);
-                fname_old = "../PhysWiki-backup/" + time;
-                fname_old << '_' << authorID << '_' << entry << ".tex";
+                stmt_select2.bind(1, hash);
+                if (!stmt_select2.executeStep())
+                    throw internal_err(SLS_WHERE);
+                Long authorID = stmt_select2.getColumn(0).getInt64();
+                const Str &entry = stmt_select2.getColumn(1).getString();
+                stmt_select2.reset();
+                fname = "../PhysWiki-backup/" + time;
+                fname << '_' << authorID << '_' << entry << ".tex";
                 if (time2 == "d") {
-                    cout << "rm " << fname_old << endl;
-                    file_remove(fname_old);
+                    cout << "rm " << fname << endl;
+                    file_remove(fname);
                     // db
-                    stmd_delete.bind(1, hash);
-                    stmd_delete.exec(); stmd_delete.reset();
+                    stmt_delete.bind(1, hash);
+                    stmt_delete.exec(); stmt_delete.reset();
                 }
                 else {
                     fname_new = "../PhysWiki-backup/" + time2;
                     fname_new << '_' << authorID << '_' << entry << ".tex";
-                    cout << "mv " << fname_old << fname_new << endl;
-                    file_move(fname_new, fname_old);
+                    cout << "mv " << fname << ' ' << fname_new << endl;
+                    file_move(fname_new, fname);
                     // db
-                    stmd_update.bind(1, time2);
-                    stmd_update.bind(2, hash);
-                    stmd_update.exec(); stmd_update.reset();
+                    stmt_update.bind(1, time2);
+                    stmt_update.bind(2, hash);
+                    stmt_update.exec(); stmt_update.reset();
                 }
             }
         }
