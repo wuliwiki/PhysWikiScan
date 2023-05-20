@@ -302,63 +302,56 @@ inline Long pay2div(Str_IO str)
 }
 
 // buttons for last and next entry
-inline void last_next_buttons(Str_IO html, SQLite::Database &db_read, Long_I order, Str_I entry, Str_I title)
+inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_main,
+                              Str_I last, Str_I next, SQLite::Database &db_read)
 {
-    Str last_entry, last_title, last_url, next_entry, next_title, next_url;
+    Str last_title, last_url, next_title, next_url;
     SQLite::Statement stmt_select(db_read,
-        R"(SELECT "id", "caption" FROM "entries" WHERE "order"=?;)");
-
-    if (order < 0)
-        throw internal_err("last_next_buttons()");
+        R"(SELECT "caption" FROM "entries" WHERE "id"=?;)");
+    const Str *last_entry, *next_entry;
 
     // find last
-    if (order == 0) {
-        last_entry = entry;
-        last_title = u8"没有上一篇了哟~（本文不在目录中）";
-    }
-    else if (order == 1) {
-        last_entry = entry;
+    if (last.empty()) {
+        last_entry = &entry;
         last_title = u8"没有上一篇了哟~";
+        if (!in_main)
+            last_title << u8"（本文不在目录中）";
     }
     else {
-        stmt_select.bind(1, (int)order-1);
+        last_entry = &last;
+        stmt_select.bind(1, last);
         if (!stmt_select.executeStep())
-            throw internal_err(u8"找不到具有以下 order 的词条： " + num2str(order-1));
-        else {
-            last_entry = (const char*)stmt_select.getColumn(0);
-            last_title = (const char*)stmt_select.getColumn(1);
-        }
+            throw internal_err(u8"词条未找到： " + last + SLS_WHERE);
+        last_title = (const char*)stmt_select.getColumn(0);
         stmt_select.reset();
     }
 
     // find next
-    if (order == 0) {
-        next_entry = entry;
-        next_title = u8"没有下一篇了哟~（本文不在目录中）";
+    if (next.empty()) {
+        next_entry = &entry;
+        next_title = u8"没有下一篇了哟~";
+        if (!in_main)
+            next_title << u8"（本文不在目录中）";
     }
     else {
-        stmt_select.bind(1, (int) order + 1);
-        if (!stmt_select.executeStep()) {
-            next_entry = entry;
-            next_title = u8"没有下一篇了哟~";
-        } else {
-            next_entry = (const char*)stmt_select.getColumn(0);
-            next_title = (const char*)stmt_select.getColumn(1);
-        }
+        next_entry = &next;
+        stmt_select.bind(1, next);
+        if (!stmt_select.executeStep())
+            throw internal_err(u8"词条未找到： " + next + SLS_WHERE);
+        next_title = (const char*)stmt_select.getColumn(0);
         stmt_select.reset();
     }
 
     // insert into html
-    if (replace(html, "PhysWikiLastEntryURL", gv::url+last_entry+".html") != 2)
+    if (replace(html, "PhysWikiLastEntryURL", gv::url + *last_entry + ".html") != 2)
         throw internal_err(u8"\"PhysWikiLastEntry\" 在 entry_template.html 中数量不对");
-    if (replace(html, "PhysWikiNextEntryURL", gv::url+next_entry+".html") != 2)
+    if (replace(html, "PhysWikiNextEntryURL", gv::url + *next_entry + ".html") != 2)
         throw internal_err(u8"\"PhysWikiNextEntry\" 在 entry_template.html 中数量不对");
     if (replace(html, "PhysWikiLastTitle", u8"上一篇：" + last_title) != 2)
         throw internal_err(u8"\"PhysWikiLastTitle\" 在 entry_template.html 中数量不对");
     if (replace(html, "PhysWikiNextTitle", u8"下一篇：" + next_title) != 2)
         throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
-
 
 // --toc
 // table of contents
@@ -418,21 +411,25 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     // read title from first comment
     get_title(title, str);
     isdraft = is_draft(str);
-    Str db_title, authors, db_keys_str, db_pentry_str;
-    Long order, db_draft;
+    Str db_title, authors, db_keys_str, db_pentry_str, chapter, last_entry, next_entry;
+    Long db_draft;
     SQLite::Statement stmt_select
             (db_read,
-             R"(SELECT "caption", "authors", "order", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
+             R"(SELECT "caption", "authors", "chapter", "last", "next", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
     stmt_select.bind(1, entry);
     if (!stmt_select.executeStep())
         throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
     db_title = (const char*)stmt_select.getColumn(0);
     authors = (const char*)stmt_select.getColumn(1);
-    order = (int)stmt_select.getColumn(2);
+    chapter = (const char*)stmt_select.getColumn(2);
+    last_entry = (const char*)stmt_select.getColumn(3);
+    next_entry = (const char*)stmt_select.getColumn(4);
     db_keys_str = (const char*)stmt_select.getColumn(3);
     db_pentry_str = (const char*)stmt_select.getColumn(4);
     db_draft = (int)stmt_select.getColumn(5);
     stmt_select.reset();
+
+    bool in_main = !chapter.empty(); // entry in main.tex
 
     // read html template and \newcommand{}
     html.clear();
@@ -461,7 +458,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     }
 
     if (title != db_title) {
-        if (order > 0) // in main.tex
+        if (in_main > 0)
             throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题（如果还不行请尝试重新编译 main.tex， 并确保其中的标题和词条文件第一行注释相同）");
     }
 
@@ -554,7 +551,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
     if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
         throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
-    last_next_buttons(html, db_read, order, entry, title);
+    last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
 
     if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
         throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");

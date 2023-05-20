@@ -508,13 +508,17 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
             auto &info = db_bib_info[id];
             bool changed = false;
             if (order != info.order) {
-                SLS_WARN(u8"数据库中文献 " + id + " 编号改变（将更新）： " + to_string(info.order) + " -> " + to_string(order));
+                tmp = u8"数据库中文献 "; tmp << id << " 编号改变（将更新）： " << to_string(info.order)
+                        << " -> " << to_string(order);
+                SLS_WARN(tmp);
                 changed = true;
                 id_flip_sign.insert(id);
                 stmt_update.bind(1, -(int)order); // to avoid unique constraint
             }
             if (bib_detail != info.detail) {
-                SLS_WARN(u8"数据库中文献 " + id + " 详情改变（将更新）： " + info.detail + " -> " + bib_detail);
+                tmp = u8"数据库中文献 ";
+                tmp << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
+                SLS_WARN(tmp);
                 changed = true;
                 stmt_update.bind(1, (int)order); // to avoid unique constraint
             }
@@ -561,7 +565,7 @@ inline void db_update_parts_chapters(
     // insert parts
     cout << "inserting parts to db_rw..." << endl;
     SQLite::Statement stmt_insert_part(db_rw,
-                                       R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
+        R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
     for (Long i = 0; i < size(part_name); ++i) {
         // cout << "part " << i << ". " << part_ids[i] << ": " << part_name[i] << " chapters: " << chap_first[i] << " -> " << chap_last[i] << endl;
         stmt_insert_part.bind(1, part_ids[i]);
@@ -602,15 +606,17 @@ inline void db_update_entries_from_toc(
         entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
 
     SQLite::Statement stmt_update(db_rw,
-        R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "order"=? WHERE "id"=?;)");
+        R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "last"=?, "next"=? WHERE "id"=?;)");
     SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "caption", "keys", "pentry", "part", "chapter", "order" FROM "entries" WHERE "id"=?;)");
+        R"(SELECT "caption", "keys", "pentry", "part", "chapter", "last", "next" FROM "entries" WHERE "id"=?;)");
     SQLite::Transaction transaction(db_rw);
-    Str tmp;
+    Str tmp, empty;
+    Long N = size(entries);
 
-    for (Long i = 0; i < size(entries); i++) {
-        Long entry_order = i + 1;
+    for (Long i = 0; i < N; i++) {
         auto &entry = entries[i];
+        auto &entry_last = (i == 0 ? empty : entries[i-1]);
+        auto &entry_next = (i == N-1 ? empty : entries[i+1]);
 
         // does entry already exist (expected)?
         Bool entry_exist;
@@ -624,7 +630,8 @@ inline void db_update_entries_from_toc(
             Str db_pentry_str = (const char*) stmt_select.getColumn(2);
             Str db_part = (const char*) stmt_select.getColumn(3);
             Str db_chapter = (const char*) stmt_select.getColumn(4);
-            int db_order = (int) stmt_select.getColumn(5);
+            Str db_last = (const char*) stmt_select.getColumn(5);
+            Str db_next = (const char*) stmt_select.getColumn(6);
             stmt_select.reset();
 
             bool changed = false;
@@ -643,8 +650,13 @@ inline void db_update_entries_from_toc(
                 SLS_WARN(tmp);
                 changed = true;
             }
-            if (entry_order != db_order) {
-                tmp = entry; tmp << ": order has changed from " << to_string(db_order) << " to " << to_string(entry_order);
+            if (entry_last != db_last) {
+                tmp = entry; tmp << ": 'last' has changed from " << db_last << " to " << entry_last;
+                SLS_WARN(tmp);
+                changed = true;
+            }
+            if (entry_next != db_next) {
+                tmp = entry; tmp << ": 'next' has changed from " << db_next << " to " << entry_next;
                 SLS_WARN(tmp);
                 changed = true;
             }
@@ -652,8 +664,9 @@ inline void db_update_entries_from_toc(
                 stmt_update.bind(1, titles[i]);
                 stmt_update.bind(2, part_ids[entry_part[i]]);
                 stmt_update.bind(3, chap_ids[entry_chap[i]]);
-                stmt_update.bind(4, (int) entry_order);
-                stmt_update.bind(5, entry);
+                stmt_update.bind(4, entry_last);
+                stmt_update.bind(5, entry_next);
+                stmt_update.bind(6, entry);
                 stmt_update.exec(); stmt_update.reset();
             }
         }

@@ -8,9 +8,10 @@ CREATE TABLE "entries" (
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
 	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID
 	
-	"part"	TEXT NOT NULL DEFAULT '', -- 部分
-	"chapter"	TEXT NOT NULL DEFAULT '', -- 章
-	"order"	INTEGER NOT NULL DEFAULT 0, -- 目录中出现的顺序（从 1 开始，全局编号，0 代表不在目录中）
+	"part"	TEXT NOT NULL DEFAULT '', -- 部分， 空代表不在目录中
+	"chapter"	TEXT NOT NULL DEFAULT '', -- 章， 空代表不在目录中
+	"last"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
+	"next"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
 
 	-- [Xiao] 小时科技版权，作者署名权（见 licens.tex）
 	-- [Use] 作者版权，百科永久使用和修改权（见 licens.tex）， 若转载需注明来源如 "Use https://xxxx.com/xxx"
@@ -49,6 +50,8 @@ CREATE TABLE "entries" (
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条列为 "uprefs"， 包括 pentry 中的（为空才能删除本词条）
 
 	PRIMARY KEY("id"),
+	FOREIGN KEY("last") REFERENCES "entries"("id"),
+	FOREIGN KEY("next") REFERENCES "entries"("id"),
 	FOREIGN KEY("last_pub") REFERENCES "review"("hash"),
 	FOREIGN KEY("last_backup") REFERENCES "history"("hash"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
