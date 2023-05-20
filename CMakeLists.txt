@@ -7,13 +7,13 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
-include_directories(/home/addis/github/SLISC-libs-x64-ubuntu22.04/sqlitecpp-3.2.1/include)
-link_directories(/home/addis/github/SLISC-libs-x64-ubuntu22.04/sqlitecpp-3.2.1/lib)
-
-list(APPEND LIBS SQLiteCpp SQLiteCpp-sqlite3)
+set(GITHUB_DIR "/home/addis/github")
+# set(GITHUB_DIR "/mnt/c/Users/addis/Documents/GitHub")
+include_directories(${GITHUB_DIR}/SLISC-libs-x64-ubuntu20.04/sqlitecpp-3.2.1/include)
+link_directories(${GITHUB_DIR}/SLISC-libs-x64-ubuntu20.04/sqlitecpp-3.2.1/lib)
 
 # Address Sanitizer
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -pthread")
 set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fno-omit-frame-pointer -fsanitize=address -static-libasan")
 # SQLite
 # list(APPEND LIBS sqlite3)
@@ -29,4 +29,4 @@ endif()
 
 add_executable(PhysWikiScan main.cpp)
 
-target_link_libraries(PhysWikiScan ${LIBS})
+target_link_libraries(PhysWikiScan SQLiteCpp SQLiteCpp-sqlite3 dl)
