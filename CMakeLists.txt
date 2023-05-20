@@ -7,10 +7,10 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
-set(GITHUB_DIR "/home/addis/github")
-# set(GITHUB_DIR "/mnt/c/Users/addis/Documents/GitHub")
-include_directories(${GITHUB_DIR}/SLISC-libs-x64-ubuntu20.04/sqlitecpp-3.2.1/include)
-link_directories(${GITHUB_DIR}/SLISC-libs-x64-ubuntu20.04/sqlitecpp-3.2.1/lib)
+set(GITHUB_DIR "/home/addis/github/SLISC-libs-x64-ubuntu22.04")
+# set(GITHUB_DIR "/mnt/c/Users/addis/Documents/GitHub/SLISC-libs-x64-ubuntu20.04")
+include_directories(${GITHUB_DIR}/sqlitecpp-3.2.1/include)
+link_directories(${GITHUB_DIR}/sqlitecpp-3.2.1/lib)
 
 # Address Sanitizer
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -pthread")

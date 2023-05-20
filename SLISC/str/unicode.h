@@ -332,14 +332,14 @@ public:
 // end is one pass last char
 inline Long u8count(Str_I str, Long_I start = 0, Long end = -1)
 {
-    if (end < 0) end = size(str);
-    u8_iter it(str, start);
-    Long N = 0;
-    while ((Long)it < end)
-        ++it, ++N;
-    if ((Long)it != end)
-        throw std::runtime_error("u8_count(): make sure `end` is the start of a u8char");
-    return N;
+	if (end < 0) end = size(str);
+	u8_iter it(str, start);
+	Long N = 0;
+	while ((Long)it < end)
+		++it, ++N;
+	if ((Long)it != end)
+		throw std::runtime_error("u8_count(): make sure `end` is the start of a u8char");
+	return N;
 }
 
 // check if is a chinese character
