@@ -1944,6 +1944,8 @@ inline void history_normalize(SQLite::Database &db_read)
             t1 = t2 = 0;
             time2_last = nullptr;
             for (auto &time_hash_time2 : e4.second) {
+                if (time_hash_time2.first == "202303231039")
+                    int a = 3;
                 t = str2time_t(time_hash_time2.first);
                 if (t <= t1) // t1 is a resume of a session
                     *time2_last = "d";
@@ -1984,9 +1986,9 @@ inline void history_normalize(SQLite::Database &db_read)
                 }
                 time2_last = &time_hash_time2.second.second;
             }
+            if (t2 > 0)
+                time_t2yyyymmddhhmm(*time2_last, t1+300);
         }
-        if (t2 > 0)
-            time_t2yyyymmddhhmm(*time2_last, t1+300);
     }
 
     // remove or rename files, and update db
