@@ -1765,7 +1765,10 @@ inline void migrate_user_db() {
 // then search for each `{+..+}` and `{-..-}`
 inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 {
+    Str tmp;
     std::regex rm_s(u8"\\s");
+    add = del = 0;
+
     // remove all space, tab, return etc
     str1 = std::regex_replace(str1, rm_s, "");
     str2 = std::regex_replace(str2, rm_s, "");
@@ -1797,14 +1800,14 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
     replace(str2, "[-", u8"[➖"); replace(str2, "-]", u8"➖]");
     write(str2, file2);
 
-    str = "git diff --no-index --word-diff-regex=. ";
-    str << '"' << file1 << "\" \"" << file2 << '"';
-    if (exec_str(str, str))
-        throw internal_err("exec command failed: " + str);
+    tmp = "git diff --no-index --word-diff-regex=. ";
+    tmp << '"' << file1 << "\" \"" << file2 << '"';
+    // git diff will return 0 iff there is no difference
+    if (exec_str(str, tmp) == 0)
+        return;
 #ifndef NDEBUG
     write(str, file_diff);
 #endif
-    add = del = 0;
     if (str.empty()) return;
     // parse git output, find addition
     Long ind = -1;
