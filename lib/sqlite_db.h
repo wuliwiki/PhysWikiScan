@@ -1779,7 +1779,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
     // check if git is installed (only once)
     static bool checked = false;
     if (!checked) {
-        str = exec_str("which git");
+        exec_str(str, "which git");
         trim(str, " \n");
         if (str.empty())
             throw std::runtime_error("git binary not found!");
@@ -1799,7 +1799,8 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 
     str = "git diff --no-index --word-diff-regex=. ";
     str << '"' << file1 << "\" \"" << file2 << '"';
-    str = exec_str(str);
+    if (exec_str(str, str))
+        throw internal_err("exec command failed: " + str);
 #ifndef NDEBUG
     write(str, file_diff);
 #endif
