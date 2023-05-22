@@ -888,17 +888,45 @@ inline void db_update_history_last(SQLite::Database &db_read)
 }
 
 // sum history.add and history.del for an author for a given time period
-inline void author_char_stat(Str_I author, Str_I time_start, Str_I time_end, SQLite::Database &db_read)
+// time_start and time_end are in yyyymmddmmss format
+inline void author_char_stat(Str_I time_start, Str_I time_end, Str_I author, SQLite::Database &db_read)
 {
-	SQLite::Statement stmt_author(db_read,
-		R"(SELECT "id" FROM "authors" WHERE "name"=?;)");
-	stmt_author.bind(1, author);
-	if (!stmt_author.executeStep())
-		throw scan_err(u8"数据库中找不到作者： " + author);
-	Long authorID = (int)stmt_author.getColumn(0);
+	if (time_start.size() != 12 || time_end.size() != 12)
+		throw scan_err(u8"日期格式不正确" SLS_WHERE);
+	Long authorID = -1;
+	SQLite::Statement stmt_author0(db_read,
+		R"(SELECT "id", "name" FROM "authors" WHERE "name"=?;)");
+	stmt_author0.bind(1, author);
+	Long Nfound = 0;
+	while (stmt_author0.executeStep()) {
+		++Nfound;
+		authorID = (int)stmt_author0.getColumn(0);
+		cout << "作者： " << stmt_author0.getColumn(1).getString() << endl;
+		cout << "id: " << authorID << endl;
+	}
+	if (Nfound > 1)
+		throw scan_err(u8"数据库中找到多于一个作者名（精确匹配）： " + author);
+	else if (Nfound == 0) {
+		cout << "精确匹配失败， 尝试模糊匹配……" << endl;
+		SQLite::Statement stmt_author(db_read,
+			R"(SELECT "id", "name" FROM "authors" WHERE "name" LIKE ?;)");
+		stmt_author.bind(1, '%' + author + '%');
+		Long Nfound = 0;
+		while (stmt_author.executeStep()) {
+			++Nfound;
+			authorID = (int)stmt_author.getColumn(0);
+			cout << "作者： " << stmt_author.getColumn(1).getString() << endl;
+			cout << "id: " << authorID << endl;
+		}
+		if (Nfound == 0)
+			throw scan_err(u8"数据库中找不到作者名（模糊匹配）： " + author);
+		if (Nfound > 1)
+			throw scan_err(u8"数据库中找到多于一个作者名（模糊匹配）： " + author);
+	}
+	
 	Str tmp = R"(SELECT SUM("add"), SUM("del") FROM "history" WHERE "author"=)";
 	tmp << authorID << R"( AND "time" >= ')" << time_start << R"(' AND "time" <= ')" << time_end << "';";
-	cout << "SQL command:\n" << tmp << endl;
+	cout << "SQL 命令:\n" << tmp << endl;
 	SQLite::Statement stmt_select(db_read, tmp);
 	if (!stmt_select.executeStep())
 		throw internal_err(SLS_WHERE);
@@ -909,8 +937,9 @@ inline void author_char_stat(Str_I author, Str_I time_start, Str_I time_end, SQL
 	data = stmt_select.getColumn(1);
 	Long tot_del = data.isNull() ? 0 : data.getInt64();
 
-	cout << "total add = " << tot_add << endl;
-	cout << "total del = " << tot_del << endl;
+	cout << "新增字符：" << tot_add << endl;
+	cout << "删除字符：" << tot_del << endl;
+	cout << "新增减删除：" << tot_add - tot_del << endl;
 }
 
 // db table "images"
