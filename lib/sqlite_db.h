@@ -859,6 +859,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 // update "history.last" for all table
 inline void db_update_history_last(SQLite::Database &db_read)
 {
+    cout << "updating history.last..."
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "hash", "time", "entry" FROM "history";)");
 	unordered_map<Str, map<Str, Str>> entry2time_hash; // entry -> (time -> hash)
@@ -885,6 +886,7 @@ inline void db_update_history_last(SQLite::Database &db_read)
 		}
 	}
 	transaction.commit();
+    cout << "done." << endl;
 }
 
 // sum history.add and history.del for an author for a given time period

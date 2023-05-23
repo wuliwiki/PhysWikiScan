@@ -281,17 +281,15 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--history-all" && args.size() <= 2) {
 			arg_history("../PhysWiki-backup/");
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+            db_update_history_last(db_read);
 			if (args.size() == 2)
 				history_add_del(db_read, true);
 			else
 				history_add_del(db_read, false);
 		}
-		else if (args[0] == "--history-last-all" && args.size() == 1) {
-			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-			db_update_history_last(db_read);
-		}
 		else if (args[0] == "--history" && args.size() == 2) {
 			Str path = "../PhysWiki-backup/";
+            // TODO
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
