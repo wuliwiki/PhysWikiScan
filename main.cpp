@@ -279,16 +279,12 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--bib")
 			arg_bib();
 		else if (args[0] == "--history-all" && args.size() <= 2) {
-			Str path;
-			if (args.size() == 2) {
-				path = args[1];
-				assert(path[path.size() - 1] == '/');
-			} else
-				path = "../PhysWiki-backup/";
-			arg_history(path);
-
+			arg_history("../PhysWiki-backup/");
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-			history_add_del(db_read);
+			if (args.size() == 2)
+				history_add_del(db_read, true);
+			else
+				history_add_del(db_read, false);
 		}
 		else if (args[0] == "--history-last-all" && args.size() == 1) {
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);

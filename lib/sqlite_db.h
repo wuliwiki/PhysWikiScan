@@ -19,7 +19,7 @@ inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
 							SQLite::Database &db)
 {
 	SQLite::Statement stmt(db,
-						   R"(SELECT "id", "order", "caption", "part" FROM "chapters" ORDER BY "order" ASC)");
+		R"(SELECT "id", "order", "caption", "part" FROM "chapters" ORDER BY "order" ASC)");
 	vecLong orders;
 	while (stmt.executeStep()) {
 		ids.push_back(stmt.getColumn(0));
@@ -36,7 +36,7 @@ inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
 inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 {
 	SQLite::Statement stmt(db,
-						   R"(SELECT "id", "order", "caption" FROM "parts" ORDER BY "order" ASC)");
+		R"(SELECT "id", "order", "caption" FROM "parts" ORDER BY "order" ASC)");
 	vecLong orders;
 	while (stmt.executeStep()) {
 		ids.push_back(stmt.getColumn(0));
@@ -1889,7 +1889,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 }
 
 // calculate "history.add" and "history.del", with output of
-inline void history_add_del(SQLite::Database &db_read) {
+inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
 	SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
@@ -1921,7 +1921,8 @@ inline void history_add_del(SQLite::Database &db_read) {
 			else {
 				int db_add = stmt_select2.getColumn(3);
 				int db_del = stmt_select2.getColumn(4);
-				if (db_add != -1 && db_del != -1) continue;
+				if (!redo_all && db_add != -1 && db_del != -1)
+					continue;
 				auto &e = hist_add_del[hash];
 				Long &add = e.first, &del = e.second;
 				cout << fname << endl;
