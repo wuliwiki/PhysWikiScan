@@ -11,7 +11,7 @@ inline Long EnsureSpace(Str_I name, Str_IO str, Long start, Long end)
 {
     Long N{}, ind0{ start };
     while (true) {
-        ind0 = str.find(name, ind0);
+        ind0 = find(str, name, ind0);
         if (ind0 < 0 || ind0 > end) break;
         if (ind0 == 0 || str.at(ind0 - 1) != ' ') {
             str.insert(ind0, " "); ++ind0; ++N;
@@ -62,13 +62,13 @@ inline Long define_newcommands(vecStr_O rules)
     ifstream fin("new_commands.txt");
     string line;
     while (getline(fin, line)) {
-        Long ind0 = line.find("\""), ind1;
+        Long ind0 = find(line, "\""), ind1;
         if (ind0 < 0) continue;
         ind0 = -1;
         for (Long i = 0; i < 4; ++i) {
-            if ((ind0 = line.find("\"", ind0+1)) < 0)
+            if ((ind0 = find(line, "\"", ind0+1)) < 0)
                 throw internal_err(u8"new_commands.txt 格式错误！");
-            if ((ind1 = line.find("\"", ind0+1)) < 0)
+            if ((ind1 = find(line, "\"", ind0+1)) < 0)
                 throw internal_err(u8"new_commands.txt 格式错误！");
             rules.push_back(line.substr(ind0+1, ind1-ind0-1));
             ind0 = ind1;
@@ -174,14 +174,14 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
         if (rule_format == "[]()" || rule_format == "*[]()") {
             args.resize(2);
             args[0] = command_opt(str, ind0);
-            Long indL = str.find('(', ind0);
+            Long indL = find(str, '(', ind0);
             Long indR = pair_brace(str, indL);
             args[1] = str.substr(indL + 1, indR - indL - 1);
             trim(args[1]);
             end = indR + 1;
         }
         else if (rule_format == "()" || rule_format == "*()") {
-            Long indL = str.find('(', ind0);
+            Long indL = find(str, '(', ind0);
             Long indR = pair_brace(str, indL);
             args.resize(1);
             args[0] = str.substr(indL + 1, indR - indL - 1);
@@ -281,11 +281,11 @@ inline Long Table(Str_IO str)
         if (ind0 < 0 || ind0 > intv.R(i))
             throw scan_err(u8"表格没有标题");
         command_arg(captions[i], str, ind0);
-        if ((Long)captions[i].find("\\footnote") >= 0)
+        if (find(captions[i], "\\footnote") >= 0)
             throw scan_err(u8"表格标题中不能添加 \\footnote");
         // recognize \hline and replace with tags, also deletes '\\'
         while (true) {
-            ind0 = str.find("\\hline", ind0);
+            ind0 = find(str, "\\hline", ind0);
             if (ind0 < 0 || ind0 > intv.R(i)) break;
             indLine.push_back(ind0);
             ind0 += 5;
@@ -308,7 +308,7 @@ inline Long Table(Str_IO str)
     for (Long i = N - 1; i >= 0; --i) {
         ind0 = intv.L(i) + 12; ind1 = intv.R(i);
         while (true) {
-            ind0 = str.find('&', ind0);
+            ind0 = find(str, '&', ind0);
             if (ind0 < 0 || ind0 > ind1) break;
             str.erase(ind0, 1);
             str.insert(ind0, "</td><td>");
@@ -316,7 +316,7 @@ inline Long Table(Str_IO str)
         }
         ind0 = str.rfind(str_end, ind1) + str_end.size();
         str.erase(ind0, ind1 - ind0 + 1);
-        ind0 = str.find(str_beg, intv.L(i)) - 1;
+        ind0 = find(str, str_beg, intv.L(i)) - 1;
         str.replace(intv.L(i), ind0 - intv.L(i) + 1,
             "<div align = \"center\"> " + Str(gv::is_eng?"Tab. ":u8"表") + num2str(i + 1) + u8"：" +
             captions[i] + "</div>");
@@ -337,14 +337,14 @@ inline Long Itemize(Str_IO str)
         // delete paragraph tags
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"<p>　　", ind0);
+            ind0 = find(str, u8"<p>　　", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 5); intvIn.R(i) -= 5; intvOut.R(i) -= 5;
         }
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find("</p>", ind0);
+            ind0 = find(str, "</p>", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 4); intvIn.R(i) -= 4;  intvOut.R(i) -= 4;
@@ -355,7 +355,7 @@ inline Long Itemize(Str_IO str)
         str.insert(intvIn.R(i) + 1, "</li></ul>");
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find("\\item", ind0);
+            ind0 = find(str, "\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
                 throw scan_err(u8"\\item 命令后面必须有空格或回车！");
@@ -389,14 +389,14 @@ inline Long Enumerate(Str_IO str)
         // delete paragraph tags
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find(u8"<p>　　", ind0);
+            ind0 = find(str, u8"<p>　　", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 5); intvIn.R(i) -= 5; intvOut.R(i) -= 5;
         }
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find("</p>", ind0);
+            ind0 = find(str, "</p>", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i))
                 break;
             str.erase(ind0, 4); intvIn.R(i) -= 4; intvOut.R(i) -= 4;
@@ -407,7 +407,7 @@ inline Long Enumerate(Str_IO str)
         str.insert(intvIn.R(i) + 1, "</li></ol>");
         ind0 = intvIn.L(i);
         while (true) {
-            ind0 = str.find("\\item", ind0);
+            ind0 = find(str, "\\item", ind0);
             if (ind0 < 0 || ind0 > intvIn.R(i)) break;
             if (str[ind0 + 5] != ' ' && str[ind0 + 5] != '\n')
                 throw scan_err(u8"\\item 命令后面必须有空格或回车！");

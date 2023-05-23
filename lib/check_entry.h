@@ -22,14 +22,14 @@ inline void get_title(Str_O title, Str_I str)
 {
 	if (size(str) == 0 || str.at(0) != U'%')
 		throw scan_err(u8"请在第一行注释标题！");
-	Long ind1 = str.find(U'\n');
+	Long ind1 = find(str, '\n');
 	if (ind1 < 0)
 		ind1 = size(str) - 1;
 	title = str.substr(1, ind1 - 1);
 	trim(title);
 	if (title.empty())
 		throw scan_err(u8"请在第一行注释标题（不能为空）！");
-	Long ind0 = title.find('\\');
+	Long ind0 = find(title, '\\');
 	if (ind0 >= 0)
 		throw scan_err(u8"第一行注释的标题不能含有 “\\” ");
 }
@@ -43,7 +43,7 @@ inline Bool is_draft(Str_I str)
 		throw scan_err(u8"每个词条最多支持一个 issues 环境!");
 	else if (intv.empty())
 		return false;
-	Long ind = str.find("\\issueDraft", intv.L(0));
+	Long ind = find(str, "\\issueDraft", intv.L(0));
 	if (ind < 0)
 		return false;
 	if (ind < intv.R(0))
@@ -108,7 +108,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 {
 	keywords.clear();
 	Str word;
-	Long ind0 = str.find('\n', 0);
+	Long ind0 = find(str, '\n', 0);
 	if (ind0 < 0 || ind0 == size(str)-1)
 		return 0;
 	ind0 = expect(str, "%", ind0+1);
@@ -117,7 +117,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 		return 0;
 	}
 	Str line; get_line(line, str, ind0);
-	Long tmp = line.find('|', 0);
+	Long tmp = find(line, '|', 0);
 	if (tmp < 0) {
 		// SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
 		return 0;
@@ -125,7 +125,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 
 	ind0 = 0;
 	while (1) {
-		Long ind1 = line.find('|', ind0);
+		Long ind1 = find(line, '|', ind0);
 		if (ind1 < 0)
 			break;
 		word = line.substr(ind0, ind1 - ind0);

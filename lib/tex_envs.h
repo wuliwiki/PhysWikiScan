@@ -29,11 +29,11 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 		if (ind_label < 0 || (i-1 >= 0 && ind_label < intvFig.R(i-1)))
 			throw scan_err(u8"图片必须有标签， 请使用上传图片按钮。");
 		ind_label += size(tmp1);
-		Long ind_label_end = str.find(U'\"', ind_label);
+		Long ind_label_end = find(str, '\"', ind_label);
 		SLS_ASSERT(ind_label_end > 0);
 		Str id = str.substr(ind_label, ind_label_end - ind_label);
 		// get width of figure
-		Long ind0 = str.find("width", intvFig.L(i)) + 5;
+		Long ind0 = find(str, "width", intvFig.L(i)) + 5;
 		ind0 = expect(str, "=", ind0);
 		ind0 = find_num(str, ind0);
 		Doub width; // figure width in cm
@@ -42,8 +42,8 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			throw scan_err(u8"图" + figNo + u8"尺寸不能超过 14.25cm");
 
 		// get file name of figure
-		Long indName1 = str.find("figures/", ind0) + 8;
-		Long indName2 = str.find('}', ind0) - 1;
+		Long indName1 = find(str, "figures/", ind0) + 8;
+		Long indName2 = find(str, '}', ind0) - 1;
 		if (indName1 < 0 || indName2 < 0) {
 			throw scan_err(u8"读取图片名错误");
 		}
@@ -112,7 +112,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			else {
 				// svg and pdf hashes not the same (new standard)
 				svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
-				fig_hash = svg_file.substr(0, svg_file.find('.'));
+				fig_hash = svg_file.substr(0, find(svg_file, '.'));
 				fig_ext_hash[i][format] = fig_hash;
 				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << svg_file;
 			}
@@ -129,7 +129,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			throw scan_err(u8"图片标题未找到， 请使用上传图片按钮！");
 		}
 		command_arg(caption, str, ind0);
-		if ((Long)caption.find("\\footnote") >= 0)
+		if (find(caption, "\\footnote") >= 0)
 			throw scan_err(u8"图片标题中不能添加 \\footnote{}");
 		// insert html code
 		widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);

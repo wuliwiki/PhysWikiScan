@@ -10,7 +10,7 @@ namespace slisc {
 #ifdef _MSC_VER
         return 0;
 #endif
-        Long ind = code.find("\n\t");
+        Long ind = find(code, "\n\t");
         if (ind >= 0)
             throw scan_err(u8"cpp 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + "...");
         write(code, "tmp.cpp");
@@ -21,7 +21,7 @@ namespace slisc {
             return -1;
         }
         read(code, "tmp.cpp.html");
-        Long ind0 = code.find("<pre>", 0) + 5;
+        Long ind0 = find(code, "<pre>", 0) + 5;
         code = code.substr(ind0, code.size() - 7 - ind0);
         remove("tmp.cpp"); remove("tmp.cpp.html");
         return 0;

@@ -61,7 +61,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 
 	// go through uncommented entries in main.tex
 	while (1) {
-		ind0 = str.find("\\entry", ind0);
+		ind0 = find(str, "\\entry", ind0);
 		if (ind0 < 0)
 			break;
 
@@ -95,7 +95,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 	// go through commented entries in main.tex
 	ind0 = -1;
 	while (1) {
-		ind0 = str0.find("\\entry", ++ind0);
+		ind0 = find(str0, "\\entry", ++ind0);
 		if (ind0 < 0)
 			break;
 		// get entry label
@@ -156,14 +156,14 @@ inline void auto_add_toc_labels_prt_cpt()
 			if (ind < 0) break;
 			ind = skip_command(str, ind, 1);
 			Long ind_label = find_command(str, "label", ind);
-			Long ind_LF = str.find('\n', ind);
+			Long ind_LF = find(str, '\n', ind);
 			if (ind_label < 0 || ind_label > ind_LF) {
 				stringstream ss;
 				for (Long i = 16; i < 1000000; ++i) {
 					ss.str("");
 					ss.clear();
 					ss << std::hex << i;
-					if ((Long) str.find(ss.str()) < 0)
+					if (find(str, ss.str()) < 0)
 						break;
 				}
 				if (strcmp(type, "part") == 0)
@@ -209,7 +209,7 @@ inline void table_of_contents(
 	CRLF_to_LF(str);
 	read(html, gv::path_out + "templates/index_template.html"); // read html template
 	CRLF_to_LF(html);
-	ind0 = html.find("PhysWikiHTMLbody", ind0);
+	ind0 = find(html, "PhysWikiHTMLbody", ind0);
 	if (ind0 < 0)
 		throw internal_err(u8"index_template.html 中没有找到 PhysWikiHTMLbody");
 	html.erase(ind0, 16);
@@ -287,7 +287,7 @@ inline void table_of_contents(
 				chap_entry_last.push_back(entries.back());
 			// get chapter id from label cpt_xxx, where xxx is id
 			Long ind_label = find_command(str, "label", ind1);
-			Long ind_LF = str.find('\n', ind1);
+			Long ind_LF = find(str, '\n', ind1);
 			if (ind_label < 0 || ind_label > ind_LF) {
 				auto_add_toc_labels_prt_cpt();
 				throw scan_err(u8"每一个 \\chapter{} 后面（同一行）必须要有 \\label{cpt_XXX}， 已经自动添加， 请重新打开 main.tex");
@@ -318,7 +318,7 @@ inline void table_of_contents(
 				throw scan_err(u8R"(main.tex 中 \part{} 必须在 \entry{} 之后或者目录开始， 不允许空的 \chapter{} 或 \part{}： )" + title);
 			// get part id from label prt_xxx, where xxx is id
 			Long ind_label = find_command(str, "label", ind1);
-			Long ind_LF = str.find('\n', ind1);
+			Long ind_LF = find(str, '\n', ind1);
 			if (ind_label < 0 || ind_label > ind_LF) {
 				auto_add_toc_labels_prt_cpt();
 				throw scan_err(u8"每一个 \\part{} 后面（同一行）必须要有 \\label{prt_XXX}， 已经自动添加， 请重新打开 main.tex");
@@ -356,7 +356,7 @@ inline void table_of_contents(
 	chap_entry_last.push_back(entry);
 
 	// list parts
-	ind0 = html.find("PhysWikiPartList", 0);
+	ind0 = find(html, "PhysWikiPartList", 0);
 	if (ind0 < 0)
 		throw internal_err(u8"html 模板中 PhysWikiPartList 不存在！");
 	html.erase(ind0, 16);

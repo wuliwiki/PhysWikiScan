@@ -859,7 +859,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 // update "history.last" for all table
 inline void db_update_history_last(SQLite::Database &db_read)
 {
-    cout << "updating history.last..."
+    cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "hash", "time", "entry" FROM "history";)");
 	unordered_map<Str, map<Str, Str>> entry2time_hash; // entry -> (time -> hash)
@@ -1564,7 +1564,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 			ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
 		}
 		catch (const std::exception &e) {
-			if ((Long)Str(e.what()).find("row not found") >= 0)
+			if (find(e.what(), "row not found") >= 0)
 				continue; // label deleted
 		}
 		parse(ref_by, ref_by_str);
@@ -1585,7 +1585,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 			ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
 		}
 		catch (const std::exception &e) {
-			if ((Long)Str(e.what()).find("row not found") >= 0)
+			if (find(e.what(), "row not found") >= 0)
 				continue; // label deleted
 		}
 		parse(ref_by, ref_by_str);
@@ -1844,10 +1844,10 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	// parse git output, find addition
 	Long ind = -1;
 	while (1) {
-		ind = str.find("{+", ind+1);
+		ind = find(str, "{+", ind+1);
 		if (ind < 0) break;
 		ind += 2;
-		Long ind1 = str.find("+}", ind);
+		Long ind1 = find(str, "+}", ind);
 		if (ind1 < 0) {
 #ifdef NDEBUG
 			file_rm(file1); file_rm(file2); file_rm(file_diff);
@@ -1860,10 +1860,10 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	// parse git output, find deletion
 	ind = -1;
 	while (1) {
-		ind = str.find("[-", ind+1);
+		ind = find(str, "[-", ind+1);
 		if (ind < 0) break;
 		ind += 2;
-		Long ind1 = str.find("-]", ind);
+		Long ind1 = find(str, "-]", ind);
 		if (ind1 < 0) {
 #ifdef NDEBUG
 			file_rm(file1); file_rm(file2); file_rm(file_diff);

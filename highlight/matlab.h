@@ -23,7 +23,7 @@ inline Long Matlab_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 	Long ind0 = 0;
 	Long N = 0;
 	while (true) {
-	    ind0 = str.find(U'%', ind0);
+	    ind0 = find(str, U'%', ind0);
 	    if (ind0 < 0) {
 	        return intv.size();
 	    }
@@ -31,7 +31,7 @@ inline Long Matlab_comments(Intvs_O intv, Str32_I str, Intvs_I intv_str)
 	        ++ind0;    continue;
 	    }
 	    intv.pushL(ind0);
-	    ind0 = str.find(U'\n', ind0);
+	    ind0 = find(str, U'\n', ind0);
 	    // last line, line ending
 	    if (ind0 < 0) {
 	        intv.pushR(str.size()-1);

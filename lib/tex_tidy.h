@@ -7,7 +7,7 @@ inline Long ensure_space_around(Str_IO str, Str_I c)
 {
 	Long N = 0, ind0 = 0;
 	while (1) {
-		ind0 = str.find(c, ind0);
+		ind0 = find(str, c, ind0);
 		if (ind0 < 0) break;
 		Long ind1 = ind0 + c.size();
 		// check right
@@ -143,7 +143,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 		}
 		if (continue2)
 			continue;
-		if (Llong(follow.find(str[ind0])) >= 0)
+		if (find(follow, str[ind0]) >= 0)
 			continue;
 		msg = u8"\\autoref{} 后面需要空格: “" + str.substr(start, ind0 + 20 - start) + u8"”";
 		if (error)
@@ -175,7 +175,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 		if (ind1 < 0) {
 			if (expect(str, "\\upref", ind0) > 0)
 				throw scan_err(u8"\\autoref{} 和 \\upref{} 中间应该有 ~");
-			Long ind2 = label.find('_');
+			Long ind2 = find(label, '_');
 			if (ind2 < 0)
 				throw scan_err("\\autoref{" + label + u8"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
 			ind5 = str.rfind("\\upref", ind5-1); entry2.clear();

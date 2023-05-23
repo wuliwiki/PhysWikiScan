@@ -1011,6 +1011,43 @@ inline Long CRLF_to_LF(Str32_IO str)
 	}
 }
 
+// my version of string::find() and rfind()
+inline Long find(Str_I str, Str_I key, Long pos = 0)
+{
+	size_t ind = str.find(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
+inline Long find(Str_I str, const char* key, Long pos = 0)
+{
+	size_t ind = str.find(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
+inline Long find(Str_I str, char key, Long pos = 0)
+{
+	size_t ind = str.find(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
+inline Long rfind(Str_I str, Str_I key, Long pos = 0)
+{
+	size_t ind = str.rfind(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
+inline Long rfind(Str_I str, const char* key, Long pos = 0)
+{
+	size_t ind = str.rfind(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
+inline Long rfind(Str_I str, char key, Long pos = 0)
+{
+	size_t ind = str.find(key, pos);
+	return ind == string::npos ? -1 : ind;
+}
+
 // Find the next appearance of one of "key"
 // output the ikey of key[ikey] found
 // return the first index of key[ikey] found, return -1 if nothing found

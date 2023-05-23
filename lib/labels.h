@@ -5,7 +5,7 @@
 inline Str label_type(Str_I label)
 {
 	assert(label[0] != ' '); assert(label.back() != ' ');
-	Long ind1 = label.find('_');
+	Long ind1 = find(label, '_');
 	return label.substr(0, ind1);
 }
 
@@ -13,7 +13,7 @@ inline Str label_type(Str_I label)
 inline Str label_id(Str_I label)
 {
 	assert(label[0] != ' '); assert(label.back() != ' ');
-	Long ind1 = label.find('_');
+	Long ind1 = find(label, '_');
 	return label.substr(ind1+1);
 }
 
@@ -110,7 +110,7 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 				<< u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
 			throw scan_err(tmp);
 		}
-		ind3 = str.find('}', ind3);
+		ind3 = find(str, '}', ind3);
 		
 		label = str.substr(ind0, ind3 - ind0);
 		trim(label);
@@ -233,13 +233,13 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 		if (ind1 < 0)
 			throw scan_err(u8"\\autoref 变量不能为空");
 		ind1 = NextNoSpace(entry1, str, ind1);
-		ind2 = str.find('_', ind1);
+		ind2 = find(str, '_', ind1);
 		if (ind2 < 0)
 			throw scan_err(u8"\\autoref 格式错误");
 		ind3 = find_num(str, ind2);
 		if (ind3 < 0)
 			throw scan_err(u8"autoref 格式错误");
-		Long ind30 = str.find('_', ind2 + 1);
+		Long ind30 = find(str, '_', ind2 + 1);
 		entry1 = str.substr(ind2 + 1, ind30 - ind2 - 1);
 		type = str.substr(ind1, ind2 - ind1);
 		if (!gv::is_eng) {
@@ -280,7 +280,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			else
 				throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
 		}
-		ind3 = str.find('}', ind3);
+		ind3 = find(str, '}', ind3);
 		label0 = str.substr(ind1, ind3 - ind1); trim(label0);
 		Long db_label_order;
 		if (type == "fig") {

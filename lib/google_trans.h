@@ -19,7 +19,7 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
 		dlm = str[ind1];
 		if (dlm == U'{')
 			throw scan_err(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
-		ind2 = str.find(dlm, ind1 + 1);
+		ind2 = find(str, dlm, ind1 + 1);
 		if (ind2 < 0)
 			throw scan_err(u8"\\verb 没有闭合");
 		if (ind2 - ind1 == 1)
@@ -43,7 +43,7 @@ inline Long hide_verbatim(vecStr_O str_verb, Str_IO str)
 		dlm = str[ind1];
 		if (dlm == U'{')
 			throw scan_err(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
-		ind2 = str.find(dlm, ind1 + 1);
+		ind2 = find(str, dlm, ind1 + 1);
 		if (ind2 < 0)
 			throw scan_err(u8"\\lstinline 没有闭合");
 		if (ind2 - ind1 == 1)
@@ -106,7 +106,7 @@ inline void unhide_eq_verb(Str_IO str)
 	read_vec_str(verb_list, gv::path_data + "verb_list.txt");
 	for (Long i = 0; i < size(eq_list); ++i) {
 		label = "$" + num2str(i, 4) + "$";
-		Long ind = str.find(label);
+		Long ind = find(str, label);
 		tmp = eq_list[i];
 		replace(tmp, "PhysWikiScanLF", "\n");
 		if (ind < 0)
@@ -117,7 +117,7 @@ inline void unhide_eq_verb(Str_IO str)
 
 	for (Long i = 0; i < size(verb_list); ++i) {
 		label = "\\verb|" + num2str(i, 4) + "|";
-		Long ind = str.find(label);
+		Long ind = find(str, label);
 		tmp = verb_list[i];
 		replace(tmp, "PhysWikiScanLF", "\n");
 		if (ind < 0)

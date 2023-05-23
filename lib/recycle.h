@@ -8,7 +8,7 @@ inline void code_table(Str_O table_str, Str_I code)
 	while (1) {
 		++N;
 		line_nums += num2str(N) + "<br>";
-		ind1 = code.find(U'\n', ind1);
+		ind1 = find(code, '\n', ind1);
 		if (ind1 < 0)
 			break;
 		++ind1;

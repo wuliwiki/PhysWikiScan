@@ -59,7 +59,7 @@ inline Long paragraph_tag1(Str_IO str)
 	trim(str, " \n");
 	// delete extra '\n' (more than two continuous)
 	while (1) {
-		ind0 = str.find("\n\n\n", ind0);
+		ind0 = find(str, "\n\n\n", ind0);
 		if (ind0 < 0)
 			break;
 		eatR(str, ind0 + 2, "\n");
@@ -261,7 +261,7 @@ inline Long wikipedia_link(Str_IO str)
 		if (ind0 < 0)
 			throw scan_err(u8"\\href{网址}{文字} 命令格式错误！");
 		Long ind1 = pair_brace(str, ind0 - 1);
-		if (Long(link.find("wikipedia.org")) > 0) {
+		if (Long(find(link, "wikipedia.org")) > 0) {
 			replace(link, "wikipedia.org", alter_domain);
 			str.replace(ind0, ind1 - ind0, link);
 		}

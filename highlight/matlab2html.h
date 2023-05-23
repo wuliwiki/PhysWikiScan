@@ -9,7 +9,7 @@ inline Long Matlab_strings(Intvs_O intv, Str32_I str)
     Long ind0 = 0;
     Bool in_string = false;
     while (true) {
-        ind0 = str.find(U'\'', ind0);
+        ind0 = find(str, U'\'', ind0);
         if (ind0 < 0) {
             return intv.size();
         }
@@ -141,7 +141,7 @@ inline Long Matlab_highlight(Str32_IO code)
     Long N = 0;
     // replace "<" and ">"
     replace(code, "<", "&lt;"); replace(code, ">", "&gt;");
-    Long ind = code.find("\n\t");
+    Long ind = find(code, "\n\t");
     if (ind >= 0)
         throw scan_err(u8"Matlab 代码中统一使用四个空格作为缩进： " + code.substr(ind, 20) + "...");
     // highlight keywords

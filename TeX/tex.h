@@ -12,7 +12,7 @@ inline Long find_command(Str_I str, Str_I name, Long_I start = 0)
 {
     Long ind0 = start;
     while (true) {
-        ind0 = str.find("\\" + name, ind0);
+        ind0 = find(str, "\\" + name, ind0);
         if (ind0 < 0)
             return -1;
 
@@ -448,7 +448,7 @@ inline Long lstinline_intv(Intvs_O intv, Str_I str)
         if (ind1 < 0)
             throw scan_err("lstinline_intv() failed (1)!");
         dlm = str[ind1];
-        ind2 = str.find(dlm, ind1 + 1);
+        ind2 = find(str, dlm, ind1 + 1);
         if (ind2 < 0)
             throw scan_err("lstinline_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
@@ -472,7 +472,7 @@ inline Long verb_intv(Intvs_O intv, Str_I str)
         if (ind1 < 0)
             throw scan_err("verb_intv() failed (1)!");
         dlm = str[ind1];
-        ind2 = str.find(dlm, ind1 + 1);
+        ind2 = find(str, dlm, ind1 + 1);
         if (ind2 < 0)
             throw scan_err("verb_intv() failed (2)!");
         intv.pushL(ind0); intv.pushR(ind2);
@@ -492,7 +492,7 @@ inline Long find_single_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
     Long N{}; // number of $$
     Long ind0{};
     while (true) {
-        ind0 = str.find("$", ind0);
+        ind0 = find(str, "$", ind0);
         if (ind0 < 0)
             break;
         if (ind0 > 0 && str[ind0 - 1] == '\\') { // escaped
@@ -526,7 +526,7 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, char option = 'i')
     Long ind0 = -1;
     while (true) {
         // find \(
-        ind0 = str.find("\\(", ++ind0);
+        ind0 = find(str, "\\(", ++ind0);
         if (ind0 < 0) break;
         // `\\(` means a line break and (, 
         //     whether inside or outside equation env
@@ -534,7 +534,7 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, char option = 'i')
         intv.pushL(ind0);
         // find `\)`, ignore `\\)`
         while (true) {
-            ind0 = str.find("\\)", ++ind0);
+            ind0 = find(str, "\\)", ++ind0);
             if (ind0 < 0)
                 throw scan_err(u8"\\( 没有找到匹配的 \\)");
             if (ind0 > 0 && str[ind0-1] == '\\') continue;
@@ -571,7 +571,7 @@ inline Long FindAllBegin(Intvs_O intv, Str_I env, Str_I str, char option)
     intv.clear();
     Long N{}, ind0{}, ind1;
     while (true) {
-        ind1 = str.find("\\begin", ind0);
+        ind1 = find(str, "\\begin", ind0);
         if (ind1 < 0)
             return N;
         ind0 = expect(str, "{", ind1 + 6);
@@ -621,14 +621,14 @@ inline void find_double_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
     intv.clear();
     Long ind0 = 0;
     while (true) {
-        ind0 = str.find("$$", ind0);
+        ind0 = find(str, "$$", ind0);
         if (ind0 < 0)
             return;
         if (option == 'i')
             intv.pushL(ind0+2);
         else
             intv.pushL(ind0);
-        ind0 = str.find("$$", ind0+2);
+        ind0 = find(str, "$$", ind0+2);
         if (ind0 < 0)
             throw scan_err(u8"$$...$$ 公式环境不闭合");
         if (option == 'i')
@@ -649,13 +649,13 @@ inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, char option = 'i')
     Long ind0 = -1;
     while (true) {
         // find \[
-        ind0 = str.find("\\[", ++ind0);
+        ind0 = find(str, "\\[", ++ind0);
         if (ind0 < 0) break;
         if (ind0 > 0 && str[ind0-1] == '\\')
             continue; // `\\[3pt]` might be used in split environment
         intv.pushL(ind0);
         // find \]
-        ind0 = str.find("\\]", ++ind0);
+        ind0 = find(str, "\\]", ++ind0);
         if (ind0 < 0)
             throw scan_err(u8"\\[ 没有找到匹配的 \\]");
         if (ind0 > 0 && str[ind0-1] == '\\')
@@ -823,7 +823,7 @@ inline Long Command2Tag(Str_I nameComm, Str_I strLeft, Str_I strRight, Str_IO st
 {
     Long N{}, ind0{}, ind1{}, ind2{};
     while (true) {
-        ind0 = str.find("\\" + nameComm, ind0);
+        ind0 = find(str, "\\" + nameComm, ind0);
         if (ind0 < 0) break;
         ind1 = ind0 + nameComm.size() + 1;
         ind1 = expect(str, "{", ind1); --ind1;
@@ -861,7 +861,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
         dlm = str[ind1];
         if (dlm == '{')
             throw scan_err(u8"\\verb 不支持 {...}， 请使用任何其他符号如 \\verb|...|， \\verb@...@");
-        ind2 = str.find(dlm, ind1 + 1);
+        ind2 = find(str, dlm, ind1 + 1);
         if (ind2 < 0)
             throw scan_err(u8"\\verb 没有闭合");
         if (ind2 - ind1 == 1)
@@ -893,7 +893,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
         dlm = str[ind1];
         if (dlm == '{')
             throw scan_err(u8"lstinline 不支持 {...}， 请使用任何其他符号如 \\lstinline|...|， \\lstinline@...@");
-        ind2 = str.find(dlm, ind1 + 1);
+        ind2 = find(str, dlm, ind1 + 1);
         if (ind2 < 0)
             throw scan_err(u8"\\lstinline 没有闭合");
         if (ind2 - ind1 == 1)
@@ -947,11 +947,11 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 
     // verb
     while (1) {
-        ind0 = str.find("\\verb|", ind0);
+        ind0 = find(str, "\\verb|", ind0);
         if (ind0 < 0)
             break;
         ind0 += 6; // one char after |
-        Long ind1 = str.find('|', ind0 + 1);
+        Long ind1 = find(str, '|', ind0 + 1);
         if (ind1 < 0)
             throw scan_err(u8"内部错误： verb_recover: \\verb|数字| 格式错误");
 
@@ -959,10 +959,10 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 
         // determin delimiter
         char dlm;
-        if (Long(str_verb[verb_ind].find('|')) >= 0) {
-            if (Long(str_verb[verb_ind].find('+')) >= 0) {
-                if (Long(str_verb[verb_ind].find('-')) >= 0) {
-                    if (Long(str_verb[verb_ind].find('*')) >= 0) {
+        if (find(str_verb[verb_ind], '|') >= 0) {
+            if (find(str_verb[verb_ind], '+') >= 0) {
+                if (find(str_verb[verb_ind], '-') >= 0) {
+                    if (find(str_verb[verb_ind], '*') >= 0) {
                         dlm = '^';
                     }
                     else
@@ -998,7 +998,7 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
         ind1 = expect(str, "|", ind0 + 10); --ind1;
         if (ind1 < 0)
             throw scan_err(u8"内部错误： expect `|index|` after `lstinline`");
-        ind2 = str.find("|", ind1 + 1);
+        ind2 = find(str, "|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2Llong(ind_str);
         replace(str_verb[ind], "<", "&lt;");
@@ -1027,7 +1027,7 @@ inline Long verb(Str_IO str, vecStr_IO str_verb)
         ind1 = expect(str, "|", ind0 + 5); --ind1;
         if (ind1 < 0)
             throw scan_err(u8"内部错误： expect `|index|` after `verb`");
-        ind2 = str.find("|", ind1 + 1);
+        ind2 = find(str, "|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2Llong(ind_str);
         replace(str_verb[ind], "<", "&lt;");

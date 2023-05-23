@@ -26,7 +26,7 @@ void get_args(vecStr_O args, Int_I argc, const char *argv[])
 		Long ind0, ind1 = 0;
 		ind0 = temp.find_first_not_of(' ', ind1);
 		for (Int i = 0; i < 100; ++i) {
-			ind1 = temp.find(' ', ind0);
+			ind1 = find(temp, ' ', ind0);
 			if (ind1 < 0) {
 				if (size(temp) > ind0)
 					args.push_back(temp.substr(ind0));

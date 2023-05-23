@@ -6,17 +6,16 @@
 inline Long line_size_lim(Str_I str, Long_I lim)
 {
 	Long ind0 = 0, line = 0, ind_old = 0;
-	Str32 str32 = u32(str);
-	while (true) {
-		ind0 = str32.find(U"\n", ind0);
+	while (1) {
+		ind0 = find(str, '\n', ind0);
 		++line;
 		if (ind0 < 0) {
-			if (size(str32) - ind_old > lim)
+			if (u8count(str, ind_old) > lim)
 				return line;
 			else
 				return -1;
 		}
-		if (ind0 - ind_old > lim)
+		if (u8count(str, ind_old, ind0) > lim)
 			return line;
 		++ind0;
 		ind_old = ind0;
@@ -40,7 +39,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		ind0 = expect(str, "[", intvIn.L(i));
 		if (ind0 > 0) {
 			ind1 = pair_brace(str, ind0 - 1);
-			ind0 = str.find("caption", ind0);
+			ind0 = find(str, "caption", ind0);
 			if (ind0 > 0 && ind0 < ind1)
 				++Ncaption;
 		}
@@ -52,12 +51,12 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		ind1 = -1;
 		if (ind0 > 0) {
 			ind1 = pair_brace(str, ind0-1);
-			ind0 = str.find("language", ind0);
+			ind0 = find(str, "language", ind0);
 			if (ind0 > 0 && ind0 < ind1) {
 				ind0 = expect(str, "=", ind0 + 8);
 				if (ind0 < 0)
 					throw scan_err(u8"lstlisting 方括号中指定语言格式错误（[language=xxx]）");
-				Long ind2 = str.find(',', ind0);
+				Long ind2 = find(str, ',', ind0);
 				if (ind2 >= 0 && ind2 <= ind1)
 					lang = str.substr(ind0, ind2 - ind0);
 				else
@@ -75,12 +74,12 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		capption_str.clear();
 		if (ind0 > 0) {
 			ind1 = pair_brace(str, ind0 - 1);
-			ind0 = str.find("caption", ind0);
+			ind0 = find(str, "caption", ind0);
 			if (ind0 > 0 && ind0 < ind1) {
 				ind0 = expect(str, "=", ind0 + 7);
 				if (ind0 < 0)
 					throw scan_err(u8"lstlisting 方括号中标题格式错误（[caption=xxx]）");
-				Long ind2 = str.find(',', ind0);
+				Long ind2 = find(str, ',', ind0);
 				if (ind2 >= 0 && ind2 <= ind1)
 					caption = str.substr(ind0, ind2 - ind0);
 				else
@@ -90,7 +89,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 				if (caption.empty())
 					throw scan_err(u8"lstlisting 方括号中标题不能为空（[caption=xxx]）");
 				while (1) {
-					ind3 = caption.find('_', ind3);
+					ind3 = find(caption, '_', ind3);
 					if (ind3 < 0) break;
 					if (ind3 > 0 && caption[ind3-1] != '\\')
 						throw scan_err(u8"lstlisting 标题中下划线前面要加 \\");
