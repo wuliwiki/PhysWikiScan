@@ -889,7 +889,7 @@ inline void db_update_history_last(SQLite::Database &db_read)
 
 // sum history.add and history.del for an author for a given time period
 // time_start and time_end are in yyyymmddmmss format
-inline void author_char_stat(Str_I time_start, Str_I time_end, Str_I author, SQLite::Database &db_read)
+inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLite::Database &db_read)
 {
 	if (time_start.size() != 12 || time_end.size() != 12)
 		throw scan_err(u8"日期格式不正确" SLS_WHERE);
@@ -909,7 +909,8 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str_I author, SQL
 	else if (Nfound == 0) {
 		cout << "精确匹配失败， 尝试模糊匹配……" << endl;
 		SQLite::Statement stmt_author(db_read,
-			R"(SELECT "id", "name" FROM "authors" WHERE "name" LIKE ?;)");
+			R"(SELECT "id", "name" FROM "authors" WHERE "name" LIKE ? ESCAPE '\';)");
+		replace(author, "_", "\\_"); replace(author, "%", "\\%");
 		stmt_author.bind(1, '%' + author + '%');
 		Long Nfound = 0;
 		while (stmt_author.executeStep()) {

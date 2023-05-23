@@ -190,15 +190,19 @@ inline void file_rm(Str_I wildcard_name) {
 #ifndef SLS_USE_MSVC
 
 inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
-{    
+{
 	if (!append)
 		fnames.clear();
 	// save a list of all files (no folder) to temporary file
 	Str path1 = path, stdout;
 	replace(path1, "\"", "\"");
 	Str tmp = "ls -p \""; tmp << path1 << "\" | grep -v /";
-	if (exec_str(stdout, tmp))
-		SLS_ERR(stdout);
+	// grep might return non-zero if there if no file found
+	if (exec_str(stdout, tmp) && !stdout.empty()) {
+		SLS_ERR("command returned nonzero: \n" + tmp + "\nstdout = \n" + stdout);
+	}
+	if (stdout.empty())
+		return;
 	std::istringstream iss(stdout);
 	
 	// read the temporary file
@@ -217,7 +221,7 @@ inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
 inline void file_list(vecStr_O fnames, Str_I path, Bool_I append)
 {
 	WIN32_FIND_DATA data;
-	HANDLE h = FindFirstFile(utf82wstr(path + "*").c_str(), &data);      // DIRECTORY
+	HANDLE h = FindFirstFile(utf82wstr(path + "*").c_str(), &data);  // DIRECTORY
 	Str fname;
 	if (!append)
 		fnames.clear();
@@ -258,7 +262,7 @@ inline void file_list_full(vecStr_O fnames, Str_I path, Bool_I append = false)
 inline void folder_list(vecStr_O folders, Str_I path, Bool_I append = false)
 {
 	WIN32_FIND_DATA data;
-	HANDLE h = FindFirstFile(utf82wstr(path + "*").c_str(), &data);      // DIRECTORY
+	HANDLE h = FindFirstFile(utf82wstr(path + "*").c_str(), &data);  // DIRECTORY
 	Str fname;
 	if (!append)
 		folders.clear();
