@@ -563,11 +563,12 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		update_db = true;
 }
 
-inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read)
+inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
+        vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read)
 {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
-	titles.clear(); titles.resize(entries.size());
+	titles.clear(); titles.resize(entries.size()); entry_err.clear();
 
 	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 	Bool update_db, isdraft;
@@ -596,12 +597,17 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 		Str html;
 
 		// =================================================================
-		PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-			fig_ids, fig_orders,
-			fig_ext_hash, isdraft, keywords,
-			labels, label_orders, entry_uprefs_change[entry],
-			entry_bibs_change[entry],
-			pentry_raw, entry, rules, db_read);
+        try {
+            PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
+                            fig_ids, fig_orders,
+                            fig_ext_hash, isdraft, keywords,
+                            labels, label_orders, entry_uprefs_change[entry],
+                            entry_bibs_change[entry],
+                            pentry_raw, entry, rules, db_read);
+        }
+        catch (const runtime_error e) {
+            entry_err[entry] = e.what();
+        }
 		// ===================================================================
 		// save html file
 		// TODO: mark redundant pentry with a slightly different color
@@ -664,13 +670,16 @@ inline void PhysWikiOnlineN_round1(vecStr_O titles, vecStr_IO entries, SQLite::D
 		file_remove(e);
 }
 
-inline void PhysWikiOnlineN_round2(vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)
+// will ignore entries in entry_err
+inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
+        vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
 	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
+        if (entry_err.count(entry)) continue;
 		cout << std::setw(5) << std::left << i
 			 << std::setw(10) << std::left << entry
 			 << titles[i] << endl; cout.flush();
@@ -753,8 +762,17 @@ inline void PhysWikiOnlineN(vecStr_IO entries)
 	}
 	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 	vecStr titles(entries.size());
-	PhysWikiOnlineN_round1(titles, entries, db_read);
-	PhysWikiOnlineN_round2(entries, titles, db_read);
+    map<Str, Str> entry_err;
+	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
+
+    if (!entry_err.empty()) {
+        cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
+        for (auto &e : entry_err) {
+            cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
+            cout << e.second << endl;
+        }
+    }
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
@@ -785,15 +803,16 @@ inline void PhysWikiOnline()
 
 	arg_bib();
 	arg_toc();
+    map<Str, Str> entry_err;
 
-	PhysWikiOnlineN_round1(titles, entries, db_read);
+	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
 
 	// generate dep.json
 	// TODO: change the tree with new rule
 //    if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //        dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entries, titles, db_read);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
 
 	// TODO: warn unused figures, based on "ref_by"
 
@@ -804,6 +823,14 @@ inline void PhysWikiOnline()
 			fout << Long(c) << endl;
 		}
 	}
+
+    if (!entry_err.empty()) {
+        cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
+        for (auto &e : entry_err) {
+            cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
+            cout << e.second << endl;
+        }
+    }
 }
 
 // recompile every user in user-notes
