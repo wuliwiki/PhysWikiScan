@@ -772,11 +772,16 @@ inline void PhysWikiOnlineN(vecStr_IO entries)
 	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
 
 	if (!entry_err.empty()) {
-		cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
-		for (auto &e : entry_err) {
-			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
-			cout << e.second << endl;
+		if (size(entry_err) > 1) {
+			Str tmp;
+			tmp << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << '\n';
+			for (auto &e: entry_err) {
+				tmp << SLS_RED_BOLD << e.first << SLS_NO_STYLE << '\n' << e.second << '\n';
+			}
+			throw scan_err(tmp);
 		}
+		else
+			throw scan_err((*entry_err.begin()).second);
 	}
 }
 
