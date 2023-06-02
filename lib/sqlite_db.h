@@ -1877,13 +1877,12 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	// check
 	Long Nchar1 = u8count(str1), Nchar2 = u8count(str2);
 	Long net_add = Nchar2 - Nchar1;
-	if (abs(net_add - (add - del)) != 0) {
-		Str tmp = "something wrong (rel err > 4%: net_add = ";
+	if (net_add != add - del) {
+		Str tmp = "something wrong";
 		tmp << to_string(net_add) <<
 			", add = " << to_string(add) << ", del = " << to_string(del) <<
 			", add-del = " << to_string(add - del);
-		SLS_WARN(tmp);
-		// throw std::runtime_error(tmp);
+		throw std::runtime_error(tmp);
 	}
 
 #ifdef NDEBUG

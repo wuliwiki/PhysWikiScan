@@ -206,7 +206,7 @@ inline Long paragraph_tag(Str_IO str)
 			}
 			else
 				begin = "\n";
-		}    
+		}
 	}
 }
 
@@ -564,7 +564,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 }
 
 inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
-        vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read)
+		vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read)
 {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
@@ -589,82 +589,87 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
-		if (i == N0)
-			cout << u8"\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
+		try {
+			if (i == N0)
+				cout << u8"\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
 
-		cout << std::setw(5) << std::left << i
-			 << std::setw(10) << std::left << entry; cout.flush();
-		Str html;
+			cout << std::setw(5) << std::left << i
+				 << std::setw(10) << std::left << entry; cout.flush();
+			Str html;
 
-		// =================================================================
-        try {
-            PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-                            fig_ids, fig_orders,
-                            fig_ext_hash, isdraft, keywords,
-                            labels, label_orders, entry_uprefs_change[entry],
-                            entry_bibs_change[entry],
-                            pentry_raw, entry, rules, db_read);
-        }
-        catch (const runtime_error &e) {
-            entry_err[entry] = e.what();
-        }
-		// ===================================================================
-		// save html file
-		// TODO: mark redundant pentry with a slightly different color
-		write(html, gv::path_out + entry + ".html.tmp");
+			// =================================================================
+				PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
+								fig_ids, fig_orders,
+								fig_ext_hash, isdraft, keywords,
+								labels, label_orders, entry_uprefs_change[entry],
+								entry_bibs_change[entry],
+								pentry_raw, entry, rules, db_read);
+			// ===================================================================
+			// save html file
+			// TODO: mark redundant pentry with a slightly different color
+			write(html, gv::path_out + entry + ".html.tmp");
 
-		cout << titles[i] << endl; cout.flush();
+			cout << titles[i] << endl; cout.flush();
 
-		// update db "entries"
-		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-		if (update_db) {
-			SQLite::Statement stmt_update
-					(db_rw,
-					 R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=? )"
-					 R"(WHERE "id"=?;)");
-			join(key_str, keywords, "|");
-			stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
-			stmt_update.bind(2, key_str);
-			stmt_update.bind(3, (int) isdraft);
-			stmt_update.bind(4, entries[i]);
-			stmt_update.exec(); stmt_update.reset();
+			// update db "entries"
+			SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+			if (update_db) {
+				SQLite::Statement stmt_update
+						(db_rw,
+						 R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=? )"
+						 R"(WHERE "id"=?;)");
+				join(key_str, keywords, "|");
+				stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
+				stmt_update.bind(2, key_str);
+				stmt_update.bind(3, (int) isdraft);
+				stmt_update.bind(4, entries[i]);
+				stmt_update.exec(); stmt_update.reset();
+			}
+
+			// update db labels, figures
+			db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
+			db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
+							  {fig_ext_hash}, db_rw);
+			db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
+
+			// order change means `update_entries` needs to be updated with autoref() as well.
+			// but just in case, we also run 1st round again for them
+			if (!gv::is_entire && !update_entries.empty()) {
+				for (auto &new_entry: update_entries)
+					if (search(new_entry, entries) < 0)
+						entries.push_back(new_entry);
+				update_entries.clear();
+				titles.resize(entries.size());
+			}
+
+			// check dependency tree and auto mark redundant pentry with ~
+			db_get_tree1(tree, nodes, entry_info,
+						 pentry_raw, entry, titles[i], db_read);
+			// update entries.pentry if changed
+			db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
+			join_pentry(pentry_str, pentry_raw);
+			if (pentry_str != db_pentry_str) {
+				SQLite::Statement stmt_update(db_rw,
+					R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
+				stmt_update.bind(1, pentry_str);
+				stmt_update.bind(2, entry);
+				stmt_update.exec(); stmt_update.reset();
+			}
 		}
-
-		// update db labels, figures
-		db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
-		db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
-						  {fig_ext_hash}, db_rw);
-		db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
-
-		// order change means `update_entries` needs to be updated with autoref() as well.
-		// but just in case, we also run 1st round again for them
-		if (!gv::is_entire && !update_entries.empty()) {
-			for (auto &new_entry: update_entries)
-				if (search(new_entry, entries) < 0)
-					entries.push_back(new_entry);
-			update_entries.clear();
-			titles.resize(entries.size());
-		}
-
-		// check dependency tree and auto mark redundant pentry with ~
-		db_get_tree1(tree, nodes, entry_info,
-					 pentry_raw, entry, titles[i], db_read);
-		// update entries.pentry if changed
-		db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
-		join_pentry(pentry_str, pentry_raw);
-		if (pentry_str != db_pentry_str) {
-			SQLite::Statement stmt_update(db_rw,
-				R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
-			stmt_update.bind(1, pentry_str);
-			stmt_update.bind(2, entry);
-			stmt_update.exec(); stmt_update.reset();
+		catch (const std::exception &e) {
+			entry_err[entry] = e.what();
 		}
 	}
 
-	// update entries.bibs & bibliography.ref_by
-	db_update_entry_bibs(entry_bibs_change);
-	// update entries.uprefs & entries.ref_by
-	db_update_uprefs(entry_uprefs_change);
+	try {
+		// update entries.bibs & bibliography.ref_by
+		db_update_entry_bibs(entry_bibs_change);
+		// update entries.uprefs & entries.ref_by
+		db_update_uprefs(entry_uprefs_change);
+	}
+	catch (const std::exception &e) {
+		entry_err["entry_unknown"] = e.what();
+	}
 
 	for (auto &e : img_to_delete)
 		file_remove(e);
@@ -672,14 +677,14 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
-        vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)
+		vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
 	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
-        if (entry_err.count(entry)) continue;
+		if (entry_err.count(entry)) continue;
 		cout << std::setw(5) << std::left << i
 			 << std::setw(10) << std::left << entry
 			 << titles[i] << endl; cout.flush();
@@ -762,17 +767,17 @@ inline void PhysWikiOnlineN(vecStr_IO entries)
 	}
 	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 	vecStr titles(entries.size());
-    map<Str, Str> entry_err;
+	map<Str, Str> entry_err;
 	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
 	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
 
-    if (!entry_err.empty()) {
-        cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
-        for (auto &e : entry_err) {
-            cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
-            cout << e.second << endl;
-        }
-    }
+	if (!entry_err.empty()) {
+		cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
+		for (auto &e : entry_err) {
+			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
+			cout << e.second << endl;
+		}
+	}
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
@@ -803,14 +808,14 @@ inline void PhysWikiOnline()
 
 	arg_bib();
 	arg_toc();
-    map<Str, Str> entry_err;
+	map<Str, Str> entry_err;
 
 	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
 
 	// generate dep.json
 	// TODO: change the tree with new rule
-//    if (file_exist(gv::path_out + "../tree/data/dep.json"))
-//        dep_json(db_read);
+//	if (file_exist(gv::path_out + "../tree/data/dep.json"))
+//		dep_json(db_read);
 
 	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
 
@@ -824,13 +829,13 @@ inline void PhysWikiOnline()
 		}
 	}
 
-    if (!entry_err.empty()) {
-        cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
-        for (auto &e : entry_err) {
-            cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
-            cout << e.second << endl;
-        }
-    }
+	if (!entry_err.empty()) {
+		cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
+		for (auto &e : entry_err) {
+			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
+			cout << e.second << endl;
+		}
+	}
 }
 
 // recompile every user in user-notes
