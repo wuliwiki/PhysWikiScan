@@ -24,3 +24,5 @@ file_add_del_git_diff_output.txt
 file_add_del_tmp_file1.txt
 file_add_del_tmp_file2.txt
 PhysNoteScan
+dryrun.log
+targets.log

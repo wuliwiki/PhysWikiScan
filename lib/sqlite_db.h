@@ -1010,10 +1010,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 		R"(SELECT "order", "ref_by", "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
-	SQLite::Statement stmt_update0(db_rw,
-		R"(UPDATE "figures" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "image_alt"=? WHERE "id"=?;)");
+		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "image_alt"=?, "deleted"=0 WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
 		R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
@@ -1049,8 +1047,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	figs_used.resize(db_figs_used.size(), false);
 	Str figs_str, image, image_alt;
 	set<Str> new_figs, figs;
-	// fig orders set to negative to avoid conflict
-	vector<pair<Str,Long>> fig_order_neg; // {id, order}
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -1077,16 +1073,20 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				SLS_WARN(tmp);
 				stmt_insert.bind(1, id);
 				stmt_insert.bind(2, entry);
-				stmt_insert.bind(3, -(int)order);
+				stmt_insert.bind(3, (int)order);
 				stmt_insert.bind(4, image);
 				stmt_insert.bind(5, image_alt);
 				stmt_insert.exec(); stmt_insert.reset();
 				new_figs.insert(id);
-				fig_order_neg.emplace_back(id, order);
 				continue;
 			}
 			figs_used[ind] = true;
 			bool changed = false;
+			// 图片 label 在 entries.figures 中，检查是否未被使用
+			if (!db_figs_used[ind]) {
+				SLS_WARN(u8"发现数据库中未使用的图片被重新使用：" + id);
+				changed = true;
+			}
 			if (entry != db_fig_entries[ind]) {
 				tmp = u8"发现数据库中图片 entry 改变（将更新）："; tmp << id << ": "
 					  << db_fig_entries[ind] << " -> " << entry;
@@ -1120,12 +1120,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			}
 			if (changed) {
 				stmt_update.bind(1, entry);
-				stmt_update.bind(2, -int(order)); // -order to avoid UNIQUE constraint
+				stmt_update.bind(2, int(order)); // -order to avoid UNIQUE constraint
 				stmt_update.bind(3, image);
 				stmt_update.bind(4, image_alt);
 				stmt_update.bind(5, id);
 				stmt_update.exec(); stmt_update.reset();
-				fig_order_neg.emplace_back(id, order);
 			}
 		}
 
@@ -1153,7 +1152,9 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 		if (!figs_used[i] && db_figs_used[i]) {
 			if (db_fig_ref_bys[i].empty() ||
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
-				SLS_WARN(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 将标记未使用");
+				tmp = u8"检测到 \\label{fig_";
+				tmp << db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
+				SLS_WARN(tmp);
 				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
 				stmt_update3.exec(); stmt_update3.reset();
@@ -1174,13 +1175,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些词条引用（请撤销删除）： " + ref_by_str);
 			}
 		}
-	}
-
-	// set label orders back to positive
-	for (auto &e : fig_order_neg) {
-		stmt_update0.bind(1, (int)e.second); // order
-		stmt_update0.bind(2, e.first); // id
-		stmt_update0.exec(); stmt_update0.reset();
 	}
 	transaction.commit();
 	// cout << "done!" << endl;
