@@ -1919,8 +1919,9 @@ inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) 
 			}
 			fname_exist = true;
 			const char *hash = stmt_select2.getColumn(0);
+            read(str, fname); CRLF_to_LF(str);
 			if (fname_old.empty()) // first backup
-				hist_add_del[hash] = make_pair(file_size(fname), 0);
+				hist_add_del[hash] = make_pair(u8count(str), 0);
 			else {
 				int db_add = stmt_select2.getColumn(3);
 				int db_del = stmt_select2.getColumn(4);
@@ -1929,7 +1930,7 @@ inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) 
 				auto &e = hist_add_del[hash];
 				Long &add = e.first, &del = e.second;
 				cout << fname << endl;
-				read(str_old, fname_old); read(str, fname);
+				read(str_old, fname_old);
 				// compare str and str_old
 				file_add_del(add, del, str_old, str);
 			}

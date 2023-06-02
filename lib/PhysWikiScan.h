@@ -605,7 +605,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
                             entry_bibs_change[entry],
                             pentry_raw, entry, rules, db_read);
         }
-        catch (const runtime_error e) {
+        catch (const runtime_error &e) {
             entry_err[entry] = e.what();
         }
 		// ===================================================================
