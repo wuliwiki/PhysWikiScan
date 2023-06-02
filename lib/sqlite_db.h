@@ -1007,7 +1007,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	SQLite::Statement stmt_select0(db_rw,
 		R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by", "image", "image_alt" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by", "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_update0(db_rw,
@@ -1020,7 +1020,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	// get all figure envs defined in `entries`, to detect deleted figures
 	//  db_xxx[i] are from the same row of "labels" table
 	vecStr db_figs, db_fig_entries, db_fig_image, db_fig_image_alt;
-	vecBool db_figs_used;
+	vecBool db_figs_used, figs_used;
 	vecLong db_fig_orders;
 	vector<vecStr> db_fig_ref_bys;
 	set<Str> db_entry_figs;
@@ -1042,10 +1042,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
 			db_fig_image_alt.push_back(stmt_select1.getColumn(3));
+			db_figs_used.push_back(!(bool)stmt_select1.getColumn(4).getInt());
 			stmt_select1.reset();
 		}
 	}
-	db_figs_used.resize(db_figs.size(), false);
+	figs_used.resize(db_figs_used.size(), false);
 	Str figs_str, image, image_alt;
 	set<Str> new_figs, figs;
 	// fig orders set to negative to avoid conflict
@@ -1070,7 +1071,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				image = map.at("pdf") + ".pdf";
 				image_alt = map.at("svg") + ".svg";
 			}
-			if (ind < 0) {
+			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp = u8"发现数据库中没有的图片环境（将模拟 editor 添加）："; tmp << id << ", " << entry
 					<< ", " << to_string(order);
 				SLS_WARN(tmp);
@@ -1084,7 +1085,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				fig_order_neg.emplace_back(id, order);
 				continue;
 			}
-			db_figs_used[ind] = true;
+			figs_used[ind] = true;
 			bool changed = false;
 			if (entry != db_fig_entries[ind]) {
 				tmp = u8"发现数据库中图片 entry 改变（将更新）："; tmp << id << ": "
@@ -1147,25 +1148,26 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	// 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
 	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "entry"='' WHERE "id"=?;)");
-	for (Long i = 0; i < size(db_figs_used); ++i) {
-		if (!db_figs_used[i]) {
+	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "id"=?;)");
+	for (Long i = 0; i < size(figs_used); ++i) {
+		if (!figs_used[i] && db_figs_used[i]) {
 			if (db_fig_ref_bys[i].empty() ||
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
 				SLS_WARN(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 将标记未使用");
 				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
 				stmt_update3.exec(); stmt_update3.reset();
-				// delete from "entries.figures"
-				stmt_select0.bind(1, db_fig_entries[i]);
-				SLS_ASSERT(stmt_select0.executeStep());
-				parse(figs, stmt_select0.getColumn(0));
-				figs.erase(db_figs[i]);
-				stmt_select0.reset();
-				join(figs_str, figs);
-				stmt_update2.bind(1, figs_str);
-				stmt_update2.bind(2, db_fig_entries[i]);
-				stmt_update2.exec(); stmt_update2.reset();
+//				// delete from "entries.figures"
+//				// (update: "entries.figures" now also includes deleted figs)
+//				stmt_select0.bind(1, db_fig_entries[i]);
+//				SLS_ASSERT(stmt_select0.executeStep());
+//				parse(figs, stmt_select0.getColumn(0));
+//				figs.erase(db_figs[i]);
+//				stmt_select0.reset();
+//				join(figs_str, figs);
+//				stmt_update2.bind(1, figs_str);
+//				stmt_update2.bind(2, db_fig_entries[i]);
+//				stmt_update2.exec(); stmt_update2.reset();
 			}
 			else {
 				join(ref_by_str, db_fig_ref_bys[i], ", ");

@@ -10,7 +10,7 @@ CREATE TABLE "entries" (
 	
 	"part"	TEXT NOT NULL DEFAULT '', -- 部分， 空代表不在目录中
 	"chapter"	TEXT NOT NULL DEFAULT '', -- 章， 空代表不在目录中
-	"last"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
+	"last"	TEXT NOT NULL DEFAULT '', -- 目录中的上一个词条， 空代表这是第一个或不在目录中
 	"next"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
 
 	-- [Xiao] 小时科技版权，作者署名权（见 licens.tex）
@@ -39,8 +39,8 @@ CREATE TABLE "entries" (
 	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布 (review.hash)
 	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份 (history.hash)
 
-	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 定义的 figures
-	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片代码）
+	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 图片环境（包括删除的）
+	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片和代码）
 
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"	TEXT NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
@@ -102,7 +102,7 @@ CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
 	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
-	"entry"	TEXT NOT NULL DEFAULT '', -- 【生成】所在词条（以 entries.figures 为准， '' 代表未被使用）
+	"entry"	TEXT NOT NULL DEFAULT '', -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter" TEXT NOT NULL DEFAULT '', -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 
 	"order"	INTEGER NOT NULL DEFAULT 0, -- 显示编号（从 1 开始， 0 代表未知）
@@ -112,12 +112,12 @@ CREATE TABLE "figures" (
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 以下信息为空且由另一条记录管理： "image_alt", "image_old", "files", "source"
+	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "image_alt", "image_old", "files", "source"
+	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0] 被使用 [1] 未被使用
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("image") REFERENCES "images"("hash"),
-	FOREIGN KEY("aka") REFERENCES "figures"("id"),
-	UNIQUE("entry", "order")
+	FOREIGN KEY("aka") REFERENCES "figures"("id")
 );
 
 -- 防止 FOREIGN KEY 报错
