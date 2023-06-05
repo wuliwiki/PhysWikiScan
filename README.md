@@ -1,15 +1,15 @@
 # PhysWikiScan
-PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转换为 html 的程序。
+PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转换为 html 的程序。 一般需要另外一个仓库 `PhysWiki`， 一般和 `littleshi.cn` 和 `PhysWiki` （非开源）仓库放在同一个目录。
 
 ## 使用说明
-* 如果不输入任何参数， 程序运行后会提示从 stdin 输入 arguments
-* `PhysWikiScan .` 全部 tex 文件转换为 html， 并生成完整目录 `index.html`。 `main.tex` 中不存在的词条也会被转换（将警告）。
-* `PhysWikiScan --titles`: 扫描所有 tex 文件， 扫描 `main.tex`， 更新数据库
-* `PhysWikiScan --toc`: 生成完整目录 `index.html`， 更新数据库
-* `PhysWikiScan --entry fname1 fname2 ...`：转换指定的词条 `fname1.tex fname2.tex`
-* `PhysWikiScan --autoref fname eq 8` 查找 `fname.tex` 词条的网页公式序号 (8) 是否存在 label。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_fname_*}`， 把 label 输出到 stdout 且输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到 stdout 且输出 `exist`。
-* `PhysWikiScan --autoref-dry fname eq 8` 和上一条一模一样， 但不会真的给词条添加 label。
-* `PhysWikiScan --bib` 生成文献列表 `bibliography.html`。
+* 如果不输入任何参数， 程序运行后会提示从命令行输入参数。
+* `PhysWikiScan .` 把全部 `contents/*.tex` 文件转换为 `online/*.html`， 并使用 `main.tex` 生成完整目录 `index.html`。 `main.tex` 中不存在的词条也会被转换（将警告）。
+* `PhysWikiScan --titles`: 扫描所有 tex 文件， 扫描 `main.tex`， 更新数据库。
+* `PhysWikiScan --toc`: 生成完整目录 `index.html`， 更新数据库。
+* `PhysWikiScan --entry 词条1 词条2 ...`：转换 `contents` 中指定的词条 `词条1.tex 词条2.tex ...`。
+* `PhysWikiScan --autoref 词条 eq 8` 查找 `contents/词条.tex` 词条的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_词条_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
+* `PhysWikiScan --autoref-dry fname eq 8` 和上一条一模一样， 除了不会真的给词条文件添加 label。
+* `PhysWikiScan --bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `PhysWikiScan --hide fname` 把词条中的公式和代码全部替换成 `$四位编号$` 以及 `\verb|四位编号|`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`， 编号对应 txt 中的行号（从 0 开始）
 * `PhysWikiScan --unhide fname` 把词条中的公式和代码恢复。
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会自动跳过该词条）
