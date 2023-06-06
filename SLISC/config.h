@@ -5,3 +5,4 @@
 #define SLS_USE_SQLITECPP
 #define SLS_USE_SQLITE
 #define SLS_USE_UTFCPP
+#define NDEBUG

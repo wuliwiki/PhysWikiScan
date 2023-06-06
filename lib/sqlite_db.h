@@ -1845,8 +1845,9 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		ind += 2;
 		Long ind1 = find(str, "+}", ind);
 		if (ind1 < 0) {
-#ifdef NDEBUG
-			file_rm(file1); file_rm(file2); file_rm(file_diff);
+            file_rm(file1); file_rm(file2);
+#ifndef NDEBUG
+	        file_rm(file_diff);
 #endif
 			throw std::runtime_error("matching +} not found!");
 		}
@@ -1861,8 +1862,9 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		ind += 2;
 		Long ind1 = find(str, "-]", ind);
 		if (ind1 < 0) {
-#ifdef NDEBUG
-			file_rm(file1); file_rm(file2); file_rm(file_diff);
+            file_rm(file1); file_rm(file2);
+#ifndef NDEBUG
+			file_rm(file_diff);
 #endif
 			throw std::runtime_error("matching -] not found!");
 		}
@@ -1881,8 +1883,9 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		throw std::runtime_error(tmp);
 	}
 
-#ifdef NDEBUG
-	file_rm(file1); file_rm(file2); file_rm(file_diff);
+    file_rm(file1); file_rm(file2);
+#ifndef NDEBUG
+	file_rm(file_diff);
 #endif
 }
 
