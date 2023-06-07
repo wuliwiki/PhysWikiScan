@@ -179,8 +179,8 @@ inline void ensure_dir(Str_I dir_or_file)
 
 #ifndef SLS_USE_MSVC
 // remove a file
-inline void file_rm(Str_I wildcard_name) {
-	system(("rm " + wildcard_name).c_str());
+inline int file_rm(Str_I wildcard_name) {
+	return system(("rm " + wildcard_name).c_str());
 }
 #endif
 

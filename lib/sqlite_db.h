@@ -769,10 +769,16 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		entry = fname.substr(ind+1);
 		author = fname.substr(13, ind-13);
 		Long authorID;
-		if (sha1_exist) {
-			authorID = str2Llong(author);
-		}
-		else {
+
+        // check if editor is still saving using old `YYYYMMDDHHMM_author_entry` format
+        Bool use_author_name = true;
+        if (str2int(authorID, author) == size(author)) {
+            // SQLite::Statement stmt_select4(db_rw, R"(SELECT 1 FROM "authors" WHERE "id"=)" + author);
+            // if (stmt_select4.executeStep())
+                use_author_name = false;
+        }
+
+        if (use_author_name) {
 			// editor is still saving using old `YYYYMMDDHHMM_author_entry` format for now
 			// TODO: delete this block after editor use `YYYYMMDDHHMM_authorID_entry` format
 			if (db_author_to_id.count(author))
@@ -1847,7 +1853,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		if (ind1 < 0) {
             file_rm(file1); file_rm(file2);
 #ifndef NDEBUG
-	        file_rm(file_diff);
+			file_rm(file_diff);
 #endif
 			throw std::runtime_error("matching +} not found!");
 		}
