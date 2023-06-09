@@ -488,6 +488,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	check_eq_ascii(str);
 	// forbid empty lines in equations
 	check_eq_empty_line(str);
+	// ensure equation punctuation
+	if (gv::is_wiki)
+		check_display_eq_punc(str);
 	// add spaces around inline equation
 	inline_eq_space(str);
 	// replace "<" and ">" in equations

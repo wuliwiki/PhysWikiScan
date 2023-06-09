@@ -685,6 +685,37 @@ inline void find_display_eq(Intvs_O intv, Str_I str, char option = 'i')
     combine(intv, intv1);
 }
 
+// in display equation, check if `~,`, `~.` exist,
+// or if a single `~` exist in the end (except spaces and returns)
+inline void check_display_eq_punc(Str_I str)
+{
+	Intvs intv;
+	find_display_eq(intv, str);
+	Str tmp;
+	for (Long i = intv.size() - 1; i >= 0; --i) {
+		Long start = intv.L(i), end = intv.R(i);
+		Long j;
+		for (j = start; j < end; ++j) {
+			char c = str[j], c1 = str[j+1];
+			if (c == '~' && (c1 == '.' || c1 == ','))
+				break;
+		}
+		if (j == end) {
+			for (j = end; j >= start; --j) {
+				char c = str[j];
+				if (c == ' ' || c == '\n') continue;
+				if (c == '~') break;
+				tmp = u8R"(根据编写规范，请在行间公式最后添加标点（如 "~," 或 "~."）， 详见 Sample.tex。
+如果的确没必要，请在最后添加 "~"。 当前公式为：
+)";
+				tmp << str.substr(start, end+1-start);
+				SLS_WARN(tmp);
+				throw scan_err(tmp);
+			}
+		}
+	}
+}
+
 // forbid empty line in equations
 inline void check_eq_empty_line(Str_I str)
 {
