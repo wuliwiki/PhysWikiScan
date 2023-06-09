@@ -838,7 +838,7 @@ inline void PhysWikiOnline()
 	}
 
 	if (!entry_err.empty()) {
-		cout << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << endl;
+		cout << SLS_RED_BOLD << entry_err.size() << "个词条编译失败： " SLS_NO_STYLE << endl;
 		for (auto &e : entry_err) {
 			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
 			cout << e.second << endl;
