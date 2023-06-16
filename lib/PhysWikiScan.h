@@ -491,7 +491,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// ensure equation punctuation
 	if (gv::is_wiki) {
 		check_display_eq_punc(str);
-		check_display_eq_paragraph(str);
+		// check_display_eq_paragraph(str);
 	}
 	// add spaces around inline equation
 	inline_eq_space(str);
