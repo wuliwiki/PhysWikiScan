@@ -725,44 +725,53 @@ inline void check_display_eq_paragraph(Str_I str)
 {
 	Str tmp;
 	u8_iter it0(str);
-	Intvs intv_i, intv_o;
-	find_display_eq(intv_i, str, 'i');
+	Intvs intv_o;
 	find_display_eq(intv_o, str, 'o');
-	for (Long i = 1; i < intv_i.size(); ++i) {
-		// 公式前面是否有空行
-		it0 = intv_o.L(i);
-		do { --it0; } while (*it0 == " ");
-		if (*it0 == "\n") { // 第 1 个换行符
+	for (Long i = 0; i < intv_o.size(); ++i) {
+		try {
+			// 公式前面是否有空行
+			it0 = intv_o.L(i);
 			do { --it0; } while (*it0 == " ");
-			if (*it0 == "\n") { // 第 2 个换行符（至少空一行）
+			if (*it0 == "\n") { // 第 1 个换行符
 				do { --it0; } while (*it0 == " ");
-				if (*it0 != "\n") { // 只空一行
-					throw scan_err(u8"在 latex 中，空行表示分段，而在公式前分段并不常见。如果你确实要这么做，请在公式前空两行以确认。 当前公式： \n"
-						+ str.substr(intv_o.L(i), intv_o.R(i)+1-intv_o.L(i)));
+				if (*it0 == "\n") { // 第 2 个换行符（至少空一行）
+					do { --it0; } while (*it0 == " ");
+					if (*it0 != "\n") { // 只空一行
+						throw scan_err(u8"在 latex 中，空行表示分段，而在公式前分段并不常见。如果你确实要这么做，请在公式前空两行以确认。 当前公式： \n"
+									   + str.substr(intv_o.L(i), intv_o.R(i) + 1 - intv_o.L(i)));
+					}
 				}
+			} else {
+				throw scan_err(u8"根据小时百科格式规范，行间公式代码必须另起一行。 当前公式：\n"
+							   + str.substr(intv_o.L(i), intv_o.R(i) + 1 - intv_o.L(i)));
 			}
-		}
-		else {
-			throw scan_err(u8"根据小时百科格式规范，行间公式代码必须另起一行。 当前公式：\n"
-				+ str.substr(intv_o.L(i), intv_o.R(i)+1-intv_o.L(i)));
-		}
 
-		// 公式后面是否有空行
-		it0 = intv_o.R(i);
-		do { ++it0; } while (*it0 == " ");
-		if (*it0 == "\n") { // 第 1 个换行符
+			// 公式后面是否有空行
+			vecStr excepts = {"\\subs", "\\item", "\\end{", "\\begin{ex", "\\begin{f",
+							  "\\begin{t"}; // 若公式后面是这些字符串， 则不警告
+			it0 = intv_o.R(i);
 			do { ++it0; } while (*it0 == " ");
-			if (*it0 == "\n") { // 第 2 个换行符（至少空一行）
+			if (*it0 == "\n") { // 第 1 个换行符
 				do { ++it0; } while (*it0 == " ");
-				if (*it0 != "\n") { // 只空一行
-					throw scan_err(u8"在 latex 中，空行表示分段。有些作者在每个公式后面都随手空行，这是错的。如果你的确想要在公式后面分段，请空两行以确认。 当前公式： \n"
-						+ str.substr(intv_o.L(i), intv_o.R(i)+1-intv_o.L(i)));
+				if (*it0 == "\n") { // 第 2 个换行符（至少空一行）
+					do { ++it0; } while (*it0 == " ");
+					if (*it0 != "\n") { // 只空一行
+						bool excepted = false;
+						for (auto &e: excepts)
+							if (str.substr(it0, size(e)) == e)
+								excepted = true;
+						if (!excepted)
+							throw scan_err(u8"在 latex 中，空行表示分段。有些作者在每个公式后面都随手空行，这是错的。如果你的确想要在公式后面分段，请空两行以确认。 当前公式： \n"
+										   + str.substr(intv_o.L(i), intv_o.R(i) + 1 - intv_o.L(i)));
+					}
 				}
+			} else {
+				throw scan_err(u8"根据小时百科格式规范，行间公式代码结束后必须另起一行。 当前公式：\n"
+							   + str.substr(intv_o.L(i), intv_o.R(i) + 1 - intv_o.L(i)));
 			}
 		}
-		else {
-			throw scan_err(u8"根据小时百科格式规范，行间公式代码结束后必须另起一行。 当前公式：\n"
-				+ str.substr(intv_o.L(i), intv_o.R(i)+1-intv_o.L(i)));
+		catch (const std::out_of_range& e) {
+			continue;
 		}
 	}
 }
