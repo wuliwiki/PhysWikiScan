@@ -800,11 +800,11 @@ inline void PhysWikiOnline()
 	gv::is_entire = true; // compiling the whole wiki
 
 	// remove matlab files
-	vecStr fnames;
-	ensure_dir(gv::path_out + "code/matlab/");
-	file_list_full(fnames, gv::path_out + "code/matlab/");
-	for (Long i = 0; i < size(fnames); ++i)
-		file_remove(fnames[i]);
+	// TODO: check deleted lstlisting using db
+//	vecStr matlab_files;
+//	ensure_dir(gv::path_out + "code/matlab/");
+//	file_list_full(matlab_files, gv::path_out + "code/matlab/");
+
 
 	vecStr entries, titles;
 
