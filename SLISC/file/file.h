@@ -301,7 +301,7 @@ inline void folder_list_full(vecStr_O folders, Str_I path, bool append = false)
 	if (!append)
 		folders.clear();
 	// save a list of all files (no folder) to temporary file
-	Str tmp = "find "; tmp << path << " -maxdepth 1 -mindepth 1 -type d;";
+	Str tmp = "find "; tmp << path << " -maxdepth 1 -mindepth 1 -type d";
 	Str stdout;
 	if (exec_str(stdout, tmp))
 		SLS_ERR(stdout);
