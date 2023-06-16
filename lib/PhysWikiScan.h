@@ -489,8 +489,10 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// forbid empty lines in equations
 	check_eq_empty_line(str);
 	// ensure equation punctuation
-	if (gv::is_wiki)
+	if (gv::is_wiki) {
 		check_display_eq_punc(str);
+		check_display_eq_paragraph(str);
+	}
 	// add spaces around inline equation
 	inline_eq_space(str);
 	// replace "<" and ">" in equations
@@ -660,6 +662,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			}
 		}
 		catch (const std::exception &e) {
+			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
 			entry_err[entry] = e.what();
 		}
 	}
