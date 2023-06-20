@@ -488,7 +488,7 @@ inline Long href(Str_IO str)
             url.substr(0, 8) != "https://") {
             throw scan_err(u8"链接格式错误: " + url);
         }
-
+        replace(url, "\\%", "%");
         Long ind1 = skip_command(str, ind0, 2);
         str.replace(ind0, ind1 - ind0,
             "<a href=\"" + url + "\" target = \"_blank\">" + name + "</a>");

@@ -5,8 +5,8 @@ Debug/
 Release/
 x64/
 backup/
-PhysWikiScan
-NoteScan
+PhysWikiScan*
+NoteScan*
 *.vcxproj.user
 npm-debug.log
 data/*.txt
