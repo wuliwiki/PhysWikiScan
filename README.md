@@ -26,6 +26,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会自动跳过该词条）
 * `PhysWikiScan ,` 批量把正文中汉字两边的英文标点变为中文（有少量 bug，碰到会跳过该词条）
 * `PhysWikiScan --check-url 词条1 词条2 ...` 会转换输出路径中 `词条1.html 词条2.html` 的所有 `http` 开头的链接是否可以正常访问。 含 `wikipedia.org` 的除外。 如果不输入 `词条1 词条2 ...` 则检查输出目录中的所有 `html` 文件。
+* `PhysWikiScan --check-url-from 词条1` 检查输出目录的所有 `html` 文件， 但从 `词条1` 开始。
 * 【暂不使用】`PhysWikiScan --hide 词条` 把词条中的公式和代码全部替换成 `$四位编号$` 以及 `\verb|四位编号|`, 防止 google 翻译改写。 数据写入 `eq_list.txt` 和 `verb_list.txt`， 编号对应 txt 中的行号（从 0 开始）
 * 【暂不使用】`PhysWikiScan --unhide 词条` 把词条中的公式和代码恢复。
 

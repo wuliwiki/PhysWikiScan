@@ -146,7 +146,7 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 // check dead url for one or all entries
 // if `entries` is empty, then check all non-deleted entries
 // TODO: not tested!
-inline void check_url(vecStr &entries)
+inline void check_url(vecStr &entries, Str_I entry_start = "")
 {
 	if (entries.empty()) {
 		entries.clear();
@@ -155,7 +155,14 @@ inline void check_url(vecStr &entries)
 	Str html, fpath, url, res;
 	unordered_set<Str> checked_links;
 	map<Str, unordered_map<Str,Str>> bad_links; // entry -> vector of (ulr, stdout)
-	for (auto &entry : entries) {
+	Long start = 0;
+	if (!entry_start.empty()) {
+		start = search(entry_start, entries);
+		if (start < 0)
+			throw scan_err(entries[start] + ".html 未找到");
+	}
+	for (Long i = start; i < size(entries); ++i) {
+		auto &entry = entries[i];
 		fpath = gv::path_out; fpath << entry << ".html";
 		cout << "\n\n" << fpath << "\n----------------" << endl;
 		read(html, fpath);
@@ -170,7 +177,9 @@ inline void check_url(vecStr &entries)
 			Long ind1 = (Long)html.find_first_of("\" >", ind);
 			if (ind1 < 0) continue;
 			url = html.substr(ind, ind1-ind);
-			url.resize(url.rfind('#'));
+			Long ind = rfind(url, '#');
+			if (ind > 0) // remove html tag
+				url.resize(ind);
 			if (checked_links.count(url))
 				continue;
 			checked_links.insert(url);
@@ -187,7 +196,8 @@ inline void check_url(vecStr &entries)
 					// res.substr(9, 3) != "403" && res.substr(7, 3) != "403"
 				)) {
 					bad_links[entry][url] = res;
-					cout << u8"无法正常访问： " << url << endl;
+					cout << SLS_RED_BOLD << u8"无法正常访问： " << url << SLS_NO_STYLE << endl;
+					cout << SLS_YELLOW_BOLD << res << SLS_NO_STYLE << endl;
 				}
 				else
 					cout << u8"可以正常访问： " << url << endl;
@@ -196,8 +206,8 @@ inline void check_url(vecStr &entries)
 	}
 	for (auto &e : bad_links) {
 		for (auto &e1 : e.second) {
-			cout << "---------------------" << endl;
-			cout << e.first << ".html" << endl;
+			cout << "\n---------------------" << endl;
+			cout << SLS_RED_BOLD << e.first << ".html" << SLS_NO_STYLE << endl;
 			cout << e1.first << endl;
 			cout << e1.second << endl;
 		}

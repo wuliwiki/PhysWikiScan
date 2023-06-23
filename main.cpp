@@ -342,6 +342,10 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(args[i]);
 			check_url(entries);
 		}
+		else if (args[0] == "--check-url-from" && args.size() == 2) {
+			vecStr entries;
+			check_url(entries, args[1]);
+		}
 		else {
 			cerr << u8"内部错误： 命令不合法" << endl;
 			return 0;
