@@ -170,6 +170,7 @@ inline void check_url(vecStr &entries)
 			Long ind1 = (Long)html.find_first_of("\" >", ind);
 			if (ind1 < 0) continue;
 			url = html.substr(ind, ind1-ind);
+			url.resize(url.rfind('#'));
 			if (checked_links.count(url))
 				continue;
 			checked_links.insert(url);
