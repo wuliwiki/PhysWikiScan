@@ -167,7 +167,8 @@ inline void check_url(vecStr &entries)
 		while (1) {
 			ind = find(ikey, html, {"http://", "https://"}, ++ind);
 			if (ind < 0) break;
-			Long ind1 = find(html, '"', ind);
+			Long ind1 = (Long)html.find_first_of("\" >", ind);
+			if (ind1 < 0) continue;
 			url = html.substr(ind, ind1-ind);
 			if (checked_links.count(url))
 				continue;

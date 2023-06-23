@@ -36,7 +36,7 @@ inline int exec_str(Str_O stdout, Str_I cmd)
 		stdout += buffer.data();
 	size_t ind = stdout.rfind('|');
 	if (ind == std::string::npos)
-		SLS_ERR("exec_str(): cmd1 = \n" + cmd1);
+		throw std::runtime_error("exec_str(): cmd1 = \n" + cmd1);
 	int ret = str2Int(stdout.substr(ind + 1));
 	stdout.resize(ind);
 	return ret;

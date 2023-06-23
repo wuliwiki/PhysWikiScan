@@ -483,12 +483,19 @@ inline Long href(Str_IO str)
             ++ind0; continue;
         }
         command_arg(url, str, ind0, 0);
+	u8_iter it(url);
+	while (it < size(url)) {
+		char c = (*it)[0];
+        	if (c > 127 || c < 0 || c == ' ')
+			throw scan_err(u8"href: 链接中不允许包含空格或非 ascii 字符 (" + *it + u8")，请直接从浏览器地址栏中复制 url。 当前 url： " + url);
+		++it;
+	}
         command_arg(name, str, ind0, 1);
         if (url.substr(0, 7) != "http://" &&
             url.substr(0, 8) != "https://") {
             throw scan_err(u8"链接格式错误: " + url);
         }
-        replace(url, "\\%", "%"); replace(url, "\\_", "_");
+        replace(url, "\\%", "%"); replace(url, "\\_", "_"); replace(url, "\\#", "#");
         Long ind1 = skip_command(str, ind0, 2);
         str.replace(ind0, ind1 - ind0,
             "<a href=\"" + url + "\" target = \"_blank\">" + name + "</a>");
