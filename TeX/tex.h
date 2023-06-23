@@ -616,7 +616,7 @@ inline Long FindEnd(Intvs_O intv, Str_I env, Str_I str)
 
 // find $$...$$ equation environments
 // assuming comments and verbatims are removed
-// if option == 'o' interval includes all dollar signeds, if option == 'i', include only what's inside
+// if option == 'o' interval includes all dollar signs, if option == 'i', include only what's inside
 inline void find_double_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
@@ -646,9 +646,9 @@ inline void find_double_dollar_eq(Intvs_O intv, Str_I str, char option = 'i')
 inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, char option = 'i')
 {
     intv.clear();
-    Long N = 0; // number of \[...\]
+    Long N; // number of \[...\]
     Long ind0 = -1;
-    while (true) {
+    while (1) {
         // find \[
         ind0 = find(str, "\\[", ++ind0);
         if (ind0 < 0) break;
@@ -663,7 +663,7 @@ inline Long find_sqr_bracket_eq(Intvs_O intv, Str_I str, char option = 'i')
             throw scan_err(u8"非法命令： \\\\]");
         intv.pushR(ind0+1);
     }
-    N /= 2;
+    N = intv.size();
     if (option == 'i' && N > 0)
         for (Long i = 0; i < N; ++i)
             intv.L(i)+=2, intv.R(i)-=2;
