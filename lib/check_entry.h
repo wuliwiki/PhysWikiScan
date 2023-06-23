@@ -153,6 +153,8 @@ inline void check_url(vecStr &entries)
 		file_list_ext(entries, gv::path_out, "html", false);
 	}
 	Str html, fpath, url, res;
+	unordered_set<Str> checked_links;
+	map<Str, unordered_map<Str,Str>> bad_links; // entry -> vector of (ulr, stdout)
 	for (auto &entry : entries) {
 		fpath = gv::path_out; fpath << entry << ".html";
 		cout << "\n\n" << fpath << "\n----------------" << endl;
@@ -167,19 +169,35 @@ inline void check_url(vecStr &entries)
 			if (ind < 0) break;
 			Long ind1 = find(html, '"', ind);
 			url = html.substr(ind, ind1-ind);
+			if (checked_links.count(url))
+				continue;
+			checked_links.insert(url);
 			bool check_url = true;
-			if (find(url, "wikipedia.org") >= 0) {
+			if (find(ikey, url, {"wikipedia.org", "github.com", "chaoli.club"}) >= 0) {
 				// TODO: 替换成 wanwei 百科 url 并检查。 wanwei 自带审核，可以放心。
 				check_url = false;
 			}
 			if (check_url) {
-				if (exec_str(res, "curl --max-time 5 -Is \"" + url + "\" | head -n 1") != 0)
-					throw internal_err("unknown error when testing url.");
-				if (size(res) < 12 || (res.substr(9, 3) != "200" && res.substr(7, 3) != "200"
-				&& res.substr(9, 3) != "301" && res.substr(7, 3) != "301"))
-					throw scan_err("url 无法正常访问： " + url + ", stdout = \n" + res);
-				cout << u8"可以正常访问： " << url << endl;
+				if (exec_str(res, "curl --max-time 5 -Is \"" + url + "\" | head -n 1") != 0 ||
+					size(res) < 12 || (
+					res.substr(9, 3) != "200" && res.substr(7, 3) != "200" &&
+					res.substr(9, 3) != "301" && res.substr(7, 3) != "301" // &&
+					// res.substr(9, 3) != "403" && res.substr(7, 3) != "403"
+				)) {
+					bad_links[entry][url] = res;
+					cout << u8"无法正常访问： " << url << endl;
+				}
+				else
+					cout << u8"可以正常访问： " << url << endl;
 			}
+		}
+	}
+	for (auto &e : bad_links) {
+		for (auto &e1 : e.second) {
+			cout << "---------------------" << endl;
+			cout << e.first << ".html" << endl;
+			cout << e1.first << endl;
+			cout << e1.second << endl;
 		}
 	}
 }
