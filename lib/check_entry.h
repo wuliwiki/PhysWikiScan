@@ -142,3 +142,44 @@ inline Long get_keywords(vecStr_O keywords, Str_I str)
 	keywords.push_back(word);
 	return keywords.size();
 }
+
+// check dead url for one or all entries
+// if `entries` is empty, then check all non-deleted entries
+// TODO: not tested!
+inline void check_url(vecStr &entries)
+{
+	if (entries.empty()) {
+		entries.clear();
+		file_list_ext(entries, gv::path_out, "html", false);
+	}
+	Str html, fpath, url, res;
+	for (auto &entry : entries) {
+		fpath = gv::path_out; fpath << entry << ".html";
+		cout << "\n\n" << fpath << "\n----------------" << endl;
+		read(html, fpath);
+		if (!is_valid(html))
+			throw std::runtime_error(u8"内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
+		CRLF_to_LF(html);
+
+		Long ind = -1, ikey;
+		while (1) {
+			ind = find(ikey, html, {"http://", "https://"}, ++ind);
+			if (ind < 0) break;
+			Long ind1 = find(html, '"', ind);
+			url = html.substr(ind, ind1-ind);
+			bool check_url = true;
+			if (find(url, "wikipedia.org") >= 0) {
+				// TODO: 替换成 wanwei 百科 url 并检查。 wanwei 自带审核，可以放心。
+				check_url = false;
+			}
+			if (check_url) {
+				if (exec_str(res, "curl --max-time 5 -Is \"" + url + "\" | head -n 1") != 0)
+					throw internal_err("unknown error when testing url.");
+				if (size(res) < 12 || (res.substr(9, 3) != "200" && res.substr(7, 3) != "200"
+				&& res.substr(9, 3) != "301" && res.substr(7, 3) != "301"))
+					throw scan_err("url 无法正常访问： " + url + ", stdout = \n" + res);
+				cout << u8"可以正常访问： " << url << endl;
+			}
+		}
+	}
+}

@@ -334,6 +334,14 @@ int main(int argc, const char *argv[]) {
 			all_commands(commands, gv::path_in + "contents/");
 			write_vec_str(commands, gv::path_data + "commands.txt");
 		}
+		else if (args[0] == "--check-url") {
+			vecStr entries;
+			if (args.size() == 1)
+				check_url(entries);
+			for (Long i = 1; i < size(args); ++i)
+				entries.push_back(args[i]);
+			check_url(entries);
+		}
 		else {
 			cerr << u8"内部错误： 命令不合法" << endl;
 			return 0;
