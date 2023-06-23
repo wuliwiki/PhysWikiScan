@@ -152,7 +152,7 @@ inline void check_url(vecStr &entries, Str_I entry_start = "")
 		entries.clear();
 		file_list_ext(entries, gv::path_out, "html", false);
 	}
-	Str html, fpath, url, res;
+	Str html, fpath, url, res, cmd;
 	unordered_set<Str> checked_links;
 	map<Str, unordered_map<Str,Str>> bad_links; // entry -> vector of (ulr, stdout)
 	Long start = 0;
@@ -189,15 +189,26 @@ inline void check_url(vecStr &entries, Str_I entry_start = "")
 				check_url = false;
 			}
 			if (check_url) {
-				if (exec_str(res, "curl --max-time 5 -Is \"" + url + "\" | head -n 1") != 0 ||
-					size(res) < 12 || (
-					res.substr(9, 3) != "200" && res.substr(7, 3) != "200" &&
-					res.substr(9, 3) != "301" && res.substr(7, 3) != "301" // &&
-					// res.substr(9, 3) != "403" && res.substr(7, 3) != "403"
-				)) {
+				int ret = 0;
+				bool exec_err = false;
+				cmd = "curl --max-time 5 -ILs \""; cmd << url <<
+					R"(" | awk 'BEGIN{RS="\r\n\r\n"}{header=$0}END{print header}' | head -n 1)";
+				try {
+					ret = exec_str(res, cmd);
+				}
+				catch (...) {
+					exec_err = true; res = u8"exec_str() error!";
+				}
+				bool wrong_http_code = true;
+				Long ind = find(res, ' ');
+				if (ind >= 0 && search(res.substr(ind+1, 3), {"200"}) >= 0)
+					wrong_http_code = false;
+				if (exec_err || ret || wrong_http_code) {
 					bad_links[entry][url] = res;
 					cout << SLS_RED_BOLD << u8"无法正常访问： " << url << SLS_NO_STYLE << endl;
+					cout << SLS_YELLOW_BOLD << cmd << SLS_NO_STYLE << endl;
 					cout << SLS_YELLOW_BOLD << res << SLS_NO_STYLE << endl;
+					checked_links.erase(url);
 				}
 				else
 					cout << u8"可以正常访问： " << url << endl;
