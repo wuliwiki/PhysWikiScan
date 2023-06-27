@@ -238,6 +238,20 @@ inline Long issuesEnv(Str_IO str)
 		str.replace(ind0, ind1 - ind0, u8"<li>本词条需要更多参考文献。</li>");
 		++N;
 	}
+	// issueAiRaw
+	ind0 = find_command(str, "issueAiRaw");
+	if (ind0 > 0) {
+		ind1 = skip_command(str, ind0);
+		str.replace(ind0, ind1 - ind0, u8"<li> 本词条含人工智能辅助创作，待审核。</li>");
+		++N;
+	}
+	// issueAi
+	ind0 = find_command(str, "issueAi");
+	if (ind0 > 0) {
+		ind1 = skip_command(str, ind0);
+		str.replace(ind0, ind1 - ind0, u8"<li> 本词条含人工智能辅助创作，已审核。</li>");
+		++N;
+	}
 	// issueOther
 	ind0 = 0;
 	N += Command2Tag("issueOther", "<li>", "</li>", str);
