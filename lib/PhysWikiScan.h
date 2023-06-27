@@ -764,7 +764,6 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-// requires ids.txt and labels.txt output from `PhysWikiOnline()`
 inline void PhysWikiOnlineN(vecStr_IO entries)
 {
 	{
