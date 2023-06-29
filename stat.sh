@@ -1,4 +1,5 @@
 # get number of "history" records for an author in a time range from database
+# ignore CC license and `Use` license
 
 author=AcertainUser
 time1=202303150000
@@ -13,5 +14,7 @@ author IN ( \
     WHERE name LIKE '%${author}%' \
 ) AND \
 time >= ${time1} AND \
-time <= ${time2} \
+time <= ${time2} AND \
+NOT license LIKE 'CCBY%' AND \
+license != 'Use' \
 "
