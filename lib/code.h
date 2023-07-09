@@ -148,6 +148,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 					write(code, fname);
 			}
 		}
+		replace(code, "&", "&amp;"); // must be replaced first
 		replace(code, "<", "&lt;"); replace(code, ">", "&gt;");
 		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
 			"<pre " + prism_line_num + "><code" + prism_lang + ">" + code + "\n</code></pre>\n");

@@ -1121,6 +1121,7 @@ inline Long verb(Str_IO str, vecStr_IO str_verb)
         ind2 = find(str, "|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2Llong(ind_str);
+	replace(str_verb[ind], "&", "&amp;");
         replace(str_verb[ind], "<", "&lt;");
         replace(str_verb[ind], ">", "&gt;");
         tmp = "<code>" + str_verb[ind] + "</code>";
