@@ -1022,7 +1022,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 		R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
 	// get all figure envs defined in `entries`, to detect deleted figures
-	//  db_xxx[i] are from the same row of "labels" table
+	// db_xxx[i] are from the same row of "labels" table
 	vecStr db_figs, db_fig_entries, db_fig_image, db_fig_image_alt;
 	vecBool db_figs_used, figs_used;
 	vecLong db_fig_orders;

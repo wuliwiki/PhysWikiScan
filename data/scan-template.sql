@@ -13,11 +13,7 @@ CREATE TABLE "entries" (
 	"last"	TEXT NOT NULL DEFAULT '', -- 目录中的上一个词条， 空代表这是第一个或不在目录中
 	"next"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
 
-	-- [Xiao] 小时科技版权，作者署名权（见 licens.tex）
-	-- [Use] 作者版权，百科永久使用和修改权（见 licens.tex）， 若转载需注明来源如 "Use https://xxxx.com/xxx"
-	-- [CCBYSA3] CC BY-SA 3.0 开源协议（和维基百科相同）
-	-- [Copy] 经作者同意或根据协议转载（不可修改）需注明来源如 "Copy https://xxxx.com/xxx"
-	"license"	TEXT NOT NULL DEFAULT '',
+	"license"	TEXT NOT NULL DEFAULT 'Usr', -- 协议
 
 	-- [Wiki] 百科（综述） [Tutor] 教程（类似教材） [Art] 文章（类似论文） [Note] 笔记总结 [Map] 导航
 	"type"  TEXT NOT NULL DEFAULT '',
@@ -39,7 +35,7 @@ CREATE TABLE "entries" (
 	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布 (review.hash)
 	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份 (history.hash)
 
-	"figures"	TEXT NOT NULL DEFAULT '', -- "figId1 figId2" 图片环境（包括删除的）
+	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），由 figures.entry 生成
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片和代码）
 
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
@@ -55,20 +51,49 @@ CREATE TABLE "entries" (
 	FOREIGN KEY("last_pub") REFERENCES "review"("hash"),
 	FOREIGN KEY("last_backup") REFERENCES "history"("hash"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
-	FOREIGN KEY("chapter") REFERENCES "chapters"("id")
+	FOREIGN KEY("chapter") REFERENCES "chapters"("id"),
+	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
 -- 防止 FOREIGN KEY 报错
 INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1);
+
+-- 创作协议
+-- 已经支持的 license 见 `license.txt`
+CREATE TABLE "licenses" (
+	"id"	TEXT UNIQUE NOT NULL, -- 协议 id，只允许字母和数字，字母开头
+	"caption"	TEXT UNIQUE NOT NULL, -- 协议官方名称
+	"url"	TEXT NOT NULL DEFAULT '', -- 协议官方 url
+	"intro"	TEXT NOT NULL DEFAULT '', -- 协议简介和说明
+	"text"	TEXT NOT NULL DEFAULT '', -- 协议全文
+	PRIMARY KEY("id")
+);
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Usr', '小时百科志愿创作协议', 'https://wuli.wiki/online/licens.html', '用于免费创作，版权归作者，小时科技拥有使用修改权。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Xiao', '小时百科付费创作协议', 'https://wuli.wiki/online/licens.html', '通常用于付费创作，版权归小时科技，作者有署名权。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('CCBYSA3', 'CC BY-SA 3.0', 'https://creativecommons.org/licenses/by-sa/3.0/deed.zh-Hans', '通常用于开源作品，如维基百科。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Pub', '公有领域', 'https://baike.baidu.com/item/%E5%85%AC%E6%9C%89%E9%A2%86%E5%9F%9F/9890908', '任何个人或团体都不具所有任何版权。 通常适用与历史文献， 或者作者主动放弃一切版权。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Copy', '转载（只读）', '', '转载内容，除格式外不允许修改，需要注明来源。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Adap', '转载（可修改）', '', '转载内容，允许修改，需要注明来源。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('GPL3', 'GPL-3.0', 'https://www.gnu.org/licenses/gpl-3.0.en.html', '常见的开源程序协议，基于该代码的作品也需要开源。');
+
+INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('MIT', 'MIT', 'https://mit-license.org/', '几乎没有任何限制的开源的协议。');
+
 
 -- 部分
 -- 目录中 \label{prt_xxx} 中 xxx 为 "id"
 CREATE TABLE "parts" (
 	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
 	"order"	INTEGER UNIQUE NOT NULL, -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
-	"caption"	TEXT NOT NULL UNIQUE, -- 标题
-	"chap_first"	TEXT NOT NULL UNIQUE, -- 第一章
-	"chap_last"	INTEGER NOT NULL UNIQUE, -- 最后一章
+	"caption"	TEXT UNIQUE NOT NULL, -- 标题
+	"chap_first"	TEXT UNIQUE NOT NULL, -- 第一章
+	"chap_last"	INTEGER UNIQUE NOT NULL, -- 最后一章
 	"subject"	TEXT NOT NULL DEFAULT '', -- [phys|math|cs] 学科
 	PRIMARY KEY("id"),
 	FOREIGN KEY("chap_first") REFERENCES "chapters"("id"),
@@ -130,10 +155,11 @@ CREATE TABLE "images" (
 	"figures"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境使用（包括 image, image_alt）
 	"figures_old"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境作为 image_old
 	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
-	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议， 格式和 entries.license 相同
+	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议
 	"time"	TEXT NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
-	FOREIGN KEY("author") REFERENCES "authors"("id")
+	FOREIGN KEY("author") REFERENCES "authors"("id"),
+	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
 -- 文件（百科附件）
@@ -154,10 +180,11 @@ CREATE TABLE "file_lib" (
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"used_by_figures"	TEXT NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"	INTEGER NOT NULL, -- 当前版本修改者
-	"license"	TEXT NOT NULL, -- [Xiao|CC|ask] 当前版本协议
+	"license"	TEXT NOT NULL, -- 当前版本协议
 	"time"	TEXT UNIQUE NOT NULL, -- 上传时间
 	PRIMARY KEY("hash"),
-	FOREIGN KEY("author") REFERENCES "authors"("id")
+	FOREIGN KEY("author") REFERENCES "authors"("id"),
+	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
 -- 带标签的代码环境
@@ -168,11 +195,12 @@ CREATE TABLE "code" (
 	"caption"	TEXT UNIQUE NOT NULL, -- 文件名
 	"language"	TEXT NOT NULL, -- [none|matlab|...] 高亮语言
 	"order"	INTEGER NOT NULL, -- 显示编号
-	"license"	TEXT NOT NULL, -- [orig|CC|ask] 版权
+	"license"	TEXT NOT NULL, -- 协议
 	"source"	TEXT NOT NULL, -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL, -- "entry1 entry2" 引用的词条
 	PRIMARY KEY("id"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id")
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
 -- 词条中的其他标签（除公式图片代码）
