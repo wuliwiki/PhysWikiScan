@@ -61,13 +61,15 @@ INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1);
 -- 创作协议
 -- 已经支持的 license 见 `license.txt`
 CREATE TABLE "licenses" (
-	"id"	TEXT UNIQUE NOT NULL, -- 协议 id，只允许字母和数字，字母开头
+	"id"	TEXT UNIQUE NOT NULL, -- 协议 id，只允许字母和数字，字母开头，空代表未知
 	"caption"	TEXT UNIQUE NOT NULL, -- 协议官方名称
 	"url"	TEXT NOT NULL DEFAULT '', -- 协议官方 url
 	"intro"	TEXT NOT NULL DEFAULT '', -- 协议简介和说明
 	"text"	TEXT NOT NULL DEFAULT '', -- 协议全文
 	PRIMARY KEY("id")
 );
+
+INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知');
 
 INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Usr', '小时百科志愿创作协议', 'https://wuli.wiki/online/licens.html', '用于免费创作，版权归作者，小时科技拥有使用修改权。');
 
