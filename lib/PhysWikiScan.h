@@ -38,7 +38,7 @@ public:
 	explicit internal_err(Str_I msg): scan_err(u8"内部错误（请联系管理员）： " + msg) {}
 };
 
-#include "../TeX/tex2html.h"
+#include "tex2html.h"
 #include "check_entry.h"
 #include "labels.h"
 #include "sqlite_db.h"

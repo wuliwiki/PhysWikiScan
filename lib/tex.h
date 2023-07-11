@@ -693,7 +693,7 @@ inline void check_display_eq_punc(Str_I str)
 	Intvs intv;
 	find_display_eq(intv, str);
 	Str tmp;
-	for (Long i = 1; i < intv.size(); ++i) {
+	for (Long i = 0; i < intv.size(); ++i) {
 		Long start = intv.L(i), end = intv.R(i);
 		Long j;
 		for (j = start; j < end; ++j) {
@@ -1092,6 +1092,7 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
         ind2 = find(str, "|", ind1 + 1);
         ind_str = str.substr(ind1 + 1, ind2 - ind1 - 1); trim(ind_str);
         Long ind = str2Llong(ind_str);
+	replace(str_verb[ind], "&", "&amp;");
         replace(str_verb[ind], "<", "&lt;");
         replace(str_verb[ind], ">", "&gt;");
         tmp = "<code>" + str_verb[ind] + "</code>";

@@ -108,5 +108,5 @@ link: # force link
 clean:
 	rm -f *.o PhysWikiScan
 
-main.o: main.cpp lib/*.h TeX/*.h SLISC/*.h SLISC/*/*.h
+main.o: main.cpp lib/*.h SLISC/*.h SLISC/*/*.h
 	$(opt_compiler) $(flags) -c main.cpp
