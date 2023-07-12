@@ -211,13 +211,26 @@ inline Long paragraph_tag(Str_IO str)
 }
 
 // replace \pentry comman with html round panel
-inline Long pentry_cmd(Str_IO str)
+inline Long pentry_cmd(Str_IO str, Pentry_I pentry)
 {
-	if (!gv::is_eng)
-		return Command2Tag("pentry",
-			u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>预备知识</b>　)", "</div>", str);
-	return Command2Tag("pentry",
-		u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>Prerequisite</b>　)", "</div>", str);
+	Long ind = 0, ikey;
+	Str pentry_arg, tmp;
+	for (Long i = 0; i < size(pentry); ++i) {
+		auto &pentry1 = pentry[i];
+		ind = find_command(str, "pentry", ind);
+		Long ind1 = skip_command(str, ind);
+		command_arg(pentry_arg, str, 0);
+		Long ind0 = 0;
+		for (Long j = 0; j < size(pentry1); ++j) {
+			ind0 = find(str, "\\upref", ind0);
+			if (ind0 < 0) break;
+			++ind0;
+		}
+		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
+		tmp << (gv::is_eng ? u8"预备知识" : "Prerequisite")
+			<< "</b>　)" << pentry_arg << "</div>";
+		str.replace(ind, ind1-ind, tmp);
+	}
 }
 
 // mark incomplete
@@ -400,7 +413,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
-	Pentry_O pentry_raw, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+	Pentry_O pentry, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -516,12 +529,12 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// process figure environments
 	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
 	// get dependent entries from \pentry{}
-	get_pentry(pentry_raw, str, db_read);
+	get_pentry(pentry, str, db_read);
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
 	// process \pentry{}
-	pentry_cmd(str);
+	pentry_cmd(str, pentry);
 	// replace user defined commands
 	newcommand(str, rules);
 	subsections(str);
