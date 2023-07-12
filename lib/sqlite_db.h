@@ -223,7 +223,8 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 // nodes[0] will be for `entry0`
 // nodes[i], tree[i] corresponds
 // pentry_raw0[i][j].tilde will be updated on output
-inline void db_get_tree1(vector<DGnode> &tree,
+inline void db_get_tree1(
+	vector<DGnode> &tree, // DAG dependency tree, each node will include last node of the same entry (if any)
 	vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
 	unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, Pentry)
 	Pentry_IO pentry_raw0, Str_I entry0, Str_I title0, // use the last i_node as tree root
@@ -234,11 +235,16 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
 
 	Str pentry_str;
-	Long i_node = size(pentry_raw0);
-	if (i_node == 0) return; // no pentry
-	nodes.emplace_back(entry0, i_node);
+	Long i_node;
+	Long Nnode = size(pentry_raw0);
+	if (Nnode == 0) return; // no pentry
 	deque<Node> q; // nodes to search
-	q.emplace_back(entry0, i_node);
+
+	// set the first Nnode of nodes to all nodes of `entry0`
+	for (i_node = 1; i_node <= Nnode; ++i_node) {
+		nodes.emplace_back(entry0, i_node);
+		q.emplace_back(entry0, i_node);
+	}
 	entry_info[entry0].first = title0;
 	entry_info[entry0].second = pentry_raw0;
 
@@ -251,8 +257,14 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		if (pentry.empty()) continue;
 		if (i_node > size(pentry))
 			throw internal_err(Str(__func__) + SLS_WHERE);
-		if (i_node > 1) // implicitly depends on the last node
-			q.emplace_back(entry, i_node-1);
+		if (i_node > 1) { // implicitly depends on the last node
+            Node nod(entry, i_node-1);
+            if (search(nod, nodes) < 0) {
+                nodes.push_back(nod);
+                if (find(q.begin(), q.end(), nod) == q.end())
+                    q.push_back(nod);
+            }
+        }
 		for (auto &en : pentry[i_node-1]) {
 			if (!entry_info.count(en.entry))
 				db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
@@ -274,14 +286,15 @@ inline void db_get_tree1(vector<DGnode> &tree,
 	tree.resize(nodes.size());
 	for (Long i = 0; i < size(nodes); ++i) {
 		auto &entry = nodes[i].entry;
+        Long i_node = nodes[i].i_node;
 		auto &pentry = entry_info[entry].second;
-		Long i_node = nodes[i].i_node;
+
 		if (pentry.empty()) continue;
 		if (i_node > 1) { // implicitly depends on the last node
 			Node nod(entry, i_node-1);
 			Long from = search(nod, nodes);
 			if (from < 0)
-				throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
+				throw internal_err(u8"上一个节点未找到（应该不会发生才对）： "
 					+ nod.entry + ":" + to_string(nod.i_node));
 			tree[from].push_back(i);
 		}
@@ -289,7 +302,7 @@ inline void db_get_tree1(vector<DGnode> &tree,
 			Node nod(en.entry, en.i_node);
 			Long from = search(nod, nodes);
 			if (from < 0)
-				throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
+				throw internal_err(u8"节点未找到（应该不会发生才对）： "
 								+ nod.entry + ":" + to_string(nod.i_node));
 			tree[from].push_back(i);
 		}
@@ -325,37 +338,39 @@ inline void db_get_tree1(vector<DGnode> &tree,
 
 	vector<vecLong> alt_paths; // path from nodes[0] to one redundant child
 	// TODO: do the same for all nodes in this entry
-	dag_reduce(alt_paths, tree, 0);
-	std::stringstream ss;
-	if (!alt_paths.empty()) {
-		for (Long j = 0; j < size(alt_paths); ++j) {
-			// mark ignored (add ~ to the end)
-			auto &alt_path = alt_paths[j];
-			Long i_red = alt_path.back(); // node[i_red] is redundant
-			auto &node_red = nodes[i_red];
+	for (i_node = 1; i_node <= Nnode; ++i_node) {
+		dag_reduce(alt_paths, tree, i_node-1);
+		std::stringstream ss;
+		if (!alt_paths.empty()) {
+			for (Long j = 0; j < size(alt_paths); ++j) {
+				// mark ignored (add ~ to the end)
+				auto &alt_path = alt_paths[j];
+				Long i_red = alt_path.back(); // node[i_red] is redundant
+				auto &node_red = nodes[i_red];
 
-			auto &pentry0 = get<1>(entry_info[entry0]);
-			auto &pentry1 = pentry0[nodes[0].i_node-1];
-			bool found = false;
-			for (auto &e : pentry1) {
-				if (e.entry == node_red.entry && e.i_node == node_red.i_node) {
-					e.tilde = found = true;
-					break;
+				auto &pentry0 = get<1>(entry_info[entry0]);
+				auto &pentry1 = pentry0[nodes[i_node-1].i_node - 1];
+				bool found = false;
+				for (auto &e: pentry1) {
+					if (e.entry == node_red.entry && e.i_node == node_red.i_node) {
+						e.tilde = found = true;
+						break;
+					}
+				}
+				if (!found)
+					throw internal_err(SLS_WHERE);
+				auto &title_bak = get<0>(entry_info[node_red.entry]);
+				ss << u8"\n\n存在多余的预备知识： " << title_bak << "(" << node_red.entry << ")" << endl;
+				ss << u8"   已存在路径： " << endl;
+				for (Long i = 0; i < size(alt_path); ++i) {
+					auto &entry = nodes[alt_path[i]].entry;
+					auto &title = get<0>(entry_info[entry]);
+					ss << title << "(" << entry
+					   << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
 				}
 			}
-			if (!found)
-				throw internal_err(SLS_WHERE);
-			auto &title_bak = get<0>(entry_info[node_red.entry]);
-			ss << u8"\n\n存在多余的预备知识： " << title_bak << "(" << node_red.entry << ")" << endl;
-			ss << u8"   已存在路径： " << endl;
-			for (Long i = 0; i < size(alt_path); ++i) {
-				auto &entry = nodes[alt_path[i]].entry;
-				auto &title = get<0>(entry_info[entry]);
-				ss << title << "(" << entry
-					<< (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
-			}
+			SLS_WARN(ss.str());
 		}
-		SLS_WARN(ss.str());
 	}
 	dag_inv(tree);
 

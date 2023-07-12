@@ -535,7 +535,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		ind0 = find_command(str, "upref", ind0);
 		if (ind0 < 0)
 			break;
-		command_arg(entry1, str, ind0);
+		command_arg(entry1, str, ind0, 0, true, true);
 		if (entry1 == entry)
 			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
 		trim(entry1);

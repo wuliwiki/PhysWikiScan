@@ -81,9 +81,9 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			command_arg(depEntry, temp, ind1);
 			if (command_has_opt(temp, ind1)) {
 				try { order = str2Llong(command_opt(temp, ind1)); }
-				catch (...) { throw scan_err(u8R"(\upref[]{} 或 \upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。)"); }
+				catch (...) { throw scan_err(u8R"(\upref[]{} 或 \upreff[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。)"); }
 				if (order <= 0)
-					throw scan_err(u8R"(\upref[]{} 或 \upref2[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。)");
+					throw scan_err(u8R"(\upref[]{} 或 \upreff[]{} 方括号中只能是正整数，用于引用某词条的第 n 个节点。)");
 			}
 			else
 				order = 0;
