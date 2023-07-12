@@ -12,7 +12,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 	if (!stmt_select0.executeStep())
 		throw internal_err(SLS_WHERE);
 	parse(db_bibs, stmt_select0.getColumn(0));
-    db_bibs_cited.resize(db_bibs.size(), false);
+	db_bibs_cited.resize(db_bibs.size(), false);
 
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "order", "details" FROM "bibliography" WHERE "id"=?;)");
@@ -27,7 +27,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 		stmt_select.bind(1, bib_id);
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-        Long bib_ind = search(bib_id, db_bibs);
+	    Long bib_ind = search(bib_id, db_bibs);
 		if (bib_ind < 0) { // new \cite{}
 			SLS_WARN(u8"发现新的文献引用（将添加）： " + bib_id);
 			bibs_change[bib_id] = true; // true means add bib_id to entries.bib
@@ -43,12 +43,12 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 	}
 
 	// deleted \cite{}
-    for (Long i = 0; i < size(db_bibs); ++i) {
-        if (!db_bibs_cited[i]) {
-            SLS_WARN(u8"发现文献引用被删除（将移除）： " + db_bibs[i]);
-            bibs_change[db_bibs[i]] = false; // false means remove db_bibs[i] from entries.bib
-        }
-    }
+	for (Long i = 0; i < size(db_bibs); ++i) {
+	    if (!db_bibs_cited[i]) {
+	        SLS_WARN(u8"发现文献引用被删除（将移除）： " + db_bibs[i]);
+	        bibs_change[db_bibs[i]] = false; // false means remove db_bibs[i] from entries.bib
+	    }
+	}
 	return N;
 }
 

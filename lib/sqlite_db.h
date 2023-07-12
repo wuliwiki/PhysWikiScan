@@ -251,8 +251,8 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		if (pentry.empty()) continue;
 		if (i_node > size(pentry))
 			throw internal_err(Str(__func__) + SLS_WHERE);
-        if (i_node > 1) // implicitly depends on the last node
-            q.emplace_back(entry, i_node-1);
+		if (i_node > 1) // implicitly depends on the last node
+			q.emplace_back(entry, i_node-1);
 		for (auto &en : pentry[i_node-1]) {
 			if (!entry_info.count(en.entry))
 				db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
@@ -275,16 +275,16 @@ inline void db_get_tree1(vector<DGnode> &tree,
 	for (Long i = 0; i < size(nodes); ++i) {
 		auto &entry = nodes[i].entry;
 		auto &pentry = entry_info[entry].second;
-        Long i_node = nodes[i].i_node;
+		Long i_node = nodes[i].i_node;
 		if (pentry.empty()) continue;
-        if (i_node > 1) { // implicitly depends on the last node
-            Node nod(entry, i_node-1);
-            Long from = search(nod, nodes);
-            if (from < 0)
-                throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
-                                   + nod.entry + ":" + to_string(nod.i_node));
-            tree[from].push_back(i);
-        }
+		if (i_node > 1) { // implicitly depends on the last node
+			Node nod(entry, i_node-1);
+			Long from = search(nod, nodes);
+			if (from < 0)
+				throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
+					+ nod.entry + ":" + to_string(nod.i_node));
+			tree[from].push_back(i);
+		}
 		for (auto &en : pentry[i_node-1]) {
 			Node nod(en.entry, en.i_node);
 			Long from = search(nod, nodes);
@@ -295,8 +295,8 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		}
 	}
 
-    // check cyclic
-    // TODO: mark as tilde
+	// check cyclic
+	// TODO: mark as tilde
 	vecLong cycle;
 	if (!dag_check(cycle, tree)) {
 		cycle.push_back(cycle[0]);
@@ -312,19 +312,19 @@ inline void db_get_tree1(vector<DGnode> &tree,
 	// check redundancy
 	dag_inv(tree);
 
-    if (0) { // debug: print edges
-        for (Long i = 0; i < size(tree); ++i) {
-            auto &entry_i = nodes[i].entry;
-            cout << i << "." << entry_i << " " << entry_info[entry_i].first << endl;
-            for (auto &j: tree[i]) {
-                auto &entry_j = nodes[j].entry;
-                    cout << "  << " << j << "." << entry_j << " " << entry_info[entry_j].first << " " << endl;
-            }
-        }
-    }
+	if (0) { // debug: print edges
+		for (Long i = 0; i < size(tree); ++i) {
+			auto &entry_i = nodes[i].entry;
+			cout << i << "." << entry_i << " " << entry_info[entry_i].first << endl;
+			for (auto &j: tree[i]) {
+				auto &entry_j = nodes[j].entry;
+					cout << "  << " << j << "." << entry_j << " " << entry_info[entry_j].first << " " << endl;
+			}
+		}
+	}
 
 	vector<vecLong> alt_paths; // path from nodes[0] to one redundant child
-    // TODO: do the same for all nodes in this entry
+	// TODO: do the same for all nodes in this entry
 	dag_reduce(alt_paths, tree, 0);
 	std::stringstream ss;
 	if (!alt_paths.empty()) {
@@ -786,15 +786,15 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		author = fname.substr(13, ind-13);
 		Long authorID;
 
-        // check if editor is still saving using old `YYYYMMDDHHMM_author_entry` format
-        Bool use_author_name = true;
-        if (str2int(authorID, author) == size(author)) {
-            // SQLite::Statement stmt_select4(db_rw, R"(SELECT 1 FROM "authors" WHERE "id"=)" + author);
-            // if (stmt_select4.executeStep())
-                use_author_name = false;
-        }
+		// check if editor is still saving using old `YYYYMMDDHHMM_author_entry` format
+		Bool use_author_name = true;
+		if (str2int(authorID, author) == size(author)) {
+			// SQLite::Statement stmt_select4(db_rw, R"(SELECT 1 FROM "authors" WHERE "id"=)" + author);
+			// if (stmt_select4.executeStep())
+				use_author_name = false;
+		}
 
-        if (use_author_name) {
+		if (use_author_name) {
 			// editor is still saving using old `YYYYMMDDHHMM_author_entry` format for now
 			// TODO: delete this block after editor use `YYYYMMDDHHMM_authorID_entry` format
 			if (db_author_to_id.count(author))
@@ -881,7 +881,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 // update "history.last" for all table
 inline void db_update_history_last(SQLite::Database &db_read)
 {
-    cout << "updating history.last..." << endl;
+	cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "hash", "time", "entry" FROM "history";)");
 	unordered_map<Str, map<Str, Str>> entry2time_hash; // entry -> (time -> hash)
@@ -908,7 +908,7 @@ inline void db_update_history_last(SQLite::Database &db_read)
 		}
 	}
 	transaction.commit();
-    cout << "done." << endl;
+	cout << "done." << endl;
 }
 
 // sum history.add and history.del for an author for a given time period
@@ -948,7 +948,7 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 		if (Nfound > 1)
 			throw scan_err(u8"数据库中找到多于一个作者名（模糊匹配）： " + author);
 	}
-	
+
 	Str tmp = R"(SELECT SUM("add"), SUM("del") FROM "history" WHERE "author"=)";
 	tmp << authorID << R"( AND "time" >= ')" << time_start << R"(' AND "time" <= ')" << time_end << "';";
 	cout << "SQL 命令:\n" << tmp << endl;
@@ -1867,7 +1867,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		ind += 2;
 		Long ind1 = find(str, "+}", ind);
 		if (ind1 < 0) {
-            file_rm(file1); file_rm(file2);
+			file_rm(file1); file_rm(file2);
 #ifndef NDEBUG
 			file_rm(file_diff);
 #endif
@@ -1884,7 +1884,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		ind += 2;
 		Long ind1 = find(str, "-]", ind);
 		if (ind1 < 0) {
-            file_rm(file1); file_rm(file2);
+			file_rm(file1); file_rm(file2);
 #ifndef NDEBUG
 			file_rm(file_diff);
 #endif
@@ -1905,7 +1905,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		throw std::runtime_error(tmp);
 	}
 
-    file_rm(file1); file_rm(file2);
+	file_rm(file1); file_rm(file2);
 #ifndef NDEBUG
 	file_rm(file_diff);
 #endif
@@ -1939,7 +1939,7 @@ inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) 
 			}
 			fname_exist = true;
 			const char *hash = stmt_select2.getColumn(0);
-            read(str, fname); CRLF_to_LF(str);
+			read(str, fname); CRLF_to_LF(str);
 			if (fname_old.empty()) // first backup
 				hist_add_del[hash] = make_pair(u8count(str), 0);
 			else {
@@ -2000,7 +2000,6 @@ inline void history_normalize(SQLite::Database &db_read)
 			for (auto &time_hash_time2 : e4.second) {
 				// debug
 				// if (time_hash_time2.first == "202303231039")
-				//     int a = 3;
 				t = str2time_t(time_hash_time2.first);
 				if (t <= t1) // t1 is a resume of a session
 					*time2_last = "d";
