@@ -648,8 +648,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			}
 
 			// check dependency tree and auto mark redundant pentry with ~
-			db_get_tree1(tree, nodes, entry_info,
-						 pentry_raw, entry, titles[i], db_read);
+			db_get_tree1(tree, nodes, entry_info, pentry_raw, entry, titles[i], db_read);
 			// update entries.pentry if changed
 			db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
 			join_pentry(pentry_str, pentry_raw);

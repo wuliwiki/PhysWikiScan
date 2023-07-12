@@ -1,10 +1,10 @@
 #pragma once
 
-// a single \upref{} or \upref0{} inside a \pentry{}
+// a single \upref{} or \upreff{} inside a \pentry{}
 struct PentryRef {
 	Str entry;
 	Long i_node; // "entry:i_node" starting from 1, 0 if there is none
-	Bool star; // \upref0{}, i.e. marked * (prefer to be ignored)
+	Bool star; // \upreff{}, i.e. marked * (prefer to be ignored)
 	Bool tilde; // omitted in the tree, i.e. marked ~
 	PentryRef(Str_I entry, Long_I i_node, Bool_I star, Bool_I tilde):
 		entry(entry), i_node(i_node), star(star), tilde(tilde) {};
@@ -53,7 +53,7 @@ inline Bool is_draft(Str_I str)
 }
 
 // get dependent entries (id) from \pentry{}
-// will ignore \pentry{} with no \upref{} or \upref0{}
+// will ignore \pentry{} with no \upref{} or \upreff{}
 inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
 	Bool star;
@@ -71,7 +71,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		Long ind1 = 0, ind2 = 0;
 		Bool first_upref = true;
 		while (1) {
-			ind1 = find(ikey, temp, {"\\upref", "\\upref0"}, ind2);
+			ind1 = find(ikey, temp, {"\\upref", "\\upreff"}, ind2);
 			star = (ikey == 1);
 			if (ind1 < 0)
 				break;

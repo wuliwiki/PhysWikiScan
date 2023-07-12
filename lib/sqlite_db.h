@@ -225,7 +225,7 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 // pentry_raw0[i][j].tilde will be updated on output
 inline void db_get_tree1(vector<DGnode> &tree,
 	vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
-	unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, pentry)
+	unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, Pentry)
 	Pentry_IO pentry_raw0, Str_I entry0, Str_I title0, // use the last i_node as tree root
 	SQLite::Database &db_read)
 {
@@ -251,10 +251,12 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		if (pentry.empty()) continue;
 		if (i_node > size(pentry))
 			throw internal_err(Str(__func__) + SLS_WHERE);
+        if (i_node > 1) // implicitly depends on the last node
+            q.emplace_back(entry, i_node-1);
 		for (auto &en : pentry[i_node-1]) {
 			if (!entry_info.count(en.entry))
 				db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
-			if (en.i_node == 0) { // 0 is max
+			if (en.i_node == 0) { // 0 means the last node
 				en.i_node = size(entry_info[en.entry].second);
 				if (en.i_node == 0) en.i_node = 1;
 			}
@@ -273,11 +275,19 @@ inline void db_get_tree1(vector<DGnode> &tree,
 	for (Long i = 0; i < size(nodes); ++i) {
 		auto &entry = nodes[i].entry;
 		auto &pentry = entry_info[entry].second;
+        Long i_node = nodes[i].i_node;
 		if (pentry.empty()) continue;
-		for (auto &en : pentry[nodes[i].i_node-1]) {
-			Node nod {en.entry, en.i_node};
-			Long from;
-			from = search(nod, nodes);
+        if (i_node > 1) { // implicitly depends on the last node
+            Node nod(entry, i_node-1);
+            Long from = search(nod, nodes);
+            if (from < 0)
+                throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
+                                   + nod.entry + ":" + to_string(nod.i_node));
+            tree[from].push_back(i);
+        }
+		for (auto &en : pentry[i_node-1]) {
+			Node nod(en.entry, en.i_node);
+			Long from = search(nod, nodes);
 			if (from < 0)
 				throw internal_err(u8"预备知识未找到（应该不会发生才对）： "
 								+ nod.entry + ":" + to_string(nod.i_node));
@@ -285,13 +295,8 @@ inline void db_get_tree1(vector<DGnode> &tree,
 		}
 	}
 
-	//    // debug: print edges
-	//    for (Long i = 0; i < size(tree); ++i)
-	//        for (auto &j : tree[i])
-	//            cout << i << "." << titles[i] << "(" << nodes[i] << ") => "
-	//                 << j << "." << titles[j] << "(" << nodes[j] << ")" << endl;
-
-	// check cyclic
+    // check cyclic
+    // TODO: mark as tilde
 	vecLong cycle;
 	if (!dag_check(cycle, tree)) {
 		cycle.push_back(cycle[0]);
@@ -305,10 +310,21 @@ inline void db_get_tree1(vector<DGnode> &tree,
 	}
 
 	// check redundancy
-
 	dag_inv(tree);
-	vector<vecLong> alt_paths;
-		// alt_paths: path from nodes[0] to one redundant child
+
+    if (0) { // debug: print edges
+        for (Long i = 0; i < size(tree); ++i) {
+            auto &entry_i = nodes[i].entry;
+            cout << i << "." << entry_i << " " << entry_info[entry_i].first << endl;
+            for (auto &j: tree[i]) {
+                auto &entry_j = nodes[j].entry;
+                    cout << "  << " << j << "." << entry_j << " " << entry_info[entry_j].first << " " << endl;
+            }
+        }
+    }
+
+	vector<vecLong> alt_paths; // path from nodes[0] to one redundant child
+    // TODO: do the same for all nodes in this entry
 	dag_reduce(alt_paths, tree, 0);
 	std::stringstream ss;
 	if (!alt_paths.empty()) {
