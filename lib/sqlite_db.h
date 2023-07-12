@@ -1104,6 +1104,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				image = map.at("pdf") + ".pdf";
 				image_alt = map.at("svg") + ".svg";
 			}
+			image = image.substr(0, 16); // keep only hash
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp = u8"发现数据库中没有的图片环境（将模拟 editor 添加）："; tmp << id << ", " << entry
 					<< ", " << to_string(order);

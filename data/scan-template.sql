@@ -134,7 +134,7 @@ CREATE TABLE "figures" (
 	"chapter" TEXT NOT NULL DEFAULT '', -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 
 	"order"	INTEGER NOT NULL DEFAULT 0, -- 显示编号（从 1 开始， 0 代表未知）
-	"image"	TEXT NOT NULL DEFAULT '', -- [hash.png|hash.pdf] 文件 SHA1 的前 16 位 + 拓展名（当前 pdf 文件暂时使用 svg 文件的 hash）
+	"image"	TEXT NOT NULL DEFAULT '', -- [hash.png|hash.pdf] 文件 SHA1 的前 16 位
 	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 其他的文件格式（pdf 必须有对应的 svg）
 	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 图片历史版本（对应 images 表）
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
