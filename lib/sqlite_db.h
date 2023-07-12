@@ -220,14 +220,14 @@ inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node
 // get dependency tree from database, for (the last node of) 1 entry0
 // each node of the tree is a part of an entry0 (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
-// nodes[0] will be for `entry0`
-// nodes[i], tree[i] corresponds
-// pentry_raw0[i][j].tilde will be updated on output
+// `entry0:(i+1)` will be in nodes[i]
+// nodes[i] corresponds to tree[i]
 inline void db_get_tree1(
-	vector<DGnode> &tree, // DAG dependency tree, each node will include last node of the same entry (if any)
-	vector<Node> &nodes, // nodes[i] is tree[i], with (entry, order)
-	unordered_map<Str, pair<Str, Pentry>> &entry_info, // entry -> (title, Pentry)
-	Pentry_IO pentry_raw0, Str_I entry0, Str_I title0, // use the last i_node as tree root
+	vector<DGnode> &tree, // [output] DAG dependency tree, each node will include last node of the same entry (if any)
+	vector<Node> &nodes, // [output] nodes[i] is tree[i], with (entry, order)
+	unordered_map<Str, pair<Str, Pentry>> &entry_info, // [output] entry -> (title, Pentry)
+	Pentry_IO pentry_raw0, // pentry_raw0[i][j].tilde will be updated on output
+	Str_I entry0, Str_I title0, // use the last node as tree root
 	SQLite::Database &db_read)
 {
 	tree.clear(); nodes.clear(); entry_info.clear();
@@ -339,6 +339,8 @@ inline void db_get_tree1(
 	vector<vecLong> alt_paths; // path from nodes[0] to one redundant child
 	// TODO: do the same for all nodes in this entry
 	for (i_node = 1; i_node <= Nnode; ++i_node) {
+		auto &root = nodes[i_node-1];
+		Str &root_title = entry_info[root.entry].first;
 		dag_reduce(alt_paths, tree, i_node-1);
 		std::stringstream ss;
 		if (!alt_paths.empty()) {
@@ -349,7 +351,7 @@ inline void db_get_tree1(
 				auto &node_red = nodes[i_red];
 
 				auto &pentry0 = get<1>(entry_info[entry0]);
-				auto &pentry1 = pentry0[nodes[i_node-1].i_node - 1];
+				auto &pentry1 = pentry0[root.i_node - 1];
 				bool found = false;
 				for (auto &e: pentry1) {
 					if (e.entry == node_red.entry && e.i_node == node_red.i_node) {
@@ -359,13 +361,14 @@ inline void db_get_tree1(
 				}
 				if (!found)
 					throw internal_err(SLS_WHERE);
-				auto &title_bak = get<0>(entry_info[node_red.entry]);
-				ss << u8"\n\n存在多余的预备知识： " << title_bak << "(" << node_red.entry << ")" << endl;
+				auto &title_red = get<0>(entry_info[node_red.entry]);
+				ss << u8"\n已标记 " << root.entry << ':' << root.i_node << " (" << root_title << u8") 中多余的预备知识： "
+				   << node_red.entry << ':' << node_red.i_node << " (" << title_red << ')' << endl;
 				ss << u8"   已存在路径： " << endl;
 				for (Long i = 0; i < size(alt_path); ++i) {
-					auto &entry = nodes[alt_path[i]].entry;
-					auto &title = get<0>(entry_info[entry]);
-					ss << title << "(" << entry
+					auto &nod = nodes[alt_path[i]];
+					auto &title = get<0>(entry_info[nod.entry]);
+					ss << nod.entry << ':' << nod.i_node << " (" << title
 					   << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
 				}
 			}
@@ -377,7 +380,8 @@ inline void db_get_tree1(
 	// add tilde to pentry_raw
 	auto &pentry0 = get<1>(entry_info[entry0]);
 	for (Long i = 0; i < size(pentry_raw0); ++i) {
-		auto &pentry1 = pentry0[i], &pentry_raw1 = pentry_raw0[i];
+		auto &pentry1 = pentry0[i];
+		auto &pentry_raw1 = pentry_raw0[i];
 		for (Long j = 0; j < size(pentry_raw1); ++j)
 			pentry_raw1[j].tilde = pentry1[j].tilde;
 	}
