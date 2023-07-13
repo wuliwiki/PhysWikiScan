@@ -22,13 +22,12 @@ inline void all_commands(vecStr_O commands, Str_I in_path)
 }
 
 // count number of Chinese characters (including punc)
-inline void word_count()
+inline void word_count(SQLite::Database &db_read)
 {
 	vecStr entries;
 	Str str;
 	Long N = 0;
-	SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-	get_column(entries, "entries", "id", db);
+	get_column(entries, "entries", "id", db_read);
 	for (Long i = 0; i < size(entries); ++i) {
 		read(str, gv::path_in + "contents/" + entries[i] + ".tex");
 		rm_comments(str);

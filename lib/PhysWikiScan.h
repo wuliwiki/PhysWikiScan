@@ -321,7 +321,7 @@ inline Long pay2div(Str_IO str)
 
 // buttons for last and next entry
 inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_main,
-							Str_I last, Str_I next, SQLite::Database &db_read)
+	Str_I last, Str_I next, SQLite::Database &db_read)
 {
 	Str last_title, last_url, next_title, next_url;
 	SQLite::Statement stmt_select(db_read,
@@ -374,42 +374,37 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 // --toc
 // table of contents
 // generate index.html from main.tex
-inline void arg_toc()
+inline void arg_toc(SQLite::Database &db_rw)
 {
 	cout << u8"\n\n\n\n\n正在从 main.tex 生成目录 index.html ...\n" << endl;
 	vecStr titles, entries;
 	vecBool is_draft;
 	vecStr part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
 	vecLong entry_part, chap_part, entry_chap;
-
-	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 	table_of_contents(part_ids, part_name, chap_first, chap_last,
 					  chap_ids, chap_name, chap_part, entry_first, entry_last,
-					  entries, titles, is_draft, entry_part, entry_chap, db_read);
+					  entries, titles, is_draft, entry_part, entry_chap, db_rw);
 
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
-							 entry_first, entry_last);
+							 entry_first, entry_last, db_rw);
 	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
 }
 
 // --bib
 // parse bibliography.tex and update db
-inline void arg_bib()
+inline void arg_bib(SQLite::Database &db_rw)
 {
 	vecStr bib_labels, bib_details;
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	bibliography(bib_labels, bib_details);
 	db_update_bib(bib_labels, bib_details, db_rw);
 }
 
 // --history
 // update db "history" table from backup files
-inline void arg_history(Str_I path)
+inline void arg_history(Str_I path, SQLite::Database &db_rw)
 {
-	SQLite::Database db(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-	db_update_author_history(path, db);
-	db_update_authors(db);
+	db_update_author_history(path, db_rw);
+	db_update_authors(db_rw);
 }
 
 // generate html from a single tex
@@ -587,7 +582,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 }
 
 inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read)
+		vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
@@ -635,7 +630,6 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			cout << titles[i] << endl; cout.flush();
 
 			// update db "entries"
-			SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 			if (update_db) {
 				SQLite::Statement stmt_update
 						(db_rw,
@@ -686,9 +680,9 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 	try {
 		// update entries.bibs & bibliography.ref_by
-		db_update_entry_bibs(entry_bibs_change);
+		db_update_entry_bibs(entry_bibs_change, db_rw);
 		// update entries.uprefs & entries.ref_by
-		db_update_uprefs(entry_uprefs_change);
+		db_update_uprefs(entry_uprefs_change, db_rw);
 	}
 	catch (const std::exception &e) {
 		entry_err["entry_unknown"] = e.what();
@@ -700,7 +694,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_I entries, vecStr_I titles, SQLite::Database &db_read)
+		vecStr_I entries, vecStr_I titles, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
@@ -720,7 +714,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	}
 	cout << endl; cout.flush();
 
-	db_update_refs(entry_add_refs, entry_del_refs);
+	db_update_refs(entry_add_refs, entry_del_refs, db_rw);
 }
 
 // generate json file containing dependency tree
@@ -781,17 +775,13 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries)
+inline void PhysWikiOnlineN(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	{
-		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-		db_check_add_entry_simulate_editor(entries, db_rw);
-	}
-	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
-	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
+	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
@@ -809,10 +799,8 @@ inline void PhysWikiOnlineN(vecStr_IO entries)
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
 // goal: should not need to be used!
-inline void PhysWikiOnline()
+inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-
 	gv::is_entire = true; // compiling the whole wiki
 
 	// remove matlab files
@@ -825,26 +813,22 @@ inline void PhysWikiOnline()
 	vecStr entries, titles;
 
 	// get entries from folder
-	{
-		vecStr titles;
-		entries_titles(entries, titles);
+	vecStr titles_tmp;
+	entries_titles(entries, titles_tmp);
+	db_check_add_entry_simulate_editor(entries, db_rw);
 
-		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-		db_check_add_entry_simulate_editor(entries, db_rw);
-	}
-
-	arg_bib();
-	arg_toc();
+	arg_bib(db_rw);
+	arg_toc(db_rw);
 	map<Str, Str> entry_err;
 
-	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read);
+	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
 
 	// generate dep.json
 	// TODO: change the tree with new rule
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
 
 	// TODO: warn unused figures, based on "ref_by"
 

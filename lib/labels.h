@@ -349,13 +349,11 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 // if exist, return 1, output label
 // if doesn't exist, return 0
 // dry_run : don't actually modify tex file
-inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order, Bool_I dry_run = false)
+inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
+	SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I dry_run = false)
 {
 	Long ind0 = 0;
 	Str label0, newtab;
-
-
-	SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 
 	// check if label exist
 	if (type == "fig") {
@@ -489,7 +487,6 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order, 
 
 	if (!dry_run) {
 		// insert into "labels"
-		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 		SQLite::Transaction transaction(db_rw);
 		SQLite::Statement stmt_insert(db_rw,
 			R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");

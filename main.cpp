@@ -211,8 +211,10 @@ int main(int argc, const char *argv[]) {
 
 	// === parse arguments ===
 	try {
+		SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
+		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 		if (args[0] == "." && args.size() == 1) {
-			PhysWikiOnline();
+			PhysWikiOnline(db_read, db_rw);
 		}
 		else if (args[0] == "--titles") {
 			// update entries.txt and titles.txt
@@ -222,9 +224,9 @@ int main(int argc, const char *argv[]) {
 			write_vec_str(entries, gv::path_data + "entries.txt");
 		}
 		else if (args[0] == "--toc" && args.size() == 1)
-			arg_toc();
+			arg_toc(db_rw);
 		else if (args[0] == "--wc" && args.size() == 1)
-			word_count();
+			word_count(db_read);
 		else if (args[0] == "--inline-eq-space")
 			// check format and auto correct .tex files
 			add_space_around_inline_eq(gv::path_in);
@@ -237,7 +239,7 @@ int main(int argc, const char *argv[]) {
 			Str label;
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
-			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]));
+			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw);
 			vecStr output;
 			if (ret == 0) { // added
 				Str id = args[2] + args[3];
@@ -254,7 +256,7 @@ int main(int argc, const char *argv[]) {
 			Str label;
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
-			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), true);
+			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw, true);
 			vecStr output;
 			if (ret == 0) // added
 				output = {label, "added"};
@@ -274,18 +276,18 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
-			PhysWikiOnlineN(entries);
+			PhysWikiOnlineN(entries, db_read, db_rw);
 		}
 		else if (args[0] == "--bib")
-			arg_bib();
+			arg_bib(db_rw);
 		else if (args[0] == "--history-all" && args.size() <= 2) {
-			arg_history("../PhysWiki-backup/");
+			arg_history("../PhysWiki-backup/", db_rw);
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-            db_update_history_last(db_read);
+            db_update_history_last(db_read, db_rw);
 			if (args.size() == 2)
-				history_add_del(db_read, true);
+				history_add_del(db_read, db_rw, true);
 			else
-				history_add_del(db_read, false);
+				history_add_del(db_read, db_rw, false);
 		}
 		else if (args[0] == "--history" && args.size() == 2) {
 			Str path = "../PhysWiki-backup/";
@@ -293,14 +295,14 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
-			history_normalize(db_read);
+			history_normalize(db_read, db_rw);
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 			author_char_stat(args[1], args[2], args[3], db_read);
 		}
 		else if (args[0] == "--fix-db" && size(args) == 1) {
-			arg_fix_db();
+			arg_fix_db(db_rw);
 		}
 		else if (args[0] == "--migrate-db" && size(args) == 3) {
 			// copy old database to a new database with different schema

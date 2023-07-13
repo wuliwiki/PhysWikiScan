@@ -186,9 +186,9 @@ inline void table_of_contents(
 		vecStr_O part_ids, vecStr_O part_names, vecStr_O part_chap_first, vecStr_O part_chap_last, // part info
 		vecStr_O chap_ids, vecStr_O chap_names, vecLong_O chap_part, vecStr_O chap_entry_first, vecStr_O chap_entry_last, // chapter info
 		vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, // entry info
-		SQLite::Database &db_read)
+		SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)");
 
 	Long ind0 = 0, ind1 = 0, ikey, chapNo = -1, chapNo_tot = 0, partNo = 0;
@@ -247,12 +247,9 @@ inline void table_of_contents(
 			stmt_select.bind(1, entry);
 			if (!stmt_select.executeStep()) {
 				SLS_WARN(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
-				{
-					vecStr titles_tmp;
-					entries_titles(entries, titles_tmp);
-					SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
-					db_check_add_entry_simulate_editor(entries, db_rw);
-				}
+				vecStr titles_tmp;
+				entries_titles(entries, titles_tmp);
+				db_check_add_entry_simulate_editor(entries, db_rw);
 				stmt_select.reset();
 				stmt_select.bind(1, entry);
 				if (!stmt_select.executeStep())

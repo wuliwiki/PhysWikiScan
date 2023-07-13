@@ -587,12 +587,11 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 inline void db_update_parts_chapters(
 		vecStr_I part_ids, vecStr_I part_name, vecStr_I chap_first, vecStr_I chap_last,
 		vecStr_I chap_ids, vecStr_I chap_name, vecLong_I chap_part,
-		vecStr_I entry_first, vecStr_I entry_last)
+		vecStr_I entry_first, vecStr_I entry_last, SQLite::Database &db_rw)
 {
 	cout << "updating sqlite database (" << part_name.size() << " parts, "
 		 << chap_name.size() << " chapters) ..." << endl;
 	cout.flush();
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 	cout << "clear parts and chatpers tables" << endl;
 	table_clear("parts", db_rw); table_clear("chapters", db_rw);
@@ -898,7 +897,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 }
 
 // update "history.last" for all table
-inline void db_update_history_last(SQLite::Database &db_read)
+inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_read,
@@ -911,7 +910,6 @@ inline void db_update_history_last(SQLite::Database &db_read)
 	}
 
 	// update db
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
@@ -1392,9 +1390,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 }
 
 // update entries.bibs and bibliography.ref_by
-inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Bool>> &entry_bibs_change)
+inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Bool>> &entry_bibs_change, SQLite::Database &db_rw)
 {
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 
 	// convert arguments
@@ -1460,9 +1457,9 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 
 // update entries.uprefs, entries.ref_by
 inline void db_update_uprefs(
-		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change)
+		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change,
+		SQLite::Database &db_rw)
 {
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 
 	cout << "updating entries.uprefs ..." << endl;
@@ -1511,9 +1508,9 @@ inline void db_update_uprefs(
 
 // update entries.refs, labels.ref_by, figures.ref_by
 inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_add_refs,
-	unordered_map<Str, unordered_set<Str>> &entry_del_refs)
+	unordered_map<Str, unordered_set<Str>> &entry_del_refs,
+	SQLite::Database &db_rw)
 {
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 
 	// transform arguments
@@ -1685,9 +1682,8 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 // make db consistent
 // (regenerate derived fields)
 // TODO: fix other generated field, i.e. entries.ref_by
-inline void arg_fix_db()
+inline void arg_fix_db(SQLite::Database &db_rw)
 {
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	Str refs_str, entry;
 	set<Str> refs;
 	unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by, bib_ref_by;
@@ -1932,7 +1928,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 }
 
 // calculate "history.add" and "history.del", with output of
-inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) {
+inline void history_add_del(SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
 	SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
@@ -1980,7 +1976,6 @@ inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) 
 
 	// update db "history.add/del"
 	cout << "\n\nupdating db history.add/del..." << endl;
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
@@ -1998,7 +1993,7 @@ inline void history_add_del(SQLite::Database &db_read, Bool_I redo_all = false) 
 }
 
 // simulate 5min backup rule, by renaming backup files
-inline void history_normalize(SQLite::Database &db_read)
+inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "entry", "author", "time", "hash" FROM "history")");
@@ -2066,7 +2061,6 @@ inline void history_normalize(SQLite::Database &db_read)
 	}
 
 	// remove or rename files, and update db
-	SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
