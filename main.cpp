@@ -360,7 +360,10 @@ int main(int argc, const char *argv[]) {
 		}
 	}
 	catch (const std::exception &e) {
-		cerr << Str(u8"错误：") + e.what() << endl;
+		if (e.what() == Str("database is locked"))
+			cerr << u8"错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。" << endl;
+		else
+			cerr << u8"错误：" << e.what() << endl;
 		exit(1);
 	}
 	catch (...) {

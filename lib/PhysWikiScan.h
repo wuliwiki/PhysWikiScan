@@ -212,25 +212,30 @@ inline Long paragraph_tag(Str_IO str)
 
 // replace \pentry comman with html round panel
 inline Long pentry_cmd(Str_IO str, Pentry_I pentry)
-{
-	Long ind = 0, ikey;
-	Str pentry_arg, tmp;
-	for (Long i = 0; i < size(pentry); ++i) {
-		auto &pentry1 = pentry[i];
-		ind = find_command(str, "pentry", ind);
-		Long ind1 = skip_command(str, ind);
-		command_arg(pentry_arg, str, 0);
-		Long ind0 = 0;
-		for (Long j = 0; j < size(pentry1); ++j) {
-			ind0 = find(str, "\\upref", ind0);
-			if (ind0 < 0) break;
-			++ind0;
-		}
-		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
-		tmp << (gv::is_eng ? u8"预备知识" : "Prerequisite")
-			<< "</b>　)" << pentry_arg << "</div>";
-		str.replace(ind, ind1-ind, tmp);
-	}
+	{
+		if (!gv::is_eng)
+			return Command2Tag("pentry",
+				u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>预备知识</b>　)", "</div>", str);
+		return Command2Tag("pentry",
+			u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>Prerequisite</b>　)", "</div>", str);
+//	Long ind = 0, ikey;
+//	Str pentry_arg, tmp;
+//	for (Long i = 0; i < size(pentry); ++i) {
+//		auto &pentry1 = pentry[i];
+//		ind = find_command(str, "pentry", ind);
+//		Long ind1 = skip_command(str, ind);
+//		command_arg(pentry_arg, str, 0);
+//		Long ind0 = 0;
+//		for (Long j = 0; j < size(pentry1); ++j) {
+//			ind0 = find(str, "\\upref", ind0);
+//			if (ind0 < 0) break;
+//			++ind0;
+//		}
+//		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
+//		tmp << (gv::is_eng ? u8"预备知识" : "Prerequisite")
+//			<< "</b>　)" << pentry_arg << "</div>";
+//		str.replace(ind, ind1-ind, tmp);
+//	}
 }
 
 // mark incomplete
