@@ -211,31 +211,68 @@ inline Long paragraph_tag(Str_IO str)
 }
 
 // replace \pentry comman with html round panel
-inline Long pentry_cmd(Str_IO str, Pentry_I pentry)
-	{
-		if (!gv::is_eng)
-			return Command2Tag("pentry",
-				u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>预备知识</b>　)", "</div>", str);
-		return Command2Tag("pentry",
-			u8R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>Prerequisite</b>　)", "</div>", str);
-//	Long ind = 0, ikey;
-//	Str pentry_arg, tmp;
-//	for (Long i = 0; i < size(pentry); ++i) {
-//		auto &pentry1 = pentry[i];
-//		ind = find_command(str, "pentry", ind);
-//		Long ind1 = skip_command(str, ind);
-//		command_arg(pentry_arg, str, 0);
-//		Long ind0 = 0;
-//		for (Long j = 0; j < size(pentry1); ++j) {
-//			ind0 = find(str, "\\upref", ind0);
-//			if (ind0 < 0) break;
-//			++ind0;
-//		}
-//		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
-//		tmp << (gv::is_eng ? u8"预备知识" : "Prerequisite")
-//			<< "</b>　)" << pentry_arg << "</div>";
-//		str.replace(ind, ind1-ind, tmp);
-//	}
+// skip pentry without \\upref*
+inline void pentry_cmd(Str_IO str, Pentry_I pentry)
+{
+	Long ind = 0;
+	Str pentry_arg, entry, tmp;
+	Str span_beg = R"(<span style="color:gray;">)", span_end = "</span>";
+	Long i = -1; // index to pentry
+	while (1) { // loop through \pentry command (not pentry var)
+		++i;
+		ind = find_command(str, "pentry", ind);
+		if (ind < 0) {
+			if (i < size(pentry))
+				throw internal_err(SLS_WHERE);
+			break;
+		}
+		auto &pentry1 = pentry[i];
+		Long Nupref = pentry.empty() ? 0 : size(pentry1);
+		Long ind1 = skip_command(str, ind, 1);
+		command_arg(pentry_arg, str, ind);
+		Long ind2 = 0, j = -1;
+		while (1) { // loop through \upref command
+			++j;
+			Long ind3 = find(pentry_arg, "\\upref", ind2);
+			if (ind3 < 0) {
+				if (j == 0) { // \pentry without \upref*
+					--i; break;
+				}
+				if (j != Nupref)
+					throw internal_err(SLS_WHERE);
+				break;
+			}
+			if (j >= Nupref)
+				throw internal_err(SLS_WHERE);
+			if (pentry1[j].tilde) {
+				pentry_arg.insert(ind3, span_end);
+				pentry_arg.insert(ind2, span_beg);
+				ind3 += size(span_beg) + size(span_end);
+			}
+			Long len1 = size(pentry_arg);
+			ind2 = skip_command(pentry_arg, ind3, 1);
+			if (ind2 == len1) {
+				if (j != Nupref-1)
+					throw internal_err(SLS_WHERE);
+				break;
+			}
+			u8_iter it(pentry_arg, ind2);
+			while (*it == " ") ++it;
+			if (ind2 == len1) {
+				if (j != Nupref-1)
+					throw internal_err(SLS_WHERE);
+				break;
+			}
+			if (j < len1-1 && *it != "，")
+				throw scan_err(u8"预备知识之间必须用中文逗号隔开，不要有空格");
+			++it; ind2 = it;
+		}
+		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
+		tmp << (gv::is_eng ? "Prerequisite" : u8"预备知识")
+			<< "</b>　" << pentry_arg << "</div>";
+		str.replace(ind, ind1-ind, tmp);
+		ind += size(tmp);
+	}
 }
 
 // mark incomplete
@@ -533,8 +570,15 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
+	//
+	// check dependency tree and auto mark redundant pentry with ~
+	vector<DGnode> tree; vector<Node> nodes;
+	unordered_map<Str, pair<Str, Pentry>> entry_info;
+	db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
+	// update entries.pentry if changed
+	db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
 	// process \pentry{}
-	pentry_cmd(str, pentry);
+	pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
 	// replace user defined commands
 	newcommand(str, rules);
 	subsections(str);
@@ -598,9 +642,6 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 	vector<unordered_map<Str, Str>> fig_ext_hash;
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
-	vector<DGnode> tree;
-	unordered_map<Str, pair<Str, Pentry>> entry_info;
-	vector<Node> nodes;
 	Str pentry_str, db_pentry_str;
 	unordered_map<Str, unordered_map<Str, Bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
 	unordered_map<Str, unordered_map<Str, Bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
@@ -616,12 +657,12 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			Str html;
 
 			// =================================================================
-				PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-								fig_ids, fig_orders,
-								fig_ext_hash, isdraft, keywords,
-								labels, label_orders, entry_uprefs_change[entry],
-								entry_bibs_change[entry],
-								pentry_raw, entry, rules, db_read);
+			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
+							fig_ids, fig_orders,
+							fig_ext_hash, isdraft, keywords,
+							labels, label_orders, entry_uprefs_change[entry],
+							entry_bibs_change[entry],
+							pentry_raw, entry, rules, db_read);
 			// ===================================================================
 			// save html file
 			// TODO: mark redundant pentry with a slightly different color
@@ -659,10 +700,6 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 				titles.resize(entries.size());
 			}
 
-			// check dependency tree and auto mark redundant pentry with ~
-			db_get_tree1(tree, nodes, entry_info, pentry_raw, entry, titles[i], db_read);
-			// update entries.pentry if changed
-			db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
 			join_pentry(pentry_str, pentry_raw);
 			if (pentry_str != db_pentry_str) {
 				SQLite::Statement stmt_update(db_rw,
