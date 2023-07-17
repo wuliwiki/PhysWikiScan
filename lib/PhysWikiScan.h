@@ -585,7 +585,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// check dependency tree and auto mark redundant pentry with ~
 	vector<DGnode> tree; vector<Node> nodes;
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
-	db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
+	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_read);
 	// update entries.pentry if changed
 	db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
 	// process \pentry{}
