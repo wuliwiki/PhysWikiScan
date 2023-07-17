@@ -48,68 +48,6 @@ inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 			SLS_ERR("something wrong!");
 }
 
-// get dependency tree from database
-// edge direction is the learning direction
-inline void db_get_tree(vector<DGnode> &tree, vecStr_O entries, vecStr_O titles,
-						vecStr_O parts, vecStr_O chapters, SQLite::Database &db)
-{
-	tree.clear(); entries.clear(); titles.clear(); parts.clear(); chapters.clear();
-	SQLite::Statement stmt_select(
-			db,
-			R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
-	Str pentry_str, tmp;
-	vector<vecStr> pentries;
-
-	while (stmt_select.executeStep()) {
-		entries.push_back(stmt_select.getColumn(0));
-		titles.push_back(stmt_select.getColumn(1));
-		parts.push_back(stmt_select.getColumn(2));
-		chapters.push_back(stmt_select.getColumn(3));
-		pentry_str = (const char*)stmt_select.getColumn(4);
-		pentries.emplace_back();
-		parse(pentries.back(), pentry_str);
-	}
-	tree.resize(entries.size());
-
-	// construct tree
-	for (Long i = 0; i < size(entries); ++i) {
-		for (auto &pentry : pentries[i]) {
-			Long from = search(pentry, entries);
-			if (from < 0) {
-				tmp = u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： ";
-				tmp << pentry << " -> " << entries[i];
-				throw internal_err(tmp);
-			}
-			tree[from].push_back(i);
-		}
-	}
-
-	// check cyclic
-	vecLong cycle;
-	if (!dag_check(cycle, tree)) {
-		Str msg = u8"存在循环预备知识: ";
-		for (auto ind : cycle)
-			msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
-		msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
-		throw scan_err(msg);
-	}
-
-	// check redundency
-	vector<pair<Long,Long>> edges;
-	dag_reduce(edges, tree);
-	std::stringstream ss;
-	if (size(edges)) {
-		ss << "\n" << endl;
-		ss << u8"==============  多余的预备知识  ==============" << endl;
-		for (auto &edge : edges) {
-			ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
-				 << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
-		}
-		ss << "=============================================\n" << endl;
-		throw scan_err(ss.str());
-	}
-}
-
 // parse the string from "entries.pentry"
 // 0 means the last node or the whole entry
 inline void parse_pentry(Pentry_O pentry, Str_I str)
@@ -191,6 +129,10 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
 	str.resize(str.size()-3); // remove " | "
 }
 
+// get title and Pentry obj for one entry
+// stmt_select should be defined as follows
+// SQLite::Statement stmt_select(db_read,
+//		R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
 inline void db_get_entry_info(
 		pair<Str, Pentry> &info, // title, pentry
 		Str_I entry, SQLite::Statement &stmt_select)
@@ -217,16 +159,17 @@ typedef Node &Node_O, &Node_IO;
 inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.i_node == b.i_node; }
 inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node < b.i_node : a.entry < b.entry; }
 
-// get dependency tree from database, for (the last node of) 1 entry0
+// get dependency tree from database, for (the last node of) 1 entry0 (last node as root)
+// edge direction is the inverse of learning direction
 // each node of the tree is a part of an entry0 (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
 // `entry0:(i+1)` will be in nodes[i]
 // nodes[i] corresponds to tree[i]
 inline void db_get_tree1(
-	vector<DGnode> &tree, // [output] DAG dependency tree, each node will include last node of the same entry (if any)
-	vector<Node> &nodes, // [output] nodes[i] is tree[i], with (entry, order)
-	unordered_map<Str, pair<Str, Pentry>> &entry_info, // [output] entry -> (title, Pentry)
-	Pentry_IO pentry_raw0, // pentry_raw0[i][j].tilde will be updated on output
+	vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
+	vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order)
+	unordered_map<Str, pair<Str, Pentry>> &entry_info, // [out] entry -> (title, Pentry)
+	Pentry_IO pentry0, // pentry0[i][j].tilde will be updated
 	Str_I entry0, Str_I title0, // use the last node as tree root
 	SQLite::Database &db_read)
 {
@@ -236,7 +179,7 @@ inline void db_get_tree1(
 
 	Str pentry_str;
 	Long i_node;
-	Long Nnode = size(pentry_raw0);
+	Long Nnode = size(pentry0);
 	if (Nnode == 0) return; // no pentry
 	deque<Node> q; // nodes to search
 
@@ -246,7 +189,7 @@ inline void db_get_tree1(
 		q.emplace_back(entry0, i_node);
 	}
 	entry_info[entry0].first = title0;
-	entry_info[entry0].second = pentry_raw0;
+	entry_info[entry0].second = pentry0;
 
 	// broad first search (BFS) to get all nodes involved
 	while (!q.empty()) {
@@ -281,7 +224,7 @@ inline void db_get_tree1(
 		}
 	}
 
-	// construct tree
+	// ---- construct tree ----
 	// every node has a non-zero i_node now
 	tree.resize(nodes.size());
 	for (Long i = 0; i < size(nodes); ++i) {
@@ -296,7 +239,7 @@ inline void db_get_tree1(
 			if (from < 0)
 				throw internal_err(u8"上一个节点未找到（应该不会发生才对）： "
 					+ nod.entry + ":" + to_string(nod.i_node));
-			tree[from].push_back(i);
+			tree[i].push_back(from);
 		}
 		for (auto &en : pentry[i_node-1]) {
 			Node nod(en.entry, en.i_node);
@@ -304,12 +247,11 @@ inline void db_get_tree1(
 			if (from < 0)
 				throw internal_err(u8"节点未找到（应该不会发生才对）： "
 								+ nod.entry + ":" + to_string(nod.i_node));
-			tree[from].push_back(i);
+			tree[i].push_back(from);
 		}
 	}
 
 	// check cyclic
-	// TODO: mark as tilde
 	vecLong cycle;
 	if (!dag_check(cycle, tree)) {
 		cycle.push_back(cycle[0]);
@@ -323,8 +265,6 @@ inline void db_get_tree1(
 	}
 
 	// check redundancy
-	dag_inv(tree);
-
 	if (0) { // debug: print edges
 		for (Long i = 0; i < size(tree); ++i) {
 			auto &entry_i = nodes[i].entry;
@@ -337,7 +277,6 @@ inline void db_get_tree1(
 	}
 
 	vector<vecLong> alt_paths; // path from nodes[0] to one redundant child
-	// TODO: do the same for all nodes in this entry
 	for (i_node = 1; i_node <= Nnode; ++i_node) {
 		auto &root = nodes[i_node-1];
 		Str &root_title = entry_info[root.entry].first;
@@ -375,15 +314,86 @@ inline void db_get_tree1(
 			SLS_WARN(ss.str());
 		}
 	}
-	dag_inv(tree);
 
 	// add tilde to pentry_raw
 	auto &pentry0 = get<1>(entry_info[entry0]);
-	for (Long i = 0; i < size(pentry_raw0); ++i) {
+	for (Long i = 0; i < size(pentry0); ++i) {
 		auto &pentry1 = pentry0[i];
-		auto &pentry_raw1 = pentry_raw0[i];
+		auto &pentry_raw1 = pentry0[i];
 		for (Long j = 0; j < size(pentry_raw1); ++j)
 			pentry_raw1[j].tilde = pentry1[j].tilde;
+	}
+}
+
+// get entire dependency tree (2 ver) from database
+// edge direction is the inverse of learning direction
+// tree: one node for each entry
+// tree2: one node for each \pentry{}
+inline void db_get_tree(
+		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
+		vector<DGnode> &tree2, // [out] same with `tree`, but each tree node is one entry
+		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order)
+		unordered_map<Str, tuple<Str, Str, Str, Pentry>> &entry_info, // [out] entry -> (title,part,chapter,Pentry)
+		SQLite::Database &db_read)
+{
+	tree.clear();
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries ")"
+		R"(WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
+	Str tmp;
+
+	// get info
+	while (stmt_select.executeStep()) {
+		const Str &entry = stmt_select.getColumn(0);
+		auto &info = entry_info[entry];
+		get<0>(info) = stmt_select.getColumn(0); // titles
+		get<1>(info) = stmt_select.getColumn(1)); // parts
+		get<2>(info) = stmt_select.getColumn(2)); // chapter
+		parse_pentry(pentry, stmt_select.getColumn(3)); // pentry
+	}
+
+	// construct tree
+	for (auto &e : entry_info) {
+		auto &entry = e.first;
+		auto &pentry = get<3>(e.second);
+		for (Long i_node = 1; i_node <= size(pentry); ++i_node) {
+			auto &pentry1 = pentry[i_node-1];
+			nodes.push_back(Node(entry, i_node));
+			tree.emplace_back();
+			for (auto &e: pentry1) {
+				if (from < 0) {
+					tmp = u8"预备知识未找到（应该已经在 PhysWikiOnline1() 中检查了不会发生才对： ";
+					tmp << pentry << " -> " << entries[i];
+					throw internal_err(tmp);
+				}
+				tree.back().push_back(i);
+			}
+		}
+	}
+
+	// check cyclic
+	vecLong cycle;
+	if (!dag_check(cycle, tree)) {
+		Str msg = u8"存在循环预备知识: ";
+		for (auto ind : cycle)
+			msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
+		msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
+		throw scan_err(msg);
+	}
+
+	// check redundency
+	vector<pair<Long,Long>> edges;
+	dag_reduce(edges, tree);
+	std::stringstream ss;
+	if (size(edges)) {
+		ss << "\n" << endl;
+		ss << u8"==============  多余的预备知识  ==============" << endl;
+		for (auto &edge : edges) {
+			ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
+			   << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
+		}
+		ss << "=============================================\n" << endl;
+		throw scan_err(ss.str());
 	}
 }
 

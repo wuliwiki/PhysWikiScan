@@ -638,7 +638,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 	unordered_set<Str> update_entries;
 	vecLong fig_orders, label_orders;
 	vecStr keywords, fig_ids, labels;
-	Pentry pentry_raw;
+	Pentry pentry;
 	vector<unordered_map<Str, Str>> fig_ext_hash;
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
@@ -662,10 +662,9 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 							fig_ext_hash, isdraft, keywords,
 							labels, label_orders, entry_uprefs_change[entry],
 							entry_bibs_change[entry],
-							pentry_raw, entry, rules, db_read);
+							pentry, entry, rules, db_read);
 			// ===================================================================
 			// save html file
-			// TODO: mark redundant pentry with a slightly different color
 			write(html, gv::path_out + entry + ".html.tmp");
 
 			cout << titles[i] << endl; cout.flush();
@@ -700,7 +699,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 				titles.resize(entries.size());
 			}
 
-			join_pentry(pentry_str, pentry_raw);
+			join_pentry(pentry_str, pentry);
 			if (pentry_str != db_pentry_str) {
 				SQLite::Statement stmt_update(db_rw,
 					R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
@@ -762,7 +761,7 @@ inline Long dep_json(SQLite::Database &db_read)
 	vector<DGnode> tree;
 	db_get_parts(part_ids, part_names, db_read);
 	db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
-	db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
+	// db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
 
 	Str str;
 	// write part names
@@ -777,17 +776,19 @@ inline Long dep_json(SQLite::Database &db_read)
 		str += R"(    {"name": ")" + chap_names[i] + "\"},\n";
 	str.pop_back(); str.pop_back();
 	str += "\n  ],\n";
-	// write entries
+	// write nodes (entry + node#)
 	str += "  \"nodes\": [\n";
-	for (Long i = 0; i < size(titles); ++i) {
-		if (titles[i].empty())
-			continue;
-		str += R"(    {"id": ")" + entries[i] + "\"" +
-			   ", \"part\": " + num2str(search(entry_part[i], part_ids)) +
-			   ", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
-			   R"(, "title": ")" + titles[i] + "\""
-											", \"url\": \"../online/" +
-			   entries[i] + ".html\"},\n";
+	for (Long i = 0; i < size(entries); ++i) {
+		for (Long j = 0; j < size(tree); ++j) {
+			if (titles[i].empty())
+				continue;
+			str += R"(    {"id": ")" + entries[i] + "\"" +
+				", \"part\": " + num2str(search(entry_part[i], part_ids)) +
+				", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
+				R"(, "title": ")" + titles[i] + "\""
+				", \"url\": \"../online/" +
+				entries[i] + ".html\"},\n";
+		}
 	}
 	str.pop_back(); str.pop_back();
 	str += "\n  ],\n";
@@ -818,6 +819,11 @@ inline void PhysWikiOnlineN(vecStr_IO entries, SQLite::Database &db_read, SQLite
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
 	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
+
+	// generate dep.json
+//	if (file_exist(gv::path_out + "../tree/data/dep.json"))
+//		dep_json(db_read);
+
 	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
 
 	if (!entry_err.empty()) {
@@ -861,7 +867,6 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
 
 	// generate dep.json
-	// TODO: change the tree with new rule
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 

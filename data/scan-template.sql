@@ -129,7 +129,7 @@ INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 不在目录中
 CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
-	"authors"	TEXT NOT NULL DEFAULT '', -- 作者，格式和 entries.authors 相同
+	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】作者，格式和 entries.authors 相同（以 images.author 为准）
 	"entry"	TEXT NOT NULL DEFAULT '', -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter" TEXT NOT NULL DEFAULT '', -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 
@@ -140,8 +140,8 @@ CREATE TABLE "figures" (
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "image_alt", "image_old", "files", "source"
-	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0] 被使用 [1] 未被使用
+	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "authors", "image_alt", "image_old", "files", "source"
+	"deleted"	INTEGER NOT NULL DEFAULT 0, -- 【生成】[0] 被使用 [1] 未被使用（以 entries.figures 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("image") REFERENCES "images"("hash"),
