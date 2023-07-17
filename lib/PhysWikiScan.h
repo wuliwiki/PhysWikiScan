@@ -446,17 +446,28 @@ inline void arg_history(Str_I path, SQLite::Database &db_rw)
 
 // generate html from a single tex
 // output title from first line comment
+// use `clear=true` to only keep the title line and key-word line of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
 	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
-	Pentry_O pentry, Str_I entry, vecStr_I rules, SQLite::Database &db_read)
+	Pentry_O pentry, Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
 	if (!is_valid(str))
 		throw std::runtime_error(u8"内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
 	CRLF_to_LF(str);
+	if (clear) {
+		// this option is used when deleting the entry, it will help to remove all labels, figures, etc from the db
+		// and get error if they are still being referenced
+		Long ind0 = find(str, '\n', 0);
+		if (ind0 > 0) {
+			ind0 = find(str, '\n', ind0);
+			if (ind0 > 0)
+				str.resize(ind0+1);
+		}
+	}
 
 	// read title from first comment
 	get_title(title, str);
@@ -625,8 +636,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		update_db = true;
 }
 
+// might append to `entries` if `order` of eq, fig, etc are updated
 inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_O titles, vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
+		vecStr_O titles, vecStr_IO entries, Bool_I clear, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
@@ -662,7 +674,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 							fig_ext_hash, isdraft, keywords,
 							labels, label_orders, entry_uprefs_change[entry],
 							entry_bibs_change[entry],
-							pentry, entry, rules, db_read);
+							pentry, entry, clear, rules, db_read);
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");
@@ -813,12 +825,12 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
-	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
+	PhysWikiOnlineN_round1(entry_err, titles, entries, clear, db_read, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
@@ -838,6 +850,12 @@ inline void PhysWikiOnlineN(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		else
 			throw scan_err((*entry_err.begin()).second);
 	}
+}
+
+// delete entries
+inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
+{
+	PhysWikiOnlineN(entries, true, db_read, db_rw);
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
@@ -864,7 +882,7 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	arg_toc(db_rw);
 	map<Str, Str> entry_err;
 
-	PhysWikiOnlineN_round1(entry_err, titles, entries, db_read, db_rw);
+	PhysWikiOnlineN_round1(entry_err, titles, entries, false, db_read, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))

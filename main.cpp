@@ -276,7 +276,18 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
-			PhysWikiOnlineN(entries, db_read, db_rw);
+			PhysWikiOnlineN(entries, false, db_read, db_rw);
+		}
+		else if (args[0] == "--delete" && args.size() > 1) {
+			vecStr entries;
+			Str arg;
+			for (Long i = 1; i < size(args); ++i) {
+				arg = args[i];
+				if (arg[0] == '-' && arg[1] == '-')
+					break;
+				entries.push_back(arg);
+			}
+			arg_delete(entries, db_read, db_rw);
 		}
 		else if (args[0] == "--bib")
 			arg_bib(db_rw);
