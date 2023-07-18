@@ -336,7 +336,7 @@ inline void db_get_tree1(
 // tree: one node for each entry
 inline void db_get_tree(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
-		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order)
+		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order). will be sorted by `entry` then `i_node`
 		// vector<DGnode> &tree2, // [out] same with `tree`, but each tree node is one entry
 		unordered_map<Str, tuple<Str, Str, Str, Pentry>> &entry_info, // [out] entry -> (title,part,chapter,Pentry)
 		SQLite::Database &db_read)
@@ -357,13 +357,17 @@ inline void db_get_tree(
 		parse_pentry(get<3>(info), stmt_select.getColumn(4)); // pentry
 	}
 
+	// sort entries
+	vecStr entries;
+	for (auto &e : entry_info)
+		entries.push_back(e.first);
+	sort(entries);
+
 	// construct nodes
 	// all `i_node` in `entry_info` will be non-zero
-	for (auto &e : entry_info) {
-		auto &entry = e.first;
-//		if (entry == "Qubit")
-//			int a = 3;
-		auto &pentry = get<3>(e.second);
+	for (auto &entry : entries) {
+		auto &info = entry_info[entry];
+		auto &pentry = get<3>(info);
 		if (pentry.empty()) {
 			nodes.emplace_back(entry, 1);
 			continue;
@@ -371,7 +375,7 @@ inline void db_get_tree(
 		for (Long i_node = 1; i_node <= size(pentry); ++i_node) {
 			auto &pentry1 = pentry[i_node-1];
 			nodes.emplace_back(entry, i_node);
-			for (auto &ee: pentry1) {
+			for (auto &ee : pentry1) {
 				// convert node `0` to the actual node
 				if (ee.i_node == 0) {
 					ee.i_node = size(get<3>(entry_info[ee.entry]));
