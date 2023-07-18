@@ -1,6 +1,7 @@
 #pragma once
 #include <regex>
 #include "../SLISC/str/str.h"
+#include "../SLISC/file/file.h"
 #include "../SLISC/util/time.h"
 
 // add or delete elements from a set
@@ -360,8 +361,8 @@ inline void db_get_tree(
 	// all `i_node` in `entry_info` will be non-zero
 	for (auto &e : entry_info) {
 		auto &entry = e.first;
-		if (entry == "Qubit")
-			int a = 3;
+//		if (entry == "Qubit")
+//			int a = 3;
 		auto &pentry = get<3>(e.second);
 		if (pentry.empty()) {
 			nodes.emplace_back(entry, 1);
@@ -436,15 +437,22 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 
 inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Database &db_rw)
 {
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "caption", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
+	SQLite::Statement stmt_undelete(db_rw,
+		R"(UPDATE "entries" SET "deleted"=0 WHERE "id"=?;)");
 	Str tmp;
 	for (auto &entry : entries) {
-		if (!exist("entries", "id", entry, db_rw)) {
+		tmp = gv::path_in; tmp << "contents/" << entry << ".tex";
+		if (!file_exist(tmp))
+			SLS_ERR("词条文件不存在：" + entry + ".tex");
+		stmt_select.bind(1, entry);
+		if (!stmt_select.executeStep()) {
 			SLS_WARN(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
 			// 从 tex 文件获取标题
 			Str str;
-			tmp = gv::path_in; tmp << "contents/" << entry << ".tex";
 			read(str, tmp); // read tex file
 			CRLF_to_LF(str);
 			Str title;
@@ -455,6 +463,15 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 			stmt_insert.exec();
 			stmt_insert.reset();
 		}
+		bool deleted = (int)stmt_select.getColumn(1);
+		if (deleted) {
+			const Str &title = stmt_select.getColumn(0);
+			SLS_WARN(u8"词条文件存在，但数据库却标记了已删除（将恢复）：" + entry + " (" + title + ')');
+			stmt_undelete.bind(1, entry);
+			stmt_undelete.exec();
+			stmt_undelete.reset();
+		}
+		stmt_select.reset();
 	}
 }
 
