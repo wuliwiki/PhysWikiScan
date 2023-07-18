@@ -769,7 +769,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 // empty elements of 'titles' will be ignored
 inline Long dep_json(SQLite::Database &db_read)
 {
-	vecStr entries, titles, entry_chap, entry_part, chap_ids, chap_names, chap_parts, part_ids, part_names;
+	vecStr chap_ids, chap_names, chap_parts, part_ids, part_names;
 	vector<DGnode> tree;
 	db_get_parts(part_ids, part_names, db_read);
 	db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
@@ -779,19 +779,22 @@ inline Long dep_json(SQLite::Database &db_read)
 	unordered_map<Str, tuple<Str, Str, Str, Pentry>> entry_info;
 	db_get_tree(tree, nodes, entry_info, db_read);
 
-	Str str;
+	Str str, node_title;
+
 	// write part names
 	str += "{\n  \"parts\": [\n";
 	for (Long i = 0; i < size(part_names); ++i)
 		str += R"(    {"name": ")" + part_names[i] + "\"},\n";
 	str.pop_back(); str.pop_back();
 	str += "\n  ],\n";
+
 	// write chapter names
 	str += "  \"chapters\": [\n";
 	for (Long i = 0; i < size(chap_names); ++i)
 		str += R"(    {"name": ")" + chap_names[i] + "\"},\n";
 	str.pop_back(); str.pop_back();
 	str += "\n  ],\n";
+
 	// write nodes (entry + node#)
 	str += "  \"nodes\": [\n";
 	for (auto &node : nodes) {
@@ -799,10 +802,14 @@ inline Long dep_json(SQLite::Database &db_read)
 			throw internal_err(SLS_WHERE);
 		auto &info = entry_info[node.entry];
 		auto &title = get<0>(info), &part = get<1>(info), &chap = get<2>(info);
-		str << R"(    {"id": ")" << node.entry << ':' << num2str(node.i_node) << '"'
-			<< ", \"part\": " << num2str(search(part, part_ids))
-			<< ", \"chap\": " << num2str(search(chap, chap_ids))
-			<< ", \"title\": " << title << '"'
+		auto &pentry = get<3>(info);
+		node_title = title;
+		if (size(pentry) > 1)
+			node_title << ':' << node.i_node;
+		str << R"(    {"id": ")" << node.entry << ':' << node.i_node << '"'
+			<< R"(, "part": )" << search(part, part_ids)
+			<< R"(, "chap": )" << search(chap, chap_ids)
+			<< R"(, "title": ")" << node_title << '"'
 			<< R"(, "url": "../online/)"
 			<< node.entry << ".html\"},\n";
 	}
@@ -814,9 +821,11 @@ inline Long dep_json(SQLite::Database &db_read)
 	Long Nedge = 0;
 	for (Long i = 0; i < size(tree); ++i) {
 		for (auto &j : tree[i]) {
-			str << R"(    {"source": ")" << entries[i] << "\", ";
-			str << R"("target": ")" << entries[j] << "\", ";
-			str << "\"value\": 1},\n";
+			auto &node_i = nodes[i], &node_j = nodes[j];
+			int strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
+			str << R"(    {"source": ")" << node_j.entry << ':' << num2str(node_j.i_node) << "\", ";
+			str << R"("target": ")" << node_i.entry << ':' << num2str(node_i.i_node) << "\", ";
+			str << "\"value\": " << strength << "},\n";
 			++Nedge;
 		}
 	}

@@ -391,6 +391,11 @@ inline void db_get_tree(
 			auto &pentry1 = pentry[i_node-1];
 			Long from = search(Node(entry, i_node), nodes);
 			if (from < 0) throw internal_err(SLS_WHERE);
+			if (i_node > 1) {
+				Long to = search(Node(entry, i_node-1), nodes);
+				if (to < 0) throw internal_err(SLS_WHERE);
+				tree[from].push_back(to);
+			}
 			for (auto &ee: pentry1) {
 				// convert node `0` to the actual node
 				if (!ee.tilde) {
