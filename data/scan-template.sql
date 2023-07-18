@@ -32,7 +32,6 @@ CREATE TABLE "entries" (
 	"issueOther"	TEXT NOT NULL DEFAULT '', -- \issueOther{} 中的文字
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
-	"occupied"	INTEGER NOT NULL DEFAULT -1, -- [-1|authors.id] 是否正在被占用（审核发布后解除）
 	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布 (review.hash)
 	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份 (history.hash)
 
@@ -88,6 +87,14 @@ INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('GPL3', 'GPL-3.
 
 INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('MIT', 'MIT', 'https://mit-license.org/', '几乎没有任何限制的开源的协议。');
 
+-- 词条占用列表
+CREATE TABLE "occupied" (
+	"entry"	TEXT UNIQUE NOT NULL, -- entries.id
+	"author"	INTEGER UNIQUE NOT NULL, -- authors.id
+	PRIMARY KEY("entry"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("author") REFERENCES "author"("id")
+);
 
 -- 部分
 -- 目录中 \label{prt_xxx} 中 xxx 为 "id"
