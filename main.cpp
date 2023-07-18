@@ -278,6 +278,9 @@ int main(int argc, const char *argv[]) {
 			}
 			PhysWikiOnlineN(entries, false, db_read, db_rw);
 		}
+		else if (args[0] == "--tree" && args.size() == 1) {
+			dep_json(db_read);
+		}
 		else if (args[0] == "--delete" && args.size() > 1) {
 			vecStr entries;
 			Str arg;
@@ -293,7 +296,6 @@ int main(int argc, const char *argv[]) {
 			arg_bib(db_rw);
 		else if (args[0] == "--history-all" && args.size() <= 2) {
 			arg_history("../PhysWiki-backup/", db_rw);
-			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
             db_update_history_last(db_read, db_rw);
 			if (args.size() == 2)
 				history_add_del(db_read, db_rw, true);
@@ -305,11 +307,9 @@ int main(int argc, const char *argv[]) {
             // TODO
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
-			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 			history_normalize(db_read, db_rw);
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
-			SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 			author_char_stat(args[1], args[2], args[3], db_read);
 		}
 		else if (args[0] == "--fix-db" && size(args) == 1) {

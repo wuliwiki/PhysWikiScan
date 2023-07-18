@@ -67,7 +67,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 			i_node = 0; star = tilde = false;
 			// get entry
 			if (!is_letter(str[ind0]))
-				throw internal_err(u8"数据库中 entries.pentry1 格式不对 (非字母): " + str);
+				throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str);
 			Long ind1 = ind0 + 1;
 			while (ind1 < size(str) && is_alphanum(str[ind1]))
 				++ind1;
@@ -333,17 +333,16 @@ inline void db_get_tree1(
 // get entire dependency tree (2 ver) from database
 // edge direction is the inverse of learning direction
 // tree: one node for each entry
-// tree2: one node for each \pentry{}
 inline void db_get_tree(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order)
-		vector<DGnode> &tree2, // [out] same with `tree`, but each tree node is one entry
+		// vector<DGnode> &tree2, // [out] same with `tree`, but each tree node is one entry
 		unordered_map<Str, tuple<Str, Str, Str, Pentry>> &entry_info, // [out] entry -> (title,part,chapter,Pentry)
 		SQLite::Database &db_read)
 {
 	tree.clear();
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries ")"
+		R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" )"
 		R"(WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
 	Str tmp;
 
@@ -351,60 +350,56 @@ inline void db_get_tree(
 	while (stmt_select.executeStep()) {
 		const Str &entry = stmt_select.getColumn(0);
 		auto &info = entry_info[entry];
-		auto &pentry = get<3>(info);
-		get<0>(info) = (const char*)stmt_select.getColumn(0); // titles
-		get<1>(info) = (const char*)stmt_select.getColumn(1); // parts
-		get<2>(info) = (const char*)stmt_select.getColumn(2); // chapter
-		parse_pentry(pentry, stmt_select.getColumn(3)); // pentry
+		get<0>(info) = (const char*)stmt_select.getColumn(1); // titles
+		get<1>(info) = (const char*)stmt_select.getColumn(2); // parts
+		get<2>(info) = (const char*)stmt_select.getColumn(3); // chapter
+		parse_pentry(get<3>(info), stmt_select.getColumn(4)); // pentry
 	}
 
-	// construct tree
+	// construct nodes
+	// all `i_node` in `entry_info` will be non-zero
 	for (auto &e : entry_info) {
 		auto &entry = e.first;
+		if (entry == "Qubit")
+			int a = 3;
 		auto &pentry = get<3>(e.second);
-		if (pentry.empty()) continue;
+		if (pentry.empty()) {
+			nodes.emplace_back(entry, 1);
+			continue;
+		}
 		for (Long i_node = 1; i_node <= size(pentry); ++i_node) {
 			auto &pentry1 = pentry[i_node-1];
 			nodes.emplace_back(entry, i_node);
-			tree.emplace_back();
 			for (auto &ee: pentry1) {
 				// convert node `0` to the actual node
 				if (ee.i_node == 0) {
 					ee.i_node = size(get<3>(entry_info[ee.entry]));
 					if (ee.i_node == 0) ee.i_node = 1;
 				}
-				if (!ee.tilde) {
-					Long to = search(Node(ee.entry, ee.i_node), nodes);
-					if (to < 0) throw internal_err(SLS_WHERE);
-					tree.back().push_back(to);
-				}
 			}
 		}
 	}
 
-	// check cyclic
-	vecLong cycle;
-	if (!dag_check(cycle, tree)) {
-		Str msg = u8"存在循环预备知识: ";
-		for (auto ind : cycle)
-			msg += to_string(ind) + "." + titles[ind] + " (" + entries[ind] + ") -> ";
-		msg += titles[cycle[0]] + " (" + entries[cycle[0]] + ")";
-		throw scan_err(msg);
-	}
+	tree.resize(nodes.size());
 
-	// check redundency
-	vector<pair<Long,Long>> edges;
-	dag_reduce(edges, tree);
-	std::stringstream ss;
-	if (size(edges)) {
-		ss << "\n" << endl;
-		ss << u8"==============  多余的预备知识  ==============" << endl;
-		for (auto &edge : edges) {
-			ss << titles[edge.first] << " (" << entries[edge.first] << ") -> "
-			   << titles[edge.second] << " (" << entries[edge.second] << ")" << endl;
+	for (auto &e : entry_info) {
+		auto &entry = e.first;
+		auto &pentry = get<3>(e.second);
+		if (pentry.empty()) continue;
+		for (Long i_node = 1; i_node <= size(pentry); ++i_node) {
+			auto &pentry1 = pentry[i_node-1];
+			Long from = search(Node(entry, i_node), nodes);
+			if (from < 0) throw internal_err(SLS_WHERE);
+			for (auto &ee: pentry1) {
+				// convert node `0` to the actual node
+				if (!ee.tilde) {
+					Long to = search(Node(ee.entry, ee.i_node), nodes);
+					if (to < 0)
+						throw internal_err(SLS_WHERE);
+					tree[from].push_back(to);
+				}
+			}
 		}
-		ss << "=============================================\n" << endl;
-		throw scan_err(ss.str());
 	}
 }
 

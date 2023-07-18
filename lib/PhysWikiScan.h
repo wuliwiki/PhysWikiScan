@@ -773,7 +773,11 @@ inline Long dep_json(SQLite::Database &db_read)
 	vector<DGnode> tree;
 	db_get_parts(part_ids, part_names, db_read);
 	db_get_chapters(chap_ids, chap_names, chap_parts, db_read);
-	// db_get_tree(tree, entries, titles, entry_part, entry_chap, db_read);
+
+	vector<Node> nodes;
+	// entry -> (title,part,chapter,Pentry)
+	unordered_map<Str, tuple<Str, Str, Str, Pentry>> entry_info;
+	db_get_tree(tree, nodes, entry_info, db_read);
 
 	Str str;
 	// write part names
@@ -790,17 +794,17 @@ inline Long dep_json(SQLite::Database &db_read)
 	str += "\n  ],\n";
 	// write nodes (entry + node#)
 	str += "  \"nodes\": [\n";
-	for (Long i = 0; i < size(entries); ++i) {
-		for (Long j = 0; j < size(tree); ++j) {
-			if (titles[i].empty())
-				continue;
-			str += R"(    {"id": ")" + entries[i] + "\"" +
-				", \"part\": " + num2str(search(entry_part[i], part_ids)) +
-				", \"chap\": " + num2str(search(entry_chap[i], chap_ids)) +
-				R"(, "title": ")" + titles[i] + "\""
-				", \"url\": \"../online/" +
-				entries[i] + ".html\"},\n";
-		}
+	for (auto &node : nodes) {
+		if (node.i_node == 0)
+			throw internal_err(SLS_WHERE);
+		auto &info = entry_info[node.entry];
+		auto &title = get<0>(info), &part = get<1>(info), &chap = get<2>(info);
+		str << R"(    {"id": ")" << node.entry << ':' << num2str(node.i_node) << '"'
+			<< ", \"part\": " << num2str(search(part, part_ids))
+			<< ", \"chap\": " << num2str(search(chap, chap_ids))
+			<< ", \"title\": " << title << '"'
+			<< R"(, "url": "../online/)"
+			<< node.entry << ".html\"},\n";
 	}
 	str.pop_back(); str.pop_back();
 	str += "\n  ],\n";
@@ -810,9 +814,9 @@ inline Long dep_json(SQLite::Database &db_read)
 	Long Nedge = 0;
 	for (Long i = 0; i < size(tree); ++i) {
 		for (auto &j : tree[i]) {
-			str += R"(    {"source": ")" + entries[i] + "\", ";
-			str += R"("target": ")" + entries[j] + "\", ";
-			str += "\"value\": 1},\n";
+			str << R"(    {"source": ")" << entries[i] << "\", ";
+			str << R"("target": ")" << entries[j] << "\", ";
+			str << "\"value\": 1},\n";
 			++Nedge;
 		}
 	}
