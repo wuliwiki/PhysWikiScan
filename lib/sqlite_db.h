@@ -939,17 +939,17 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	cout << "done." << endl;
 }
 
-// update "history.last" for all table
+// update all "history.last"
 inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "hash", "time", "entry" FROM "history";)");
-	unordered_map<Str, map<Str, Str>> entry2time_hash; // entry -> (time -> hash)
+		R"(SELECT "hash", "time", "entry", "last" FROM "history";)");
+	unordered_map<Str, map<Str, pair<Str,Str>>> entry2time2hash_last; // entry -> (time -> (hash,last))
 	while (stmt_select.executeStep()) {
-		entry2time_hash[stmt_select.getColumn(2)]
+		entry2time2hash_last[stmt_select.getColumn(2)]
 			[stmt_select.getColumn(1).getString()] =
-				stmt_select.getColumn(0).getString();
+				pair<Str,Str>(stmt_select.getColumn(0), stmt_select.getColumn(3));
 	}
 
 	// update db
@@ -960,15 +960,21 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
 		R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select3(db_read,
+		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
 	Str last_hash;
-	for (auto &e : entry2time_hash) {
+	for (auto &e : entry2time2hash_last) {
 		auto &entry = e.first;
 		last_hash.clear();
-		for (auto &time_hash : e.second) {
-			auto &hash = time_hash.second;
-			stmt_update.bind(1, last_hash);
-			stmt_update.bind(2, hash);
-			stmt_update.exec(); stmt_update.reset();
+		for (auto &time_hash_last : e.second) {
+			auto &hash = time_hash_last.second.first;
+			auto &db_last_hash = time_hash_last.second.second;
+			if (last_hash != db_last_hash) {
+				SLS_WARN(u8"检测到 history.last 改变，将模拟编辑器更新：" + db_last_hash + " -> " + last_hash);
+				stmt_update.bind(1, last_hash);
+				stmt_update.bind(2, hash);
+				stmt_update.exec(); stmt_update.reset();
+			}
 			last_hash = hash;
 		}
 		// update entries.last_backup
@@ -976,8 +982,9 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
 		const Str &db_last_backup = stmt_select2.getColumn(0);
 		stmt_select2.reset();
-		const Str &last_backup = (--e.second.end())->second;
+		const Str &last_backup = ((--e.second.end())->second).first;
 		if (last_backup != db_last_backup) {
+			SLS_WARN(u8"检测到 entry.last_backup 改变，将模拟编辑器更新：" + db_last_backup + " -> " + last_backup);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
 			stmt_update2.exec(); stmt_update2.reset();
