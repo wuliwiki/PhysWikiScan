@@ -360,7 +360,7 @@ int main(int argc, const char *argv[]) {
 			check_url(entries, args[1]);
 		}
 		else {
-			cerr << u8"内部错误： 命令不合法" << endl;
+			cerr << u8"scan 内部错误： 命令不合法" << endl;
 			return 0;
 		}
 		
@@ -374,13 +374,13 @@ int main(int argc, const char *argv[]) {
 	}
 	catch (const std::exception &e) {
 		if (e.what() == Str("database is locked"))
-			cerr << u8"错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。" << endl;
+			cerr << u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。" << endl;
 		else
-			cerr << u8"错误：" << e.what() << endl;
+			cerr << u8"scan 错误：" << e.what() << endl;
 		exit(1);
 	}
 	catch (...) {
-		cerr << u8"内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！" << endl;
+		cerr << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！" << endl;
 		exit(1);
 	}
 

@@ -866,9 +866,45 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 }
 
 // delete entries
+// if failed, db will not change
 inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	PhysWikiOnlineN(entries, true, db_read, db_rw);
+	vecStr ref_by, tmp;
+	Str stmp, err_msg;
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
+	for (auto &entry : entries) {
+
+		// check entries.ref_by
+		stmt_select.bind(1,entry);
+		if (!stmt_select.executeStep())
+			throw scan_err(u8"数据库中找不到要删除的词条： " + entry);
+		const Str &ref_by_str = stmt_select.getColumn(0);
+		stmt_select.reset();
+		parse(ref_by, ref_by_str);
+		if (!ref_by.empty())
+			err_msg = u8"无法删除词条，因为被其他词条引用：" + ref_by_str;
+
+		// make sure no one is referencing anything else
+		tmp.push_back(entry);
+		try { PhysWikiOnlineN(tmp, true, db_read, db_rw); }
+		catch (std::exception &e) {
+			err_msg << "\n\n" << e.what();
+		}
+
+		// TODO: check if hash is the same with latest backup
+
+		if (!err_msg.empty())
+			throw scan_err(err_msg);
+
+		// update entries.deleted
+		stmt_update.bind(1, entry);
+		stmt_update.exec(); stmt_update.reset();
+
+		// delete file
+		stmp = gv::path_in; stmp << "contents/" << entry << ".tex";
+		file_remove(stmp);
+	}
 }
 
 // convert PhysWiki/ folder to wuli.wiki/online folder

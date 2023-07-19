@@ -21,6 +21,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --autoref 词条 eq 8` 查找 `contents/词条.tex` 词条的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_词条_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
 * `PhysWikiScan --autoref-dry 词条 eq 8` 和上一条一模一样， 除了不会真的给词条文件添加 label。
 * `PhysWikiScan --bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
+* `PhysWikiScan --delete 词条1 词条2 ...` 相当于先把词条除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否词条本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除词条文件。
 
 **批量修改词条文件**
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会自动跳过该词条）
@@ -64,4 +65,4 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * 原来的 `PhysWikiCheck()` 去哪了？
 * 代码块应该也像公式一样可以拖动， 而且需要可以上下拖动。 每行长度不应该有限制（研究一下 pdf 里面的代码块能否自动换行）。
 * 检查词条名， `\subsection{}` 和 `\subsubsection{}` 中是否有空格， 提示应该替换成 `\ `
-* 添加命令 `--delete 词条id` 只有满足以下条件的词条可以删除（否则提示为什么不能删除）： `entries.ref_by` 为空， `figures` 对应的 `figures.ref_by` 为空， `labels` 对应的 `labels.ref_by` 为空。 删除后更新 `entries.deleted`。
+* 想想怎样编译历史版本或已删除词条。

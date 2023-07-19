@@ -1254,7 +1254,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			}
 			else {
 				join(ref_by_str, db_fig_ref_bys[i], ", ");
-				throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些词条引用（请撤销删除）： " + ref_by_str);
+				throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些词条引用。请撤销删除，把引用删除后再试： " + ref_by_str);
 			}
 		}
 	}
