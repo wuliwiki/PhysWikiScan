@@ -476,18 +476,17 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Long db_draft;
 	SQLite::Statement stmt_select
 			(db_read,
-			 R"(SELECT "caption", "authors", "chapter", "last", "next", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
+			 R"(SELECT "caption", "chapter", "last", "next", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
 	db_title = (const char*)stmt_select.getColumn(0);
-	authors = (const char*)stmt_select.getColumn(1);
-	chapter = (const char*)stmt_select.getColumn(2);
-	last_entry = (const char*)stmt_select.getColumn(3);
-	next_entry = (const char*)stmt_select.getColumn(4);
-	db_keys_str = (const char*)stmt_select.getColumn(3);
-	db_pentry_str = (const char*)stmt_select.getColumn(4);
-	db_draft = (int)stmt_select.getColumn(5);
+	chapter = (const char*)stmt_select.getColumn(1);
+	last_entry = (const char*)stmt_select.getColumn(2);
+	next_entry = (const char*)stmt_select.getColumn(3);
+	db_keys_str = (const char*)stmt_select.getColumn(4);
+	db_pentry_str = (const char*)stmt_select.getColumn(5);
+	db_draft = (int)stmt_select.getColumn(6);
 	stmt_select.reset();
 
 	bool in_main = !chapter.empty(); // entry in main.tex

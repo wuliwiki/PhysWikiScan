@@ -956,8 +956,13 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
+	SQLite::Statement stmt_select2(db_read,
+		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw,
+		R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
 	Str last_hash;
 	for (auto &e : entry2time_hash) {
+		auto &entry = e.first;
 		last_hash.clear();
 		for (auto &time_hash : e.second) {
 			auto &hash = time_hash.second;
@@ -965,6 +970,17 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 			stmt_update.bind(2, hash);
 			stmt_update.exec(); stmt_update.reset();
 			last_hash = hash;
+		}
+		// update entries.last_backup
+		stmt_select2.bind(1, entry);
+		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+		const Str &db_last_backup = stmt_select2.getColumn(0);
+		stmt_select2.reset();
+		const Str &last_backup = (--e.second.end())->second;
+		if (last_backup != db_last_backup) {
+			stmt_update2.bind(1, last_backup);
+			stmt_update2.bind(2, entry);
+			stmt_update2.exec(); stmt_update2.reset();
 		}
 	}
 	transaction.commit();
@@ -2151,4 +2167,5 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 		}
 	}
 	transaction.commit();
+	db_update_history_last(db_read, db_rw);
 }
