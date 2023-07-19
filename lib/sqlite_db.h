@@ -452,35 +452,36 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		R"(INSERT INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
 	SQLite::Statement stmt_undelete(db_rw,
 		R"(UPDATE "entries" SET "deleted"=0 WHERE "id"=?;)");
-	Str tmp;
+	Str str, title, tmp;
+
 	for (auto &entry : entries) {
 		tmp = gv::path_in; tmp << "contents/" << entry << ".tex";
 		if (!file_exist(tmp))
 			SLS_ERR("词条文件不存在：" + entry + ".tex");
 		stmt_select.bind(1, entry);
+		bool deleted = false;
 		if (!stmt_select.executeStep()) {
 			SLS_WARN(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
 			// 从 tex 文件获取标题
-			Str str;
 			read(str, tmp); // read tex file
 			CRLF_to_LF(str);
-			Str title;
 			get_title(title, str);
 			// 写入数据库
 			stmt_insert.bind(1, entry);
 			stmt_insert.bind(2, title);
-			stmt_insert.exec();
-			stmt_insert.reset();
+			stmt_insert.exec(); stmt_insert.reset();
 		}
-		bool deleted = (int)stmt_select.getColumn(1);
-		if (deleted) {
-			const Str &title = stmt_select.getColumn(0);
-			SLS_WARN(u8"词条文件存在，但数据库却标记了已删除（将恢复）：" + entry + " (" + title + ')');
-			stmt_undelete.bind(1, entry);
-			stmt_undelete.exec();
-			stmt_undelete.reset();
+		else {
+			deleted = (int)stmt_select.getColumn(1);
+			if (deleted) {
+				title = (const char*)stmt_select.getColumn(0);
+				SLS_WARN(u8"词条文件存在，但数据库却标记了已删除（将恢复）：" + entry + " (" + title + ')');
+				stmt_undelete.bind(1, entry);
+				stmt_undelete.exec();
+				stmt_undelete.reset();
+			}
+			stmt_select.reset();
 		}
-		stmt_select.reset();
 	}
 }
 
