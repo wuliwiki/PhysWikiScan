@@ -212,7 +212,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
 	SQLite::Statement stmt_select_fig(db_read,
-		R"(SELECT "order", "ref_by" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by" FROM "figures" WHERE "deleted"=0 AND "id"=?;)");
 	SQLite::Statement stmt_select0(db_read,
 		R"(SELECT "refs" FROM "entries" WHERE "id"=')" + entry + "';");
 
@@ -290,6 +290,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			if (!stmt_select_fig.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
 			db_label_order = int(stmt_select_fig.getColumn(0));
+			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select_fig.getColumn(1));
 			stmt_select_fig.reset();
 
@@ -302,6 +303,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			if (!stmt_select.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
 			db_label_order = int(stmt_select.getColumn(0));
+			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select.getColumn(1));
 			stmt_select.reset();
 
