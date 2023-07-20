@@ -538,9 +538,9 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		if (entry1 == entry)
 			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
 		trim(entry1);
-		if (!file_exist(gv::path_in + "contents/" + entry1 + ".tex")) {
+		tmp = gv::path_in; tmp << "contents/" << entry1 << ".tex";
+		if (!file_exist(tmp))
 			throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
-		}
 		right = skip_command(str, ind0, 1);
 		tmp = R"(<span class = "icon"><a href = ")";
 		tmp << gv::url << entry1

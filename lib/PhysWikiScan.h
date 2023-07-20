@@ -729,7 +729,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 		// update entries.bibs & bibliography.ref_by
 		db_update_entry_bibs(entry_bibs_change, db_rw);
 		// update entries.uprefs & entries.ref_by
-		db_update_uprefs(entry_uprefs_change, db_rw);
+		db_update_uprefs(entry_uprefs_change, db_read, db_rw);
 	}
 	catch (const std::exception &e) {
 		entry_err["entry_unknown"] = e.what();
