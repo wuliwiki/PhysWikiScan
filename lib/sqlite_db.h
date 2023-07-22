@@ -1145,6 +1145,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
 			db_fig_image_alt.push_back(stmt_select1.getColumn(3));
+			if (!db_fig_image_alt.back().empty() && size(db_fig_image_alt.back()) != 16) {
+				if (db_fig_image_alt.back().substr(16) != ".svg")
+					throw internal_err(u8"figures.image_alt 格式不对："+db_fig_image_alt.back());
+				SLS_WARN(u8"发现 figures.image_alt 可能仍然带有拓展名，将模拟编辑器删除："+db_fig_image_alt.back());
+				db_fig_image_alt.back().resize(16);
+			}
 			db_figs_used.push_back(!(bool)stmt_select1.getColumn(4).getInt());
 			stmt_select1.reset();
 		}
@@ -1163,16 +1169,15 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			if (map.size() == 1) { // png
 				if (!map.count("png"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("png") + ".png";
+				image = map.at("png");
 				image_alt = "";
 			}
 			else if (map.size() == 2) { // svg + pdf
 				if (!map.count("svg") || !map.count("pdf"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("pdf") + ".pdf";
-				image_alt = map.at("svg") + ".svg";
+				image = map.at("pdf");
+				image_alt = map.at("svg");
 			}
-			image = image.substr(0, 16); // keep only hash
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp = u8"发现数据库中没有的图片环境（将模拟 editor 添加）："; tmp << id << ", " << entry
 					<< ", " << to_string(order);

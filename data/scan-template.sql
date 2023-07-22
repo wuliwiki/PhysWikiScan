@@ -139,11 +139,10 @@ CREATE TABLE "figures" (
 	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】作者，格式和 entries.authors 相同（以 images.author 为准）
 	"entry"	TEXT NOT NULL DEFAULT '', -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter" TEXT NOT NULL DEFAULT '', -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
-
 	"order"	INTEGER NOT NULL DEFAULT 0, -- 显示编号（从 1 开始， 0 代表未知）
-	"image"	TEXT NOT NULL DEFAULT '', -- [hash.png|hash.pdf] 文件 SHA1 的前 16 位
-	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 其他的文件格式（pdf 必须有对应的 svg）
-	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1.svg hash2.gif ..." 图片历史版本（对应 images 表）
+	"image"	TEXT NOT NULL DEFAULT '', -- 图片 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF）
+	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 其他格式的图片的 SHA1 前 16 位（pdf 必须有对应的 svg）
+	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 图片历史版本的 SHA1 前 16 位
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）

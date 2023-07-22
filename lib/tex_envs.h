@@ -111,8 +111,11 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			}
 			else {
 				// svg and pdf hashes not the same (new standard)
-				svg_file = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
-				fig_hash = svg_file.substr(0, find(svg_file, '.'));
+				fig_hash = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
+				if (size(fig_hash) != 16) {
+					SLS_WARN(u8"发现 figures.image_alt 仍然带有拓展名，将模拟编辑器删除。");
+					fig_hash.resize(16);
+				}
 				fig_ext_hash[i][format] = fig_hash;
 				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << svg_file;
 			}
