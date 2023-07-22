@@ -1291,6 +1291,28 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	// cout << "done!" << endl;
 }
 
+// get all history.hash for an entry, by tracing entries.last_backup and history.last
+// order is from new to old
+inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database &db_read)
+{
+	history_hash.clear();
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select1(db_read,
+		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
+	stmt_select.bind(1, entry);
+	if (!stmt_select.executeStep())
+		throw internal_err(u8"db_get_history()： 词条不存在：" + entry);
+	history_hash.push_back(stmt_select.getColumn(0));
+	stmt_select.reset();
+	while (!history_hash.back().empty()) {
+		stmt_select1.bind(1, history_hash.back());
+		if (!stmt_select1.executeStep())
+			throw internal_err(u8"db_get_history()： history.hash 不存在：" + history_hash.back());
+		history_hash.push_back(stmt_select1.getColumn(0));
+	}
+}
+
 // update labels table of database
 // order change means `update_entries` needs to be updated with autoref() as well.
 inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entries,
