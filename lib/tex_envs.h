@@ -14,7 +14,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 	Long N = 0;
 	Intvs intvFig;
 	Str figName, fname_in, fname_out, href, format, caption, widthPt, figNo;
-	Str fname_in2, str_mod, tex_fname, svg_file;
+	Str fname_in2, str_mod, tex_fname;
 	Long Nfig = find_env(intvFig, str, "figure", 'o');
 	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
 		throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
@@ -102,7 +102,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 				CRLF_to_LF(tmp);
 				fig_hash = sha1sum(tmp).substr(0, 16);
 				fig_ext_hash[i][format] = fig_hash;
-				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
+				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << '.' << format;
 				// rename figure files with hash
 				if (figName != fig_hash) {
 					file_copy(fname_in2, fname_in, true);
@@ -117,7 +117,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 					fig_hash.resize(16);
 				}
 				fig_ext_hash[i][format] = fig_hash;
-				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << svg_file;
+				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << '.' << format;
 			}
 		}
 		else
