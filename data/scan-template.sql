@@ -146,7 +146,7 @@ CREATE TABLE "figures" (
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "authors", "image_alt", "image_old", "files", "source"
+	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "authors", "image_alt", "image_old", "files", "source"。一张图片（包括历史版本）被多个 figure 环境使用时， 这些数据只能由其中一个管理
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- 【生成】[0] 被使用 [1] 未被使用（以 entries.figures 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
@@ -162,7 +162,7 @@ CREATE TABLE "images" (
 	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
 	"ext"	TEXT NOT NULL, -- [pdf|svg|png|jpg|gif] 拓展名
 	"figures"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境使用（包括 image, image_alt）
-	"figures_old"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境作为 image_old
+	"figures_old"	TEXT NOT NULL DEFAULT '', -- "figures.id" 被哪个图片环境作为 image_old
 	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
 	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议
 	"time"	TEXT NOT NULL DEFAULT '', -- 上传时间

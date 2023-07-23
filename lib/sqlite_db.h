@@ -635,6 +635,7 @@ inline void db_update_parts_chapters(
 	cout << "updating sqlite database (" << part_name.size() << " parts, "
 		 << chap_name.size() << " chapters) ..." << endl;
 	cout.flush();
+	check_foreign_key(db_rw, false);
 	SQLite::Transaction transaction(db_rw);
 	cout << "clear parts and chatpers tables" << endl;
 	table_clear("parts", db_rw); table_clear("chapters", db_rw);
@@ -670,6 +671,7 @@ inline void db_update_parts_chapters(
 		stmt_insert_chap.exec(); stmt_insert_chap.reset();
 	}
 	transaction.commit();
+	check_foreign_key(db_rw, false);
 	cout << "done." << endl;
 }
 
@@ -1289,6 +1291,41 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	}
 	transaction.commit();
 	// cout << "done!" << endl;
+}
+
+// delete from "images" table, and the file
+// if used by "figures" table, the figure must be marked deleted
+inline void db_delete_images(
+	vecStr_I images, // hashes, no extension
+	SQLite::Database &db_read, SQLite::Database &db_rw)
+{
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
+	SQLite::Statement stmt_select2(db_read,
+		R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id"=?;)");
+	vecStr figures;
+
+	for (auto &image : images) {
+		stmt_select.bind(1, image);
+		parse(figures, stmt_select.getColumn(0));
+		if (size(figures) > 1)
+			throw internal_err(u8"暂不支持删除 images 表格中具有多个 images.figures 的行。");
+		stmt_select.reset();
+		// if (figures.empty())
+
+		// stmt_select2.bind()
+	}
+
+
+//	if (image_info.empty()) {
+//		while (stmt_select2.executeStep()) {
+//			auto &info = image_info[stmt_select2.getColumn(0)];
+//			get<0>(info) = (const char*)stmt_select2.getColumn(1); // image
+//			parse(get<1>(info), stmt_select2.getColumn(2)); // image_alt
+//			parse(get<2>(info), stmt_select2.getColumn(3)); // image_old
+//		}
+//	}
+
 }
 
 // get all history.hash for an entry, by tracing entries.last_backup and history.last

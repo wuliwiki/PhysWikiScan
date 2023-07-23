@@ -911,17 +911,91 @@ inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Dat
 	}
 }
 
+// delete all related db data and files of a figure
+// must be marked figures.deleted and not referenced by figures.aka
+inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
+{
+	Str tmp;
+	vecStr image_hash, entries_figures, images, images_alt, images_old;
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
+	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
+	for (auto &figure : figures) {
+		stmt_select.bind(1, figure);
+		if (!stmt_select.executeStep())
+			throw internal_err(u8"arg_delete_fig()：要删除的图片未找到：" + figure);
+		const char* entry = stmt_select.getColumn(2);
+
+		// check figures.deleted
+		bool deleted = (int)stmt_select.getColumn(3);
+		if (!deleted)
+			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
+
+
+		// check entries.figures
+		stmt_select3.bind(1, entry);
+		parse(entries_figures, stmt_select3.getColumn(0));
+		for (auto &fig : entries_figures) {
+			if (fig == figure) {
+				tmp = u8"arg_delete_fig()：要删除的图片 ";
+				tmp << figure << u8" 已被标记 figures.deleted， 但仍然被 entries.figures 引用："
+					<< entry;
+				throw internal_err(tmp);
+			}
+		}
+		stmt_select3.reset();
+
+		// check figures.aka
+		stmt_select2.bind(1, entry);
+		tmp.clear();
+		while (stmt_select2.executeStep()) {
+			const Str &id = (const char*)stmt_select2.getColumn(0);
+			tmp << " " << id;
+		}
+		stmt_select2.reset();
+		if (!tmp.empty())
+			throw internal_err(u8"不允许删除未被 figures.aka 引用的图片：" + figure + u8"请先删除：" + tmp);
+
+		// delete figures.image*
+		parse(images, stmt_select.getColumn(0));
+		db_delete_images(images, db_read, db_rw);
+
+		parse(images_alt, stmt_select.getColumn(1));
+		db_delete_images(images_alt, db_read, db_rw);
+
+		parse(images_old, stmt_select.getColumn(4));
+		db_delete_images(images_old, db_read, db_rw);
+
+		stmt_select.reset();
+	}
+}
+
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
 inline void arg_delete_all(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
+	vecStr history_hash;
 	arg_delete(entries, db_read, db_rw, true);
 	SQLite::Statement stmt_select(db_read, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_delete0(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 	for (auto &entry : entries) {
 		stmt_select.bind(1, entry);
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
+		// delete all history records
+		db_get_history(history_hash, entry, db_read);
+		stmt_delete0.bind(1, entry);
+		stmt_delete0.exec(); stmt_delete0.reset();
+		for (auto &hash : history_hash) {
+			stmt_delete.bind(1, hash);
+			stmt_delete.exec(); stmt_delete.reset();
+		}
 
+		// delete all figures and images
+		// TODO: use arg_delete_figs();
 	}
 }
 

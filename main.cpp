@@ -213,6 +213,7 @@ int main(int argc, const char *argv[]) {
 	try {
 		SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+		check_foreign_key(db_rw);
 		if (args[0] == "." && args.size() == 1) {
 			PhysWikiOnline(db_read, db_rw);
 		}
