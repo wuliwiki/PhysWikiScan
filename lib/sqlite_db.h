@@ -68,7 +68,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 			i_node = 0; star = tilde = false;
 			// get entry
 			if (!is_letter(str[ind0]))
-				throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str);
+				throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str + SLS_WHERE);
 			Long ind1 = ind0 + 1;
 			while (ind1 < size(str) && is_alphanum(str[ind1]))
 				++ind1;
@@ -76,7 +76,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 			for (auto &ee: pentry) // check repeat
 				for (auto &e : ee)
 					if (entry == e.entry)
-						throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str);
+						throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str + SLS_WHERE);
 			ind0 = ind1;
 			if (ind0 == size(str)) break;
 			// get number
@@ -96,11 +96,11 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 			// check "|"
 			ind0 = str.find_first_not_of(' ', ind0);
 			if (ind0 < 0)
-				throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
+				throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str + SLS_WHERE);
 			if (str[ind0] == '|') {
 				ind0 = str.find_first_not_of(' ', ind0 + 1);
 				if (ind0 < 0)
-					throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str);
+					throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str + SLS_WHERE);
 				break;
 			}
 			pentry1.emplace_back(entry, i_node, star, tilde);
@@ -116,7 +116,7 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
 	if (v_pentries.empty()) return;
 	for (auto &pentries : v_pentries) {
 		if (pentries.empty())
-			throw scan_err("\\pentry{} empty!");
+			throw scan_err("\\pentry{} empty!" SLS_WHERE);
 		for (auto &p : pentries) {
 			str += p.entry;
 			if (p.i_node > 0)
@@ -1300,20 +1300,35 @@ inline void db_delete_images(
 	SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
 		R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_read,
+		R"(DELETE FROM "images" WHERE "hash"=?;)");
+	Str tmp;
 	vecStr figures;
 
 	for (auto &image : images) {
 		stmt_select.bind(1, image);
+		if (!stmt_select.executeStep())
+			throw internal_err(u8"要删除的图片文件 hash 不存在：" + image + SLS_WHERE)
 		parse(figures, stmt_select.getColumn(0));
+		const char *ext = stmt_select.getColumn(1);
 		if (size(figures) > 1)
-			throw internal_err(u8"暂不支持删除 images 表格中具有多个 images.figures 的行。");
+			throw internal_err(u8"暂不支持删除 images 表格中具有多个 images.figures 的行：" + image + SLS_WHERE);
 		stmt_select.reset();
-		// if (figures.empty())
-
-		// stmt_select2.bind()
+		if (figures.empty()) {
+			stmt_delete.bind(1, image);
+			stmt_delete.exec(); stmt_delete.reset();
+			tmp = gv::path_in; tmp << "figures/" << image << ext;
+			file_remove(tmp);
+		}
+		stmt_select2.bind(1, figures[0]);
+		if (!stmt_select2.executeStep()) {
+			tmp = u8"引用 image "; tmp << image << u8" 的图片环境不存在：" << figures[0] << SLS_WHERE;
+			throw internal_err(tmp);
+		}
+		stmt_select2.reset();
 	}
 
 
@@ -1339,13 +1354,13 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
-		throw internal_err(u8"db_get_history()： 词条不存在：" + entry);
+		throw internal_err(u8"db_get_history()： 词条不存在：" + entry + SLS_WHERE);
 	history_hash.push_back(stmt_select.getColumn(0));
 	stmt_select.reset();
 	while (!history_hash.back().empty()) {
 		stmt_select1.bind(1, history_hash.back());
 		if (!stmt_select1.executeStep())
-			throw internal_err(u8"db_get_history()： history.hash 不存在：" + history_hash.back());
+			throw internal_err(u8"db_get_history()： history.hash 不存在：" + history_hash.back() + SLS_WHERE);
 		history_hash.push_back(stmt_select1.getColumn(0));
 	}
 }
@@ -1388,7 +1403,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 		auto &entry = entries[j];
 		stmt_select0.bind(1, entry);
 		if (!stmt_select0.executeStep())
-			throw scan_err("词条不存在： " + entry);
+			throw scan_err("词条不存在： " + entry + SLS_WHERE);
 		parse(db_entry_labels, stmt_select0.getColumn(0));
 		stmt_select0.reset();
 		for (auto &label: db_entry_labels) {
@@ -1396,7 +1411,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 			db_label_entries.push_back(entry);
 			stmt_select1.bind(1, label);
 			if (!stmt_select1.executeStep())
-				throw scan_err("标签不存在： " + label);
+				throw scan_err("标签不存在： " + label + SLS_WHERE);
 			db_label_orders.push_back((int)stmt_select1.getColumn(0));
 			db_label_ref_bys.emplace_back();
 			parse(db_label_ref_bys.back(), stmt_select1.getColumn(1));
@@ -1436,7 +1451,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 			bool changed = false;
 			if (entry != db_label_entries[ind]) {
 				tmp = "label "; tmp << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
-						<< db_label_entries[ind] << " -> " << entry;
+						<< db_label_entries[ind] << " -> " << entry << SLS_WHERE;
 				throw scan_err(tmp);
 				changed = true;
 			}
@@ -1464,7 +1479,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 		if (!new_labels.empty()) {
 			stmt_select0.bind(1, entry);
 			if (!stmt_select0.executeStep())
-				throw internal_err("db_update_labels(): entry 不存在： " + entry);
+				throw internal_err("db_update_labels(): entry 不存在： " + entry + SLS_WHERE);
 			parse(labels, stmt_select0.getColumn(0));
 			for (auto &e : new_labels)
 				labels.insert(e);
@@ -1503,7 +1518,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");
-				tmp = u8"检测到 label 被删除： "; tmp << db_label << u8"\n但是被这些词条引用： " << ref_by_str;
+				tmp = u8"检测到 label 被删除： "; tmp << db_label << u8"\n但是被这些词条引用： "
+					<< ref_by_str << SLS_WHERE;
 				throw scan_err(tmp);
 			}
 		}
@@ -1567,7 +1583,7 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 		auto &bibs_changed = e.second;
 		stmt_select_entry_bibs.bind(1, entry);
 		if (!stmt_select_entry_bibs.executeStep())
-			throw internal_err("entry 找不到： " + entry);
+			throw internal_err("entry 找不到： " + entry + SLS_WHERE);
 		parse(bibs, stmt_select_entry_bibs.getColumn(0));
 		stmt_select_entry_bibs.reset();
 		for (auto &bib : bibs_changed) {
@@ -1603,7 +1619,8 @@ inline void db_update_uprefs(
 		auto &entry = e.first;
 		auto &uprefs_change = e.second;
 		stmt_select.bind(1, entry);
-		if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+		if (!stmt_select.executeStep())
+			throw internal_err(SLS_WHERE);
 		parse(uprefs, stmt_select.getColumn(0));
 		stmt_select.reset();
 		for (auto &ee : uprefs_change) {
@@ -1612,7 +1629,7 @@ inline void db_update_uprefs(
 			bool deleted = get_int("entries", "id", entry_refed, "deleted", db_read);
 			if (deleted) {
 				if (is_add)
-					throw scan_err(u8"不允许 \\upref{被删除的词条}：" + entry_refed);
+					throw scan_err(u8"不允许 \\upref{被删除的词条}：" + entry_refed + SLS_WHERE);
 				else
 					SLS_WARN(u8"检测到删除命令 \\upref{被删除的词条}（删除词条时应该已经确保了没有被 upref 才对）（将视为没有被删除）：" + entry_refed);
 			}
@@ -1789,7 +1806,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		auto &new_refs = e.second;
 		stmt_select_entry_refs.bind(1, entry);
 		if (!stmt_select_entry_refs.executeStep())
-			throw internal_err("entry 找不到： " + entry);
+			throw internal_err("entry 找不到： " + entry + SLS_WHERE);
 		parse(refs, stmt_select_entry_refs.getColumn(0));
 		stmt_select_entry_refs.reset();
 		refs.insert(new_refs.begin(), new_refs.end());
@@ -1808,7 +1825,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		auto &del_refs = e.second;
 		stmt_select_entry_refs.bind(1, entry);
 		if (!stmt_select_entry_refs.executeStep())
-			throw internal_err("entry 找不到： " + entry);
+			throw internal_err("entry 找不到： " + entry + SLS_WHERE);
 		parse(refs, stmt_select_entry_refs.getColumn(0));
 		stmt_select_entry_refs.reset();
 		for (auto &label : del_refs)
@@ -1857,7 +1874,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			stmt_update_labels_entry.bind(2, label);
 			stmt_update_labels_entry.exec();
 			if (!stmt_update_labels_entry.getChanges())
-				throw internal_err("数据库 labels 表格中未找到： " + label);
+				throw internal_err("数据库 labels 表格中未找到： " + label + SLS_WHERE);
 			stmt_update_labels_entry.reset();
 		}
 	}
@@ -1874,7 +1891,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			stmt_update_figs_entry.bind(2, fig_id);
 			stmt_update_figs_entry.exec();
 			if (!stmt_update_figs_entry.getChanges())
-				throw internal_err("数据库 figs 表格中未找到： " + fig_id);
+				throw internal_err("数据库 figs 表格中未找到： " + fig_id + SLS_WHERE);
 			stmt_update_figs_entry.reset();
 		}
 	}
@@ -1905,7 +1922,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		stmt_update_fig_ref_by.bind(2, e.first);
 		stmt_update_fig_ref_by.exec();
 		if (!stmt_update_fig_ref_by.getChanges())
-			throw internal_err("数据库 figures 表格中未找到： " + e.first);
+			throw internal_err("数据库 figures 表格中未找到： " + e.first + SLS_WHERE);
 		stmt_update_fig_ref_by.reset();
 	}
 
@@ -1916,7 +1933,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		stmt_update_labels_ref_by.bind(2, e.first);
 		stmt_update_labels_ref_by.exec();
 		if (!stmt_update_labels_ref_by.getChanges())
-			throw internal_err("数据库 labels 表格中未找到： " + e.first);
+			throw internal_err("数据库 labels 表格中未找到： " + e.first + SLS_WHERE);
 		stmt_update_labels_ref_by.reset();
 	}
 	cout << "done!" << endl;
@@ -1941,7 +1958,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		stmt_update_bib_ref_by.bind(2, e.first); // bib_id
 		stmt_update_bib_ref_by.exec();
 		if (!stmt_update_bib_ref_by.getChanges())
-			throw internal_err("数据库 figures 表格中未找到： " + e.first);
+			throw internal_err("数据库 figures 表格中未找到： " + e.first + SLS_WHERE);
 		stmt_update_bib_ref_by.reset();
 	}
 	cout << "done!" << endl;
@@ -1994,7 +2011,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		exec_str(str, "which git");
 		trim(str, " \n");
 		if (str.empty())
-			throw std::runtime_error("git binary not found!");
+			throw std::runtime_error("git binary not found!" SLS_WHERE);
 	}
 
 	// replace "{+", "+}", "[-", "-]" to avoid conflict
@@ -2030,7 +2047,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 #ifndef NDEBUG
 			file_rm(file_diff);
 #endif
-			throw std::runtime_error("matching +} not found!");
+			throw std::runtime_error("matching +} not found!" SLS_WHERE);
 		}
 		add += u8count(str, ind, ind1);
 		ind = ind1 + 1;
@@ -2047,7 +2064,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 #ifndef NDEBUG
 			file_rm(file_diff);
 #endif
-			throw std::runtime_error("matching -] not found!");
+			throw std::runtime_error("matching -] not found!" SLS_WHERE);
 		}
 		del += u8count(str, ind, ind1);
 		ind = ind1 + 1;
@@ -2060,7 +2077,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 		Str tmp = "something wrong";
 		tmp << to_string(net_add) <<
 			", add = " << to_string(add) << ", del = " << to_string(del) <<
-			", add-del = " << to_string(add - del);
+			", add-del = " << to_string(add - del) << SLS_WHERE;
 		throw std::runtime_error(tmp);
 	}
 
