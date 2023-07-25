@@ -768,6 +768,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	cout << "updating sqlite database \"history\" table (" << fnames.size()
 		<< " backup) ..." << endl; cout.flush();
 
+	check_foreign_key(db_rw, false);
 	SQLite::Transaction transaction(db_rw);
 
 	// update "history" table
@@ -938,6 +939,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	}
 
 	transaction.commit();
+	check_foreign_key(db_rw);
 	cout << "done." << endl;
 }
 
@@ -1311,7 +1313,7 @@ inline void db_delete_images(
 	for (auto &image : images) {
 		stmt_select.bind(1, image);
 		if (!stmt_select.executeStep())
-			throw internal_err(u8"要删除的图片文件 hash 不存在：" + image + SLS_WHERE)
+			throw internal_err(u8"要删除的图片文件 hash 不存在：" + image + SLS_WHERE);
 		parse(figures, stmt_select.getColumn(0));
 		const char *ext = stmt_select.getColumn(1);
 		if (size(figures) > 1)
@@ -2221,6 +2223,7 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 	}
 
 	// remove or rename files, and update db
+	check_foreign_key(db_rw, false);
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
@@ -2268,5 +2271,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 		}
 	}
 	transaction.commit();
+	check_foreign_key(db_rw);
 	db_update_history_last(db_read, db_rw);
 }
