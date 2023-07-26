@@ -32,8 +32,8 @@ CREATE TABLE "entries" (
 	"issueOther"	TEXT NOT NULL DEFAULT '', -- \issueOther{} 中的文字
 
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0|1] 是否已删除
-	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布 (review.hash)
-	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份 (history.hash)
+	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
+	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 
 	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），由 figures.entry 生成
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片和代码）
@@ -252,6 +252,9 @@ CREATE TABLE "history" (
 	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
 
+-- 防止 FOREIGN KEY 报错
+INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '000000000000', 0, '');
+
 -- 审稿记录
 CREATE TABLE "review" (
 	"hash" TEXT UNIQUE NOT NULL, -- history.hash
@@ -269,6 +272,9 @@ CREATE TABLE "review" (
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
+
+-- 防止 FOREIGN KEY 报错
+INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '000000000000', 0, '', 0);
 
 -- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
 CREATE TABLE "contribution" (
