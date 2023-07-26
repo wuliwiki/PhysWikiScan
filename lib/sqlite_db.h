@@ -774,7 +774,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	// update "history" table
 	check_foreign_key(db_rw);
 
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "hash", "time", "author", "entry" FROM "history")");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
 
 	//            hash        time author entry  file-exist
 	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
@@ -948,7 +948,7 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 {
 	cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "hash", "time", "entry", "last" FROM "history";)");
+		R"(SELECT "hash", "time", "entry", "last" FROM "history" WHERE "hash" <> '';)");
 	unordered_map<Str, map<Str, pair<Str,Str>>> entry2time2hash_last; // entry -> (time -> (hash,last))
 	while (stmt_select.executeStep()) {
 		entry2time2hash_last[stmt_select.getColumn(2)]
@@ -2158,7 +2158,7 @@ inline void history_add_del(SQLite::Database &db_read, SQLite::Database &db_rw, 
 inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "entry", "author", "time", "hash" FROM "history")");
+		R"(SELECT "entry", "author", "time", "hash" FROM "history" WHERE "hash" <> '';)");
 	//            entry                author     time         hash  time2 (new time, or "" for nothing, "d" to delete)
 	unordered_map<Str,   unordered_map<Str,    map<Str,   pair<Str,  Str>>>> entry_author_time_hash_time2;
 	while (stmt_select.executeStep()) {
