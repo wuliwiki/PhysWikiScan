@@ -455,7 +455,8 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 	Str str, title, tmp;
 
 	for (auto &entry : entries) {
-		tmp = gv::path_in; tmp << "contents/" << entry << ".tex";
+		tmp.clear();
+		tmp << gv::path_in; tmp << "contents/" << entry << ".tex";
 		if (!file_exist(tmp))
 			SLS_ERR("词条文件不存在：" + entry + ".tex");
 		stmt_select.bind(1, entry);
@@ -480,8 +481,8 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 				stmt_undelete.exec();
 				stmt_undelete.reset();
 			}
-			stmt_select.reset();
 		}
+		stmt_select.reset();
 	}
 }
 
@@ -562,10 +563,12 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		parse(info.ref_by, ref_by_str);
 		if (search(id, bib_labels) < 0) {
 			if (!info.ref_by.empty()) {
-				tmp = u8"检测到删除的文献： "; tmp << id << u8"， 但被以下词条引用： " << ref_by_str;
+				tmp.clear();
+				tmp << u8"检测到删除的文献： " << id << u8"， 但被以下词条引用： " << ref_by_str;
 				throw scan_err(tmp);
 			}
-			tmp = u8"检测到删除文献（将删除）： "; tmp << to_string(info.order) << ". " << id;
+			tmp.clear();
+			tmp << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
 			SLS_WARN(tmp);
 			stmt_delete.bind(1, id);
 			stmt_delete.exec(); stmt_delete.reset();
@@ -586,7 +589,8 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			auto &info = db_bib_info[id];
 			bool changed = false;
 			if (order != info.order) {
-				tmp = u8"数据库中文献 "; tmp << id << " 编号改变（将更新）： " << to_string(info.order)
+				tmp.clear();
+				tmp << u8"数据库中文献 "; tmp << id << " 编号改变（将更新）： " << to_string(info.order)
 						<< " -> " << to_string(order);
 				SLS_WARN(tmp);
 				changed = true;
@@ -594,8 +598,8 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 				stmt_update.bind(1, -(int)order); // to avoid unique constraint
 			}
 			if (bib_detail != info.detail) {
-				tmp = u8"数据库中文献 ";
-				tmp << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
+				tmp.clear();
+				tmp << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
 				SLS_WARN(tmp);
 				changed = true;
 				stmt_update.bind(1, (int)order); // to avoid unique constraint
@@ -715,27 +719,27 @@ inline void db_update_entries_from_toc(
 
 			bool changed = false;
 			if (titles[i] != db_title) {
-				tmp = entry; tmp << ": title has changed from " << db_title << " to " << titles[i];
+				tmp.clear(); tmp << entry << ": title has changed from " << db_title << " to " << titles[i];
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (part_ids[entry_part[i]] != db_part) {
-				tmp = entry; tmp << ": part has changed from " << db_part << " to " << part_ids[entry_part[i]];
+				tmp.clear(); tmp << entry << ": part has changed from " << db_part << " to " << part_ids[entry_part[i]];
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (chap_ids[entry_chap[i]] != db_chapter) {
-				tmp = entry; tmp << ": chapter has changed from " << db_chapter << " to " << chap_ids[entry_chap[i]];
+				tmp.clear(); tmp << entry << ": chapter has changed from " << db_chapter << " to " << chap_ids[entry_chap[i]];
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (entry_last != db_last) {
-				tmp = entry; tmp << ": 'last' has changed from " << db_last << " to " << entry_last;
+				tmp.clear(); tmp << entry << ": 'last' has changed from " << db_last << " to " << entry_last;
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (entry_next != db_next) {
-				tmp = entry; tmp << ": 'next' has changed from " << db_next << " to " << entry_next;
+				tmp.clear(); tmp << entry << ": 'next' has changed from " << db_next << " to " << entry_next;
 				SLS_WARN(tmp);
 				changed = true;
 			}
@@ -876,7 +880,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			}
 			// rename to new format
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
-			tmp = path; tmp << fname << ".tex";
+			tmp.clear(); tmp << path << fname << ".tex";
 			SLS_WARN("moving " + fpath + " -> " + tmp);
 			file_move(tmp, fpath);
 		}
@@ -1084,7 +1088,7 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 				db_image_ext = (const char*)stmt_select.getColumn(0);
 				parse(db_image_figures, stmt_select.getColumn(1));
 				if (image_ext != db_image_ext) {
-					tmp = u8"图片文件拓展名不允许改变: "; tmp << image_hash << '.'
+					tmp.clear(); tmp << u8"图片文件拓展名不允许改变: " << image_hash << '.'
 						  << db_image_ext << " -> " << image_ext;
 					throw internal_err(tmp);
 				}
@@ -1183,8 +1187,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				image_alt = map.at("svg");
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
-				tmp = u8"发现数据库中没有的图片环境（将模拟 editor 添加）："; tmp << id << ", " << entry
-					<< ", " << to_string(order);
+				tmp.clear(); tmp << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
+					<< id << ", " << entry << ", " << to_string(order);
 				SLS_WARN(tmp);
 				stmt_insert.bind(1, id);
 				stmt_insert.bind(2, entry);
@@ -1203,13 +1207,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				changed = true;
 			}
 			if (entry != db_fig_entries[ind]) {
-				tmp = u8"发现数据库中图片 entry 改变（将更新）："; tmp << id << ": "
+				tmp.clear(); tmp << u8"发现数据库中图片 entry 改变（将更新）：" << id << ": "
 					  << db_fig_entries[ind] << " -> " << entry;
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (order != db_fig_orders[ind]) {
-				tmp = u8"发现数据库中图片 order 改变（将更新）："; tmp << id << ": "
+				tmp.clear(); tmp << u8"发现数据库中图片 order 改变（将更新）：" << id << ": "
 						<< to_string(db_fig_orders[ind]) << " -> " << to_string(order);
 				SLS_WARN(tmp);
 				changed = true;
@@ -1222,13 +1226,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				}
 			}
 			if (image != db_fig_image[ind]) {
-				tmp = u8"发现数据库中图片 image 改变（将更新）："; tmp << id << ": "
+				tmp.clear(); tmp << u8"发现数据库中图片 image 改变（将更新）：" << id << ": "
 					  << db_fig_image[ind] << " -> " << image;
 				SLS_WARN(tmp);
 				changed = true;
 			}
 			if (image_alt != db_fig_image_alt[ind]) {
-				tmp = u8"发现数据库中图片 image_alt 改变（将更新）："; tmp << id << ": "
+				tmp.clear(); tmp << u8"发现数据库中图片 image_alt 改变（将更新）：" << id << ": "
 					  << db_fig_image_alt[ind] << " -> " << image_alt;
 				SLS_WARN(tmp);
 				changed = true;
@@ -1267,8 +1271,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 		if (!figs_used[i] && db_figs_used[i]) {
 			if (db_fig_ref_bys[i].empty() ||
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
-				tmp = u8"检测到 \\label{fig_";
-				tmp << db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
+				tmp.clear(); tmp << u8"检测到 \\label{fig_"
+					<< db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
 				SLS_WARN(tmp);
 				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
@@ -1295,7 +1299,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	// cout << "done!" << endl;
 }
 
-// delete from "images" table, and the file
+// delete from "images" table, and the image file
 // if used by "figures" table, the figure must be marked deleted
 inline void db_delete_images(
 	vecStr_I images, // hashes, no extension
@@ -1304,11 +1308,10 @@ inline void db_delete_images(
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-		R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id"=?;)");
-	SQLite::Statement stmt_delete(db_read,
-		R"(DELETE FROM "images" WHERE "hash"=?;)");
-	Str tmp;
-	vecStr figures;
+		R"(SELECT "image", "image_alt", "image_old", "deleted" FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_read, R"(DELETE FROM "images" WHERE "hash"=?;)");
+	Str tmp, db_image;
+	vecStr figures, db_image_alt, db_image_old;
 
 	for (auto &image : images) {
 		stmt_select.bind(1, image);
@@ -1322,24 +1325,41 @@ inline void db_delete_images(
 		if (figures.empty()) {
 			stmt_delete.bind(1, image);
 			stmt_delete.exec(); stmt_delete.reset();
-			tmp = gv::path_in; tmp << "figures/" << image << ext;
+			tmp.clear(); tmp << gv::path_in << "figures/" << image << ext;
 			file_remove(tmp);
 		}
 		stmt_select2.bind(1, figures[0]);
 		if (!stmt_select2.executeStep()) {
-			tmp = u8"引用 image "; tmp << image << u8" 的图片环境不存在：" << figures[0] << SLS_WHERE;
+			tmp.clear();
+			tmp << u8"引用 image " << image << u8" 的图片环境不存在：" << figures[0] << SLS_WHERE;
 			throw internal_err(tmp);
 		}
-		stmt_select2.reset();
-	}
 
+		db_image = (const char*)stmt_select2.getColumn(0); // image
+		parse(db_image_alt, stmt_select2.getColumn(1)); // image_alt
+		parse(db_image_old, stmt_select2.getColumn(2)); // image_old
+		bool deleted = (int)stmt_select2.getColumn(3);
+		if (db_image != image) {
+			tmp.clear();
+			tmp << u8"数据库中 image.figure 和 figure.image 不符：image=" << image << "figure=" << figures[0];
+			throw internal_err(tmp);
+		}
+		if (!deleted)
+			throw scan_err(u8"无法删除被 figure 环境使用的 image：" + image);
+		stmt_select2.reset();
+
+		stmt_delete.bind(1, image);
+		stmt_delete.exec(); stmt_delete.reset();
+		tmp.clear(); tmp << gv::path_in << "figures/" << image << '.' << ext;
+		file_remove(tmp);
+		tmp.clear(); tmp << gv::path_out << image << '.' << ext;
+		file_remove(tmp);
+	}
 
 //	if (image_info.empty()) {
 //		while (stmt_select2.executeStep()) {
 //			auto &info = image_info[stmt_select2.getColumn(0)];
-//			get<0>(info) = (const char*)stmt_select2.getColumn(1); // image
-//			parse(get<1>(info), stmt_select2.getColumn(2)); // image_alt
-//			parse(get<2>(info), stmt_select2.getColumn(3)); // image_old
+
 //		}
 //	}
 
@@ -1437,7 +1457,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 
 			Long ind = search(label, db_labels);
 			if (ind < 0) {
-				tmp = u8"数据库中不存在 label（将模拟 editor 插入）："; tmp << label << ", " << type << ", "
+				tmp.clear();
+				tmp << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 						<< entry << ", " << to_string(order);
 				SLS_WARN(tmp);
 				stmt_insert.bind(1, label);
@@ -1452,7 +1473,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 			db_labels_used[ind] = true;
 			bool changed = false;
 			if (entry != db_label_entries[ind]) {
-				tmp = "label "; tmp << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+				tmp.clear();
+				tmp << "label "; tmp << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
 						<< db_label_entries[ind] << " -> " << entry << SLS_WHERE;
 				throw scan_err(tmp);
 				changed = true;
@@ -1520,7 +1542,8 @@ inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entrie
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");
-				tmp = u8"检测到 label 被删除： "; tmp << db_label << u8"\n但是被这些词条引用： "
+				tmp.clear();
+				tmp << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
 					<< ref_by_str << SLS_WHERE;
 				throw scan_err(tmp);
 			}
@@ -2028,8 +2051,8 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	replace(str2, "[-", u8"[➖"); replace(str2, "-]", u8"➖]");
 	write(str2, file2);
 
-	tmp = "git diff --no-index --word-diff-regex=. ";
-	tmp << '"' << file1 << "\" \"" << file2 << '"';
+	tmp.clear(); tmp << "git diff --no-index --word-diff-regex=. "
+		<< '"' << file1 << "\" \"" << file2 << '"';
 	// git diff will return 0 iff there is no difference
 	if (exec_str(str, tmp) == 0)
 		return;
@@ -2076,8 +2099,8 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	Long Nchar1 = u8count(str1), Nchar2 = u8count(str2);
 	Long net_add = Nchar2 - Nchar1;
 	if (net_add != add - del) {
-		Str tmp = "something wrong";
-		tmp << to_string(net_add) <<
+		Str tmp;
+		tmp << "something wrong" << to_string(net_add) <<
 			", add = " << to_string(add) << ", del = " << to_string(del) <<
 			", add-del = " << to_string(add - del) << SLS_WHERE;
 		throw std::runtime_error(tmp);

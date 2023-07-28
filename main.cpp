@@ -304,6 +304,17 @@ int main(int argc, const char *argv[]) {
 			}
 			arg_delete_all(entries, db_read, db_rw);
 		}
+		else if (args[0] == "--delete-figure" && args.size() > 1) {
+			vecStr figures;
+			Str arg;
+			for (Long i = 1; i < size(args); ++i) {
+				arg = args[i];
+				if (arg[0] == '-' && arg[1] == '-')
+					break;
+				figures.push_back(arg);
+			}
+			arg_delete_figs(figures, db_read, db_rw);
+		}
 		else if (args[0] == "--bib")
 			arg_bib(db_rw);
 		else if (args[0] == "--history-all" && args.size() <= 2) {

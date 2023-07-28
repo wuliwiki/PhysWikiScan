@@ -969,6 +969,10 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 		db_delete_images(images_old, db_read, db_rw);
 
 		stmt_select.reset();
+
+		// delete figures record
+		stmt_delete.bind(1, figure);
+		stmt_delete.executeStep(); stmt_delete.reset();
 	}
 }
 

@@ -23,6 +23,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `PhysWikiScan --delete 词条1 词条2 ...` 相当于先把词条除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否词条本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除词条文件。
 * `PhysWikiScan --delete-all 词条1 词条2 ...` 如果词条没有标记删除就先使用 `--delete`， 然后删除指定词条所有数据和相关文件和备份（在多个词条之间共享的除外）。
+* `PhysWikiScan --delete-figure 图片1 图片2 ...` 删除数据库中已经被标记 `figures.deleted` 的图片以及所有相关 `images` 和图片文件。
 
 **批量修改词条文件**
 * `PhysWikiScan --inline-eq-space` 批量把 tex 文件中的行内公式两边添加空格（如果是中文）（有少量 bug，碰到会自动跳过该词条）
