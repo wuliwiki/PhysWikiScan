@@ -1308,25 +1308,30 @@ inline void db_delete_images(
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-		R"(SELECT "image", "image_alt", "image_old", "deleted" FROM "figures" WHERE "id"=?;)");
-	SQLite::Statement stmt_delete(db_read, R"(DELETE FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "image", "deleted" FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
 	Str tmp, db_image;
-	vecStr figures, db_image_alt, db_image_old;
+	vecStr figures;
 
 	for (auto &image : images) {
 		stmt_select.bind(1, image);
-		if (!stmt_select.executeStep())
-			throw internal_err(u8"要删除的图片文件 hash 不存在：" + image + SLS_WHERE);
+		if (!stmt_select.executeStep()) {
+			SLS_WARN(u8"要删除的图片文件 hash 不存在（将忽略）：" + image + SLS_WHERE);
+			continue;
+		}
 		parse(figures, stmt_select.getColumn(0));
 		const char *ext = stmt_select.getColumn(1);
 		if (size(figures) > 1)
 			throw internal_err(u8"暂不支持删除 images 表格中具有多个 images.figures 的行：" + image + SLS_WHERE);
 		stmt_select.reset();
 		if (figures.empty()) {
+			SLS_WARN(u8"要删除的 image 的 images.figures 为空（将继续删除）：" + image + SLS_WHERE);
 			stmt_delete.bind(1, image);
 			stmt_delete.exec(); stmt_delete.reset();
 			tmp.clear(); tmp << gv::path_in << "figures/" << image << ext;
 			file_remove(tmp);
+			cout << "正在删除：" << image << ext << endl;
 		}
 		stmt_select2.bind(1, figures[0]);
 		if (!stmt_select2.executeStep()) {
@@ -1336,18 +1341,21 @@ inline void db_delete_images(
 		}
 
 		db_image = (const char*)stmt_select2.getColumn(0); // image
-		parse(db_image_alt, stmt_select2.getColumn(1)); // image_alt
-		parse(db_image_old, stmt_select2.getColumn(2)); // image_old
-		bool deleted = (int)stmt_select2.getColumn(3);
+		bool deleted = (int)stmt_select2.getColumn(1);
 		if (db_image != image) {
 			tmp.clear();
-			tmp << u8"数据库中 image.figure 和 figure.image 不符：image=" << image << "figure=" << figures[0];
+			tmp << u8"数据库中 image.figure 和 figure.image 不符：image=" << image << "  figure=" << figures[0];
 			throw internal_err(tmp);
 		}
 		if (!deleted)
-			throw scan_err(u8"无法删除被 figure 环境使用的 image：" + image);
+			throw scan_err(u8"无法删除被未删除的 figure 环境使用的 image：" + image);
 		stmt_select2.reset();
 
+		// set figures.image = ''
+		stmt_update.bind(1, figures[0]);
+		stmt_update.exec(); stmt_update.reset();
+
+		// delete from images
 		stmt_delete.bind(1, image);
 		stmt_delete.exec(); stmt_delete.reset();
 		tmp.clear(); tmp << gv::path_in << "figures/" << image << '.' << ext;
@@ -1355,14 +1363,6 @@ inline void db_delete_images(
 		tmp.clear(); tmp << gv::path_out << image << '.' << ext;
 		file_remove(tmp);
 	}
-
-//	if (image_info.empty()) {
-//		while (stmt_select2.executeStep()) {
-//			auto &info = image_info[stmt_select2.getColumn(0)];
-
-//		}
-//	}
-
 }
 
 // get all history.hash for an entry, by tracing entries.last_backup and history.last

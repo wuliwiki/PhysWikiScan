@@ -916,12 +916,19 @@ inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Dat
 inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	Str tmp;
-	vecStr image_hash, entries_figures, images, images_alt, images_old;
+	vecStr image_hash, images, images_alt, images_old;
+	set<Str> entries_figures;
+
+	check_foreign_key(db_rw, false);
+	SQLite::Transaction transaction(db_rw);
+
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
+
 	for (auto &figure : figures) {
 		stmt_select.bind(1, figure);
 		if (!stmt_select.executeStep())
@@ -933,17 +940,24 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 		if (!deleted)
 			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
 
-
-		// check entries.figures
+		// erase figure from entries.figures
 		stmt_select3.bind(1, entry);
+		if (!stmt_select3.executeStep())
+			throw internal_err(SLS_WHERE);
 		parse(entries_figures, stmt_select3.getColumn(0));
-		for (auto &fig : entries_figures) {
-			if (fig == figure) {
-				tmp = u8"arg_delete_fig()：要删除的图片 ";
-				tmp << figure << u8" 已被标记 figures.deleted， 但仍然被 entries.figures 引用："
-					<< entry;
-				throw internal_err(tmp);
-			}
+		bool included = false;
+		if (entries_figures.count(figure)) {
+			included = true;
+			entries_figures.erase(figure);
+			join(tmp, entries_figures);
+			stmt_update3.bind(1, tmp);
+			stmt_update3.bind(2, entry);
+			stmt_update3.exec(); stmt_update3.reset();
+		}
+		else {
+			tmp.clear(); tmp << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
+				<< entry << '.' << figure;
+			SLS_WARN(tmp);
 		}
 		stmt_select3.reset();
 
@@ -974,6 +988,9 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 		stmt_delete.bind(1, figure);
 		stmt_delete.executeStep(); stmt_delete.reset();
 	}
+
+	transaction.commit();
+	check_foreign_key(db_rw);
 }
 
 // arg_delete(), plus everything associated with this entry
