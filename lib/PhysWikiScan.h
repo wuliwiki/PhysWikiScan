@@ -945,9 +945,7 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 		if (!stmt_select3.executeStep())
 			throw internal_err(SLS_WHERE);
 		parse(entries_figures, stmt_select3.getColumn(0));
-		bool included = false;
 		if (entries_figures.count(figure)) {
-			included = true;
 			entries_figures.erase(figure);
 			join(tmp, entries_figures);
 			stmt_update3.bind(1, tmp);
