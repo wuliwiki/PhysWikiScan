@@ -71,22 +71,6 @@ CREATE TABLE "licenses" (
 
 INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知');
 
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Usr', '小时百科志愿创作协议', 'https://wuli.wiki/online/licens.html', '用于免费创作，版权归作者，小时科技拥有使用修改权。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Xiao', '小时百科付费创作协议', 'https://wuli.wiki/online/licens.html', '通常用于付费创作，版权归小时科技，作者有署名权。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('CCBYSA3', 'CC BY-SA 3.0', 'https://creativecommons.org/licenses/by-sa/3.0/deed.zh-Hans', '通常用于开源作品，如维基百科。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Pub', '公有领域', 'https://baike.baidu.com/item/%E5%85%AC%E6%9C%89%E9%A2%86%E5%9F%9F/9890908', '任何个人或团体都不具所有任何版权。 通常适用与历史文献， 或者作者主动放弃一切版权。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Copy', '转载（只读）', '', '转载内容，除格式外不允许修改，需要注明来源。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('Adap', '转载（可修改）', '', '转载内容，允许修改，需要注明来源。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('GPL3', 'GPL-3.0', 'https://www.gnu.org/licenses/gpl-3.0.en.html', '常见的开源程序协议，基于该代码的作品也需要开源。');
-
-INSERT INTO "licenses" ("id", "caption", "url", "intro") VALUES ('MIT', 'MIT', 'https://mit-license.org/', '几乎没有任何限制的开源的协议。');
-
 -- 词条占用列表
 CREATE TABLE "occupied" (
 	"entry"	TEXT UNIQUE NOT NULL, -- entries.id
