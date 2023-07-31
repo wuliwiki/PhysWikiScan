@@ -1867,9 +1867,9 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 // make db consistent
 // (regenerate derived fields)
 // TODO: fix other generated field, i.e. entries.ref_by
-inline void arg_fix_db(SQLite::Database &db_rw)
+inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	Str refs_str, entry;
+	Str refs_str, entry, tmp;
 	set<Str> refs;
 	unordered_map<Str, set<Str>> figs_ref_by, labels_ref_by, bib_ref_by;
 
@@ -1916,7 +1916,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			stmt_update_figs_entry.bind(2, fig_id);
 			stmt_update_figs_entry.exec();
 			if (!stmt_update_figs_entry.getChanges())
-				throw internal_err("数据库 figs 表格中未找到： " + fig_id + SLS_WHERE);
+				throw internal_err("数据库 figures 表格中未找到 entries.figures 中的： " + fig_id + SLS_WHERE);
 			stmt_update_figs_entry.reset();
 		}
 	}
@@ -1986,6 +1986,54 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			throw internal_err("数据库 figures 表格中未找到： " + e.first + SLS_WHERE);
 		stmt_update_bib_ref_by.reset();
 	}
+
+	// === regenerate images.figures from figures.image ========
+	unordered_map<Str, set<Str>> images_figures, images_figures_old; // images.figures* generated from figures.image
+	SQLite::Statement stmt_select3(db_read, R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id" != '';)");
+	SQLite::Statement stmt_select4(db_read, R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
+	vecStr image_alt, image_old;
+	while (stmt_select3.executeStep()) {
+		const char *fig_id = stmt_select3.getColumn(0);
+		const char *image_hash = stmt_select3.getColumn(1);
+		parse(image_alt, stmt_select3.getColumn(2));
+		if (size(image_alt) > 1)
+			throw internal_err(u8"暂时不允许多于一个 image_alt！");
+		parse(image_old, stmt_select3.getColumn(3));
+		if (size(image_old) > 1)
+			throw internal_err(u8"暂时不允许多于一个 image_old！");
+		stmt_select4.bind(1, image_hash);
+		if (!stmt_select4.executeStep()) {
+			tmp.clear(); tmp << u8"图片 " << fig_id << " 的 image " << image_hash << u8" 不存在！";
+			throw internal_err(tmp);
+		}
+		stmt_select4.reset();
+
+		images_figures[image_hash].insert(fig_id);
+		if (!image_alt.empty())
+			images_figures[image_alt[0]].insert(fig_id);
+		if (!image_old.empty())
+			images_figures_old[image_old[0]].insert(fig_id);
+	}
+
+	vecStr db_images;
+	get_column(db_images, "images", "hash", db_read);
+	SQLite::Statement stmt_update4(db_rw, R"(UPDATE "images" SET "figures"=?, "figures_old"=? WHERE "hash"=?;)");
+	SQLite::Statement stmt_delete4(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
+	for (auto &image_hash : db_images) {
+		if (!images_figures.count(image_hash) && !images_figures_old.count(image_hash)) {
+			tmp.clear(); tmp << u8"图片 image " << image_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
+			SLS_WARN(tmp);
+			stmt_delete4.bind(1, image_hash);
+			stmt_delete4.exec(); stmt_delete4.reset();
+		}
+		join(tmp, images_figures[image_hash]);
+		stmt_update4.bind(1, tmp);
+		join(tmp, images_figures_old[image_hash]);
+		stmt_update4.bind(2, tmp);
+		stmt_update4.bind(3, image_hash);
+		stmt_update4.exec(); stmt_update4.reset();
+	}
+
 	cout << "done!" << endl;
 
 	transaction.commit();

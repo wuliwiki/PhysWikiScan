@@ -315,6 +315,17 @@ int main(int argc, const char *argv[]) {
 			}
 			arg_delete_figs(figures, db_read, db_rw);
 		}
+		else if (args[0] == "--delete-image" && args.size() > 1) {
+			vecStr images;
+			Str arg;
+			for (Long i = 1; i < size(args); ++i) {
+				arg = args[i];
+				if (arg[0] == '-' && arg[1] == '-')
+					break;
+				images.push_back(arg);
+			}
+			db_delete_images(images, db_read, db_rw);
+		}
 		else if (args[0] == "--bib")
 			arg_bib(db_rw);
 		else if (args[0] == "--history-all" && args.size() <= 2) {
@@ -336,7 +347,7 @@ int main(int argc, const char *argv[]) {
 			author_char_stat(args[1], args[2], args[3], db_read);
 		}
 		else if (args[0] == "--fix-db" && size(args) == 1) {
-			arg_fix_db(db_rw);
+			arg_fix_db(db_read, db_rw);
 		}
 		else if (args[0] == "--migrate-db" && size(args) == 3) {
 			// copy old database to a new database with different schema

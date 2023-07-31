@@ -145,7 +145,7 @@ INSERT INTO "figures" ("id", "caption") VALUES ('', '无');
 CREATE TABLE "images" (
 	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
 	"ext"	TEXT NOT NULL, -- [pdf|svg|png|jpg|gif] 拓展名
-	"figures"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 被哪些图片环境使用（包括 image, image_alt）
+	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2" 被哪些图片环境使用（包括 image, image_alt）
 	"figures_old"	TEXT NOT NULL DEFAULT '', -- "figures.id" 被哪个图片环境作为 image_old
 	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
 	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议
