@@ -866,12 +866,14 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 
 // delete entries
 // if failed, db will not change
-inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I no_throw = false)
+inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
 	vecStr ref_by, tmp;
 	Str stmp, err_msg;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
+	SQLite::Transaction transaction(db_rw);
+
 	for (auto &entry : entries) {
 		// check entries.ref_by
 		stmt_select.bind(1,entry);
@@ -906,9 +908,12 @@ inline void arg_delete(vecStr_IO entries, SQLite::Database &db_read, SQLite::Dat
 		stmt_update.exec(); stmt_update.reset();
 
 		// delete file
-		stmp = gv::path_in; stmp << "contents/" << entry << ".tex";
+		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
 		file_remove(stmp);
+		cout << "successfully (shallow) deleted " << stmp;
 	}
+
+	transaction.commit();
 }
 
 // delete all related db data and files of a figure
@@ -930,9 +935,13 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 
 	for (auto &figure : figures) {
+		cout << "deleting figure: " << figure << endl;
 		stmt_select.bind(1, figure);
-		if (!stmt_select.executeStep())
-			throw internal_err(u8"arg_delete_fig()：要删除的图片未找到：" + figure);
+		if (!stmt_select.executeStep()) {
+			SLS_WARN(u8"arg_delete_fig()：要删除的图片未找到（将忽略）：" + figure);
+			stmt_select.reset();
+			continue;
+		}
 		const char* entry = stmt_select.getColumn(2);
 
 		// check figures.deleted
@@ -993,28 +1002,48 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
-inline void arg_delete_all(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	vecStr history_hash;
-	arg_delete(entries, db_read, db_rw, true);
-	SQLite::Statement stmt_select(db_read, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_delete0(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	vecStr history_hash, figures;
+	SQLite::Statement stmt_select(db_read, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
+
 	for (auto &entry : entries) {
+		cout << "--- deleting everything about entry: " << entry << " ---" << endl;
+		// delete entries.figures and all associated images
 		stmt_select.bind(1, entry);
-		if (!stmt_select.executeStep())
-			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
-		// delete all history records
+		if (!stmt_select.executeStep()) {
+			SLS_WARN(u8"arg_delete(): 数据库中找不到要删除的词条（将忽略）： " + entry);
+			stmt_select.reset();
+			continue;
+		}
+		bool deleted = (int)stmt_select.getColumn(1);
+		if (!deleted) // do normal delete first
+			arg_delete({entry}, db_read, db_rw, true);
+		parse(figures, stmt_select.getColumn(0));
+		stmt_select.reset();
+		arg_delete_figs(figures, db_read, db_rw);
+
+		// delete all history records and files
 		db_get_history(history_hash, entry, db_read);
-		stmt_delete0.bind(1, entry);
-		stmt_delete0.exec(); stmt_delete0.reset();
-		for (auto &hash : history_hash) {
-			stmt_delete.bind(1, hash);
-			stmt_delete.exec(); stmt_delete.reset();
+		stmt_update.bind(1, entry);
+		stmt_update.exec(); stmt_update.reset();
+		if (!history_hash.empty()) {
+			cout << "deleting " << history_hash.size() << " history." << endl;
+			for (auto &hash: history_hash) {
+				stmt_delete.bind(1, hash);
+				stmt_delete.exec();
+				stmt_delete.reset();
+				// TODO: also remove history files
+				// file_remove("../PhysWiki-backup/" + )
+			}
 		}
 
-		// delete all figures and images
-		// TODO: use arg_delete_figs();
+		// delete from entries
+		stmt_delete0.bind(1, entry);
+		stmt_delete0.exec(); stmt_delete0.reset();
 	}
 }
 

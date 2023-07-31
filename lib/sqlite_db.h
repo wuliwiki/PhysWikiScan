@@ -1308,13 +1308,14 @@ inline void db_delete_images(
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-		R"(SELECT "image", "deleted" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "image", "deleted", "image_alt" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
-	Str tmp, db_image;
+	Str tmp;
 	vecStr figures;
 
 	for (auto &image : images) {
+		cout << "deleting image: " << image << endl;
 		stmt_select.bind(1, image);
 		if (!stmt_select.executeStep()) {
 			SLS_WARN(u8"要删除的图片文件 hash 不存在（将忽略）：" + image + SLS_WHERE);
@@ -1340,11 +1341,14 @@ inline void db_delete_images(
 			throw internal_err(tmp);
 		}
 
-		db_image = (const char*)stmt_select2.getColumn(0); // image
+		const char *fig_image = stmt_select2.getColumn(0);
+		const char *fig_image_alt = stmt_select2.getColumn(2);
 		bool deleted = (int)stmt_select2.getColumn(1);
-		if (db_image != image) {
+		if (fig_image != image && fig_image_alt != image) {
 			tmp.clear();
-			tmp << u8"数据库中 image.figure 和 figure.image 不符：image=" << image << "  figure=" << figures[0];
+			tmp << u8"数据库中 image.figures 和 figures.image* 不符：image="
+				<< image << " figures.image=" << fig_image << "  figures.image_alt=" << fig_image_alt
+				<< "  figure=" << figures[0];
 			throw internal_err(tmp);
 		}
 		if (!deleted)
@@ -1384,7 +1388,9 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 		if (!stmt_select1.executeStep())
 			throw internal_err(u8"db_get_history()： history.hash 不存在：" + history_hash.back() + SLS_WHERE);
 		history_hash.push_back(stmt_select1.getColumn(0));
+		stmt_select1.reset();
 	}
+	history_hash.pop_back();
 }
 
 // update labels table of database

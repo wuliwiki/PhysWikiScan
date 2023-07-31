@@ -293,7 +293,7 @@ int main(int argc, const char *argv[]) {
 			}
 			arg_delete(entries, db_read, db_rw);
 		}
-		else if (args[0] == "--delete-all" && args.size() > 1) {
+		else if (args[0] == "--delete-hard" && args.size() > 1) {
 			vecStr entries;
 			Str arg;
 			for (Long i = 1; i < size(args); ++i) {
@@ -302,7 +302,7 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
-			arg_delete_all(entries, db_read, db_rw);
+			arg_delete_hard(entries, db_read, db_rw);
 		}
 		else if (args[0] == "--delete-figure" && args.size() > 1) {
 			vecStr figures;
