@@ -65,8 +65,8 @@ inline void global_forbid_char(Str_I str)
 	u8_iter it(str), it_end(str, -1);
 	for (; it != it_end; ++it) {
 		if (u32(*it)[0] > 65536) {
-			Long beg = max(Long(0),(Long)it-30);
-			SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, it-beg) + u8"？？？");
+			Long beg = max(Long(0), (Long)it-30);
+			SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, (Long)it-beg) + u8"？？？");
 			illegal_chars.insert(str[ind]);
 		}
 	}
