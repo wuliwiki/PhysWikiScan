@@ -14,10 +14,7 @@ CREATE TABLE "entries" (
 	"next"	TEXT NOT NULL DEFAULT '', -- 目录中的下一个词条， 空代表这是最后一个或不在目录中
 
 	"license"	TEXT NOT NULL DEFAULT 'Usr', -- 协议
-
-	-- [Wiki] 百科（综述） [Tutor] 教程（类似教材） [Art] 文章（类似论文） [Note] 笔记总结 [Map] 导航
 	"type"  TEXT NOT NULL DEFAULT '',
-
 	"keys" TEXT NOT NULL DEFAULT '', -- "关键词1|...|关键词N"
 
 	-- "entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的词条id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
@@ -52,14 +49,13 @@ CREATE TABLE "entries" (
 	FOREIGN KEY("last_backup") REFERENCES "history"("hash"),
 	FOREIGN KEY("part") REFERENCES "parts"("id"),
 	FOREIGN KEY("chapter") REFERENCES "chapters"("id"),
-	FOREIGN KEY("license") REFERENCES "licenses"("id")
+	FOREIGN KEY("license") REFERENCES "licenses"("id"),
+	FOREIGN KEY("type") REFERENCES "types"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1);
+INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1); -- 防止 FOREIGN KEY 报错
 
 -- 创作协议
--- 已经支持的 license 见 `license.txt`
 CREATE TABLE "licenses" (
 	"id"	TEXT UNIQUE NOT NULL, -- 协议 id，只允许字母和数字，字母开头，空代表未知
 	"caption"	TEXT UNIQUE NOT NULL, -- 协议官方名称
@@ -69,7 +65,23 @@ CREATE TABLE "licenses" (
 	PRIMARY KEY("id")
 );
 
-INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知');
+INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIGN KEY 报错
+
+-- 文章类型
+CREATE TABLE "types" (
+	"id"	TEXT UNIQUE NOT NULL,
+	"caption"	TEXT UNIQUE NOT NULL, -- 中文名
+	"intro"	TEXT NOT NULL DEFAULT '', -- 协议简介和说明
+	PRIMARY KEY("id")
+);
+
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Wiki', '综述', '');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Tutor', '教程', '');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Art', '文章', '');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Map', '导航', '');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '');
+
 
 -- 词条占用列表
 CREATE TABLE "occupied" (
@@ -94,8 +106,7 @@ CREATE TABLE "parts" (
 	FOREIGN KEY("chap_last") REFERENCES "chapters"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "parts" VALUES('', 0, '无', '', '', '');
+INSERT INTO "parts" VALUES('', 0, '无', '', '', ''); -- 防止 FOREIGN KEY 报错
 
 -- 章
 -- 目录中 \label{cpt_xxx} 中 xxx 为 "id"
@@ -112,8 +123,7 @@ CREATE TABLE "chapters" (
 	FOREIGN KEY("entry_last") REFERENCES "entries"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 不在目录中
+INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 防止 FOREIGN KEY 报错
 
 -- 图片环境（所有图片环境必须带标签）
 -- \label{fig_xxx} 中 xxx 为 "id"
@@ -138,8 +148,7 @@ CREATE TABLE "figures" (
 	FOREIGN KEY("aka") REFERENCES "figures"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "figures" ("id", "caption") VALUES ('', '无');
+INSERT INTO "figures" ("id", "caption") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
 
 -- 图片文件（包括历史版本)
 CREATE TABLE "images" (
@@ -218,8 +227,7 @@ CREATE TABLE "bibliography" (
 	PRIMARY KEY("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无');
+INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
 
 -- 编辑历史（一个记录 5 分钟）
 CREATE TABLE "history" (
@@ -236,8 +244,7 @@ CREATE TABLE "history" (
 	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '000000000000', 0, '');
+INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '000000000000', 0, ''); -- 防止 FOREIGN KEY 报错
 
 -- 审稿记录
 CREATE TABLE "review" (
@@ -257,8 +264,7 @@ CREATE TABLE "review" (
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
--- 防止 FOREIGN KEY 报错
-INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '000000000000', 0, '', 0);
+INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '000000000000', 0, '', 0); -- 防止 FOREIGN KEY 报错
 
 -- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
 CREATE TABLE "contribution" (
