@@ -76,11 +76,11 @@ CREATE TABLE "types" (
 );
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Wiki', '综述', '');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Tutor', '教程', '');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Art', '文章', '');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Map', '导航', '');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Wiki', '综述', '类似于维基百科的条目，中立、全面、一般性的介绍。');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Tutor', '教程', '类似于教材的一节。');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Art', '文章', '类似于学术论文。');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Map', '导航', '介绍百科中的一章、一部分等，具有大量链接到其中的词条。');
+INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '类似于讲义、复习资料，把个知识的要点列出。');
 
 
 -- 词条占用列表

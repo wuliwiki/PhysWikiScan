@@ -39,12 +39,11 @@ inline void get_title(Str_O title, Str_I str)
 // if a license is defined and in db, then return `licenses.id`
 // if is defined but not in db, then throw an error
 // if is not defined, then output empty string
-inline void get_license(Str_O license, Str_I str, SQLite::Database &db_read)
+inline void get_entry_license(Str_O license, Str_I str, SQLite::Database &db_read)
 {
 	Long ind = 0; license.clear();
 	while (str[ind] == '%') {
 		ind = (Long)str.find_first_not_of(' ', ind+1);
-		cout << '"' << str.substr(ind, 8) << '"' << endl;
 		if (ind > 0 && str.substr(ind, 8) == "license ") {
 			ind = (Long)str.find_first_not_of(' ', ind + 8);
 			if (ind < 0) return;
@@ -60,11 +59,34 @@ inline void get_license(Str_O license, Str_I str, SQLite::Database &db_read)
 		return;
 
 	// check db
-	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "caption" FROM "licenses" WHERE "id"=?;)");
-	stmt_select.bind(1, license);
-	if (!stmt_select.executeStep())
+	if (!exist("licenses", "id", license, db_read))
 		throw internal_err(u8"license 不存在于数据库：" + license);
+}
+
+// get the type of entry (entries.type)
+// similar with `get_entry_license()`
+inline void get_entry_type(Str_O type, Str_I str, SQLite::Database &db_read)
+{
+	Long ind = 0; type.clear();
+	while (str[ind] == '%') {
+		ind = (Long)str.find_first_not_of(' ', ind+1);
+		if (ind > 0 && str.substr(ind, 5) == "type ") {
+			ind = (Long)str.find_first_not_of(' ', ind + 5);
+			if (ind < 0) return;
+			Long ind1 = (Long)str.find_first_of(" \n", ind);
+			if (ind1 < 0) ind1 = size(str);
+			type = str.substr(ind, ind1-ind); break;
+		}
+		ind = find(str, '\n', ind);
+		if (ind < 0) return;
+		++ind;
+	}
+	if (type.empty())
+		return;
+
+	// check db
+	if (!exist("types", "id", type, db_read))
+		throw internal_err(u8"type 不存在于数据库：" + type);
 }
 
 // check if an entry is labeled "\issueDraft"
