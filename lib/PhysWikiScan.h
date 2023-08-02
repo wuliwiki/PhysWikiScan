@@ -506,7 +506,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		gv::is_eng = false;
 
 	// add keyword meta to html
-	if (get_keywords(keywords, str) > 0) {
+	get_keywords(keywords, str);
+	if (size(keywords) > 0) {
 		Str keywords_str = keywords[0];
 		for (Long i = 1; i < size(keywords); ++i) {
 			keywords_str += "," + keywords[i];

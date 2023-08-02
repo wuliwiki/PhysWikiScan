@@ -159,43 +159,27 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 // get keywords from the comment in the second line
 // return numbers of keywords found
 // e.g. "关键词1|关键词2|关键词3"
-inline Long get_keywords(vecStr_O keywords, Str_I str)
+inline void get_keywords(vecStr_O keywords, Str_I str)
 {
-	keywords.clear();
-	Str word;
-	Long ind0 = find(str, '\n', 0);
-	if (ind0 < 0 || ind0 == size(str)-1)
-		return 0;
-	ind0 = expect(str, "%", ind0+1);
-	if (ind0 < 0) {
-		// SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
-		return 0;
+	Long ind = 0; keywords.clear();
+	Str keys_str;
+	while (str[ind] == '%') {
+		ind = (Long)str.find_first_not_of(' ', ind+1);
+		if (ind > 0 && str.substr(ind, 5) == "keys ") {
+			ind = (Long)str.find_first_not_of(' ', ind + 5);
+			if (ind < 0) return;
+			Long ind1 = (Long)str.find_first_of('\n', ind);
+			if (ind1 < 0) ind1 = size(str);
+			keys_str = str.substr(ind, ind1-ind); break;
+		}
+		ind = find(str, '\n', ind);
+		if (ind < 0) return;
+		++ind;
 	}
-	Str line; get_line(line, str, ind0);
-	Long tmp = find(line, '|', 0);
-	if (tmp < 0) {
-		// SLS_WARN(u8"请在第二行注释关键词： 例如 \"% 关键词1|关键词2|关键词3\"！");
-		return 0;
-	}
-
-	ind0 = 0;
-	while (1) {
-		Long ind1 = find(line, '|', ind0);
-		if (ind1 < 0)
-			break;
-		word = line.substr(ind0, ind1 - ind0);
-		trim(word);
-		if (word.empty())
-			throw scan_err(u8"第二行关键词格式错误！ 正确格式为 “% 关键词1|关键词2|关键词3”");
-		keywords.push_back(word);
-		ind0 = ind1 + 1;
-	}
-	word = line.substr(ind0);
-	trim(word);
-	if (word.empty())
-		throw scan_err(u8"第二行关键词格式错误！ 正确格式为 “% 关键词1|关键词2|关键词3”");
-	keywords.push_back(word);
-	return keywords.size();
+	if (keys_str.empty()) return;
+	parse(keywords, keys_str, "|");
+	for (auto key : keywords)
+		trim(key);
 }
 
 // check dead url for one or all entries
