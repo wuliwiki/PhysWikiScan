@@ -449,7 +449,7 @@ inline void arg_history(Str_I path, SQLite::Database &db_rw)
 // use `clear=true` to only keep the title line and key-word line of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
 	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
-	Bool_O isdraft, vecStr_O keywords, vecStr_O labels, vecLong_O label_orders,
+	Bool_O isdraft, vecStr_O keywords, Str_O license, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -472,11 +472,10 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// read title from first comment
 	get_title(title, str);
 	isdraft = is_draft(str);
-	Str db_title, authors, db_keys_str, db_pentry_str, chapter, last_entry, next_entry;
+	Str db_title, authors, db_keys_str, db_license, db_pentry_str, chapter, last_entry, next_entry;
 	Long db_draft;
-	SQLite::Statement stmt_select
-			(db_read,
-			 R"(SELECT "caption", "chapter", "last", "next", "keys", "pentry", "isdraft" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "caption", "chapter", "last", "next", "keys", "pentry", "isdraft", "license" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
@@ -487,6 +486,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	db_keys_str = (const char*)stmt_select.getColumn(4);
 	db_pentry_str = (const char*)stmt_select.getColumn(5);
 	db_draft = (int)stmt_select.getColumn(6);
+	db_license = (const char*)stmt_select.getColumn(7);
 	stmt_select.reset();
 
 	bool in_main = !chapter.empty(); // entry in main.tex
@@ -525,7 +525,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// insert HTML title
 	if (replace(html, "PhysWikiHTMLtitle", db_title) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
-
+	// get license
+	get_license(license, str, db_read);
 	// check globally forbidden char
 	global_forbid_char(str);
 	// save and replace verbatim code with an index
@@ -631,7 +632,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// update db "entries" table
 	Str key_str; join(key_str, keywords, "|");
 	if (title != db_title || key_str != db_keys_str
-		|| isdraft != db_draft)
+		|| isdraft != db_draft || db_license != license)
 		update_db = true;
 }
 
@@ -645,7 +646,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 	Bool update_db, isdraft;
-	Str key_str;
+	Str key_str, license;
 	unordered_set<Str> update_entries;
 	vecLong fig_orders, label_orders;
 	vecStr keywords, fig_ids, labels;
@@ -653,7 +654,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 	vector<unordered_map<Str, Str>> fig_ext_hash;
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
-	Str pentry_str, db_pentry_str;
+	Str pentry_str, db_pentry_str, html;
 	unordered_map<Str, unordered_map<Str, Bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
 	unordered_map<Str, unordered_map<Str, Bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 
@@ -665,15 +666,12 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 			cout << std::setw(5) << std::left << i
 				 << std::setw(10) << std::left << entry; cout.flush();
-			Str html;
 
 			// =================================================================
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-							fig_ids, fig_orders,
-							fig_ext_hash, isdraft, keywords,
-							labels, label_orders, entry_uprefs_change[entry],
-							entry_bibs_change[entry],
-							pentry, entry, clear, rules, db_read);
+				fig_ids, fig_orders, fig_ext_hash, isdraft, keywords, license,
+				labels, label_orders, entry_uprefs_change[entry],
+				entry_bibs_change[entry], pentry, entry, clear, rules, db_read);
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");
@@ -682,15 +680,14 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 
 			// update db "entries"
 			if (update_db) {
-				SQLite::Statement stmt_update
-						(db_rw,
-						 R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=? )"
-						 R"(WHERE "id"=?;)");
+				SQLite::Statement stmt_update(db_rw,
+					R"(UPDATE "entries" SET "caption"=?, "keys"=?, "draft"=?, "license"=? WHERE "id"=?;)");
 				join(key_str, keywords, "|");
 				stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
 				stmt_update.bind(2, key_str);
-				stmt_update.bind(3, (int) isdraft);
-				stmt_update.bind(4, entries[i]);
+				stmt_update.bind(3, (int)isdraft);
+				stmt_update.bind(4, license);
+				stmt_update.bind(5, entries[i]);
 				stmt_update.exec(); stmt_update.reset();
 			}
 

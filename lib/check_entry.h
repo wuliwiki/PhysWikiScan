@@ -34,6 +34,39 @@ inline void get_title(Str_O title, Str_I str)
 		throw scan_err(u8"第一行注释的标题不能含有 “\\” ");
 }
 
+// get the license (defined in comment as "% license <license>")
+// check the lines starting with '%' at the beginning of `str`
+// if a license is defined and in db, then return `licenses.id`
+// if is defined but not in db, then throw an error
+// if is not defined, then output empty string
+inline void get_license(Str_O license, Str_I str, SQLite::Database &db_read)
+{
+	Long ind = 0; license.clear();
+	while (str[ind] == '%') {
+		ind = (Long)str.find_first_not_of(' ', ind+1);
+		cout << '"' << str.substr(ind, 8) << '"' << endl;
+		if (ind > 0 && str.substr(ind, 8) == "license ") {
+			ind = (Long)str.find_first_not_of(' ', ind + 8);
+			if (ind < 0) return;
+			Long ind1 = (Long)str.find_first_of(" \n", ind);
+			if (ind1 < 0) ind1 = size(str);
+			license = str.substr(ind, ind1-ind); break;
+		}
+		ind = find(str, '\n', ind);
+		if (ind < 0) return;
+		++ind;
+	}
+	if (license.empty())
+		return;
+
+	// check db
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "caption" FROM "licenses" WHERE "id"=?;)");
+	stmt_select.bind(1, license);
+	if (!stmt_select.executeStep())
+		throw internal_err(u8"license 不存在于数据库：" + license);
+}
+
 // check if an entry is labeled "\issueDraft"
 inline Bool is_draft(Str_I str)
 {
