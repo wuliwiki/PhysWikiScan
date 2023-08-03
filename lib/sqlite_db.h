@@ -778,7 +778,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	// update "history" table
 	check_foreign_key(db_rw);
 
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
 
 	//            hash        time author entry  file-exist
 	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
@@ -837,6 +838,10 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	// insert new_authors to "authors" table
 	SQLite::Statement stmt_insert_auth(db_rw,
 		R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
+	SQLite::Statement stmt_select4(db_rw,
+		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
+	SQLite::Statement stmt_update(db_rw,
+		R"(UPDATE "history" SET "hash"=? WHERE "id"=?;)");
 
 	Str fpath, tmp;
 
@@ -906,15 +911,26 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			get<3>(time_author_entry_fexist) = true;
 		}
 		else {
-			SLS_WARN(u8"数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
-			stmt_insert.bind(1, sha1);
-			stmt_insert.bind(2, time);
-			stmt_insert.bind(3, int(authorID));
-			stmt_insert.bind(4, entry);
-			try { stmt_insert.exec(); }
-			catch (std::exception &e) { throw internal_err(Str(e.what()) + SLS_WHERE); }
-			stmt_insert.reset();
-			db_history[sha1] = make_tuple(time, authorID, entry, true);
+			stmt_select4.bind(1, time);
+			stmt_select4.bind(2, (int)authorID);
+			stmt_select4.bind(3, entry);
+			if (stmt_select4.executeStep()) {
+				stmt_select4.reset();
+				SLS_WARN(u8"检测到数据库的 history 表格的 hash 改变（将更新）：" + sha1 + " " + fname);
+				stmt_update.bind(1, sha1);
+				stmt_update.exec(); stmt_update.reset();
+			}
+			else {
+				SLS_WARN(u8"数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
+				stmt_insert.bind(1, sha1);
+				stmt_insert.bind(2, time);
+				stmt_insert.bind(3, (int) authorID);
+				stmt_insert.bind(4, entry);
+				try { stmt_insert.exec(); }
+				catch (std::exception &e) { throw internal_err(Str(e.what()) + SLS_WHERE); }
+				stmt_insert.reset();
+				db_history[sha1] = make_tuple(time, authorID, entry, true);
+			}
 		}
 	}
 

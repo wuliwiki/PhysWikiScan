@@ -241,7 +241,8 @@ CREATE TABLE "history" (
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("last") REFERENCES "history"("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id")
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	UNIQUE("time", "author", "entry")
 );
 
 INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '000000000000', 0, ''); -- 防止 FOREIGN KEY 报错
