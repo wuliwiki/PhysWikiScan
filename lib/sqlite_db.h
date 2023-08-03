@@ -841,7 +841,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select4(db_rw,
 		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "history" SET "hash"=? WHERE "id"=?;)");
+		R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
 
 	Str fpath, tmp;
 
@@ -915,13 +915,17 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			stmt_select4.bind(2, (int)authorID);
 			stmt_select4.bind(3, entry);
 			if (stmt_select4.executeStep()) {
-				stmt_select4.reset();
-				SLS_WARN(u8"检测到数据库的 history 表格的 hash 改变（将更新）：" + sha1 + " " + fname);
+				const char *db_hash = stmt_select4.getColumn(0);
+				tmp.clear(); tmp << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
+					<< db_hash << " -> " << sha1 << ' ' << fname;
+				SLS_WARN(tmp);
 				stmt_update.bind(1, sha1);
+				stmt_update.bind(2, db_hash);
 				stmt_update.exec(); stmt_update.reset();
 			}
 			else {
-				SLS_WARN(u8"数据库的 history 表格中不存在备份文件（将添加）：" + sha1 + " " + fname);
+				tmp.clear(); tmp << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
+				SLS_WARN(tmp);
 				stmt_insert.bind(1, sha1);
 				stmt_insert.bind(2, time);
 				stmt_insert.bind(3, (int) authorID);
@@ -931,6 +935,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				stmt_insert.reset();
 				db_history[sha1] = make_tuple(time, authorID, entry, true);
 			}
+			stmt_select4.reset();
 		}
 	}
 
@@ -964,10 +969,10 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 }
 
 // update all "history.last"
-inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void db_update_history_last(SQLite::Database &db_rw)
 {
 	cout << "updating history.last..." << endl;
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "hash", "time", "entry", "last" FROM "history" WHERE "hash" <> '';)");
 	unordered_map<Str, map<Str, pair<Str,Str>>> entry2time2hash_last; // entry -> (time -> (hash,last))
 	while (stmt_select.executeStep()) {
@@ -980,13 +985,11 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
-	SQLite::Statement stmt_select2(db_read,
+	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
 		R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_select3(db_read,
-		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
-	Str last_hash;
+	Str last_hash, tmp;
 	for (auto &e : entry2time2hash_last) {
 		auto &entry = e.first;
 		last_hash.clear();
@@ -994,7 +997,9 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 			auto &hash = time_hash_last.second.first;
 			auto &db_last_hash = time_hash_last.second.second;
 			if (last_hash != db_last_hash) {
-				SLS_WARN(u8"检测到 history.last 改变，将模拟编辑器更新：" + db_last_hash + " -> " + last_hash);
+				tmp.clear(); tmp << u8"检测到 history.last 改变，将模拟编辑器更新："
+					<< db_last_hash << " -> " << last_hash;
+				SLS_WARN(tmp);
 				stmt_update.bind(1, last_hash);
 				stmt_update.bind(2, hash);
 				stmt_update.exec(); stmt_update.reset();
@@ -1003,7 +1008,8 @@ inline void db_update_history_last(SQLite::Database &db_read, SQLite::Database &
 		}
 		// update entries.last_backup
 		stmt_select2.bind(1, entry);
-		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+		if (!stmt_select2.executeStep())
+			throw internal_err(SLS_WHERE);
 		const Str &db_last_backup = stmt_select2.getColumn(0);
 		stmt_select2.reset();
 		const Str &last_backup = ((--e.second.end())->second).first;
@@ -2365,5 +2371,5 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 	}
 	transaction.commit();
 	check_foreign_key(db_rw);
-	db_update_history_last(db_read, db_rw);
+	db_update_history_last(db_rw);
 }

@@ -330,7 +330,7 @@ int main(int argc, const char *argv[]) {
 			arg_bib(db_rw);
 		else if (args[0] == "--history-all" && args.size() <= 2) {
 			arg_history("../PhysWiki-backup/", db_rw);
-            db_update_history_last(db_read, db_rw);
+			db_update_history_last(db_rw);
 			if (args.size() == 2)
 				history_add_del(db_read, db_rw, true);
 			else
