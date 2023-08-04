@@ -586,7 +586,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
-	//
+
 	// check dependency tree and auto mark redundant pentry with ~
 	vector<DGnode> tree; vector<Node> nodes;
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
@@ -628,6 +628,11 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
 	if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
 		throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
+	if (gv::is_wiki) {
+		Long i_node = max(size(pentry), 1);
+		if (replace(html, "PhysWikiNnode", num2str(i_node)) != 1)
+			throw internal_err(u8"\"PhysWikiNnode\" 在 entry_template.html 中数量不对");
+	}
 
 	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
 
