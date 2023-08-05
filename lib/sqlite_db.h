@@ -414,6 +414,7 @@ inline void db_get_tree(
 }
 
 // calculate author list of an entry, based on "history" table counts in db_read
+// consider authors.aka
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select(db_read, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
@@ -492,9 +493,9 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 {
 	author_ids.clear(); minutes.clear();
 	SQLite::Statement stmt_count(db,
-		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author" ORDER BY record_count DESC;)");
+		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
 	SQLite::Statement stmt_select(db,
-		R"(SELECT "hide" FROM "authors" WHERE "id"=? AND "hide"=1;)");
+		R"(SELECT "hide", "aka" FROM "authors" WHERE "id"=?;)");
 
 	stmt_count.bind(1, entry);
 	while (stmt_count.executeStep()) {
@@ -504,12 +505,27 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 		if (time <= 10) continue;
 		// 检查是否隐藏作者
 		stmt_select.bind(1, int(id));
-		bool hidden = stmt_select.executeStep();
+		stmt_select.executeStep();
+		bool hidden = (int)stmt_select.getColumn(0);
+		Long aka = (int)stmt_select.getColumn(1);
 		stmt_select.reset();
 		if (hidden) continue;
-		author_ids.push_back(id);
-		minutes.push_back(time);
+		if (aka < 0) { // no aka
+			author_ids.push_back(id);
+			minutes.push_back(time);
+		}
+		else { // has aka
+			Long ind = search(aka, author_ids);
+			if (ind < 0) {
+				author_ids.push_back(aka);
+				minutes.push_back(time);
+			}
+			else
+				minutes[ind] += time;
+		}
 	}
+	sort(minutes, author_ids);
+	flip(author_ids); // flip(minutes);
 	stmt_count.reset();
 	Str str;
 	join(str, author_ids);
