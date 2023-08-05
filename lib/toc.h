@@ -189,12 +189,11 @@ inline void table_of_contents(
 		SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "caption", "draft" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "caption", "draft", "type" FROM "entries" WHERE "id"=?;)");
 
 	Long ind0 = 0, ind1 = 0, ikey, chapNo = -1, chapNo_tot = 0, partNo = 0;
-	vecStr keys{ "\\part", "\\chapter", "\\entry", "\\bibli"};
-	
-	Str title, entry, str, str2, html, class_draft;
+	vecStr keys{ "\\part", "\\chapter", "\\entry", "\\bibli"}, type;
+	Str title, entry, str, str2, html, link_class;
 
 	part_ids.clear(); part_names.clear(); part_chap_first.clear(); part_chap_last.clear();
 	chap_ids.clear(); chap_names.clear(); chap_part.clear();
@@ -257,6 +256,7 @@ inline void table_of_contents(
 			}
 			db_title = (const char *)stmt_select.getColumn(0);
 			is_draft.push_back((int)stmt_select.getColumn(1));
+			type.push_back(stmt_select.getColumn(2));
 			stmt_select.reset();
 
 			// TODO: enable this when editor can update db title
@@ -264,9 +264,16 @@ inline void table_of_contents(
 			//    throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中词条标题 “" + db_title + u8"” 不符！");
 
 			// insert entry into html table of contents
-			class_draft = (is_draft.back()) ? "class=\"draft\" " : "";
-			tmp.clear(); tmp << "<a " << class_draft << "href = \"" << gv::url << entry << R"(.html" target = "_blank">)"
-					<< title << u8"</a>　\n";
+			link_class = type.back();
+			if (is_draft.back()) {
+				if (!link_class.empty())
+					link_class += ' ';
+				link_class += "draft";
+			}
+			if (!link_class.empty())
+				link_class = "class=\"" + link_class + "\" ";
+			tmp.clear(); tmp << "<a " << link_class << "href = \"" << gv::url << entry
+				<< R"(.html" target = "_blank">)" << title << u8"</a>　\n";
 			ind0 = insert(html, tmp, ind0);
 
 			entry_part.push_back(partNo);
