@@ -86,11 +86,11 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '类似
 -- 词条占用列表
 CREATE TABLE "occupied" (
 	"entry"	TEXT UNIQUE NOT NULL, -- entries.id
-	"author"	INTEGER UNIQUE NOT NULL, -- authors.id
+	"author"	INTEGER NOT NULL, -- authors.id
 	"time" TEXT NOT NULL, -- 开始占用的时间
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("author") REFERENCES "author"("id")
+	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
 -- 部分
