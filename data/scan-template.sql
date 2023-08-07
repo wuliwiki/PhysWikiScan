@@ -87,6 +87,7 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '类似
 CREATE TABLE "occupied" (
 	"entry"	TEXT UNIQUE NOT NULL, -- entries.id
 	"author"	INTEGER UNIQUE NOT NULL, -- authors.id
+	"time" TEXT NOT NULL, -- 开始占用的时间
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "author"("id")

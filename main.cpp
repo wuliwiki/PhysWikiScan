@@ -343,6 +343,9 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			history_normalize(db_read, db_rw);
 		}
+		else if (args[0] == "--backup" && args.size() == 2) {
+			arg_backup(args[1], db_rw);
+		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			author_char_stat(args[1], args[2], args[3], db_read);
 		}

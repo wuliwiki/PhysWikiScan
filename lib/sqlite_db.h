@@ -2389,3 +2389,21 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 	check_foreign_key(db_rw);
 	db_update_history_last(db_rw);
 }
+
+// backup an entry to PhysWiki-backup
+inline void arg_backup(Str_I entry, SQLite::Database &db_rw)
+{
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "author", "time" FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+			R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )";
+			R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
+	SQLite::Transaction transaction(db_rw);
+	stmt_select.bind(1, entry);
+	if (!stmt_select.executeStep())
+		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
+	stmt_select.getColumn(0);
+	Str time_str;
+	time_t2yyyymmddhhmm(time_str, std::time(nullptr));
+	transaction.commit();
+}
