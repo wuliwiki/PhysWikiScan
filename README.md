@@ -20,6 +20,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 * `PhysWikiScan --entry 词条1 词条2 ...`：转换 `contents` 中指定的词条 `词条1.tex 词条2.tex ...`。
 * `PhysWikiScan --autoref 词条 eq 8` 查找 `contents/词条.tex` 词条的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_词条_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
 * `PhysWikiScan --autoref-dry 词条 eq 8` 和上一条一模一样， 除了不会真的给词条文件添加 label。
+* `PhysWikiScan --backup 词条 作者id` 把 `contents/词条.tex` 备份到 `../PhysWiki-backup/YYYYMMDDHHMM_作者id_词条.tex`， 若 hash 已经在数据库中则不备份并输出 `exist 已存在的文件名 history.id`。 同一词条同一作者，若距离上次备份超过 30 分钟，则使用当前时间， 否则增加到上次备份时间加五分钟的整数倍，若已经存在，则覆盖。 如果新增了文件和记录，就会在 stdout 输出 `added 文件名 history.id`； 若替换了文件和记录，就会输出 `replaced 文件名 history.id`。
 * `PhysWikiScan --bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `PhysWikiScan --delete 词条1 词条2 ...` 相当于先把词条除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否词条本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除词条文件。
 * `PhysWikiScan --delete-hard 词条1 词条2 ...` 如果词条没有标记删除就先使用 `--delete 词条`， 然后删除指定词条所有数据和相关文件和备份（在多个词条之间共享的除外）。

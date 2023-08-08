@@ -2106,19 +2106,19 @@ inline void migrate_user_db() {
 
 // `git diff --no-index --word-diff-regex=. file1.tex file2.tex`
 // then search for each `{+..+}` and `{-..-}`
-inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
+inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new)
 {
 	Str tmp;
 	std::regex rm_s(u8"\\s");
 	add = del = 0;
 
 	// remove all space, tab, return etc
-	str1 = std::regex_replace(str1, rm_s, "");
-	str2 = std::regex_replace(str2, rm_s, "");
-	SLS_ASSERT(utf8::is_valid(str1));
-	SLS_ASSERT(utf8::is_valid(str2));
+	str_old = std::regex_replace(str_old, rm_s, "");
+	str_new = std::regex_replace(str_new, rm_s, "");
+	SLS_ASSERT(utf8::is_valid(str_old));
+	SLS_ASSERT(utf8::is_valid(str_new));
 
-	if (str1 == str2) {
+	if (str_old == str_new) {
 		add = del = 0; return;
 	}
 	Str str;
@@ -2135,13 +2135,13 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	static const Str file1 = "file_add_del_tmp_file1.txt",
 		file2 = "file_add_del_tmp_file2.txt",
 		file_diff = "file_add_del_git_diff_output.txt";
-	replace(str1, "{+", u8"{➕"); replace(str1, "+}", u8"➕}");
-	replace(str1, "[-", u8"[➖"); replace(str1, "-]", u8"➖]");
-	write(str1, file1);
+	replace(str_old, "{+", u8"{➕"); replace(str_old, "+}", u8"➕}");
+	replace(str_old, "[-", u8"[➖"); replace(str_old, "-]", u8"➖]");
+	write(str_old, file1);
 
-	replace(str2, "{+", u8"{➕"); replace(str2, "+}", u8"➕}");
-	replace(str2, "[-", u8"[➖"); replace(str2, "-]", u8"➖]");
-	write(str2, file2);
+	replace(str_new, "{+", u8"{➕"); replace(str_new, "+}", u8"➕}");
+	replace(str_new, "[-", u8"[➖"); replace(str_new, "-]", u8"➖]");
+	write(str_new, file2);
 
 	tmp.clear(); tmp << "git diff --no-index --word-diff-regex=. "
 		<< '"' << file1 << "\" \"" << file2 << '"';
@@ -2188,7 +2188,7 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 	}
 
 	// check
-	Long Nchar1 = u8count(str1), Nchar2 = u8count(str2);
+	Long Nchar1 = u8count(str_old), Nchar2 = u8count(str_new);
 	Long net_add = Nchar2 - Nchar1;
 	if (net_add != add - del) {
 		Str tmp;
@@ -2204,8 +2204,8 @@ inline void file_add_del(Long_O add, Long_O del, Str str1, Str str2)
 #endif
 }
 
-// calculate "history.add" and "history.del", with output of
-inline void history_add_del(SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I redo_all = false) {
+// calculate all "history.add" and "history.del"
+inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
 	SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
@@ -2245,7 +2245,7 @@ inline void history_add_del(SQLite::Database &db_read, SQLite::Database &db_rw, 
 				cout << fname << endl;
 				read(str_old, fname_old);
 				// compare str and str_old
-				file_add_del(add, del, str_old, str);
+				str_add_del(add, del, str_old, str);
 			}
 		}
 		stmt_select2.reset();
@@ -2391,19 +2391,117 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 }
 
 // backup an entry to PhysWiki-backup
-inline void arg_backup(Str_I entry, SQLite::Database &db_rw)
+inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "author", "time" FROM "history" WHERE "hash"=?;)");
-	SQLite::Statement stmt_insert(db_rw,
-			R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )";
-			R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
+	Str str, tmp;
 	SQLite::Transaction transaction(db_rw);
+
+	// get hash, check existence
+	tmp << gv::path_in << "contents/" << entry << ".tex";
+	read(str, tmp);
+	CRLF_to_LF(str);
+	Str hash = sha1sum(str);
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
+	stmt_select2.bind(1, hash);
+	if (stmt_select2.executeStep()) {
+		const char *time_str = stmt_select2.getColumn(0);
+		int author_id_last = stmt_select2.getColumn(1);
+		cout << "exist " << time_str << '_' << author_id << '_' << entry << ".tex "
+			<< hash;
+		stmt_select2.reset();
+		return;
+	}
+	stmt_select2.reset();
+
+	// get last backup from `entries.hash_last`
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "hash_last" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
-	stmt_select.getColumn(0);
-	Str time_str;
-	time_t2yyyymmddhhmm(time_str, std::time(nullptr));
+	const char *hash_last = stmt_select.getColumn(0);
+	stmt_select2.bind(1, hash_last);
+	if (!stmt_select2.executeStep()) {
+		tmp.clear();
+		tmp << u8"entries.hash_last 未找到： " << entry << '.' << hash_last;
+		throw internal_err(tmp);
+	}
+	const char *time_str_last = stmt_select2.getColumn(0);
+	int author_id_last = stmt_select2.getColumn(1);
+	const char *hash_last_last = stmt_select2.getColumn(2);
+	stmt_select2.reset();
+	std::time_t time_last = str2time_t(time_str_last);
+
+	// calculate time in current backup file name
+	bool replace = false; // replace the last backup
+	std::time_t time = std::time(nullptr);
+	std::time_t time_backup = time;
+	if (author_id == author_id_last) {
+		if (time > time_last && time < time_last + 30*60) {
+			if ((time-time_last) % 300 != 0)
+				time_backup = time_last + ((time-time_last)/300+1)*300;
+		}
+		else if (time <= time_last)
+			replace = true;
+	}
+	else { // author_id != author_id_last
+		if (time < time_last)
+			time_backup = time_last + 1;
+	}
+	Str time_backup_str;
+	time_t2yyyymmddhhmm(time_backup_str, time_backup);
+
+	// calculate char add/del
+	Str str2;
+	tmp.clear();
+	if (replace) {
+		// SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
+		//	stmt_select2.bind(1, hash);
+		stmt_select2.bind(1, hash_last_last);
+		if (!stmt_select2.executeStep())
+			throw internal_err(SLS_WHERE);
+		const char *time_last_last = stmt_select2.getColumn(0);
+		int author_id_last_last = stmt_select2.getColumn(1);
+		stmt_select2.reset();
+		tmp << "../PhysWiki-backup/"
+			<< time_last_last << '_' << author_id_last_last << '_' << entry << ".tex";
+	}
+	else {
+		tmp << gv::path_in << "../PhysWiki-backup/"
+			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
+	}
+	read(str2, tmp);
+	str_add_del(char_add, char_del, str2, str);
+
+	// write or replace file
+	tmp.clear(); tmp << gv::path_in << "../PhysWiki-backup/"
+		<< time_backup << '_' << author_id << '_' << entry << ".tex";
+	write(str, tmp);
+
+	// insert db
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )"
+		R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
+	stmt_insert.bind(1, hash);
+	stmt_insert.bind(2, time_backup_str);
+	stmt_insert.bind(3, author_id);
+	stmt_insert.bind(4, entry);
+	stmt_insert.bind(5, char_add);
+	stmt_insert.bind(6, char_del);
+	if (!replace)
+		stmt_insert.bind(7, hash_last);
+	else
+		stmt_insert.bind(7, hash_last_last);
+	stmt_insert.exec(); stmt_insert.reset();
+
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last"=? WHERE "id"=?;)");
+	stmt_update2.bind(1, hash);
+	stmt_update2.bind(2, entry);
+	stmt_update2.exec(); stmt_update2.reset();
+
+	if (replace) {
+		SQLite::Statement stmt_insert(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+		stmt_insert.bind(1, hash_last);
+		stmt_insert.exec(); stmt_insert.reset();
+	}
 	transaction.commit();
 }

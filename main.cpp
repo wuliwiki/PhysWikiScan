@@ -332,9 +332,9 @@ int main(int argc, const char *argv[]) {
 			arg_history("../PhysWiki-backup/", db_rw);
 			db_update_history_last(db_rw);
 			if (args.size() == 2)
-				history_add_del(db_read, db_rw, true);
+				history_add_del_all(db_read, db_rw, true);
 			else
-				history_add_del(db_read, db_rw, false);
+				history_add_del_all(db_read, db_rw, false);
 		}
 		else if (args[0] == "--history" && args.size() == 2) {
 			Str path = "../PhysWiki-backup/";
@@ -343,8 +343,8 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			history_normalize(db_read, db_rw);
 		}
-		else if (args[0] == "--backup" && args.size() == 2) {
-			arg_backup(args[1], db_rw);
+		else if (args[0] == "--backup" && args.size() == 3) {
+			arg_backup(args[1], str2Int(args[2]), db_rw);
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			author_char_stat(args[1], args[2], args[3], db_read);
