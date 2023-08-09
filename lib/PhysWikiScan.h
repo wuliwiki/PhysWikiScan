@@ -876,8 +876,8 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 // if failed, db will not change
 inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
-	vecStr ref_by, tmp;
-	Str stmp, err_msg;
+	vecStr ref_by, vtmp;
+	Str stmp, err_msg, tmp;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
 
@@ -887,10 +887,21 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
 		bool db_deleted = (int)stmt_select.getColumn(1);
+		tmp.clear(); tmp << gv::path_in << "contents/" << entry << ".tex";
 		if (db_deleted) {
-			if (no_throw)
-				continue;
-			throw internal_err(u8"arg_delete(): 词条已经被标记删除：" + entry);
+			if (file_exist(tmp))
+				db_deleted = false;
+			else {
+				if (no_throw)
+					continue;
+				throw internal_err(u8"arg_delete(): 要删除的词条已经被标记删除：" + entry);
+			}
+		}
+		else { // !db_deleted
+			if (!file_exist(tmp)) {
+				SLS_WARN(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
+				write("% dummy\n\n", tmp);
+			}
 		}
 		const Str &ref_by_str = stmt_select.getColumn(0);
 		stmt_select.reset();
@@ -899,8 +910,8 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 			err_msg = u8"无法删除词条，因为被其他词条引用：" + ref_by_str;
 
 		// make sure no one is referencing anything else
-		tmp.push_back(entry);
-		try { PhysWikiOnlineN(tmp, true, db_read, db_rw); }
+		vtmp.push_back(entry);
+		try { PhysWikiOnlineN(vtmp, true, db_read, db_rw); }
 		catch (std::exception &e) {
 			err_msg << "\n\n" << e.what();
 		}
