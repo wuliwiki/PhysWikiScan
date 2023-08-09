@@ -2470,6 +2470,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
 	}
 	read(str2, tmp);
+	Long char_add, char_del;
 	str_add_del(char_add, char_del, str2, str);
 
 	// write or replace file
@@ -2485,8 +2486,8 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	stmt_insert.bind(2, time_backup_str);
 	stmt_insert.bind(3, author_id);
 	stmt_insert.bind(4, entry);
-	stmt_insert.bind(5, char_add);
-	stmt_insert.bind(6, char_del);
+	stmt_insert.bind(5, (int)char_add);
+	stmt_insert.bind(6, (int)char_del);
 	if (!replace)
 		stmt_insert.bind(7, hash_last);
 	else

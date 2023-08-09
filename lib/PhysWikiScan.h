@@ -880,7 +880,6 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 	Str stmp, err_msg;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
-	SQLite::Transaction transaction(db_rw);
 
 	for (auto &entry : entries) {
 		// check entries.ref_by
@@ -920,8 +919,6 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 		file_remove(stmp);
 		cout << "successfully (shallow) deleted " << stmp;
 	}
-
-	transaction.commit();
 }
 
 // delete all related db data and files of a figure
@@ -1028,10 +1025,10 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 			continue;
 		}
 		bool deleted = (int)stmt_select.getColumn(1);
-		if (!deleted) // do normal delete first
-			arg_delete({entry}, db_read, db_rw, true);
 		parse(figures, stmt_select.getColumn(0));
 		stmt_select.reset();
+		if (!deleted) // do normal delete first
+			arg_delete({entry}, db_read, db_rw, true);
 		arg_delete_figs(figures, db_read, db_rw);
 
 		// delete all history records and files
