@@ -133,7 +133,6 @@ CREATE TABLE "figures" (
 	"image"	TEXT NOT NULL DEFAULT '', -- latex 代码中图片文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF）
 	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 其他格式的图片的 SHA1 前 16 位（pdf 必须有对应的 svg）
 	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 图片历史版本的 SHA1 前 16 位（所有格式）
-	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
 	"aka"	TEXT NOT NULL DEFAULT '', -- 若不为空，"figures.id" 由另一条记录（被标记 deleted 也没关系）管理： "authors", "image_alt", "image_old", "files", "source"。 "image" 必须在 "image/image_alt/image_old" 中。
@@ -155,6 +154,7 @@ CREATE TABLE "images" (
 	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
 	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议
 	"time"	TEXT NOT NULL DEFAULT '', -- 上传时间
+	"files"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2" 附件（创作该图片的项目文件、源码等）（对应 file_lib 表）
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("figure") REFERENCES "figures"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
@@ -164,10 +164,9 @@ CREATE TABLE "images" (
 -- 文件（百科附件）
 CREATE TABLE "files" (
 	"id"	TEXT UNIQUE NOT NULL, -- 命名规则和词条一样
-	"name"	TEXT UNIQUE NOT NULL, -- 文件名（含拓展名）
 	"description"	TEXT UNIQUE NOT NULL, -- 描述
-	"hash"	TEXT UNIQUE NOT NULL, -- 当前版本文件的 MD5
-	"hash_old"	TEXT NOT NULL DEFAULT '', -- 历史版本
+	"hash"	TEXT UNIQUE NOT NULL, -- 当前版本文件的 file_lib.hash
+	"hash_old"	TEXT NOT NULL DEFAULT '', -- 历史版本（从新到老排序）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	PRIMARY KEY("id"),
 	FOREIGN KEY("hash") REFERENCES "file_lib"("hash")
@@ -175,7 +174,9 @@ CREATE TABLE "files" (
 
 -- 文件（被 "files" 和 "figures.files" 使用）
 CREATE TABLE "file_lib" (
-	"hash"	TEXT UNIQUE NOT NULL, -- MD5
+	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位
+	"name"	TEXT UNIQUE NOT NULL, -- 文件名（含拓展名）
+	"description"	TEXT UNIQUE NOT NULL, -- 备注（类似 commit 信息）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"used_by_figures"	TEXT NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"	INTEGER NOT NULL, -- 当前版本修改者
