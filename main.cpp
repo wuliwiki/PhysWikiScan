@@ -313,7 +313,7 @@ int main(int argc, const char *argv[]) {
 					break;
 				figures.push_back(arg);
 			}
-			arg_delete_figs(figures, db_read, db_rw);
+			arg_delete_figs_hard(figures, db_read, db_rw);
 		}
 		else if (args[0] == "--delete-image" && args.size() > 1) {
 			vecStr images;

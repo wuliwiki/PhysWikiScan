@@ -934,7 +934,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 
 // delete all related db data and files of a figure
 // must be marked figures.deleted and not referenced by figures.aka
-inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	Str tmp;
 	vecStr image_hash, images, images_alt, images_old;
@@ -961,7 +961,7 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 		const char* entry = stmt_select.getColumn(2);
 
 		// check figures.deleted
-		bool deleted = (int)stmt_select.getColumn(3);
+		bool deleted = (int) stmt_select.getColumn(3);
 		if (!deleted)
 			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
 
@@ -1020,13 +1020,17 @@ inline void arg_delete_figs(vecStr_I figures, SQLite::Database &db_read, SQLite:
 // except stuff shared between multiple entries
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	vecStr history_hash, figures;
+	vecStr history_hash, figures, figs_dangling;
 	Str tmp;
 	SQLite::Statement stmt_select(db_read, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select3(db_read, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select4(db_read, R"(SELECT "id" FROM "figures" WHERE "aka"=?;)");
+	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"='1' WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		cout << "--- deleting everything about entry: " << entry << " ---" << endl;
@@ -1042,7 +1046,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		stmt_select.reset();
 		if (!deleted) // do normal delete first
 			arg_delete({entry}, db_read, db_rw, true);
-		arg_delete_figs(figures, db_read, db_rw);
+		arg_delete_figs_hard(figures, db_read, db_rw);
 
 		// delete all history records and files
 		db_get_history(history_hash, entry, db_read);
@@ -1066,8 +1070,26 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		}
 
 		// delete from entries
-		stmt_delete0.bind(1, entry);
-		stmt_delete0.exec(); stmt_delete0.reset();
+		try {
+			stmt_delete0.bind(1, entry);
+			stmt_delete0.exec();
+			stmt_delete0.reset();
+		}
+		catch (const std::exception &e) {
+			if (find(e.what(), "FOREIGN KEY") >= 0) {
+				SLS_WARN("db foreign key err, trying to resolve...");
+				// delete from figures using `figures.entry`
+				stmt_select3.bind(1, entry);
+				while (stmt_select3.executeStep())
+					figs_dangling.push_back(stmt_select3.getColumn(0));
+				stmt_select3.reset();
+				for (auto &fig_id : figs_dangling) {
+					stmt_update2.bind(1, fig_id);
+					stmt_update2.exec(); stmt_update2.reset();
+					arg_delete_figs_hard({Str(fig_id)}, db_read, db_rw);
+				}
+			}
+		}
 	}
 }
 
