@@ -1338,10 +1338,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 }
 
 // delete from "images" table, and the image file
-// if used by "figures" table, the figure must be marked deleted
+// figures in "images.figures", must have `figures.deleted==1`
+// TODO: if `fig_id` not empty, and images.figures+figures_old have multiple items in total,
+//     image will not be deleted, but `fig_id` will be removed from `images.figures(_old)`
 inline void db_delete_images(
 	vecStr_I images, // hashes, no extension
-	SQLite::Database &db_read, SQLite::Database &db_rw)
+	SQLite::Database &db_read, SQLite::Database &db_rw, Str_I fig_id = "")
 {
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");

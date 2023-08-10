@@ -32,7 +32,7 @@ CREATE TABLE "entries" (
 	"last_pub"	TEXT NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"	TEXT NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 
-	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），由 figures.entry 生成
+	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），以 figures.entry 为准
 	"labels"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片和代码）
 
 	"refs"	TEXT NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
@@ -76,12 +76,6 @@ CREATE TABLE "types" (
 );
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Wiki', '综述', '类似于维基百科的条目，中立、全面、一般性的介绍。');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Tutor', '教程', '类似于教材的一节。');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Art', '文章', '类似于学术论文。');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Map', '导航', '介绍百科中的一章、一部分等，具有大量链接到其中的词条。');
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('Note', '笔记', '类似于讲义、复习资料，把个知识的要点列出。');
-
 
 -- 词条占用列表
 CREATE TABLE "occupied" (
@@ -131,18 +125,19 @@ INSERT INTO "chapters" VALUES('', 0, '无', '', '', ''); -- 防止 FOREIGN KEY �
 CREATE TABLE "figures" (
 	"id"	TEXT UNIQUE NOT NULL,
 	"caption"	TEXT NOT NULL DEFAULT '', -- 标题 \caption{xxx}
+	"width"	TEXT NOT NULL DEFAULT '6', -- 图片环境宽度（单位 cm）
 	"authors"	TEXT NOT NULL DEFAULT '', -- 【生成】作者，格式和 entries.authors 相同（以 images.author 为准）
 	"entry"	TEXT NOT NULL DEFAULT '', -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter" TEXT NOT NULL DEFAULT '', -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 	"order"	INTEGER NOT NULL DEFAULT 0, -- 显示编号（从 1 开始， 0 代表未知）
-	"image"	TEXT NOT NULL DEFAULT '', -- 图片 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF）
+	"image"	TEXT NOT NULL DEFAULT '', -- latex 代码中图片文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF）
 	"image_alt"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 其他格式的图片的 SHA1 前 16 位（pdf 必须有对应的 svg）
-	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 图片历史版本的 SHA1 前 16 位
+	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 图片历史版本的 SHA1 前 16 位（所有格式）
 	"files"	TEXT NOT NULL DEFAULT '', -- "id1 id2" 附件（创作该图片的项目文件、源码等）（对应 files 表， 其中有历史版本信息）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 由另一条记录管理： "authors", "image_alt", "image_old", "files", "source"。一张图片（包括历史版本）被多个 figure 环境使用时， 这些数据只能由其中一个管理
-	"deleted"	INTEGER NOT NULL DEFAULT 0, -- 【生成】[0] 被使用 [1] 未被使用（以 entries.figures 为准）
+	"aka"	TEXT NOT NULL DEFAULT '', -- 若不为空，"figures.id" 由另一条记录（被标记 deleted 也没关系）管理： "authors", "image_alt", "image_old", "files", "source"。 "image" 必须在 "image/image_alt/image_old" 中。
+	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("image") REFERENCES "images"("hash"),
@@ -155,12 +150,13 @@ INSERT INTO "figures" ("id", "caption") VALUES ('', '无'); -- 防止 FOREIGN KE
 CREATE TABLE "images" (
 	"hash"	TEXT UNIQUE NOT NULL, -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
 	"ext"	TEXT NOT NULL, -- [pdf|svg|png|jpg|gif] 拓展名
-	"figures"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2" 被哪些图片环境使用（包括 image, image_alt）
-	"figures_old"	TEXT NOT NULL DEFAULT '', -- "figures.id" 被哪个图片环境作为 image_old
+	"figure"	TEXT NOT NULL DEFAULT '', -- 【生成】本图片文件归哪个图片环境管理，该环境的 figures.aka 为空。 本图的 hash 可能出现在该环境的 figures.image/image_alt/image_old 中的一个。
+	"figures_aka"	TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2" 被 figures 中哪些环境作为 image 或 image_alt， 且它们的 figures.aka 都是本图的 "figure"
 	"author"	INTEGER NOT NULL DEFAULT '', -- 当前版本修改者
 	"license"	TEXT NOT NULL DEFAULT '', -- 当前版本协议
 	"time"	TEXT NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
+	FOREIGN KEY("figure") REFERENCES "figures"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
