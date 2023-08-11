@@ -1,18 +1,22 @@
 # get number of "history" records for an author in a time range from database
 # ignore CC license and `Use` license
 
-author=零
-time1=202303150000
-time2=202306302359
+author=Acertain
+time1=202307010000
+time2=202307312359
 
 ##############################
-sqlite3 data/scan.db "\
-SELECT COUNT(1) FROM history WHERE \
-author IN ( \
+sqlite3 data/scan.db " \
+SELECT COUNT(1) FROM history \
+JOIN entries ON history.entry = entries.id \
+WHERE \
+history.author IN ( \
     SELECT id \
     FROM authors \
     WHERE name LIKE '%${author}%' \
 ) AND \
-time >= ${time1} AND \
-time <= ${time2}  \
+history.time >= '${time1}' AND \
+history.time <= '${time2}' AND \
+entries.license = 'Xiao' \
 "
+
