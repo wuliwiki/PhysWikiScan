@@ -1098,15 +1098,16 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 
 // db table "images"
 inline void db_update_images(Str_I entry, vecStr_I fig_ids,
-	const vector<unordered_map<Str,Str>> & fig_ext_hash, SQLite::Database &db_rw)
+	const vector<unordered_map<Str,Str>> &fig_ext_hash, // fig_ext_hash[i][ext] -> hash, for fig_ids[i]
+	SQLite::Database &db_rw)
 {
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "ext", "figures" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "ext", "figure", "figures_aka" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "images" ("hash", "ext", "figures") VALUES (?,?,?);)");
+		R"(INSERT INTO "images" ("hash", "ext", "figure", "figures_aka") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "images" SET "figures"=? WHERE "hash"=?;)");
+		R"(UPDATE "images" SET "figure"=?, "figures_aka"=? WHERE "hash"=?;)");
 	Str db_image_ext, tmp;
 	set<Str> db_image_figures;
 
@@ -1338,66 +1339,103 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 }
 
 // delete from "images" table, and the image file
-// figures in "images.figures", must have `figures.deleted==1`
-// TODO: if `fig_id` not empty, and images.figures+figures_old have multiple items in total,
-//     image will not be deleted, but `fig_id` will be removed from `images.figures(_old)`
+// if "images.figure/figures_aka" use this image as "image" or "image_alt", then it must have `figures.deleted==1`
+//                                            if as "image_old" then `figures.deleted==1` is not necessary.
 inline void db_delete_images(
 	vecStr_I images, // hashes, no extension
 	SQLite::Database &db_read, SQLite::Database &db_rw, Str_I fig_id = "")
 {
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "figures", "ext" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "figure", "figures_aka", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-		R"(SELECT "image", "deleted", "image_alt" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "image", "image_alt", "image_old", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "image_alt"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "image_old"=? WHERE "id"=?;)");
 	Str tmp;
-	vecStr figures;
+	set<Str> figures, figures_image_alt, figures_image_old; // images.figure + images.figures_aka
 
 	for (auto &image : images) {
-		cout << "deleting image: " << image << endl;
+		cout << "deleting image with hash: " << image << endl;
 		stmt_select.bind(1, image);
 		if (!stmt_select.executeStep()) {
 			SLS_WARN(u8"要删除的图片文件 hash 不存在（将忽略）：" + image + SLS_WHERE);
 			continue;
 		}
-		parse(figures, stmt_select.getColumn(0));
+		const char *figure = stmt_select.getColumn(0);
+		parse(figures, stmt_select.getColumn(1));
+		figures.push_back(figure);
 		const char *ext = stmt_select.getColumn(1);
-		if (size(figures) > 1)
-			throw internal_err(u8"暂不支持删除 images 表格中具有多个 images.figures 的行：" + image + SLS_WHERE);
 		stmt_select.reset();
 		if (figures.empty()) {
-			SLS_WARN(u8"要删除的 image 的 images.figures 为空（将继续删除）：" + image + SLS_WHERE);
+			SLS_WARN(u8"要删除的 image 不属于任何环境， 即 images.figure 和 .figures_aka 都为空（将继续删除）：" + image + SLS_WHERE);
 			stmt_delete.bind(1, image);
 			stmt_delete.exec(); stmt_delete.reset();
 			tmp.clear(); tmp << gv::path_in << "figures/" << image << ext;
 			file_remove(tmp);
 			cout << "正在删除：" << image << ext << endl;
 		}
-		stmt_select2.bind(1, figures[0]);
-		if (!stmt_select2.executeStep()) {
-			tmp.clear();
-			tmp << u8"引用 image " << image << u8" 的图片环境不存在：" << figures[0] << SLS_WHERE;
-			throw internal_err(tmp);
+
+		// check figures.deleted
+		for (auto &fig : figures) {
+			bool has_aka = (fig == figure);
+			stmt_select2.bind(1, fig);
+			if (!stmt_select2.executeStep()) {
+				tmp.clear();
+				if has_aka
+					tmp << u8"images.figure 中";
+				else
+					tmp << u8"images.figures_aka 中";
+				tmp << u8"引用 image " << image << u8" 的图片环境 " << fig << u8" 不存在（将忽略）"
+					<< SLS_WHERE;
+				SLS_WARN(tmp);
+				figures.erase(fig);
+				continue;
+			}
+			const char *fig_image = stmt_select2.getColumn(0);
+			parse(figures_image_alt, stmt_select2.getColumn(1));
+			parse(figures_image_old, stmt_select2.getColumn(2));
+			bool deleted = (int)stmt_select2.getColumn(3);
+			if (!deleted) {
+				bool in_figures_image = (fig == fig_image);
+				bool in_figures_image_alt = figures_image_alt.count(fig);
+				if (in_figures_image || in_figures_image_alt)
+					throw scan_err(u8"无法删除被未删除的 figure 环境使用的 image：" + image);
+			}
 		}
 
-		const char *fig_image = stmt_select2.getColumn(0);
-		const char *fig_image_alt = stmt_select2.getColumn(2);
-		bool deleted = (int)stmt_select2.getColumn(1);
-		if (fig_image != image && fig_image_alt != image) {
-			tmp.clear();
-			tmp << u8"数据库中 image.figures 和 figures.image* 不符：image="
-				<< image << " figures.image=" << fig_image << "  figures.image_alt=" << fig_image_alt
-				<< "  figure=" << figures[0];
-			throw internal_err(tmp);
-		}
-		if (!deleted)
-			throw scan_err(u8"无法删除被未删除的 figure 环境使用的 image：" + image);
-		stmt_select2.reset();
+		// now delete db
+		for (auto &fig : figures) {
+			bool has_aka = (fig == figure);
+			stmt_select2.bind(1, fig);
+			const char *fig_image = stmt_select2.getColumn(0);
+			parse(figures_image_alt, stmt_select2.getColumn(1));
+			parse(figures_image_old, stmt_select2.getColumn(2));
+			bool deleted = (int)stmt_select2.getColumn(3);
 
-		// set figures.image = ''
-		stmt_update.bind(1, figures[0]);
-		stmt_update.exec(); stmt_update.reset();
+			bool in_figures_image = (fig == fig_image);
+			bool in_figures_image_alt = figures_image_alt.count(fig);
+			bool in_figures_image_old = figures_image_old.count(fig);
+
+			if (in_figures_image) {
+				// set figures.image = ''
+				stmt_update.bind(1, fig);
+				stmt_update.exec(); stmt_update.reset();
+			}
+			if (in_figures_image_alt) {
+				join(tmp, figures_image_alt);
+				stmt_update2.bind(1, tmp);
+				stmt_update2.bind(2, fig);
+				stmt_update2.exec(); stmt_update2.reset();
+			}
+			if (in_figures_image_old) {
+				join(tmp, figures_image_old);
+				stmt_update3.bind(1, tmp);
+				stmt_update3.bind(2, fig);
+				stmt_update3.exec(); stmt_update3.reset();
+			}
+		}
 
 		// delete from images
 		stmt_delete.bind(1, image);

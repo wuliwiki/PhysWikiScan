@@ -135,7 +135,7 @@ CREATE TABLE "figures" (
 	"image_old"	TEXT NOT NULL DEFAULT '', -- "hash1 hash2 ..." 图片历史版本的 SHA1 前 16 位（所有格式）
 	"source"	TEXT NOT NULL DEFAULT '', -- 来源（如果非原创）
 	"ref_by"	TEXT NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"	TEXT NOT NULL DEFAULT '', -- 若不为空，"figures.id" 由另一条记录（被标记 deleted 也没关系）管理： "authors", "image_alt", "image_old", "files", "source"。 "image" 必须在 "image/image_alt/image_old" 中。
+	"aka"	TEXT NOT NULL DEFAULT '', -- "figures.id" 若不为空，由另一条记录（被标记 deleted 也没关系）管理： "authors", "image_alt", "image_old", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在 "image/image_alt/image_old" 之一中。
 	"deleted"	INTEGER NOT NULL DEFAULT 0, -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
