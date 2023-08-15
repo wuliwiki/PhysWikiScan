@@ -1152,18 +1152,18 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 	SQLite::Statement stmt_select0(db_rw,
 		R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by", "image", "image_alt", "deleted", "aka" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by", "image", "deleted", "aka" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
+		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "image_alt"=?, "deleted"=0 WHERE "id"=?;)");
+		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "aka"=?, "deleted"=0 WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
 		R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
 	// get all figure envs defined in `entries`, to detect deleted figures
 	// db_xxx[i] are from the same row of "labels" table
-	vecStr db_figs, db_fig_entries, db_fig_image, db_fig_image_alt;
-	map<Str, Str> db_fig_aka; // figures.id -> figures.aka
+	vecStr db_figs, db_fig_entries, db_fig_image;
+	unordered_map<Str, Str> db_fig_aka; // figures.id -> figures.aka
 	vecBool db_figs_used, figs_used;
 	vecLong db_fig_orders;
 	vector<vecStr> db_fig_ref_bys;
@@ -1185,20 +1185,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 			db_fig_ref_bys.emplace_back();
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
-			db_fig_image_alt.push_back(stmt_select1.getColumn(3));
-			db_fig_aka[fig_id] = stmt_select1.getColumn(5).getString();
-			if (!db_fig_image_alt.back().empty() && size(db_fig_image_alt.back()) != 16) {
-				if (db_fig_image_alt.back().substr(16) != ".svg")
-					throw internal_err(u8"figures.image_alt 格式不对："+db_fig_image_alt.back());
-				SLS_WARN(u8"发现 figures.image_alt 可能仍然带有拓展名，将模拟编辑器删除："+db_fig_image_alt.back());
-				db_fig_image_alt.back().resize(16);
-			}
-			db_figs_used.push_back(!(bool)stmt_select1.getColumn(4).getInt());
+			db_fig_aka[fig_id] = stmt_select1.getColumn(4).getString();
+			db_figs_used.push_back(!(bool)stmt_select1.getColumn(3).getInt());
 			stmt_select1.reset();
 		}
 	}
 	figs_used.resize(db_figs_used.size(), false);
-	Str figs_str, image, image_alt;
+	Str figs_str, image;
 	set<Str> new_figs, figs;
 
 	for (Long i = 0; i < size(entries); ++i) {
@@ -1212,16 +1205,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				if (!map.count("png"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
 				image = map.at("png");
-				image_alt = "";
 			}
 			else if (map.size() == 2) { // svg + pdf
 				if (!map.count("svg") || !map.count("pdf"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
 				image = map.at("pdf");
-				if (db_fig_aka[id].empty())
-					image_alt = map.at("svg");
-				else
-					image_alt = ""; // let master fig env manage image_alt
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp.clear(); tmp << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
@@ -1231,7 +1219,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				stmt_insert.bind(2, entry);
 				stmt_insert.bind(3, (int)order);
 				stmt_insert.bind(4, image);
-				stmt_insert.bind(5, image_alt);
 				stmt_insert.exec(); stmt_insert.reset();
 				new_figs.insert(id);
 				continue;
@@ -1268,17 +1255,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				SLS_WARN(tmp);
 				changed = true;
 			}
-			if (image_alt != db_fig_image_alt[ind]) {
-				tmp.clear(); tmp << u8"发现数据库中图片 image_alt 改变（将更新）：" << id << ": "
-					  << db_fig_image_alt[ind] << " -> " << image_alt;
-				SLS_WARN(tmp);
-				changed = true;
-			}
 			if (changed) {
 				stmt_update.bind(1, entry);
 				stmt_update.bind(2, int(order)); // -order to avoid UNIQUE constraint
 				stmt_update.bind(3, image);
-				stmt_update.bind(4, image_alt);
+				stmt_update.bind(4, update_aka_here_if_image_hash_changes);
 				stmt_update.bind(5, id);
 				stmt_update.exec(); stmt_update.reset();
 			}
