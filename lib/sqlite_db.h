@@ -3,6 +3,7 @@
 #include "../SLISC/str/str.h"
 #include "../SLISC/file/file.h"
 #include "../SLISC/util/time.h"
+#include "../SLISC/util/sha1sum.h"
 
 // add or delete elements from a set
 template <class T>

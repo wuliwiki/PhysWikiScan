@@ -1,4 +1,5 @@
 #pragma once
+#include "../SLISC/file/file.h"
 
 // a single \upref{} or \upreff{} inside a \pentry{}
 struct PentryRef {

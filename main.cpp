@@ -194,27 +194,6 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
 	}
 }
 
-// write log
-void scan_log(Str_I str, bool print_time = false)
-{
-	// write to file
-	const char *log_file = "scan_log.txt";
-	ofstream file(log_file, std::ios::app);
-	if (!file.is_open())
-		throw internal_err(Str("Unable to open ") + log_file);
-	// get time
-	if (print_time) {
-		time_t time = std::time(nullptr);
-		std::tm *ptm = localtime(&time);
-		stringstream ss;
-		ss << std::put_time(ptm, "%Y-%m-%d %H:%M:%S");
-		static Str time_str = std::move(ss.str());
-		file << time_str << "  ";
-	}
-	file << str << endl;
-	file.close();
-}
-
 int main(int argc, const char *argv[]) {
 	using namespace slisc;
 	Str tmp;
