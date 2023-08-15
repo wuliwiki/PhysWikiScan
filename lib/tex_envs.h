@@ -112,6 +112,13 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			else {
 				// svg and pdf hashes not the same (new standard)
 				fig_hash = get_text("figures", "id", fig_ids[i], "image_alt", db_read);
+				// if current record has non-empty "aka", then use the master record
+				if (fig_hash.empty()) {
+					Str aka = get_text("figures", "id", fig_ids[i], "aka", db_read);
+					if (aka.empty())
+						throw internal_err(u8"pdf 图片找不到对应的 svg 且 figures.aka 为空：" + fig_ids[i]);
+					fig_hash = get_text("figures", "id", aka, "image_alt", db_read);
+				}
 				if (size(fig_hash) != 16) {
 					SLS_WARN(u8"发现 figures.image_alt 仍然带有拓展名，将模拟编辑器删除。");
 					fig_hash.resize(16);

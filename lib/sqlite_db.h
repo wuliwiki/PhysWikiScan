@@ -1103,13 +1103,12 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 {
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "ext", "figure", "figures_aka" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "images" ("hash", "ext", "figure", "figures_aka") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "images" SET "figure"=?, "figures_aka"=? WHERE "hash"=?;)");
 	Str db_image_ext, tmp;
-	set<Str> db_image_figures;
 
 	for (Long i = 0; i < size(fig_ids); ++i) {
 		for (auto &ext_hash: fig_ext_hash[i]) {
@@ -1125,19 +1124,10 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 			}
 			else {
 				db_image_ext = (const char*)stmt_select.getColumn(0);
-				parse(db_image_figures, stmt_select.getColumn(1));
 				if (image_ext != db_image_ext) {
 					tmp.clear(); tmp << u8"图片文件拓展名不允许改变: " << image_hash << '.'
 						  << db_image_ext << " -> " << image_ext;
 					throw internal_err(tmp);
-				}
-				if (db_image_figures.insert(fig_ids[i]).second) {
-					// inserted
-					SLS_WARN(u8"images.figures 发生改变(将模拟 editor 更新): 新增 " + fig_ids[i]);
-					join(tmp, db_image_figures);
-					stmt_update.bind(1, tmp);
-					stmt_update.bind(2, image_hash);
-					stmt_update.exec(); stmt_update.reset();
 				}
 			}
 			stmt_select.reset();
@@ -1147,9 +1137,12 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 }
 
 // db table "figures"
-inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entries,
-	const vector<vecStr> &entry_figs, const vector<vecLong> &entry_fig_orders,
-	const vector<vector<unordered_map<Str,Str>>> &entry_fig_ext_hash, SQLite::Database &db_rw)
+inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
+	vecStr_I entries,
+	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures in entries[i]
+	const vector<vecLong> &entry_fig_orders, // entry_fig_orders[i] are the figures.order in entries[i]
+	const vector<vector<unordered_map<Str,Str>>> &entry_fig_ext_hash, // entry_fig_ext_hash[i][j] is map(ext -> hash) for entry_figs[i][j]
+	SQLite::Database &db_rw)
 {
 	// cout << "updating db for figures environments..." << endl;
 	update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
@@ -1159,7 +1152,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	SQLite::Statement stmt_select0(db_rw,
 		R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by", "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by", "image", "image_alt", "deleted", "aka" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image", "image_alt") VALUES (?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
@@ -1170,6 +1163,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 	// get all figure envs defined in `entries`, to detect deleted figures
 	// db_xxx[i] are from the same row of "labels" table
 	vecStr db_figs, db_fig_entries, db_fig_image, db_fig_image_alt;
+	map<Str, Str> db_fig_aka; // figures.id -> figures.aka
 	vecBool db_figs_used, figs_used;
 	vecLong db_fig_orders;
 	vector<vecStr> db_fig_ref_bys;
@@ -1192,6 +1186,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
 			db_fig_image_alt.push_back(stmt_select1.getColumn(3));
+			db_fig_aka[fig_id] = stmt_select1.getColumn(5).getString();
 			if (!db_fig_image_alt.back().empty() && size(db_fig_image_alt.back()) != 16) {
 				if (db_fig_image_alt.back().substr(16) != ".svg")
 					throw internal_err(u8"figures.image_alt 格式不对："+db_fig_image_alt.back());
@@ -1223,7 +1218,10 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 				if (!map.count("svg") || !map.count("pdf"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
 				image = map.at("pdf");
-				image_alt = map.at("svg");
+				if (db_fig_aka[id].empty())
+					image_alt = map.at("svg");
+				else
+					image_alt = ""; // let master fig env manage image_alt
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp.clear(); tmp << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
@@ -1463,9 +1461,11 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 
 // update labels table of database
 // order change means `update_entries` needs to be updated with autoref() as well.
-inline void db_update_labels(unordered_set<Str> &update_entries, vecStr_I entries,
-				 const vector<vecStr> &entry_labels, const vector<vecLong> &entry_label_orders,
-				 SQLite::Database &db_rw)
+inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
+	vecStr_I entries,
+	const vector<vecStr> &entry_labels,
+	const vector<vecLong> &entry_label_orders,
+	SQLite::Database &db_rw)
 {
 	SQLite::Transaction transaction(db_rw);
 	// cout << "updating db for labels..." << endl;
