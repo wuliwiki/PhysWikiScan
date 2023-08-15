@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "../SLISC/file/sqlite_ext.h"
+#include "../SLISC/util/time.h"
 #include "../SLISC/str/str.h"
-#include "../SLISC/str/disp.h"
 #include "../SLISC/algo/sort.h"
 #include "../SLISC/algo/graph.h"
 #include "../SLISC/util/sha1sum.h"

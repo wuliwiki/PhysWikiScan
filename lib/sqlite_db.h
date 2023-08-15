@@ -1339,8 +1339,8 @@ inline void db_update_figures(unordered_set<Str> &update_entries, vecStr_I entri
 }
 
 // delete from "images" table, and the image file
-// if "images.figure/figures_aka" use this image as "image" or "image_alt", then it must have `figures.deleted==1`
-//                                            if as "image_old" then `figures.deleted==1` is not necessary.
+// if "images.figure/figures_aka" use this image as "image" or "image_alt",
+//     then it must have `figures.deleted==1`
 inline void db_delete_images(
 	vecStr_I images, // hashes, no extension
 	SQLite::Database &db_read, SQLite::Database &db_rw, Str_I fig_id = "")
@@ -1348,13 +1348,12 @@ inline void db_delete_images(
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "figure", "figures_aka", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-		R"(SELECT "image", "image_alt", "image_old", "deleted" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "image_alt"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "image_old"=? WHERE "id"=?;)");
 	Str tmp;
-	set<Str> figures, figures_image_alt, figures_image_old; // images.figure + images.figures_aka
+	set<Str> figures, figures_image_alt; // images.figure + images.figures_aka
 
 	for (auto &image : images) {
 		cout << "deleting image with hash: " << image << endl;
@@ -1365,7 +1364,7 @@ inline void db_delete_images(
 		}
 		const char *figure = stmt_select.getColumn(0);
 		parse(figures, stmt_select.getColumn(1));
-		figures.push_back(figure);
+		figures.insert(figure);
 		const char *ext = stmt_select.getColumn(1);
 		stmt_select.reset();
 		if (figures.empty()) {
@@ -1383,7 +1382,7 @@ inline void db_delete_images(
 			stmt_select2.bind(1, fig);
 			if (!stmt_select2.executeStep()) {
 				tmp.clear();
-				if has_aka
+				if (has_aka)
 					tmp << u8"images.figure 中";
 				else
 					tmp << u8"images.figures_aka 中";
@@ -1395,8 +1394,7 @@ inline void db_delete_images(
 			}
 			const char *fig_image = stmt_select2.getColumn(0);
 			parse(figures_image_alt, stmt_select2.getColumn(1));
-			parse(figures_image_old, stmt_select2.getColumn(2));
-			bool deleted = (int)stmt_select2.getColumn(3);
+			bool deleted = (int)stmt_select2.getColumn(2);
 			if (!deleted) {
 				bool in_figures_image = (fig == fig_image);
 				bool in_figures_image_alt = figures_image_alt.count(fig);
@@ -1411,12 +1409,10 @@ inline void db_delete_images(
 			stmt_select2.bind(1, fig);
 			const char *fig_image = stmt_select2.getColumn(0);
 			parse(figures_image_alt, stmt_select2.getColumn(1));
-			parse(figures_image_old, stmt_select2.getColumn(2));
 			bool deleted = (int)stmt_select2.getColumn(3);
 
 			bool in_figures_image = (fig == fig_image);
 			bool in_figures_image_alt = figures_image_alt.count(fig);
-			bool in_figures_image_old = figures_image_old.count(fig);
 
 			if (in_figures_image) {
 				// set figures.image = ''
@@ -1428,12 +1424,6 @@ inline void db_delete_images(
 				stmt_update2.bind(1, tmp);
 				stmt_update2.bind(2, fig);
 				stmt_update2.exec(); stmt_update2.reset();
-			}
-			if (in_figures_image_old) {
-				join(tmp, figures_image_old);
-				stmt_update3.bind(1, tmp);
-				stmt_update3.bind(2, fig);
-				stmt_update3.exec(); stmt_update3.reset();
 			}
 		}
 

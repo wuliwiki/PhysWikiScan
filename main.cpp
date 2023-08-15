@@ -194,30 +194,58 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
 	}
 }
 
+// write log
+void scan_log(Str_I str, bool print_time = false)
+{
+	// write to file
+	const char *log_file = "scan_log.txt";
+	ofstream file(log_file, std::ios::app);
+	if (!file.is_open())
+		throw internal_err(Str("Unable to open ") + log_file);
+	// get time
+	if (print_time) {
+		time_t time = std::time(nullptr);
+		std::tm *ptm = localtime(&time);
+		stringstream ss;
+		ss << std::put_time(ptm, "%Y-%m-%d %H:%M:%S");
+		static Str time_str = std::move(ss.str());
+		file << time_str << "  ";
+	}
+	file << str << endl;
+	file.close();
+}
+
 int main(int argc, const char *argv[]) {
 	using namespace slisc;
-	Timer timer;
-	vecStr args;
-	get_args(args, argc, argv);
-	timer.tic();
+	Str tmp;
 
-	get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);
-	if (gv::url == "https://wuli.wiki/online/" || gv::url == "https://wuli.wiki/changed/")
-		gv::is_wiki = true;
-	else
-		gv::is_wiki = false;
-	if (gv::path_in.substr(gv::path_in.size() - 4) == "/en/")
-		gv::is_eng = true;
-
-	// === parse arguments ===
+	// write command to log
 	try {
+		for (int i = 1; i < argc; ++i)
+			tmp << "$" << i << ' ' << argv[i] << ' ';
+		scan_log(tmp, true);
+
+		Timer timer;
+		vecStr args;
+		get_args(args, argc, argv);
+		timer.tic();
+
+		get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);
+		if (gv::url == "https://wuli.wiki/online/" || gv::url == "https://wuli.wiki/changed/")
+			gv::is_wiki = true;
+		else
+			gv::is_wiki = false;
+		if (gv::path_in.substr(gv::path_in.size() - 4) == "/en/")
+			gv::is_eng = true;
+
+		// === parse arguments ===
 		SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 		check_foreign_key(db_rw);
 		if (args[0] == "." && args.size() == 1) {
 			PhysWikiOnline(db_read, db_rw);
 		}
-		else if (args[0] == "--titles") {
+		else if (args[0] == "--titles" && args.size() == 1) {
 			// update entries.txt and titles.txt
 			vecStr titles, entries, isDraft;
 			entries_titles(entries, titles);
@@ -397,12 +425,16 @@ int main(int argc, const char *argv[]) {
 			check_url(entries, args[1]);
 		}
 		else {
-			cerr << u8"scan 内部错误： 命令不合法" << endl;
-			return 0;
+			tmp = u8"scan 内部错误： 命令不合法\n";
+			scan_log(tmp);
+			cerr << tmp << endl;
+			return 1;
 		}
 		
 		cout.precision(3);
-		cout << "all done! time (s): " << timer.toc() << endl;
+		tmp.clear(); tmp << "all done! time (s): " << timer.toc() << '\n';
+		cout << tmp << endl;
+		scan_log(tmp);
 		if (argc <= 1) {
 			cout << u8"按任意键退出..." << endl;
 			char c = (char)getchar();
@@ -410,14 +442,22 @@ int main(int argc, const char *argv[]) {
 		}
 	}
 	catch (const std::exception &e) {
-		if (e.what() == Str("database is locked"))
-			cerr << u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。" << endl;
-		else
-			cerr << u8"scan 错误：" << e.what() << endl;
+		if (e.what() == Str("database is locked")) {
+			tmp = u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。\n";
+			scan_log(tmp);
+			cerr << tmp << endl;
+		}
+		else {
+			tmp.clear(); tmp << u8"scan 错误：" << e.what() << '\n';
+			scan_log(tmp);
+			cerr << tmp << endl;
+		}
 		exit(1);
 	}
 	catch (...) {
-		cerr << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！" << endl;
+		tmp << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！\n";
+		scan_log(tmp);
+		cerr << tmp << endl;
 		exit(1);
 	}
 
