@@ -591,3 +591,178 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
 	}
 	return N;
 }
+
+// update labels table of database
+// order change means `update_entries` needs to be updated with autoref() as well.
+inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
+							 vecStr_I entries,
+							 const vector<vecStr> &entry_labels,
+							 const vector<vecLong> &entry_label_orders,
+							 SQLite::Database &db_rw)
+{
+	SQLite::Transaction transaction(db_rw);
+	// cout << "updating db for labels..." << endl;
+	update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
+	SQLite::Statement stmt_select0(db_rw,
+								   R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select1(db_rw,
+								   R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+								  R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+	SQLite::Statement stmt_update0(db_rw,
+								   R"(UPDATE "labels" SET "order"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update(db_rw,
+								  R"(UPDATE "labels" SET "entry"=?, "order"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw,
+								   R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
+
+	Long order;
+	Str type, tmp;
+
+	// get all db labels defined in `entries`
+	//  db_xxx[i] are from the same row of "labels" table
+	vecStr db_labels, db_label_entries;
+	vecBool db_labels_used;
+	vecLong db_label_orders;
+	vector<vecStr> db_label_ref_bys;
+
+	// get all labels defined by `entries`
+	set<Str> db_entry_labels;
+	for (Long j = 0; j < size(entries); ++j) {
+		auto &entry = entries[j];
+		stmt_select0.bind(1, entry);
+		if (!stmt_select0.executeStep())
+			throw scan_err("词条不存在： " + entry + SLS_WHERE);
+		parse(db_entry_labels, stmt_select0.getColumn(0));
+		stmt_select0.reset();
+		for (auto &label: db_entry_labels) {
+			db_labels.push_back(label);
+			db_label_entries.push_back(entry);
+			stmt_select1.bind(1, label);
+			if (!stmt_select1.executeStep())
+				throw scan_err("标签不存在： " + label + SLS_WHERE);
+			db_label_orders.push_back((int)stmt_select1.getColumn(0));
+			db_label_ref_bys.emplace_back();
+			parse(db_label_ref_bys.back(), stmt_select1.getColumn(1));
+			stmt_select1.reset();
+		}
+	}
+	db_labels_used.resize(db_labels.size(), false);
+	Str labels_str;
+	set<Str> new_labels, labels;
+	// {label, order}, negated label order， to avoid UNIQUE constraint
+	vector<pair<Str,Long>> label_order_neg;
+	for (Long j = 0; j < size(entries); ++j) {
+		auto &entry = entries[j];
+		new_labels.clear();
+		for (Long i = 0; i < size(entry_labels[j]); ++i) {
+			auto &label = entry_labels[j][i];
+			order = entry_label_orders[j][i];
+			type = label_type(label);
+			if (type == "fig" || type == "code")
+				throw internal_err("`labels` here should not contain fig or code type!");
+
+			Long ind = search(label, db_labels);
+			if (ind < 0) {
+				tmp.clear();
+				tmp << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
+					<< entry << ", " << to_string(order);
+				SLS_WARN(tmp);
+				stmt_insert.bind(1, label);
+				stmt_insert.bind(2, type);
+				stmt_insert.bind(3, entry);
+				stmt_insert.bind(4, -(int)order);
+				stmt_insert.exec(); stmt_insert.reset();
+				new_labels.insert(label);
+				label_order_neg.emplace_back(label, order);
+				continue;
+			}
+			db_labels_used[ind] = true;
+			bool changed = false;
+			if (entry != db_label_entries[ind]) {
+				tmp.clear();
+				tmp << "label "; tmp << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+									 << db_label_entries[ind] << " -> " << entry << SLS_WHERE;
+				throw scan_err(tmp);
+				changed = true;
+			}
+			if (order != db_label_orders[ind]) {
+				SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）："
+						 + to_string(db_label_orders[ind]) + " -> " + to_string(order));
+				changed = true;
+				// order change means other ref_by entries needs to be updated with autoref() as well.
+				if (!gv::is_entire) {
+					for (auto &by_entry: db_label_ref_bys[ind])
+						if (search(by_entry, entries) < 0)
+							update_entries.insert(by_entry);
+				}
+			}
+			if (changed) {
+				stmt_update.bind(1, entry);
+				stmt_update.bind(2, -(int)order); // -order to avoid UNIQUE constraint
+				stmt_update.bind(3, label);
+				stmt_update.exec(); stmt_update.reset();
+				label_order_neg.emplace_back(label, order);
+			}
+		}
+
+		// add to entries.labels
+		if (!new_labels.empty()) {
+			stmt_select0.bind(1, entry);
+			if (!stmt_select0.executeStep())
+				throw internal_err("db_update_labels(): entry 不存在： " + entry + SLS_WHERE);
+			parse(labels, stmt_select0.getColumn(0));
+			for (auto &e : new_labels)
+				labels.insert(e);
+			join(labels_str, labels);
+			stmt_update2.bind(1, labels_str);
+			stmt_update2.bind(2, entry);
+			stmt_update2.exec(); stmt_update2.reset();
+			stmt_select0.reset();
+		}
+	}
+
+	// 检查被删除的标签（如果只被本词条引用， 就留给 \autoref() 报错）
+	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
+	Str ref_by_str;
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
+	for (Long i = 0; i < size(db_labels_used); ++i) {
+		if (!db_labels_used[i]) {
+			auto &db_label = db_labels[i];
+			auto &entry = db_label_entries[i];
+			if (db_label_ref_bys[i].empty() ||
+				(db_label_ref_bys[i].size() == 1 && db_label_ref_bys[i][0] == entry)) {
+				SLS_WARN(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
+				// delete from "labels"
+				stmt_delete.bind(1, db_label);
+				stmt_delete.exec(); stmt_delete.reset();
+				// delete from "entries.labels"
+				stmt_select0.bind(1, entry);
+				SLS_ASSERT(stmt_select0.executeStep());
+				parse(labels, stmt_select0.getColumn(0));
+				labels.erase(db_label);
+				stmt_select0.reset();
+				join(labels_str, labels);
+				stmt_update2.bind(1, labels_str);
+				stmt_update2.bind(2, entry);
+				stmt_update2.exec(); stmt_update2.reset();
+			}
+			else {
+				join(ref_by_str, db_label_ref_bys[i], ", ");
+				tmp.clear();
+				tmp << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
+					<< ref_by_str << SLS_WHERE;
+				throw scan_err(tmp);
+			}
+		}
+	}
+
+	// set label orders back to positive
+	for (auto &e : label_order_neg) {
+		stmt_update0.bind(1, int(e.second)); // order
+		stmt_update0.bind(2, e.first); // label
+		stmt_update0.exec(); stmt_update0.reset();
+	}
+	transaction.commit();
+	// cout << "done!" << endl;
+}

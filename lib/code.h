@@ -28,7 +28,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 {
 	Long ind0 = 0, ind1 = 0;
 	Intvs intvIn, intvOut;
-	Str code, ind_str;
+	Str code, ind_str, tmp;
 	find_env(intvIn, str, "lstlisting", 'i');
 	Long N = find_env(intvOut, str, "lstlisting", 'o');
 	Str lang, caption, capption_str; // language, caption
@@ -137,7 +137,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		}
 		if (lang == "matlab" && gv::is_wiki) {
 			if (!caption.empty() && caption.back() == 'm') {
-				Str fname = gv::path_out + "code/" + lang + "/" + caption;
+				Str fname; fname << gv::path_out << "code/" << lang << '/' << caption;
 				// if (gv::is_entire && file_exist(fname))
 				//	throw scan_err(u8"代码文件名重复： " + fname);
 				if (file_exist(fname))
@@ -150,8 +150,9 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		}
 		replace(code, "&", "&amp;"); // must be replaced first
 		replace(code, "<", "&lt;"); replace(code, ">", "&gt;");
-		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, capption_str +
-			"<pre " + prism_line_num + "><code" + prism_lang + ">" + code + "\n</code></pre>\n");
+		tmp.clear(); tmp << capption_str << "<pre " << prism_line_num
+			<< "><code" << prism_lang << ">" << code << "\n</code></pre>\n";
+		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, tmp);
 	}
 	return N;
 }
