@@ -245,7 +245,7 @@ inline void table_of_contents(
 			// get db info
 			stmt_select.bind(1, entry);
 			if (!stmt_select.executeStep()) {
-				SLS_WARN(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
+				db_log(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
 				vecStr titles_tmp;
 				entries_titles(entries, titles_tmp);
 				db_check_add_entry_simulate_editor(entries, db_rw);

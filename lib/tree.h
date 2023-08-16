@@ -296,8 +296,8 @@ inline void db_get_tree(
 {
 	tree.clear();
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" )"
-								  R"(WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
+		R"(SELECT "id", "caption", "part", "chapter", "pentry" FROM "entries" )"
+		R"(WHERE "deleted" = 0 ORDER BY "id" COLLATE NOCASE ASC;)");
 
 	// get info
 	while (stmt_select.executeStep()) {

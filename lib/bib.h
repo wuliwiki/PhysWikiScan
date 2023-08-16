@@ -1,5 +1,94 @@
 #pragma once
 
+struct BibInfo {
+	Long order{}; // starts from 1
+	Str detail;
+	set<Str> ref_by; // {entry1, entry2, ...}
+};
+
+// update "bibliography" table of sqlite db
+inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Database &db) {
+	SQLite::Transaction transaction(db);
+
+	// read the whole db bibliography table
+	SQLite::Statement stmt_select(db,
+								  R"(SELECT "id", "order", "details", "ref_by" FROM "bibliography" WHERE "id" != '';)");
+	SQLite::Statement stmt_delete(db,
+								  R"(DELETE FROM "bibliography" WHERE "id"=?;)");
+	unordered_map<Str, BibInfo> db_bib_info; // id -> (order, details, ref_by)
+
+	while (stmt_select.executeStep()) {
+		const Str &id = (const char*)stmt_select.getColumn(0);
+		auto &info = db_bib_info[id];
+		info.order = (int)stmt_select.getColumn(1);
+		info.detail = (const char*)stmt_select.getColumn(2);
+		const Str &ref_by_str = (const char*)stmt_select.getColumn(3);
+		parse(info.ref_by, ref_by_str);
+		if (search(id, bib_labels) < 0) {
+			if (!info.ref_by.empty()) {
+				clear(sb) << u8"检测到删除的文献： " << id << u8"， 但被以下词条引用： " << ref_by_str;
+				throw scan_err(sb);
+			}
+			clear(sb) << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
+			db_log(sb);
+			stmt_delete.bind(1, id);
+			stmt_delete.exec(); stmt_delete.reset();
+		}
+	}
+	stmt_select.reset();
+
+	SQLite::Statement stmt_update(db,
+								  R"(UPDATE "bibliography" SET "order"=?, "details"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_insert(db,
+								  R"(INSERT INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
+	unordered_set<Str> id_flip_sign;
+
+	for (Long i = 0; i < size(bib_labels); i++) {
+		Long order = i+1;
+		const Str &id = bib_labels[i], &bib_detail = bib_details[i];
+		if (db_bib_info.count(id)) {
+			auto &info = db_bib_info[id];
+			bool changed = false;
+			if (order != info.order) {
+				clear(sb) << u8"数据库中文献 "; sb << id << " 编号改变（将更新）： " << to_string(info.order)
+												   << " -> " << to_string(order);
+				SLS_WARN(sb);
+				changed = true;
+				id_flip_sign.insert(id);
+				stmt_update.bind(1, -(int)order); // to avoid unique constraint
+			}
+			if (bib_detail != info.detail) {
+				clear(sb) << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
+				db_log(sb);
+				changed = true;
+				stmt_update.bind(1, (int)order); // to avoid unique constraint
+			}
+			if (changed) {
+				stmt_update.bind(2, bib_detail);
+				stmt_update.bind(3, id);
+				stmt_update.exec(); stmt_update.reset();
+			}
+		}
+		else {
+			SLS_WARN(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
+			stmt_insert.bind(1, id);
+			stmt_insert.bind(2, -(int)order);
+			stmt_insert.bind(3, bib_detail);
+			stmt_insert.exec(); stmt_insert.reset();
+			id_flip_sign.insert(id);
+		}
+	}
+
+	// set the orders back
+	SQLite::Statement stmt_update2(db,
+								   R"(UPDATE "bibliography" SET "order" = "order" * -1 WHERE "id"=?;)");
+	for (auto &id : id_flip_sign) {
+		stmt_update2.bind(1, id);
+		stmt_update2.exec(); stmt_update2.reset();
+	}
+	transaction.commit();
+}
+
 // replace "\cite{}" with `[?]` cytation linke
 inline Long cite(unordered_map<Str, Bool> &bibs_change,
 	Str_IO str, Str_I entry, SQLite::Database &db_read)
@@ -29,7 +118,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 			throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
 	    Long bib_ind = search(bib_id, db_bibs);
 		if (bib_ind < 0) { // new \cite{}
-			SLS_WARN(u8"发现新的文献引用（将添加）： " + bib_id);
+			db_log(u8"发现新的文献引用（将添加）： " + bib_id);
 			bibs_change[bib_id] = true; // true means add bib_id to entries.bib
 		}
 		else
@@ -45,7 +134,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 	// deleted \cite{}
 	for (Long i = 0; i < size(db_bibs); ++i) {
 	    if (!db_bibs_cited[i]) {
-	        SLS_WARN(u8"发现文献引用被删除（将移除）： " + db_bibs[i]);
+	        db_log(u8"发现文献引用被删除（将移除）： " + db_bibs[i]);
 	        bibs_change[db_bibs[i]] = false; // false means remove db_bibs[i] from entries.bib
 	    }
 	}

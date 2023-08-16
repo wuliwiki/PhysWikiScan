@@ -23,7 +23,7 @@ inline void db_update_images(
 			stmt_select.bind(1, image_hash);
 			if (!stmt_select.executeStep()) {
 				clear(sb) << "数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
 				stmt_insert.bind(3, fig_id);
@@ -33,7 +33,7 @@ inline void db_update_images(
 				db_image_ext = (const char*)stmt_select.getColumn(0);
 				if (image_ext != db_image_ext) {
 					clear(sb) << u8"图片文件拓展名不允许改变: " << image_hash << '.'
-									 << db_image_ext << " -> " << image_ext;
+						<< db_image_ext << " -> " << image_ext;
 					throw internal_err(sb);
 				}
 			}
@@ -119,7 +119,7 @@ inline void db_update_figures(
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				clear(sb) << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
 						  << fig_id << ", " << entry << ", " << to_string(order);
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_insert.bind(1, fig_id);
 				stmt_insert.bind(2, entry);
 				stmt_insert.bind(3, (int)order);
@@ -132,19 +132,19 @@ inline void db_update_figures(
 			bool changed = false;
 			// 图片 label 在 entries.figures 中，检查是否未被使用
 			if (!db_figs_used[ind]) {
-				SLS_WARN(u8"发现数据库中未使用的图片被重新使用：" + fig_id);
+				db_log(u8"发现数据库中未使用的图片被重新使用（将更新）：" + fig_id);
 				changed = true;
 			}
 			if (entry != db_fig_entries[ind]) {
 				clear(sb) << u8"发现数据库中图片 entry 改变（将更新）：" << fig_id << ": "
 								 << db_fig_entries[ind] << " -> " << entry;
-				SLS_WARN(sb);
+				db_log(sb);
 				changed = true;
 			}
 			if (order != db_fig_orders[ind]) {
 				clear(sb) << u8"发现数据库中图片 order 改变（将更新）：" << fig_id << ": "
 								 << to_string(db_fig_orders[ind]) << " -> " << to_string(order);
-				SLS_WARN(sb);
+				db_log(sb);
 				changed = true;
 				// order change means other ref_by entries needs to be updated with autoref() as well.
 				if (!gv::is_entire) {
@@ -156,7 +156,7 @@ inline void db_update_figures(
 			if (image != db_fig_image[ind]) {
 				clear(sb) << u8"发现数据库中图片 image 改变（将更新）：" << fig_id << ": "
 								 << db_fig_image[ind] << " -> " << image;
-				SLS_WARN(sb);
+				db_log(sb);
 				if (!db_fig_aka[fig_id].empty()) {
 					clear(sb) << u8"图片环境（" << fig_id << "）是另一环境（" << db_fig_aka[fig_id] << "）的镜像，不支持手动修改图片文件，请撤回 "
 							  << image << '.' << ext << "， 并新建一个 figure 环境。 TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 fig 重命名，然后把新版本图片用原来的 fig。";
@@ -198,7 +198,7 @@ inline void db_update_figures(
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
 				clear(sb) << u8"检测到 \\label{fig_"
 								 << db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
-				SLS_WARN(sb);
+				db_log(sb);
 				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
 				stmt_update3.exec(); stmt_update3.reset();
@@ -233,7 +233,8 @@ inline void db_delete_images(
 		cout << "deleting image with hash: " << image << endl;
 		stmt_select.bind(1, image);
 		if (!stmt_select.executeStep()) {
-			SLS_WARN(u8"要删除的图片文件 hash 不存在（将忽略）：" + image + SLS_WHERE);
+			clear(sb) << u8"要删除的图片文件 hash 不存在（将忽略）：" << image << SLS_WHERE;
+			db_log(sb);
 			continue;
 		}
 		const char *figure = stmt_select.getColumn(0); // images.figure
@@ -242,7 +243,8 @@ inline void db_delete_images(
 		const char *ext = stmt_select.getColumn(2); // images.ext
 		stmt_select.reset();
 		if (figures.empty()) {
-			SLS_WARN(u8"要删除的 image 不属于任何环境， 即 images.figure 和 .figures_aka 都为空（将继续删除）：" + image + SLS_WHERE);
+			clear(sb) << u8"要删除的 image 不属于任何环境， 即 images.figure 和 .figures_aka 都为空（将继续删除）：" << image << SLS_WHERE;
+			db_log(sb);
 			stmt_delete.bind(1, image);
 			stmt_delete.exec(); stmt_delete.reset();
 			clear(sb) << gv::path_in << "figures/" << image << ext;
@@ -261,7 +263,7 @@ inline void db_delete_images(
 					clear(sb) << u8"images.figures_aka 中";
 				sb << u8"引用 image " << image << u8" 的图片环境 " << fig << u8" 不存在（将忽略）"
 					<< SLS_WHERE;
-				SLS_WARN(sb);
+				db_log(sb);
 				figures.erase(fig);
 				continue;
 			}

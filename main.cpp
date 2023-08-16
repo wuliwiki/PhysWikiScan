@@ -343,10 +343,6 @@ int main(int argc, const char *argv[]) {
 			else
 				history_add_del_all(db_read, db_rw, false);
 		}
-		else if (args[0] == "--history" && args.size() == 2) {
-			Str path = "../PhysWiki-backup/";
-            // TODO
-		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			history_normalize(db_read, db_rw);
 		}

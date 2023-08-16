@@ -129,6 +129,7 @@
 // text styles (see also text_style() in disp.h)
 #define SLS_RED_BOLD "\033[1;31m"
 #define SLS_YELLOW_BOLD "\033[1;33m"
+#define SLS_CYAN_BOLD "\033[1;36m"
 #define SLS_NO_STYLE "\033[0m"
 
 // SLS_TO_STR(x) converts a numeric macro to a string

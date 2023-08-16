@@ -553,7 +553,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		Long ind = search(entry1, db_uprefs);
 		if (ind < 0) {
 			if (!uprefs_change.count(entry1)) {
-				SLS_WARN(u8"检测到新增的 upref（将添加）：" + entry1);
+				db_log(u8"检测到新增的 upref（将添加）：" + entry1);
 				uprefs_change[entry1] = true;
 			}
 		}
@@ -562,7 +562,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 	}
 	for (Long i = 0; i < size(db_uprefs); ++i) {
 		if (!db_uprefs_visited[i]) {
-			SLS_WARN(u8"检测到删除的 upref（将删除）：" + db_uprefs[i]);
+			db_log(u8"检测到删除的 upref（将删除）：" + db_uprefs[i]);
 			uprefs_change[db_uprefs[i]] = false;
 		}
 	}
@@ -667,7 +667,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			if (ind < 0) {
 				clear(sb) << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_insert.bind(1, label);
 				stmt_insert.bind(2, type);
 				stmt_insert.bind(3, entry);
@@ -686,7 +686,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 				changed = true;
 			}
 			if (order != db_label_orders[ind]) {
-				SLS_WARN("label " + label + u8" 的 order 发生改变（将更新）："
+				db_log("label " + label + u8" 的 order 发生改变（将更新）："
 						 + to_string(db_label_orders[ind]) + " -> " + to_string(order));
 				changed = true;
 				// order change means other ref_by entries needs to be updated with autoref() as well.
@@ -731,7 +731,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			auto &entry = db_label_entries[i];
 			if (db_label_ref_bys[i].empty() ||
 				(db_label_ref_bys[i].size() == 1 && db_label_ref_bys[i][0] == entry)) {
-				SLS_WARN(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
+				db_log(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
 				// delete from "labels"
 				stmt_delete.bind(1, db_label);
 				stmt_delete.exec(); stmt_delete.reset();

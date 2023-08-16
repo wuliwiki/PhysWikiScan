@@ -940,7 +940,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		else {
 			clear(sb) << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
 				<< entry << '.' << figure;
-			SLS_WARN(sb);
+			db_log(sb);
 		}
 		stmt_select3.reset();
 
@@ -998,7 +998,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		// delete entries.figures and all associated images
 		stmt_select.bind(1, entry);
 		if (!stmt_select.executeStep()) {
-			SLS_WARN(u8"arg_delete(): 数据库中找不到要删除的词条（将忽略）： " + entry);
+			db_log(u8"arg_delete(): 数据库中找不到要删除的词条（将忽略）： " + entry);
 			stmt_select.reset();
 			continue;
 		}
@@ -1038,7 +1038,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		}
 		catch (const std::exception &e) {
 			if (find(e.what(), "FOREIGN KEY") >= 0) {
-				SLS_WARN("db foreign key err, trying to resolve...");
+				db_log("db foreign key err, trying to resolve...");
 				// delete from figures using `figures.entry`
 				stmt_select3.bind(1, entry);
 				while (stmt_select3.executeStep())

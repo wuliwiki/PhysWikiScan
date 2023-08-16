@@ -215,7 +215,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				authorID = new_authors[author];
 			else {
 				authorID = ++author_id_max;
-				SLS_WARN(u8"备份文件中的作者不在数据库中（将添加）： " + author + " ID: " + to_string(author_id_max));
+				clear(sb) << u8"备份文件中的作者不在数据库中（将添加）： " << author << " ID: " << author_id_max;
+				db_log(sb);
 				new_authors[author] = author_id_max;
 				stmt_insert_auth.bind(1, int(author_id_max));
 				stmt_insert_auth.bind(2, author);
@@ -225,7 +226,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			// rename to new format
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
 			clear(sb) << path << fname << ".tex";
-			clear(sb1) << "moving " << fpath << " -> " << sb;
+			clear(sb1) << "移动文件 " << fpath << " -> " << sb;
 			SLS_WARN(sb1);
 			file_move(sb, fpath);
 		}
@@ -233,7 +234,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		author_contrib[authorID] += 5;
 		if (entries.count(entry) == 0 &&
 			entries_deleted_inserted.count(entry) == 0) {
-			SLS_WARN(u8"备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
+			db_log(u8"备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
 			entries_deleted_inserted.insert(entry);
@@ -241,13 +242,22 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 		if (sha1_exist) {
 			auto &time_author_entry_fexist = db_history[sha1];
-			if (get<0>(time_author_entry_fexist) != time)
-				SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " + get<0>(time_author_entry_fexist));
-			if (get<1>(time_author_entry_fexist) != authorID)
-				SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： " +
-						 to_string(get<1>(time_author_entry_fexist)) + "." + db_id_to_author[get<1>(time_author_entry_fexist)]);
-			if (get<2>(time_author_entry_fexist) != entry)
-				SLS_WARN(u8"备份 " + fname + u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： " + get<2>(time_author_entry_fexist));
+			if (get<0>(time_author_entry_fexist) != time) {
+				clear(sb) << u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " +
+							 get<0>(time_author_entry_fexist);
+				db_log(sb);
+			}
+			if (get<1>(time_author_entry_fexist) != authorID) {
+				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： "
+					<< to_string(get<1>(time_author_entry_fexist)) << '.'
+					<< db_id_to_author[get<1>(time_author_entry_fexist)];
+				db_log(sb);
+			}
+			if (get<2>(time_author_entry_fexist) != entry) {
+				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： "
+					<< get<2>(time_author_entry_fexist);
+				db_log(sb);
+			}
 			get<3>(time_author_entry_fexist) = true;
 		}
 		else {
@@ -258,14 +268,14 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				const char *db_hash = stmt_select4.getColumn(0);
 				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
 								 << db_hash << " -> " << sha1 << ' ' << fname;
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_update.bind(1, sha1);
 				stmt_update.bind(2, db_hash);
 				stmt_update.exec(); stmt_update.reset();
 			}
 			else {
 				clear(sb) << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_insert.bind(1, sha1);
 				stmt_insert.bind(2, time);
 				stmt_insert.bind(3, (int) authorID);
@@ -281,8 +291,9 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 	for (auto &row : db_history) {
 		if (!get<3>(row.second)) {
-			cout << u8"数据库 history 中文件不存在：" << row.first << ", " << get<0>(row.second) << ", " <<
-				 get<1>(row.second) << ", " << get<2>(row.second) << endl;
+			clear(sb) << u8"数据库 history 中文件不存在：" << row.first << ", " << get<0>(row.second) << ", " <<
+				 get<1>(row.second) << ", " << get<2>(row.second);
+			db_log(sb);
 		}
 	}
 	cout << "\ndone." << endl;
@@ -339,7 +350,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			if (last_hash != db_last_hash) {
 				clear(sb) << u8"检测到 history.last 改变，将模拟编辑器更新："
 								 << db_last_hash << " -> " << last_hash;
-				SLS_WARN(sb);
+				db_log(sb);
 				stmt_update.bind(1, last_hash);
 				stmt_update.bind(2, hash);
 				stmt_update.exec(); stmt_update.reset();
@@ -356,7 +367,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 		if (last_backup != db_last_backup) {
 			clear(sb) << u8"检测到 entry.last_backup 改变，将模拟编辑器更新："
 				<< db_last_backup << " -> " << last_backup;
-			SLS_WARN(sb);
+			db_log(sb);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
 			stmt_update2.exec(); stmt_update2.reset();

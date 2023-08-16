@@ -40,7 +40,7 @@ public:
 };
 
 // write log
-void scan_log(Str_I str, bool print_time = false)
+inline void scan_log(Str_I str, bool print_time = false)
 {
 	static Str log_file = "scan_log.txt";
 
@@ -61,8 +61,15 @@ void scan_log(Str_I str, bool print_time = false)
 	file.close();
 }
 
+// db log, also output to stdout
+inline void db_log(Str_I str)
+{
+	cout << SLS_CYAN_BOLD << "[DB] " << str << SLS_NO_STYLE << endl;
+	scan_log(str);
+}
+
 // limit log size
-void limit_log()
+inline void limit_log()
 {
 	const Long size_min = 5e6, size_max = 10e6;
 
