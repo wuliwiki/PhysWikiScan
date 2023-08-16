@@ -1157,7 +1157,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "aka"=?, "deleted"=0 WHERE "id"=?;)");
+		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "deleted"=0 WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
 		R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 
@@ -1192,7 +1192,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 		}
 	}
 	figs_used.resize(db_figs_used.size(), false);
-	Str figs_str, image;
+	Str figs_str, image, ext;
 	set<Str> new_figs, figs;
 
 	for (Long i = 0; i < size(entries); ++i) {
@@ -1205,12 +1205,12 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 			if (map.size() == 1) { // png
 				if (!map.count("png"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("png");
+				image = map.at("png"); ext = "png";
 			}
 			else if (map.size() == 2) { // svg + pdf
 				if (!map.count("svg") || !map.count("pdf"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("pdf");
+				image = map.at("pdf"); ext = "pdf";
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				tmp.clear(); tmp << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
@@ -1252,16 +1252,21 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 			}
 			if (image != db_fig_image[ind]) {
 				tmp.clear(); tmp << u8"发现数据库中图片 image 改变（将更新）：" << id << ": "
-					  << db_fig_image[ind] << " -> " << image;
+					<< db_fig_image[ind] << " -> " << image;
 				SLS_WARN(tmp);
+				if (!db_fig_aka[id].empty()) {
+					tmp << u8"图片环境（" << id << "）是另一环境（" << db_fig_aka[id] << "）的镜像，不支持手动修改图片文件，请撤回 "
+						<< image << '.' << ext << "， 并新建一个 figure 环境。 TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。";
+					// TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。
+					throw scan_err(tmp);
+				}
 				changed = true;
 			}
 			if (changed) {
 				stmt_update.bind(1, entry);
-				stmt_update.bind(2, int(order)); // -order to avoid UNIQUE constraint
+				stmt_update.bind(2, (int)order);
 				stmt_update.bind(3, image);
-				stmt_update.bind(4, update_aka_here_if_image_hash_changes);
-				stmt_update.bind(5, id);
+				stmt_update.bind(4, id);
 				stmt_update.exec(); stmt_update.reset();
 			}
 		}
@@ -1296,17 +1301,6 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
 				stmt_update3.exec(); stmt_update3.reset();
-//				// delete from "entries.figures"
-//				// (update: "entries.figures" now also includes deleted figs)
-//				stmt_select0.bind(1, db_fig_entries[i]);
-//				SLS_ASSERT(stmt_select0.executeStep());
-//				parse(figs, stmt_select0.getColumn(0));
-//				figs.erase(db_figs[i]);
-//				stmt_select0.reset();
-//				join(figs_str, figs);
-//				stmt_update2.bind(1, figs_str);
-//				stmt_update2.bind(2, db_fig_entries[i]);
-//				stmt_update2.exec(); stmt_update2.reset();
 			}
 			else {
 				join(ref_by_str, db_fig_ref_bys[i], ", ");
