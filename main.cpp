@@ -196,13 +196,13 @@ inline void replace_eng_punc_to_chinese(Str_I path_in)
 
 int main(int argc, const char *argv[]) {
 	using namespace slisc;
-	Str tmp;
 
 	// write command to log
 	try {
+		limit_log();
 		for (int i = 1; i < argc; ++i)
-			tmp << "$" << i << ' ' << argv[i] << ' ';
-		scan_log(tmp, true);
+			clear(sb) << "$" << i << ' ' << argv[i] << ' ';
+		scan_log(sb, true);
 
 		Timer timer;
 		vecStr args;
@@ -404,16 +404,16 @@ int main(int argc, const char *argv[]) {
 			check_url(entries, args[1]);
 		}
 		else {
-			tmp = u8"scan 内部错误： 命令不合法\n";
-			scan_log(tmp);
-			cerr << tmp << endl;
+			sb = u8"scan 内部错误： 命令不合法\n";
+			scan_log(sb);
+			cerr << sb << endl;
 			return 1;
 		}
 		
 		cout.precision(3);
-		tmp.clear(); tmp << "all done! time (s): " << timer.toc() << '\n';
-		cout << tmp << endl;
-		scan_log(tmp);
+		clear(sb) << "all done! time (s): " << timer.toc() << '\n';
+		cout << sb << endl;
+		scan_log(sb);
 		if (argc <= 1) {
 			cout << u8"按任意键退出..." << endl;
 			char c = (char)getchar();
@@ -422,21 +422,21 @@ int main(int argc, const char *argv[]) {
 	}
 	catch (const std::exception &e) {
 		if (e.what() == Str("database is locked")) {
-			tmp = u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。\n";
-			scan_log(tmp);
-			cerr << tmp << endl;
+			sb = u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。\n";
+			scan_log(sb);
+			cerr << sb << endl;
 		}
 		else {
-			tmp.clear(); tmp << u8"scan 错误：" << e.what() << '\n';
-			scan_log(tmp);
-			cerr << tmp << endl;
+			clear(sb) << u8"scan 错误：" << e.what() << '\n';
+			scan_log(sb);
+			cerr << sb << endl;
 		}
 		exit(1);
 	}
 	catch (...) {
-		tmp << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！\n";
-		scan_log(tmp);
-		cerr << tmp << endl;
+		clear(sb) << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！\n";
+		scan_log(sb);
+		cerr << sb << endl;
 		exit(1);
 	}
 

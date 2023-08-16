@@ -1,6 +1,7 @@
 // global variables, must be set only once
 #pragma once
 
+#include "../SLISC/file/file.h"
 #include "../SLISC/file/sqlite_ext.h"
 #include "../SLISC/str/str.h"
 #include "../SLISC/algo/graph.h"
@@ -41,8 +42,9 @@ public:
 // write log
 void scan_log(Str_I str, bool print_time = false)
 {
+	static Str log_file = "scan_log.txt";
+
 	// write to file
-	const char *log_file = "scan_log.txt";
 	ofstream file(log_file, std::ios::app);
 	if (!file.is_open())
 		throw internal_err(Str("Unable to open ") + log_file);
@@ -57,4 +59,23 @@ void scan_log(Str_I str, bool print_time = false)
 	}
 	file << str << endl;
 	file.close();
+}
+
+// limit log size
+void limit_log()
+{
+	const Long size_min = 5e6, size_max = 10e6;
+
+	// limit file size (reduce size to size_min if size > size_max)
+	// only delete whole lines
+	static Str log_file = "scan_log.txt";
+	read(sb, log_file);
+	cout << "size(sb)=" << size(sb) << " size_max=" << size_max << endl;
+	if (size(sb) > size_max) {
+		Long ind = find(sb, '\n', size(sb)-size_min);
+		if (ind > 0) {
+			cout << "writing file size=" << size(sb)-ind << endl;
+			write(sb.substr(ind + 1), log_file);
+		}
+	}
 }
