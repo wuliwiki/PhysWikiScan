@@ -38,7 +38,7 @@ inline Long paragraph_tag1(Str_IO str)
 inline Long paragraph_tag(Str_IO str)
 {
 	Long N = 0, ind0 = 0, left = 0, length = -500, ikey = -500;
-	Str temp, env, end, begin = u8"<p>　　\n";
+	Str tmp, env, end, begin = u8"<p>　　\n";
 
 	// "begin", and commands that cannot be in a paragraph
 	vecStr commands = {"begin", "subsection", "subsubsection", "pentry"};
@@ -108,40 +108,40 @@ inline Long paragraph_tag(Str_IO str)
 
 		// add tags
 		length = ind0 - left;
-		temp = str.substr(left, length);
-		N += paragraph_tag1(temp);
-		if (temp.empty()) {
+		tmp = str.substr(left, length);
+		N += paragraph_tag1(tmp);
+		if (tmp.empty()) {
 			if (next == 'e' && last != 'e') {
-				temp = "\n<p>\n";
+				tmp = "\n<p>\n";
 			}
 			else if (last == 'e' && next != 'e') {
-				temp = "\n</p>\n";
+				tmp = "\n</p>\n";
 			}
 			else {
-				temp = "\n";
+				tmp = "\n";
 			}
 		}
 		else {
-			temp = begin + temp + end;
+			tmp = begin + tmp + end;
 		}
-		str.replace(left, length, temp);
+		str.replace(left, length, tmp);
 		find_inline_eq(intvInline, str);
 		if (next == 'f')
 			return N;
-		ind0 += temp.size() - length;
+		ind0 += size(tmp) - length;
 		
 		// skip
 		if (ikey == 0) {
 			if (next == 'p') {
 				Long ind1 = skip_env(str, ind0);
-				Long left, right;
+				Long right;
 				left = inside_env(right, str, ind0, 2);
 				length = right - left;
-				temp = str.substr(left, length);
-				paragraph_tag(temp);
-				str.replace(left, length, temp);
+				tmp = str.substr(left, length);
+				paragraph_tag(tmp);
+				str.replace(left, length, tmp);
 				find_inline_eq(intvInline, str);
-				ind0 = ind1 + temp.size() - length;
+				ind0 = ind1 + size(tmp) - length;
 			}
 			else
 				ind0 = skip_env(str, ind0);
@@ -290,13 +290,11 @@ inline Long wikipedia_link(Str_IO str)
 }
 
 // if a position is in \pay...\paid
-inline Bool ind_in_pay(Str_I str, Long_I ind)
+inline bool ind_in_pay(Str_I str, Long_I ind)
 {
 	Long ikey;
 	Long ind0 = rfind(ikey, str, { "\\pay", "\\paid" }, ind);
-	if (ind0 < 0)
-		return false;
-	else if (ikey == 1)
+	if (ind0 < 0 || ikey == 1)
 		return false;
 	else if (ikey == 0)
 		return true;
@@ -795,8 +793,8 @@ inline Long dep_json(SQLite::Database &db_read)
 		for (auto &j : tree[i]) {
 			auto &node_i = nodes[i], &node_j = nodes[j];
 			int strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
-			str << R"(    {"source": ")" << node_j.entry << ':' << num2str(node_j.i_node) << "\", ";
-			str << R"("target": ")" << node_i.entry << ':' << num2str(node_i.i_node) << "\", ";
+			str << R"(    {"source": ")" << node_j.entry << ':' << node_j.i_node << "\", ";
+			str << R"("target": ")" << node_i.entry << ':' << node_i.i_node << "\", ";
 			str << "\"value\": " << strength << "},\n";
 			++Nedge;
 		}
@@ -901,7 +899,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 // must be marked figures.deleted and not referenced by figures.aka
 inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	Str tmp;
+	Str tmp, tmp2;
 	vecStr image_hash, images, images_alt, images_old;
 	set<Str> entries_figures;
 
@@ -957,8 +955,10 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 			tmp << " " << id;
 		}
 		stmt_select2.reset();
-		if (!tmp.empty())
-			throw internal_err(u8"不允许删除未被 figures.aka 引用的图片：" + figure + u8"请先删除：" + tmp);
+		if (!tmp.empty()) {
+			tmp2.clear(); tmp2 << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << tmp;
+			throw internal_err(tmp2);
+		}
 
 		// delete figures.image*
 		parse(images, stmt_select.getColumn(0));

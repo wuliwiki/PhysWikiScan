@@ -22,8 +22,8 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 
 	vecStr authors;
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
-	for (int id : author_ids) {
-		stmt_select2.bind(1, id);
+	for (auto &id : author_ids) {
+		stmt_select2.bind(1, (int)id);
 		if (!stmt_select2.executeStep())
 			throw internal_err(u8"词条： " + entry + u8" 作者 id 不存在： " + num2str(id));
 		authors.push_back(stmt_select2.getColumn(0));
@@ -39,9 +39,9 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 {
 	author_ids.clear(); minutes.clear();
 	SQLite::Statement stmt_count(db,
-								 R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
+		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
 	SQLite::Statement stmt_select(db,
-								  R"(SELECT "hide", "aka" FROM "authors" WHERE "id"=?;)");
+		R"(SELECT "hide", "aka" FROM "authors" WHERE "id"=?;)");
 
 	stmt_count.bind(1, entry);
 	while (stmt_count.executeStep()) {
@@ -76,7 +76,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 	Str str;
 	join(str, author_ids);
 	SQLite::Statement stmt_update(db,
-								  R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
+		R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
 	stmt_update.bind(1, str);
 	stmt_update.bind(2, entry);
 	stmt_update.exec();
@@ -89,7 +89,7 @@ inline void db_update_authors(SQLite::Database &db)
 {
 	cout << "updating database for author lists...." << endl;
 	SQLite::Statement stmt_select( db,
-								   R"(SELECT "id" FROM "entries";)");
+		R"(SELECT "id" FROM "entries";)");
 	Str entry; vecLong author_ids, counts;
 	while (stmt_select.executeStep()) {
 		entry = (const char*)stmt_select.getColumn(0);
@@ -118,7 +118,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	check_foreign_key(db_rw);
 
 	SQLite::Statement stmt_select(db_rw,
-								  R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
+		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
 
 	//            hash        time author entry  file-exist
 	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
@@ -151,7 +151,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	}
 
 	SQLite::Statement stmt_select3(db_rw,
-								   R"(SELECT "id", "aka" FROM "authors" WHERE "aka" != -1;)");
+		R"(SELECT "id", "aka" FROM "authors" WHERE "aka" != -1;)");
 	unordered_map<int, int> db_author_aka;
 	while (stmt_select3.executeStep()) {
 		int id = stmt_select3.getColumn(0);
@@ -163,7 +163,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
 
 	SQLite::Statement stmt_insert(db_rw,
-								  R"(INSERT INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+		R"(INSERT INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
 	vecStr entries0;
 	get_column(entries0, "entries", "id", db_rw);
@@ -172,17 +172,17 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 	// insert a deleted entry (to ensure FOREIGN KEY exist)
 	SQLite::Statement stmt_insert_entry(db_rw,
-										R"(INSERT INTO "entries" ("id", "deleted") VALUES (?, 1);)");
+		R"(INSERT INTO "entries" ("id", "deleted") VALUES (?, 1);)");
 
 	// insert new_authors to "authors" table
 	SQLite::Statement stmt_insert_auth(db_rw,
-									   R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
+		R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
 	SQLite::Statement stmt_select4(db_rw,
-								   R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
+		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
+		R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
 
-	Str fpath, tmp;
+	Str fpath, tmp, tmp2;
 
 	for (Long i = 0; i < size(fnames); ++i) {
 		auto &fname = fnames[i];
@@ -193,7 +193,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 		// fname = YYYYMMDDHHMM_authorID_entry
 		time = fname.substr(0, 12);
-		Long ind = fname.rfind('_');
+		Long ind = (Long)fname.rfind('_');
 		entry = fname.substr(ind+1);
 		author = fname.substr(13, ind-13);
 		Long authorID;
@@ -225,7 +225,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			// rename to new format
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
 			tmp.clear(); tmp << path << fname << ".tex";
-			SLS_WARN("moving " + fpath + " -> " + tmp);
+			tmp2.clear(); tmp2 << "moving " << fpath << " -> " << tmp;
+			SLS_WARN(tmp2);
 			file_move(tmp, fpath);
 		}
 
@@ -312,7 +313,8 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 {
 	cout << "updating history.last..." << endl;
 	SQLite::Statement stmt_select(db_rw,
-								  R"(SELECT "hash", "time", "entry", "last" FROM "history" WHERE "hash" <> '';)");
+		R"(SELECT "hash", "time", "entry", "last" FROM "history" WHERE "hash" <> '';)");
+	Str tmp;
 	unordered_map<Str, map<Str, pair<Str,Str>>> entry2time2hash_last; // entry -> (time -> (hash,last))
 	while (stmt_select.executeStep()) {
 		entry2time2hash_last[stmt_select.getColumn(2)]
@@ -323,12 +325,12 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 	// update db
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
+		R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_rw,
-								   R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw,
-								   R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
-	Str last_hash, tmp;
+		R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	Str last_hash;
 	for (auto &e : entry2time2hash_last) {
 		auto &entry = e.first;
 		last_hash.clear();
@@ -353,7 +355,9 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 		stmt_select2.reset();
 		const Str &last_backup = ((--e.second.end())->second).first;
 		if (last_backup != db_last_backup) {
-			SLS_WARN(u8"检测到 entry.last_backup 改变，将模拟编辑器更新：" + db_last_backup + " -> " + last_backup);
+			tmp.clear(); tmp << u8"检测到 entry.last_backup 改变，将模拟编辑器更新："
+				<< db_last_backup << " -> " << last_backup;
+			SLS_WARN(tmp);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
 			stmt_update2.exec(); stmt_update2.reset();
@@ -369,9 +373,9 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 {
 	history_hash.clear();
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_read,
-								   R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
+		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"db_get_history()： 词条不存在：" + entry + SLS_WHERE);
@@ -396,7 +400,7 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 		entries.push_back(stmt_select.getColumn(0));
 
 	SQLite::Statement stmt_select2(db_read,
-								   R"(SELECT "hash", "time", "author", "add", "del" FROM "history"
+		R"(SELECT "hash", "time", "author", "add", "del" FROM "history"
 			WHERE "entry"=? ORDER BY "time";)");
 	Str fname_old, fname, str, str_old;
 	unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
@@ -438,7 +442,7 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 	cout << "\n\nupdating db history.add/del..." << endl;
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
+		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
 	for (auto &e : hist_add_del) {
 		auto &hash = e.first;
 		auto &add_del = e.second;
@@ -456,7 +460,7 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "entry", "author", "time", "hash" FROM "history" WHERE "hash" <> '';)");
+		R"(SELECT "entry", "author", "time", "hash" FROM "history" WHERE "hash" <> '';)");
 	//            entry                author     time         hash  time2 (new time, or "" for nothing, "d" to delete)
 	unordered_map<Str,   unordered_map<Str,    map<Str,   pair<Str,  Str>>>> entry_author_time_hash_time2;
 	while (stmt_select.executeStep()) {
@@ -524,11 +528,11 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 	check_foreign_key(db_rw, false);
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select2(db_rw,
-								   R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
+		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "history" SET "time"=? WHERE "hash"=?;)");
+		R"(UPDATE "history" SET "time"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw,
-								  R"(DELETE FROM "history" WHERE "hash"=?;)");
+		R"(DELETE FROM "history" WHERE "hash"=?;)");
 	Str fname, fname_new;
 	for (auto &e5 : entry_author_time_hash_time2) {
 		for (auto &e4: e5.second) {
@@ -663,8 +667,8 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 
 	// insert db
 	SQLite::Statement stmt_insert(db_rw,
-								  R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )"
-								  R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
+		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )"
+		R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
 	stmt_insert.bind(1, hash);
 	stmt_insert.bind(2, time_backup_str);
 	stmt_insert.bind(3, author_id);
@@ -683,9 +687,9 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	stmt_update2.exec(); stmt_update2.reset();
 
 	if (replace) {
-		SQLite::Statement stmt_insert(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
-		stmt_insert.bind(1, hash_last);
-		stmt_insert.exec(); stmt_insert.reset();
+		SQLite::Statement stmt_insert2(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+		stmt_insert2.bind(1, hash_last);
+		stmt_insert2.exec(); stmt_insert2.reset();
 	}
 	transaction.commit();
 }

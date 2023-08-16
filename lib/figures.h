@@ -8,11 +8,11 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 {
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select(db_rw,
-								  R"(SELECT "ext" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-								  R"(INSERT INTO "images" ("hash", "ext", "figure", "figures_aka") VALUES (?,?,?,?);)");
+		R"(INSERT INTO "images" ("hash", "ext", "figure", "figures_aka") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "images" SET "figure"=?, "figures_aka"=? WHERE "hash"=?;)");
+		R"(UPDATE "images" SET "figure"=?, "figures_aka"=? WHERE "hash"=?;)");
 	Str db_image_ext, tmp;
 
 	for (Long i = 0; i < size(fig_ids); ++i) {
@@ -220,9 +220,9 @@ inline void db_delete_images(
 		SQLite::Database &db_read, SQLite::Database &db_rw, Str_I fig_id = "")
 {
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "figure", "figures_aka", "ext" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "figure", "figures_aka", "ext" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_read,
-								   R"(SELECT "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "image_alt"=? WHERE "id"=?;)");

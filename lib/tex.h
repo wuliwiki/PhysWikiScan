@@ -114,7 +114,7 @@ inline Long skip_command(Str_I str, Long_I ind, Long_I Narg = 0, Bool_I omit_ski
 	    }
 	    if (!arg_no_brace)
 	        throw scan_err("skip_command(): '{' not found!");
-	    ind0 = str.find_first_not_of(' ', ind0);
+	    ind0 = (Long)str.find_first_not_of(' ', ind0);
 	    if (ind0 < 0)
 	        throw scan_err("skip_command(): end of file!");
 	    ++ind0;
@@ -137,7 +137,7 @@ inline void command_name(Str_O name, Str_I str, Long_I ind)
 	    }
 	}
 	if (!found)
-	    i = str.size();
+	    i = size(str);
 	name = str.substr(ind+1, i - (ind+1));
 }
 
@@ -157,10 +157,10 @@ inline Bool is_in_cmd(Str_I str, Str_I name, Long_I ind)
 {
 	if (ind < 0 || ind >= size(str))
 	    throw scan_err(u8"内部错误： is_in_cmd() index out of bound");
-	Long ind0 = str.rfind("\\" + name, ind);
+	Long ind0 = (Long)str.rfind("\\" + name, ind);
 	if (ind0 < 0)
 	    return false;
-	ind0 = expect(str, "{", ind0 + name.size() + 1);
+	ind0 = expect(str, "{", ind0 + size(name) + 1);
 	if (ind0 < 0)
 	    return false;
 	Long ind1 = pair_brace(str, ind0 - 1);
@@ -259,13 +259,13 @@ inline Long command_arg(Str_O arg, Str_I str, Long_I ind, Long_I i = 0, Bool_I t
 	if (ind1 < 0) {
 	    if (!arg_no_brace)
 	        return -1;
-	    ind0 = str.find_first_not_of(' ', ind0);
+	    ind0 = (Long)str.find_first_not_of(' ', ind0);
 	    if (ind0 < 0)
 	        throw scan_err("command_arg(): end of file!");
 	    if (str[ind0] == '\\') {
 	        command_name(arg, str, ind0);
 	        arg = '\\' + arg;
-	        ind0 += arg.size();
+	        ind0 += size(arg);
 	    }
 	    else {
 	        arg = str[ind0]; ++ind0;
@@ -358,7 +358,7 @@ inline Long find_env(Intvs_O intv, Str_I str, Str_I env, char option = 'i')
 	    if (option == 'o')
 	        ind0 = skip_command(str, ind0, 1);
 	    if (ind0 < 0) {
-	        intv.pushR(str.size() - 1);
+	        intv.pushR(size(str) - 1);
 	        return intv.size();
 	    }
 	    else
@@ -432,7 +432,7 @@ inline Str current_env(Long_I ind, Str_I str)
 inline Bool index_in_env(Long_I ind, Str_I name, Str_I str)
 {
 	Long iname;
-	return index_in_env(iname, ind, { name.c_str() }, str);
+	return index_in_env(iname, ind, { name }, str);
 }
 
 // find interval of all "\lstinline *...*"
@@ -445,7 +445,7 @@ inline Long lstinline_intv(Intvs_O intv, Str_I str)
 	    ind0 = find_command(str, "lstinline", ind0);
 	    if (ind0 < 0)
 	        break;
-	    ind1 = str.find_first_not_of(' ', ind0 + 10);
+	    ind1 = (Long)str.find_first_not_of(' ', ind0 + 10);
 	    if (ind1 < 0)
 	        throw scan_err("lstinline_intv() failed (1)!");
 	    dlm = str[ind1];
@@ -469,7 +469,7 @@ inline Long verb_intv(Intvs_O intv, Str_I str)
 	    ind0 = find_command(str, "verb", ind0);
 	    if (ind0 < 0)
 	        break;
-	    ind1 = str.find_first_not_of(' ', ind0 + 5);
+	    ind1 = (Long)str.find_first_not_of(' ', ind0 + 5);
 	    if (ind1 < 0)
 	        throw scan_err("verb_intv() failed (1)!");
 	    dlm = str[ind1];
@@ -899,7 +899,7 @@ inline Long RemoveBraces(vecLong_I ind_left, vecLong_I ind_right,
 
 	if (N > 0) {
 	    sort(ind.begin(), ind.end());
-	    for (Long i = ind.size() - 1; i >= 0; --i) {
+	    for (Long i = size(ind) - 1; i >= 0; --i) {
 	        str.insert(ind[i], u8"删除标记");
 	    }
 	}
@@ -916,7 +916,7 @@ inline Long Command2Tag(Str_I nameComm, Str_I strLeft, Str_I strRight, Str_IO st
 	while (true) {
 	    ind0 = find(str, "\\" + nameComm, ind0);
 	    if (ind0 < 0) break;
-	    ind1 = ind0 + nameComm.size() + 1;
+	    ind1 = ind0 + size(nameComm) + 1;
 	    ind1 = expect(str, "{", ind1); --ind1;
 	    if (ind1 < 0) {
 	        ++ind0; continue;
@@ -946,7 +946,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 	    ind0 = find_command(str, "verb", ind0);
 	    if (ind0 < 0)
 	        break;
-	    ind1 = str.find_first_not_of(' ', ind0 + 5);
+	    ind1 = (Long)str.find_first_not_of(' ', ind0 + 5);
 	    if (ind1 < 0)
 	        throw scan_err(u8"\\verb 没有开始");
 	    dlm = str[ind1];
@@ -978,7 +978,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 	    ind0 = find_command(str, "lstinline", ind0);
 	    if (ind0 < 0)
 	        break;
-	    ind1 = str.find_first_not_of(' ', ind0 + 10);
+	    ind1 = (Long)str.find_first_not_of(' ', ind0 + 10);
 	    if (ind1 < 0)
 	        throw scan_err(u8"\\lstinline 没有开始");
 	    dlm = str[ind1];
@@ -1026,7 +1026,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 	    str.replace(ind0, intvIn.R(i) - ind0 + 1, "\n" + num2str(size(str_verb)-1) + "\n");
 	}
 
-	return str_verb.size();
+	return size(str_verb);
 }
 
 // reverse process of verbatim()
@@ -1097,7 +1097,7 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
 	    replace(str_verb[ind], ">", "&gt;");
 	    tmp = "<code>" + str_verb[ind] + "</code>";
 	    str.replace(ind0, ind2 - ind0 + 1, tmp);
-	    ind0 += tmp.size();
+	    ind0 += size(tmp);
 	    ++N;
 	}
 	return N;
@@ -1149,7 +1149,7 @@ inline Long Env2Tag(Str_IO str, Long_I ind, Str_I strLeft, Str_I strRight, Long_
 
 	str.replace(ind2, Nend, strRight);
 	str.replace(ind, Nbegin, strLeft);
-	return strRight.size() + strLeft.size() - Nend - Nbegin;
+	return size(strRight) + size(strLeft) - Nend - Nbegin;
 }
 
 // replace all nameEnv environments with strLeft...strRight

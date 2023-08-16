@@ -16,7 +16,7 @@ inline Long EnsureSpace(Str_I name, Str_IO str, Long start, Long end)
 	    if (ind0 == 0 || str.at(ind0 - 1) != ' ') {
 	        str.insert(ind0, " "); ++ind0; ++N;
 	    }
-	    ind0 += name.size();
+	    ind0 += size(name);
 	    if (ind0 == size(str) || str.at(ind0) != ' ') {
 	        str.insert(ind0, " "); ++N;
 	    }
@@ -27,10 +27,10 @@ inline Long EnsureSpace(Str_I name, Str_IO str, Long start, Long end)
 // check if an index is in an HTML tag "<name>...</name>
 inline Bool is_in_tag(Str_I str, Str_I name, Long_I ind)
 {
-	Long ind1 = str.rfind("<" + name + ">", ind);
+	Long ind1 = (Long)str.rfind("<" + name + ">", ind);
 	if (ind1 < 0)
 	    return false;
-	Long ind2 = str.rfind("</" + name + ">", ind);
+	Long ind2 = (Long)str.rfind("</" + name + ">", ind);
 	if (ind2 < ind1)
 	    return true;
 	return false;
@@ -78,7 +78,7 @@ inline Long define_newcommands(vecStr_O rules)
 	    if (rules[i] < rules[i - 4])
 	        throw internal_err(u8"define_newcommands(): rules not sorted: " + rules[i]);
 	}
-	return rules.size();
+	return size(rules);
 }
 
 // ==== directly implement \newcommand{}{} by replacing ====
@@ -93,7 +93,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 	Long N = 0;
 
 	// all commands to find
-	if (rules.size() % 4 != 0)
+	if (size(rules) % 4 != 0)
 	    throw scan_err("rules.size() illegal!");
 	// == print newcommands ===
 	// for (Long i = 0; i < size(rules); i += 4)
@@ -138,7 +138,7 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 	    while (1) {
 	        Long ind1;
 	        if (ind == 0) {
-	            lookup(ind1, cmds, cmd, ind+1, cmds.size() - 1);
+	            lookup(ind1, cmds, cmd, ind+1, size(cmds) - 1);
 	            while (ind1 > 0 && cmds[ind1 - 1] == cmd)
 	                --ind1;
 	        }
@@ -290,7 +290,7 @@ inline Long Table(Str_IO str)
 	        indLine.push_back(ind0);
 	        ind0 += 5;
 	    }
-	    Nline = indLine.size();
+	    Nline = size(indLine);
 	    str.replace(indLine[Nline - 1], 6, str_end);
 	    ind0 = ExpectKeyReverse(str, "\\\\", indLine[Nline - 1] - 1);
 	    str.erase(ind0 + 1, 2);
@@ -314,7 +314,7 @@ inline Long Table(Str_IO str)
 	        str.insert(ind0, "</td><td>");
 	        ind1 += 8;
 	    }
-	    ind0 = str.rfind(str_end, ind1) + str_end.size();
+	    ind0 = (Long)str.rfind(str_end, ind1) + size(str_end);
 	    str.erase(ind0, ind1 - ind0 + 1);
 	    ind0 = find(str, str_beg, intv.L(i)) - 1;
 	    str.replace(intv.L(i), ind0 - intv.L(i) + 1,
@@ -361,7 +361,7 @@ inline Long Itemize(Str_IO str)
 	            throw scan_err(u8"\\item 命令后面必须有空格或回车！");
 	        indItem.push_back(ind0); ind0 += 5;
 	    }
-	    Nitem = indItem.size();
+	    Nitem = size(indItem);
 	    if (Nitem == 0)
 	        continue;
 
@@ -413,7 +413,7 @@ inline Long Enumerate(Str_IO str)
 	            throw scan_err(u8"\\item 命令后面必须有空格或回车！");
 	        indItem.push_back(ind0); ind0 += 5;
 	    }
-	    Nitem = indItem.size();
+	    Nitem = size(indItem);
 	    if (Nitem == 0)
 	        continue;
 
@@ -432,7 +432,7 @@ inline Long Enumerate(Str_IO str)
 inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 {
 	Long ind0 = 0, N = 0;
-	Str temp, idNo;
+	Str tmp, idNo;
 	ind0 = find_command(str, "footnote", ind0);
 	if (ind0 < 0)
 	    return 0;
@@ -440,11 +440,13 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 	while (true) {
 	    ++N;
 	    num2str(idNo, N);
-	    command_arg(temp, str, ind0);
-	    str += "<a href = \"" + url + entry + ".html#ret" + idNo + "\" id = \"note" + idNo + "\">" + idNo + ". <b>^</b></a> " + temp + "<br>\n";
+	    command_arg(tmp, str, ind0);
+	    str << "<a href = \"" << url << entry << ".html#ret" << idNo << "\" id = \"note"
+			<< idNo << "\">" << idNo << ". <b>^</b></a> " << tmp << "<br>\n";
 	    ind0 -= eatL(str, ind0 - 1, " \n");
-	    str.replace(ind0, skip_command(str, ind0, 1) - ind0,
-	        "<sup><a href = \"" + url + entry + ".html#note" + idNo + "\" id = \"ret" + idNo + "\"><b>" + idNo + "</b></a></sup>");
+		tmp.clear(); tmp << "<sup><a href = \"" << url << entry << ".html#note"
+			<< idNo << "\" id = \"ret" << idNo << "\"><b>" << idNo << "</b></a></sup>";
+	    str.replace(ind0, skip_command(str, ind0, 1) - ind0,tmp);
 	    ++ind0;
 	    ind0 = find_command(str, "footnote", ind0);
 	    if (ind0 < 0)
@@ -457,7 +459,7 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 inline Long subsections(Str_IO str)
 {
 	Long ind0 = 0, N = 0;
-	Str subtitle;
+	Str subtitle, tmp;
 	while (1) {
 	    ind0 = find_command(str, "subsection", ind0);
 	    if (ind0 < 0)
@@ -465,7 +467,8 @@ inline Long subsections(Str_IO str)
 	    ++N;
 	    command_arg(subtitle, str, ind0);
 	    Long ind1 = skip_command(str, ind0, 1);
-	    str.replace(ind0, ind1 - ind0, "<h2 class = \"w3-text-indigo\"><b>" + num2str32(N) + ". " + subtitle + "</b></h2>");
+		tmp.clear(); tmp << "<h2 class = \"w3-text-indigo\"><b>" << N << ". " << subtitle << "</b></h2>";
+	    str.replace(ind0, ind1 - ind0, tmp);
 	}
 }
 
@@ -474,7 +477,7 @@ inline Long subsections(Str_IO str)
 inline Long href(Str_IO str)
 {
 	Long ind0 = 0, N = 0, tmp;
-	Str name, url;
+	Str name, url, tmp2;
 	while (1) {
 	    ind0 = find_command(str, "href", ind0);
 	    if (ind0 < 0)
@@ -483,13 +486,13 @@ inline Long href(Str_IO str)
 	        ++ind0; continue;
 	    }
 	    command_arg(url, str, ind0, 0);
-	u8_iter it(url);
-	while (it < size(url)) {
-		char c = (*it)[0];
-	    	if (c > 127 || c < 0 || c == ' ')
-			throw scan_err(u8"href: 链接中不允许包含空格或非 ascii 字符 (" + *it + u8")，请直接从浏览器地址栏中复制 url。 当前 url： " + url);
-		++it;
-	}
+		u8_iter it(url);
+		while (it < size(url)) {
+			char c = (*it)[0];
+				if (c > 127 || c < 0 || c == ' ')
+				throw scan_err(u8"href: 链接中不允许包含空格或非 ascii 字符 (" + *it + u8")，请直接从浏览器地址栏中复制 url。 当前 url： " + url);
+			++it;
+		}
 	    command_arg(name, str, ind0, 1);
 	    if (url.substr(0, 7) != "http://" &&
 	        url.substr(0, 8) != "https://") {
@@ -497,8 +500,8 @@ inline Long href(Str_IO str)
 	    }
 	    replace(url, "\\%", "%"); replace(url, "\\_", "_"); replace(url, "\\#", "#");
 	    Long ind1 = skip_command(str, ind0, 2);
-	    str.replace(ind0, ind1 - ind0,
-	        "<a href=\"" + url + "\" target = \"_blank\">" + name + "</a>");
+		tmp2.clear(); tmp2 << "<a href=\"" << url << R"(" target = "_blank">)" << name << "</a>";
+	    str.replace(ind0, ind1 - ind0, tmp2);
 	    ++N; ++ind0;
 	}
 }

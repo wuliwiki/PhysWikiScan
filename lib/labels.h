@@ -21,7 +21,7 @@ inline Str label_id(Str_I label)
 inline Str label_entry_old(Str_I label)
 {
 	Str id = label_id(label);
-	Long ind = id.rfind('_');
+	Long ind = (Long)id.rfind('_');
 	return id.substr(0, ind);
 }
 
@@ -46,12 +46,12 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 		const Long ind5 = find_command(str, "label", ind4);
 		if (ind5 < 0) return N;
 		// detect environment kind
-		ind2 = str.rfind("\\end", ind5);
-		ind4 = str.rfind("\\begin", ind5);
+		ind2 = (Long)str.rfind("\\end", ind5);
+		ind4 = (Long)str.rfind("\\begin", ind5);
 		if (ind4 < 0 || (ind4 >= 0 && ind2 > ind4)) {
 			// label not in environment, must be a subsection label
-			Long ind7 = str.rfind("\\subsection", ind5);
-			Long ind8 = str.rfind("\n", ind5);
+			Long ind7 = (Long)str.rfind("\\subsection", ind5);
+			Long ind8 = (Long)str.rfind('\n', ind5);
 			if (ind7 < 0 || ind8 > ind7)
 				throw scan_err(u8"环境外的 \\label 视为 \\subsection{} 的标签， 必须紧接在后面（不能换行）： " + str.substr(ind5, 22));
 			type = "sub"; envName = "subsection";
@@ -65,8 +65,8 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 			}
 			else if (expect(str, "figure", ind1) > 0) {
 				type = "fig"; envName = "figure";
-				Long ind7 = str.rfind("\\caption", ind5);
-				Long ind8 = str.rfind("\n", ind5);
+				Long ind7 = (Long)str.rfind("\\caption", ind5);
+				Long ind8 = (Long)str.rfind('\n', ind5);
 				if (ind7 < 0 || ind8 > ind7)
 					throw scan_err(u8"figure 环境中的 \\label 必须紧接在 \\caption{} 后面（不能换行）： " + str.substr(ind5, 22));
 			}
@@ -104,7 +104,8 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 		
 		// check label format and save label
 		ind0 = expect(str, "{", ind5 + 6);
-		ind3 = expect(str, type + '_' + entry, ind0);
+		tmp.clear(); tmp << type << '_' << entry;
+		ind3 = expect(str, tmp, ind0);
 		if (ind3 < 0) {
 			tmp.clear(); tmp << "label " << str.substr(ind0, 20)
 				<< u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
@@ -334,7 +335,7 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 	for (Long num = 1; ; ++num) {
 		Long ind0 = 0;
 		while (1) {
-			label = envName; label << '_' << entry << '_' << num2str(num);
+			label = envName; label << '_' << entry << '_' << num;
 			ind0 = find_command(str, "label", ind0);
 			if (ind0 < 0)
 				return; // label is unique
@@ -461,7 +462,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		break2: ;
 	}
 	else if (type == "sub") { // add subsection labels
-		Long ind0 = -1;
+		ind0 = -1;
 		for (Long i = 0; i < order; ++i) {
 			ind0 = find_command(str, "subsection", ind0+1);
 			if (ind0 < 0)
@@ -584,7 +585,7 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
 		if (index_in_env(iname, intvEnvOut.L(i), { "itemize", "enumerate" }, str))
 			width -= 40;
 		Str strLeft = R"(<div class="eq"><div class = "w3-cell" style = "width:)";
-		strLeft << num2str(width) << "px\">\n\\begin{" << nameEnv << '}';
+		strLeft << width << "px\">\n\\begin{" << nameEnv << '}';
 		Str strRight = "\\end{" + nameEnv + "}\n</div></div>";
 		str.replace(intvEnvIn.R(i) + 1, intvEnvOut.R(i) - intvEnvIn.R(i), strRight);
 		str.replace(intvEnvOut.L(i), intvEnvIn.L(i) - intvEnvOut.L(i), strLeft);

@@ -100,7 +100,7 @@ inline void hide_eq_verb(Str_IO str)
 
 inline void unhide_eq_verb(Str_IO str)
 {
-	Str tmp, label;
+	Str tmp, tmp2, label;
 	vecStr eq_list, verb_list;
 	read_vec_str(eq_list, gv::path_data + "eq_list.txt");
 	read_vec_str(verb_list, gv::path_data + "verb_list.txt");
@@ -109,8 +109,10 @@ inline void unhide_eq_verb(Str_IO str)
 		Long ind = find(str, label);
 		tmp = eq_list[i];
 		replace(tmp, "PhysWikiScanLF", "\n");
-		if (ind < 0)
-			SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + "\n");
+		if (ind < 0) {
+			tmp2.clear(); tmp2 << label << u8" 没有找到，替换： \n" << tmp << "\n";
+			SLS_WARN(tmp2);
+		}
 		else
 			str.replace(ind, label.size(), tmp);
 	}
@@ -120,8 +122,10 @@ inline void unhide_eq_verb(Str_IO str)
 		Long ind = find(str, label);
 		tmp = verb_list[i];
 		replace(tmp, "PhysWikiScanLF", "\n");
-		if (ind < 0)
-			SLS_WARN(label + u8" 没有找到，替换： \n" + tmp + "\n");
+		if (ind < 0) {
+			tmp2.clear(); tmp2 << label << u8" 没有找到，替换： \n" << tmp << "\n";
+			SLS_WARN(tmp2);
+		}
 		else
 			str.replace(ind, label.size(), tmp);
 	}
