@@ -39,7 +39,7 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 	Str type; // "eq", "fig", "ex", "sub"...
 	Str envName; // "equation" or "figure" or "example"...
 	Long idN{}; // convert to idNum
-	Str label, fig_id, tmp;
+	Str label, fig_id;
 	fig_ids.clear(); fig_orders.clear();
 	labels.clear(); label_orders.clear();
 	while (1) {
@@ -104,12 +104,12 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 		
 		// check label format and save label
 		ind0 = expect(str, "{", ind5 + 6);
-		tmp.clear(); tmp << type << '_' << entry;
-		ind3 = expect(str, tmp, ind0);
+		sb.clear(); sb << type << '_' << entry;
+		ind3 = expect(str, sb, ind0);
 		if (ind3 < 0) {
-			tmp.clear(); tmp << "label " << str.substr(ind0, 20)
+			sb.clear(); sb << "label " << str.substr(ind0, 20)
 				<< u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
-			throw scan_err(tmp);
+			throw scan_err(sb);
 		}
 		ind3 = find(str, '}', ind3);
 		
@@ -207,7 +207,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 	Bool inEq;
 	Str entry1, label0, fig_id, type, kind, newtab, file;
 	vecStr envNames{"equation", "align", "gather"};
-	Str db_ref_by_str, ref_by_str, tmp;
+	Str db_ref_by_str, ref_by_str;
 	set<Str> ref_by;
 
 	SQLite::Statement stmt_select(db_read,
@@ -319,8 +319,8 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			str.insert(ind3 + 1, " </a>");
 		str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
 		if (!inEq) {
-			tmp.clear(); tmp << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
-			str.insert(ind3 + 1, tmp);
+			sb.clear(); sb << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
+			str.insert(ind3 + 1, sb);
 		}
 		str.erase(ind0, ind3 - ind0 + 1);
 		++N;
@@ -530,7 +530,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 	vecBool db_uprefs_visited(db_uprefs.size(), false);
 
 	Long ind0 = 0, right, N = 0;
-	Str entry1, tmp;
+	Str entry1;
 	while (1) {
 		ind0 = find_command(str, "upref", ind0);
 		if (ind0 < 0)
@@ -539,14 +539,14 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		if (entry1 == entry)
 			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
 		trim(entry1);
-		tmp = gv::path_in; tmp << "contents/" << entry1 << ".tex";
-		if (!file_exist(tmp))
+		sb = gv::path_in; sb << "contents/" << entry1 << ".tex";
+		if (!file_exist(sb))
 			throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
 		right = skip_command(str, ind0, 1);
-		tmp = R"(<span class = "icon"><a href = ")";
-		tmp << gv::url << entry1
+		sb = R"(<span class = "icon"><a href = ")";
+		sb << gv::url << entry1
 			<< R"(.html" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
-		str.replace(ind0, right - ind0, tmp);
+		str.replace(ind0, right - ind0, sb);
 		++N;
 
 		// db
@@ -618,7 +618,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 								   R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
 
 	Long order;
-	Str type, tmp;
+	Str type;
 
 	// get all db labels defined in `entries`
 	//  db_xxx[i] are from the same row of "labels" table
@@ -665,10 +665,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 
 			Long ind = search(label, db_labels);
 			if (ind < 0) {
-				tmp.clear();
-				tmp << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
+				sb.clear();
+				sb << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
-				SLS_WARN(tmp);
+				SLS_WARN(sb);
 				stmt_insert.bind(1, label);
 				stmt_insert.bind(2, type);
 				stmt_insert.bind(3, entry);
@@ -681,10 +681,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			db_labels_used[ind] = true;
 			bool changed = false;
 			if (entry != db_label_entries[ind]) {
-				tmp.clear();
-				tmp << "label "; tmp << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+				sb.clear();
+				sb << "label "; sb << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
 									 << db_label_entries[ind] << " -> " << entry << SLS_WHERE;
-				throw scan_err(tmp);
+				throw scan_err(sb);
 				changed = true;
 			}
 			if (order != db_label_orders[ind]) {
@@ -750,10 +750,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");
-				tmp.clear();
-				tmp << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
+				sb.clear();
+				sb << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
 					<< ref_by_str << SLS_WHERE;
-				throw scan_err(tmp);
+				throw scan_err(sb);
 			}
 		}
 	}

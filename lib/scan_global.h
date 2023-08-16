@@ -17,6 +17,8 @@ namespace gv {
 	Bool is_entire = false; // running one tex or the entire wiki
 }
 
+Str sb, sb1; // string buffer
+
 class scan_err : public std::exception
 {
 private:

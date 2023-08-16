@@ -19,7 +19,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
 		throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
 	fig_ext_hash.resize(Nfig);
-	Str tmp, fig_hash;
+	Str fig_hash;
 
 	for (Long i = Nfig - 1; i >= 0; --i) {
 		num2str(figNo, i + 1);
@@ -98,9 +98,9 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			fname_in.clear(); fname_in << gv::path_in << "figures/" << figName << "." << format;
 			if (file_exist(fname_in)) {
 				// svg and pdf hashes (or old file name rule) are still the same (old standard)
-				read(tmp, fname_in);
-				CRLF_to_LF(tmp);
-				fig_hash = sha1sum(tmp).substr(0, 16);
+				read(sb, fname_in);
+				CRLF_to_LF(sb);
+				fig_hash = sha1sum(sb).substr(0, 16);
 				fig_ext_hash[i][format] = fig_hash;
 				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << '.' << format;
 				// rename figure files with hash
@@ -144,13 +144,13 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 		// insert html code
 		widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);
 		href.clear(); href << gv::url << fig_hash << "." << format;
-		tmp.clear(); tmp << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
+		sb.clear(); sb << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
 				"<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
 				<< "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
 				<< "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> "
 				<< (gv::is_eng ? "Fig. " : u8"图 ") << figNo
 				<< u8"：" << caption << "</div>";
-		str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1, tmp);
+		str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1, sb);
 		++N;
 	}
 	return N;
@@ -162,7 +162,7 @@ inline Long theorem_like_env(Str_IO str)
 {
 	Long N, N_tot = 0, ind0;
 	Intvs intvIn, intvOut;
-	Str env_title, env_num, tmp;
+	Str env_title, env_num;
 	vecStr envNames = {"definition", "lemma", "theorem",
 		"corollary", "example", "exercise"};
 	vecStr envCnNames;
@@ -192,11 +192,11 @@ inline Long theorem_like_env(Str_IO str)
 			// replace
 			str.replace(ind2, ind3 - ind2, "</div>\n");
 			// str.replace(ind1, ind2 - ind1, temp);
-			tmp.clear(); tmp << "<div class = \"w3-panel " << envBorderColors[i]
+			sb.clear(); sb << "<div class = \"w3-panel " << envBorderColors[i]
 					<< " w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
 					<< envCnNames[i] << " "
 					<< env_num << u8"</b>　" << env_title << "</h3>\n";
-			str.replace(ind0, ind1 - ind0, tmp);
+			str.replace(ind0, ind1 - ind0, sb);
 		}
 	}
 	return N_tot;

@@ -28,7 +28,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 {
 	Long ind0 = 0, ind1 = 0;
 	Intvs intvIn, intvOut;
-	Str code, ind_str, tmp;
+	Str code, ind_str;
 	find_env(intvIn, str, "lstlisting", 'i');
 	Long N = find_env(intvOut, str, "lstlisting", 'o');
 	Str lang, caption, capption_str; // language, caption
@@ -150,9 +150,9 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		}
 		replace(code, "&", "&amp;"); // must be replaced first
 		replace(code, "<", "&lt;"); replace(code, ">", "&gt;");
-		tmp.clear(); tmp << capption_str << "<pre " << prism_line_num
+		sb.clear(); sb << capption_str << "<pre " << prism_line_num
 			<< "><code" << prism_lang << ">" << code << "\n</code></pre>\n";
-		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, tmp);
+		str.replace(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1, sb);
 	}
 	return N;
 }

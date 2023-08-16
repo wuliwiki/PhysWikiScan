@@ -432,7 +432,7 @@ inline Long Enumerate(Str_IO str)
 inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 {
 	Long ind0 = 0, N = 0;
-	Str tmp, idNo;
+	Str idNo;
 	ind0 = find_command(str, "footnote", ind0);
 	if (ind0 < 0)
 	    return 0;
@@ -440,13 +440,13 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 	while (true) {
 	    ++N;
 	    num2str(idNo, N);
-	    command_arg(tmp, str, ind0);
+	    command_arg(sb, str, ind0);
 	    str << "<a href = \"" << url << entry << ".html#ret" << idNo << "\" id = \"note"
-			<< idNo << "\">" << idNo << ". <b>^</b></a> " << tmp << "<br>\n";
+			<< idNo << "\">" << idNo << ". <b>^</b></a> " << sb << "<br>\n";
 	    ind0 -= eatL(str, ind0 - 1, " \n");
-		tmp.clear(); tmp << "<sup><a href = \"" << url << entry << ".html#note"
+		sb.clear(); sb << "<sup><a href = \"" << url << entry << ".html#note"
 			<< idNo << "\" id = \"ret" << idNo << "\"><b>" << idNo << "</b></a></sup>";
-	    str.replace(ind0, skip_command(str, ind0, 1) - ind0,tmp);
+	    str.replace(ind0, skip_command(str, ind0, 1) - ind0,sb);
 	    ++ind0;
 	    ind0 = find_command(str, "footnote", ind0);
 	    if (ind0 < 0)
@@ -459,7 +459,7 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 inline Long subsections(Str_IO str)
 {
 	Long ind0 = 0, N = 0;
-	Str subtitle, tmp;
+	Str subtitle;
 	while (1) {
 	    ind0 = find_command(str, "subsection", ind0);
 	    if (ind0 < 0)
@@ -467,8 +467,8 @@ inline Long subsections(Str_IO str)
 	    ++N;
 	    command_arg(subtitle, str, ind0);
 	    Long ind1 = skip_command(str, ind0, 1);
-		tmp.clear(); tmp << "<h2 class = \"w3-text-indigo\"><b>" << N << ". " << subtitle << "</b></h2>";
-	    str.replace(ind0, ind1 - ind0, tmp);
+		sb.clear(); sb << "<h2 class = \"w3-text-indigo\"><b>" << N << ". " << subtitle << "</b></h2>";
+	    str.replace(ind0, ind1 - ind0, sb);
 	}
 }
 
@@ -477,7 +477,7 @@ inline Long subsections(Str_IO str)
 inline Long href(Str_IO str)
 {
 	Long ind0 = 0, N = 0, tmp;
-	Str name, url, tmp2;
+	Str name, url;
 	while (1) {
 	    ind0 = find_command(str, "href", ind0);
 	    if (ind0 < 0)
@@ -500,8 +500,8 @@ inline Long href(Str_IO str)
 	    }
 	    replace(url, "\\%", "%"); replace(url, "\\_", "_"); replace(url, "\\#", "#");
 	    Long ind1 = skip_command(str, ind0, 2);
-		tmp2.clear(); tmp2 << "<a href=\"" << url << R"(" target = "_blank">)" << name << "</a>";
-	    str.replace(ind0, ind1 - ind0, tmp2);
+		sb.clear(); sb << "<a href=\"" << url << R"(" target = "_blank">)" << name << "</a>";
+	    str.replace(ind0, ind1 - ind0, sb);
 	    ++N; ++ind0;
 	}
 }

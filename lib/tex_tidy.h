@@ -161,7 +161,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 {
 	Long ind0 = 0, N = 0;
-	Str label, entry1, entry2, tmp;
+	Str label, entry1, entry2;
 	while (1) {
 		ind0 = find_command(str, "autoref", ind0);
 		if (ind0 < 0)
@@ -181,8 +181,8 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 			ind5 = str.rfind("\\upref", ind5-1); entry2.clear();
 			if (ind5 > 0 && ExpectKeyReverse(str, "~", ind5 - 1) < 0)
 				command_arg(entry2, str, ind5);
-			Str tmp = label_entry_old(label);
-			if (tmp != entry && tmp != entry2)
+			sb = label_entry_old(label);
+			if (sb != entry && sb != entry2)
 				throw scan_err("\\autoref{" + label + u8"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
 			continue;
 		}
@@ -191,8 +191,8 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 			throw scan_err(u8"\\autoref{} 后面不应该有单独的 ~");
 		command_arg(entry1, str, ind2 - 6);
 		if (label_entry_old(label) != entry1) {
-			tmp.clear(); tmp << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
-			throw scan_err(tmp);
+			sb.clear(); sb << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
+			throw scan_err(sb);
 		}
 		str.erase(ind1-1, 1); // delete ~
 		ind0 = ind2;

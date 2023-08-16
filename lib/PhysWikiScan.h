@@ -38,7 +38,7 @@ inline Long paragraph_tag1(Str_IO str)
 inline Long paragraph_tag(Str_IO str)
 {
 	Long N = 0, ind0 = 0, left = 0, length = -500, ikey = -500;
-	Str tmp, env, end, begin = u8"<p>　　\n";
+	Str str1, env, end, begin = u8"<p>　　\n";
 
 	// "begin", and commands that cannot be in a paragraph
 	vecStr commands = {"begin", "subsection", "subsubsection", "pentry"};
@@ -108,27 +108,27 @@ inline Long paragraph_tag(Str_IO str)
 
 		// add tags
 		length = ind0 - left;
-		tmp = str.substr(left, length);
-		N += paragraph_tag1(tmp);
-		if (tmp.empty()) {
+		str1 = str.substr(left, length);
+		N += paragraph_tag1(str1);
+		if (str1.empty()) {
 			if (next == 'e' && last != 'e') {
-				tmp = "\n<p>\n";
+				str1 = "\n<p>\n";
 			}
 			else if (last == 'e' && next != 'e') {
-				tmp = "\n</p>\n";
+				str1 = "\n</p>\n";
 			}
 			else {
-				tmp = "\n";
+				str1 = "\n";
 			}
 		}
 		else {
-			tmp = begin + tmp + end;
+			str1 = begin + str1 + end;
 		}
-		str.replace(left, length, tmp);
+		str.replace(left, length, str1);
 		find_inline_eq(intvInline, str);
 		if (next == 'f')
 			return N;
-		ind0 += size(tmp) - length;
+		ind0 += size(str1) - length;
 		
 		// skip
 		if (ikey == 0) {
@@ -137,11 +137,11 @@ inline Long paragraph_tag(Str_IO str)
 				Long right;
 				left = inside_env(right, str, ind0, 2);
 				length = right - left;
-				tmp = str.substr(left, length);
-				paragraph_tag(tmp);
-				str.replace(left, length, tmp);
+				str1 = str.substr(left, length);
+				paragraph_tag(str1);
+				str.replace(left, length, str1);
 				find_inline_eq(intvInline, str);
-				ind0 = ind1 + size(tmp) - length;
+				ind0 = ind1 + size(str1) - length;
 			}
 			else
 				ind0 = skip_env(str, ind0);
@@ -180,7 +180,7 @@ inline Long paragraph_tag(Str_IO str)
 inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 {
 	Long ind = 0;
-	Str pentry_arg, entry, tmp;
+	Str pentry_arg, entry;
 	Str span_beg = R"(<span style="color:gray;">)", span_end = "</span>";
 	Long i = -1; // index to pentry
 	while (1) { // loop through \pentry command (not pentry var)
@@ -232,11 +232,11 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 				throw scan_err(u8"预备知识之间必须用中文逗号隔开，不要有空格");
 			++it; ind2 = it;
 		}
-		tmp = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
-		tmp << (gv::is_eng ? "Prerequisite" : u8"预备知识")
+		sb = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
+		sb << (gv::is_eng ? "Prerequisite" : u8"预备知识")
 			<< "</b>　" << pentry_arg << "</div>";
-		str.replace(ind, ind1-ind, tmp);
-		ind += size(tmp);
+		str.replace(ind, ind1-ind, sb);
+		ind += size(sb);
 	}
 }
 
@@ -252,14 +252,13 @@ inline Long rep_eq_lt_gt(Str_IO str)
 {
 	Long N = 0;
 	Intvs intv, intv1;
-	Str tmp;
 	find_inline_eq(intv, str);
 	find_display_eq(intv1, str); combine(intv, intv1);
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 		Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
-		tmp = str.substr(ind0, Nstr);
-		N += ensure_space_around(tmp, "<") + ensure_space_around(tmp, ">");
-		str.replace(ind0, Nstr, tmp);
+		sb = str.substr(ind0, Nstr);
+		N += ensure_space_around(sb, "<") + ensure_space_around(sb, ">");
+		str.replace(ind0, Nstr, sb);
 	}
 	return N;
 }
@@ -823,12 +822,11 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
-			Str tmp;
-			tmp << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << '\n';
+			sb << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << '\n';
 			for (auto &e: entry_err) {
-				tmp << SLS_RED_BOLD << e.first << SLS_NO_STYLE << '\n' << e.second << '\n';
+				sb << SLS_RED_BOLD << e.first << SLS_NO_STYLE << '\n' << e.second << '\n';
 			}
-			throw scan_err(tmp);
+			throw scan_err(sb);
 		}
 		else
 			throw scan_err((*entry_err.begin()).second);
@@ -840,7 +838,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
 	vecStr ref_by, vtmp;
-	Str stmp, err_msg, tmp;
+	Str stmp, err_msg;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
 
@@ -850,9 +848,9 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
 		bool db_deleted = (int)stmt_select.getColumn(1);
-		tmp.clear(); tmp << gv::path_in << "contents/" << entry << ".tex";
+		sb.clear(); sb << gv::path_in << "contents/" << entry << ".tex";
 		if (db_deleted) {
-			if (file_exist(tmp))
+			if (file_exist(sb))
 				db_deleted = false;
 			else {
 				if (no_throw)
@@ -861,9 +859,9 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 			}
 		}
 		else { // !db_deleted
-			if (!file_exist(tmp)) {
+			if (!file_exist(sb)) {
 				SLS_WARN(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
-				write("% dummy\n\n", tmp);
+				write("% dummy\n\n", sb);
 			}
 		}
 		const Str &ref_by_str = stmt_select.getColumn(0);
@@ -899,7 +897,6 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 // must be marked figures.deleted and not referenced by figures.aka
 inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	Str tmp, tmp2;
 	vecStr image_hash, images, images_alt, images_old;
 	set<Str> entries_figures;
 
@@ -935,29 +932,29 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		parse(entries_figures, stmt_select3.getColumn(0));
 		if (entries_figures.count(figure)) {
 			entries_figures.erase(figure);
-			join(tmp, entries_figures);
-			stmt_update3.bind(1, tmp);
+			join(sb, entries_figures);
+			stmt_update3.bind(1, sb);
 			stmt_update3.bind(2, entry);
 			stmt_update3.exec(); stmt_update3.reset();
 		}
 		else {
-			tmp.clear(); tmp << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
+			sb.clear(); sb << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
 				<< entry << '.' << figure;
-			SLS_WARN(tmp);
+			SLS_WARN(sb);
 		}
 		stmt_select3.reset();
 
 		// check figures.aka
 		stmt_select2.bind(1, entry);
-		tmp.clear();
+		sb.clear();
 		while (stmt_select2.executeStep()) {
 			const Str &id = (const char*)stmt_select2.getColumn(0);
-			tmp << " " << id;
+			sb << " " << id;
 		}
 		stmt_select2.reset();
-		if (!tmp.empty()) {
-			tmp2.clear(); tmp2 << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << tmp;
-			throw internal_err(tmp2);
+		if (!sb.empty()) {
+			sb1.clear(); sb1 << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
+			throw internal_err(sb1);
 		}
 
 		// delete figures.image*
@@ -986,7 +983,6 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	vecStr history_hash, figures, figs_dangling;
-	Str tmp;
 	SQLite::Statement stmt_select(db_read, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
@@ -1025,12 +1021,12 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 					throw internal_err(SLS_WHERE);
 				if (entry != (const char*)stmt_select2.getColumn(2))
 					throw internal_err(SLS_WHERE);
-				tmp.clear(); tmp << "../PhysWiki-backup/" << (const char*)stmt_select2.getColumn(0) << '_'
+				sb.clear(); sb << "../PhysWiki-backup/" << (const char*)stmt_select2.getColumn(0) << '_'
 					<< (int)stmt_select2.getColumn(1) << '_' << entry << ".tex";
 				stmt_select2.reset();
 				stmt_delete.bind(1, hash);
 				stmt_delete.exec(); stmt_delete.reset();
-				file_remove(tmp);
+				file_remove(sb);
 			}
 		}
 

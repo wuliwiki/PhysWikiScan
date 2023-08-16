@@ -692,7 +692,6 @@ inline void check_display_eq_punc(Str_I str)
 {
 	Intvs intv;
 	find_display_eq(intv, str);
-	Str tmp;
 	for (Long i = 0; i < intv.size(); ++i) {
 		Long start = intv.L(i), end = intv.R(i);
 		Long j;
@@ -706,12 +705,12 @@ inline void check_display_eq_punc(Str_I str)
 				char c = str[j];
 				if (c == ' ' || c == '\n') continue;
 				if (c == '~') break;
-				tmp = u8R"(根据编写规范，请在行间公式最后添加标点（如 "~," 或 "~."）， 详见 Sample.tex。
+				sb = u8R"(根据编写规范，请在行间公式最后添加标点（如 "~," 或 "~."）， 详见 Sample.tex。
 如果的确没必要，请在最后添加 "~"。 当前公式为：
 )";
-				tmp << str.substr(start, end+1-start);
-				SLS_WARN(tmp);
-				throw scan_err(tmp);
+				sb << str.substr(start, end+1-start);
+				SLS_WARN(sb);
+				throw scan_err(sb);
 			}
 		}
 	}
@@ -723,7 +722,6 @@ inline void check_display_eq_punc(Str_I str)
 // 所以这个函数要求如果你真的想在公式前后分段， 就空两行
 inline void check_display_eq_paragraph(Str_I str)
 {
-	Str tmp;
 	u8_iter it0(str);
 	Intvs intv_o;
 	find_display_eq(intv_o, str, 'o');
@@ -783,7 +781,6 @@ inline void check_eq_empty_line(Str_I str)
 	find_inline_eq(intv, str);
 	find_display_eq(intv1, str);
 	combine(intv, intv1);
-	Str tmp;
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 	    for (Long j = intv.L(i); j < intv.R(i); ++j) {
 	        if (str[j] == '\n' && str[j+1] == '\n')
@@ -799,7 +796,6 @@ inline void check_eq_ascii(Str_I str)
 	find_inline_eq(intv, str);
 	find_display_eq(intv1, str);
 	combine(intv, intv1);
-	Str tmp;
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 	    for (Long j = intv.L(i); j <= intv.R(i); ++j) {
 	        if (!is_ascii(str[j]) && !is_in_cmd(str, "text", j))
@@ -939,7 +935,6 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 {
 	Long ind0 = 0, ind1, ind2;
 	char dlm;
-	Str tmp;
 
 	// verb
 	while (true) {
@@ -961,14 +956,14 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 	    str_verb.push_back(str.substr(ind1 + 1, ind2 - ind1 - 1));
 	    Long ind10 = skip_char8(str, ind0, -1);
 	    if (is_chinese(str, ind10))
-	        tmp = ' ';
+	        sb = ' ';
 	    else
-	        tmp.clear();
-	    tmp += "\\verb|" + num2str(size(str_verb) - 1) + "|";
+	        sb.clear();
+	    sb += "\\verb|" + num2str(size(str_verb) - 1) + "|";
 	    ind10 = skip_char8(str, ind2, 1);
 	    if (is_chinese(str, ind10))
-	        tmp += ' ';
-	    str.replace(ind0, ind2 + 1 - ind0, tmp);
+	        sb += ' ';
+	    str.replace(ind0, ind2 + 1 - ind0, sb);
 	    ind0 += 3;
 	}
 
@@ -994,14 +989,14 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 
 	    Long ind10 = skip_char8(str, ind0, -1);
 	    if (is_chinese(str, ind10))
-	        tmp = ' ';
+	        sb = ' ';
 	    else
-	        tmp.clear();
-	    tmp += "\\lstinline|" + num2str(size(str_verb) - 1) + "|";
+	        sb.clear();
+	    sb += "\\lstinline|" + num2str(size(str_verb) - 1) + "|";
 	    ind10 = skip_char8(str, ind2, 1);
 	    if (is_chinese(str, ind10))
-	        tmp += ' ';
-	    str.replace(ind0, ind2 + 1 - ind0, tmp);
+	        sb += ' ';
+	    str.replace(ind0, ind2 + 1 - ind0, sb);
 	    ind0 += 3;
 	}
 	
@@ -1034,7 +1029,7 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 {
 	SLS_ERR("unfinished!");
 	Long N = 0, ind0 = 0;
-	Str ind_str, tmp;
+	Str ind_str;
 
 	// verb
 	while (1) {
@@ -1078,7 +1073,7 @@ inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 inline Long lstinline(Str_IO str, vecStr_IO str_verb)
 {
 	Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
-	Str ind_str, tmp;
+	Str ind_str;
 	while (true) {
 	    ind0 = find_command(str, "lstinline", ind0);
 	    if (ind0 < 0)
@@ -1095,9 +1090,9 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
 	replace(str_verb[ind], "&", "&amp;");
 	    replace(str_verb[ind], "<", "&lt;");
 	    replace(str_verb[ind], ">", "&gt;");
-	    tmp = "<code>" + str_verb[ind] + "</code>";
-	    str.replace(ind0, ind2 - ind0 + 1, tmp);
-	    ind0 += size(tmp);
+	    sb = "<code>" + str_verb[ind] + "</code>";
+	    str.replace(ind0, ind2 - ind0 + 1, sb);
+	    ind0 += size(sb);
 	    ++N;
 	}
 	return N;
@@ -1108,7 +1103,7 @@ inline Long lstinline(Str_IO str, vecStr_IO str_verb)
 inline Long verb(Str_IO str, vecStr_IO str_verb)
 {
 	Long N = 0, ind0 = 0, ind1 = 0, ind2 = 0;
-	Str ind_str, tmp;
+	Str ind_str;
 	while (true) {
 	    ind0 = find_command(str, "verb", ind0);
 	    if (ind0 < 0)
@@ -1125,9 +1120,9 @@ inline Long verb(Str_IO str, vecStr_IO str_verb)
 	replace(str_verb[ind], "&", "&amp;");
 	    replace(str_verb[ind], "<", "&lt;");
 	    replace(str_verb[ind], ">", "&gt;");
-	    tmp = "<code>" + str_verb[ind] + "</code>";
-	    str.replace(ind0, ind2 - ind0 + 1, tmp);
-	    ind0 += tmp.size();
+	    sb = "<code>" + str_verb[ind] + "</code>";
+	    str.replace(ind0, ind2 - ind0 + 1, sb);
+	    ind0 += sb.size();
 	    ++N;
 	}
 	return N;
