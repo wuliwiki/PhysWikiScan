@@ -682,6 +682,8 @@ inline void find_display_eq(Intvs_O intv, Str_I str, char option = 'i')
 	combine(intv, intv1);
 	find_env(intv1, str, "align", option);
 	combine(intv, intv1);
+	find_env(intv1, str, "align*", option);
+	combine(intv, intv1);
 	find_env(intv1, str, "gather", option);
 	combine(intv, intv1);
 }

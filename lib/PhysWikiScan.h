@@ -410,7 +410,7 @@ inline void arg_history(Str_I path, SQLite::Database &db_rw)
 // output title from first line comment
 // use `clear=true` to only keep the title line and key-word line of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
-	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, vector<unordered_map<Str, Str>> &fig_ext_hash,
+	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
@@ -623,7 +623,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 	vecLong fig_orders, label_orders;
 	vecStr keywords, fig_ids, labels;
 	Pentry pentry;
-	vector<unordered_map<Str, Str>> fig_ext_hash;
+	unordered_map<Str, unordered_map<Str, Str>> fig_ext_hash; // figures.id -> (ext -> hash)
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
 	Str pentry_str, db_pentry_str, html;
@@ -667,7 +667,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			// update db labels, figures
 			db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
 			db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
-							  {fig_ext_hash}, db_rw);
+							  fig_ext_hash, db_rw);
 			db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
 
 			// order change means `update_entries` needs to be updated with autoref() as well.

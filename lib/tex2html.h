@@ -210,15 +210,17 @@ inline Long newcommand(Str_IO str, vecStr_I rules)
 
 // deal with escape simbols in normal text
 // str must be normal text
-inline Long TextEscape(Str_IO str)
+// return number of replacement and if "\\\\" is found
+inline pair<Long, bool> TextEscape(Str_IO str)
 {
 	Long N{};
+	bool has_br = false;
 	N += replace(str, "<", "&lt;");
 	N += replace(str, ">", "&gt;");
-	Long tmp = replace(str, "\\\\", "<br>");
-	if (tmp > 0)
-	    throw scan_err(u8"正文中发现 '\\\\' 强制换行！");
-	N += tmp;
+	Long Nr = replace(str, "\\\\", "<br>");
+	if (Nr > 0)
+		has_br = true;
+	N += Nr;
 	N += replace(str, "\\ ", " ");
 	N += replace(str, "{}", "");
 	N += replace(str, "\\^", "^");
@@ -232,7 +234,7 @@ inline Long TextEscape(Str_IO str)
 	N += replace(str, "\\,", " ");
 	N += replace(str, "\\;", " ");
 	N += replace(str, "\\textbackslash", "&bsol;");
-	return N;
+	return make_pair(N, has_br);
 }
 
 // deal with escape simbols in normal text, Command environments
@@ -240,22 +242,20 @@ inline Long TextEscape(Str_IO str)
 inline Long NormalTextEscape(Str_IO str)
 {
 	Long N1{}, N{}, Nnorm{};
-	Str temp;
+	Str str1;
 	Intvs intv;
-	Bool warned = false;
+	Bool warned = false, has_br;
 	Nnorm = FindNormalText(intv, str);
 	for (Long i = Nnorm - 1; i >= 0; --i) {
-	    temp = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
-	    try {N1 = TextEscape(temp);}
-	    catch(const std::exception &e) {
-	        if (!warned) {
-	            SLS_WARN(e.what()); warned = true;
-	        }
+		str1 = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
+	    tie(N1, has_br) = TextEscape(str1);
+		if (has_br && !warned) {
+				SLS_WARN(u8R"(正文中发现 "\\" 强制换行！)"); warned = true;
 	    }
 	    if (N1 < 0)
 	        continue;
 	    N += N1;
-	    str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, temp);
+	    str.replace(intv.L(i), intv.R(i) - intv.L(i) + 1, str1);
 	}
 	return N;
 }
@@ -269,8 +269,8 @@ inline Long Table(Str_IO str)
 	Intvs intv;
 	vecLong indLine; // stores the position of "\hline"
 	vecStr captions;
-	Str str_beg = "<div class = \"eq\" align = \"center\">"
-	    "<div class = \"w3 - cell\" style = \"width:710px\">\n<table><tr><td>";
+	Str str_beg = R"(<div class = "eq" align = "center"><div class = "w3 - cell" style = "width:710px">
+<table><tr><td>)";
 	Str str_end = "</td></tr></table>\n</div></div>";
 	N = find_env(intv, str, "table", 'o');
 	if (N == 0) return 0;

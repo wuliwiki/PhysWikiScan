@@ -7,8 +7,11 @@
 // `imgs` is the list of image names, `mark[i]` will be set to 1 when `imgs[i]` is used
 // if `imgs` is empty, `imgs` and `mark` will be ignored
 // fig_ext_hash[i] maps the file extension to file hash
-inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<Str, Str>> &fig_ext_hash, Str_IO str, Str_I entry,
-					vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
+inline void figure_env(
+	unordered_set<Str> &img_to_delete, // [out] image files to delete
+	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash, // figures.id -> (ext -> hash)
+	Str_IO str, Str_I entry,
+	vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
 {
 	fig_ext_hash.clear();
 	Long N = 0;
@@ -18,14 +21,14 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 	Long Nfig = find_env(intvFig, str, "figure", 'o');
 	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
 		throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
-	fig_ext_hash.resize(Nfig);
 	Str fig_hash;
 
 	for (Long i = Nfig - 1; i >= 0; --i) {
+		auto &fig_id = fig_ids[i];
 		num2str(figNo, i + 1);
 		// get label and id
 		Str tmp1 = "id = \"fig_";
-		Long ind_label = str.rfind(tmp1, intvFig.L(i));
+		Long ind_label = rfind(str, tmp1, intvFig.L(i));
 		if (ind_label < 0 || (i-1 >= 0 && ind_label < intvFig.R(i-1)))
 			throw scan_err(u8"图片必须有标签， 请使用上传图片按钮。");
 		ind_label += size(tmp1);
@@ -59,7 +62,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			if (!file_exist(fname_in))
 				throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
 			fig_hash = sha1sum_f(fname_in).substr(0, 16);
-			fig_ext_hash[i][format] = fig_hash;
+			fig_ext_hash[fig_id][format] = fig_hash;
 			// rename figure files with hash
 			fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
 			if (figName != fig_hash) {
@@ -68,7 +71,9 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 				// modify .tex file
 				tex_fname.clear(); tex_fname << gv::path_in << "contents/" << entry << ".tex";
 				read(str_mod, tex_fname);
-				replace(str_mod, figName + "." + format, fig_hash + "." + format);
+				clear(sb) << figName << '.' << format;
+				clear(sb1) << fig_hash << '.' << format;
+				replace(str_mod, sb, sb1);
 				write(str_mod, tex_fname);
 			}
 		}
@@ -80,7 +85,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 			if (!file_exist(fname_in))
 				throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
 			fig_hash = sha1sum_f(fname_in).substr(0, 16);
-			fig_ext_hash[i][format] = fig_hash;
+			fig_ext_hash[fig_id][format] = fig_hash;
 			// rename figure files with hash
 			fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << "." << format;
 			if (figName != fig_hash) {
@@ -89,7 +94,9 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 				// modify .tex file
 				tex_fname.clear(); tex_fname << gv::path_in << "contents/" << entry << ".tex";
 				read(str_mod, tex_fname);
-				replace(str_mod, figName + "." + format, fig_hash + "." + format);
+				clear(sb) << figName << '.' << format;
+				clear(sb1) << fig_hash << '.' << format;
+				replace(str_mod, sb, sb1);
 				write(str_mod, tex_fname);
 			}
 
@@ -101,7 +108,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 				read(sb, fname_in);
 				CRLF_to_LF(sb);
 				fig_hash = sha1sum(sb).substr(0, 16);
-				fig_ext_hash[i][format] = fig_hash;
+				fig_ext_hash[fig_id][format] = fig_hash;
 				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << '.' << format;
 				// rename figure files with hash
 				if (figName != fig_hash) {
@@ -123,7 +130,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 					SLS_WARN(u8"发现 figures.image_alt 仍然带有拓展名，将模拟编辑器删除。");
 					fig_hash.resize(16);
 				}
-				fig_ext_hash[i][format] = fig_hash;
+				fig_ext_hash[fig_id][format] = fig_hash;
 				fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << fig_hash << '.' << format;
 			}
 		}
@@ -153,7 +160,6 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 		str.replace(intvFig.L(i), intvFig.R(i) - intvFig.L(i) + 1, sb);
 		++N;
 	}
-	return N;
 }
 
 // these environments are already not in a paragraph

@@ -2,9 +2,10 @@
 #include "sqlite_db.h"
 
 // db table "images"
-inline void db_update_images(Str_I entry, vecStr_I fig_ids,
-							 const vector<unordered_map<Str,Str>> &fig_ext_hash, // fig_ext_hash[i][ext] -> hash, for fig_ids[i]
-							 SQLite::Database &db_rw)
+inline void db_update_images(
+		Str_I entry, vecStr_I fig_ids,
+		const unordered_map<Str, unordered_map<Str,Str>> &fig_ext_hash, // figures.id -> (ext -> hash)
+		SQLite::Database &db_rw)
 {
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select(db_rw,
@@ -15,17 +16,17 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 		R"(UPDATE "images" SET "figure"=?, "figures_aka"=? WHERE "hash"=?;)");
 	Str db_image_ext;
 
-	for (Long i = 0; i < size(fig_ids); ++i) {
-		for (auto &ext_hash: fig_ext_hash[i]) {
+	for (auto &fig_id :fig_ids) {
+		for (auto &ext_hash: fig_ext_hash.at(fig_id)) {
 			auto &image_ext = ext_hash.first;
 			auto &image_hash = ext_hash.second;
-			stmt_select.bind(1, ext_hash.second);
+			stmt_select.bind(1, image_hash);
 			if (!stmt_select.executeStep()) {
 				clear(sb) << "数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
 				SLS_WARN(sb);
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
-				stmt_insert.bind(3, fig_ids[i]);
+				stmt_insert.bind(3, fig_id);
 				stmt_insert.exec(); stmt_insert.reset();
 			}
 			else {
@@ -43,16 +44,16 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 }
 
 // db table "figures"
-inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
+inline void db_update_figures(
+	unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
 	vecStr_I entries,
-	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures in entries[i]
+	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures.id in entries[i]
 	const vector<vecLong> &entry_fig_orders, // entry_fig_orders[i] are the figures.order in entries[i]
-	const vector<vector<unordered_map<Str,Str>>> &entry_fig_ext_hash, // entry_fig_ext_hash[i][j] is map(ext -> hash) for entry_figs[i][j]
+	const unordered_map<Str, unordered_map<Str,Str>> &fig_ext_hash, // fig_id -> (ext -> hash)
 	SQLite::Database &db_rw)
 {
 	// cout << "updating db for figures environments..." << endl;
 	update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
-	Str id;
 	Long order;
 	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select0(db_rw,
@@ -102,46 +103,46 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 		auto &entry = entries[i];
 		new_figs.clear();
 		for (Long j = 0; j < size(entry_figs[i]); ++j) {
-			id = entry_figs[i][j]; order = entry_fig_orders[i][j];
-			Long ind = search(id, db_figs);
-			const unordered_map<Str,Str> &map = entry_fig_ext_hash[i][j];
-			if (map.size() == 1) { // png
-				if (!map.count("png"))
+			const Str &fig_id = entry_figs[i][j]; order = entry_fig_orders[i][j];
+			Long ind = search(fig_id, db_figs);
+			auto &ext_hash = fig_ext_hash.at(fig_id);
+			if (ext_hash.size() == 1) { // png
+				if (!ext_hash.count("png"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("png"); ext = "png";
+				image = ext_hash.at("png"); ext = "png";
 			}
-			else if (map.size() == 2) { // svg + pdf
-				if (!map.count("svg") || !map.count("pdf"))
+			else if (ext_hash.size() == 2) { // svg + pdf
+				if (!ext_hash.count("svg") || !ext_hash.count("pdf"))
 					throw internal_err("db_update_figures(): unexpected fig format!");
-				image = map.at("pdf"); ext = "pdf";
+				image = ext_hash.at("pdf"); ext = "pdf";
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
 				clear(sb) << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
-								 << id << ", " << entry << ", " << to_string(order);
+						  << fig_id << ", " << entry << ", " << to_string(order);
 				SLS_WARN(sb);
-				stmt_insert.bind(1, id);
+				stmt_insert.bind(1, fig_id);
 				stmt_insert.bind(2, entry);
 				stmt_insert.bind(3, (int)order);
 				stmt_insert.bind(4, image);
 				stmt_insert.exec(); stmt_insert.reset();
-				new_figs.insert(id);
+				new_figs.insert(fig_id);
 				continue;
 			}
 			figs_used[ind] = true;
 			bool changed = false;
 			// 图片 label 在 entries.figures 中，检查是否未被使用
 			if (!db_figs_used[ind]) {
-				SLS_WARN(u8"发现数据库中未使用的图片被重新使用：" + id);
+				SLS_WARN(u8"发现数据库中未使用的图片被重新使用：" + fig_id);
 				changed = true;
 			}
 			if (entry != db_fig_entries[ind]) {
-				clear(sb) << u8"发现数据库中图片 entry 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 entry 改变（将更新）：" << fig_id << ": "
 								 << db_fig_entries[ind] << " -> " << entry;
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (order != db_fig_orders[ind]) {
-				clear(sb) << u8"发现数据库中图片 order 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 order 改变（将更新）：" << fig_id << ": "
 								 << to_string(db_fig_orders[ind]) << " -> " << to_string(order);
 				SLS_WARN(sb);
 				changed = true;
@@ -153,13 +154,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				}
 			}
 			if (image != db_fig_image[ind]) {
-				clear(sb) << u8"发现数据库中图片 image 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 image 改变（将更新）：" << fig_id << ": "
 								 << db_fig_image[ind] << " -> " << image;
 				SLS_WARN(sb);
-				if (!db_fig_aka[id].empty()) {
-					clear(sb) << u8"图片环境（" << id << "）是另一环境（" << db_fig_aka[id] << "）的镜像，不支持手动修改图片文件，请撤回 "
-						<< image << '.' << ext << "， 并新建一个 figure 环境。 TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。";
-					// TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。
+				if (!db_fig_aka[fig_id].empty()) {
+					clear(sb) << u8"图片环境（" << fig_id << "）是另一环境（" << db_fig_aka[fig_id] << "）的镜像，不支持手动修改图片文件，请撤回 "
+							  << image << '.' << ext << "， 并新建一个 figure 环境。 TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 fig 重命名，然后把新版本图片用原来的 fig。";
+					// TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 fig 重命名，然后把新版本图片用原来的 fig。
 					throw scan_err(sb);
 				}
 				changed = true;
@@ -168,7 +169,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				stmt_update.bind(1, entry);
 				stmt_update.bind(2, (int)order);
 				stmt_update.bind(3, image);
-				stmt_update.bind(4, id);
+				stmt_update.bind(4, fig_id);
 				stmt_update.exec(); stmt_update.reset();
 			}
 		}
@@ -190,7 +191,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 	// 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
 	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "id"=?;)");
+	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "fig"=?;)");
 	for (Long i = 0; i < size(figs_used); ++i) {
 		if (!figs_used[i] && db_figs_used[i]) {
 			if (db_fig_ref_bys[i].empty() ||

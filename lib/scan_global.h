@@ -70,11 +70,9 @@ void limit_log()
 	// only delete whole lines
 	static Str log_file = "scan_log.txt";
 	read(sb, log_file);
-	cout << "size(sb)=" << size(sb) << " size_max=" << size_max << endl;
 	if (size(sb) > size_max) {
 		Long ind = find(sb, '\n', size(sb)-size_min);
 		if (ind > 0) {
-			cout << "writing file size=" << size(sb)-ind << endl;
 			write(sb.substr(ind + 1), log_file);
 		}
 	}
