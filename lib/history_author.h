@@ -227,7 +227,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
 			clear(sb) << path << fname << ".tex";
 			clear(sb1) << "移动文件 " << fpath << " -> " << sb;
-			SLS_WARN(sb1);
+			scan_warn(sb1);
 			file_move(sb, fpath);
 		}
 

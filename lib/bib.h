@@ -52,7 +52,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			if (order != info.order) {
 				clear(sb) << u8"数据库中文献 "; sb << id << " 编号改变（将更新）： " << to_string(info.order)
 												   << " -> " << to_string(order);
-				SLS_WARN(sb);
+				db_log(sb);
 				changed = true;
 				id_flip_sign.insert(id);
 				stmt_update.bind(1, -(int)order); // to avoid unique constraint
@@ -70,7 +70,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			}
 		}
 		else {
-			SLS_WARN(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
+			db_log(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
 			stmt_insert.bind(1, id);
 			stmt_insert.bind(2, -(int)order);
 			stmt_insert.bind(3, bib_detail);

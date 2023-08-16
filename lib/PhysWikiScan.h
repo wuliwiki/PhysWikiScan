@@ -860,7 +860,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 		}
 		else { // !db_deleted
 			if (!file_exist(sb)) {
-				SLS_WARN(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
+				scan_warn(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
 				write("% dummy\n\n", sb);
 			}
 		}
@@ -914,7 +914,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		cout << "deleting figure: " << figure << endl;
 		stmt_select.bind(1, figure);
 		if (!stmt_select.executeStep()) {
-			SLS_WARN(u8"arg_delete_fig()：要删除的图片未找到（将忽略）：" + figure);
+			scan_warn(u8"arg_delete_fig()：要删除的图片未找到（将忽略）：" + figure);
 			stmt_select.reset();
 			continue;
 		}
@@ -1089,7 +1089,7 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	// TODO: warn unused figures, based on "ref_by"
 
 	if (!illegal_chars.empty()) {
-		SLS_WARN(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
+		scan_warn(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
 		ofstream fout("data/illegal_chars.txt");
 		for (auto c: illegal_chars) {
 			fout << Long(c) << endl;

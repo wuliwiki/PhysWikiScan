@@ -111,7 +111,7 @@ inline void unhide_eq_verb(Str_IO str)
 		replace(sb, "PhysWikiScanLF", "\n");
 		if (ind < 0) {
 			clear(sb1) << label << u8" 没有找到，替换： \n" << sb << "\n";
-			SLS_WARN(sb1);
+			scan_warn(sb1);
 		}
 		else
 			str.replace(ind, label.size(), sb);
@@ -124,7 +124,7 @@ inline void unhide_eq_verb(Str_IO str)
 		replace(sb, "PhysWikiScanLF", "\n");
 		if (ind < 0) {
 			clear(sb1) << label << u8" 没有找到，替换： \n" << sb << "\n";
-			SLS_WARN(sb1);
+			scan_warn(sb1);
 		}
 		else
 			str.replace(ind, label.size(), sb);

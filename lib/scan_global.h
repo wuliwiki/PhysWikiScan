@@ -68,6 +68,12 @@ inline void db_log(Str_I str)
 	scan_log(str);
 }
 
+inline void scan_warn(Str_I str)
+{
+	SLS_WARN(str);
+	scan_log("[Warning] " + str);
+}
+
 // limit log size
 inline void limit_log()
 {

@@ -127,7 +127,7 @@ inline void figure_env(
 					fig_hash = get_text("figures", "id", aka, "image_alt", db_read);
 				}
 				if (size(fig_hash) != 16) {
-					SLS_WARN(u8"发现 figures.image_alt 仍然带有拓展名，将模拟编辑器删除。");
+					scan_warn(u8"发现 figures.image_alt 仍然带有拓展名，将模拟编辑器删除。");
 					fig_hash.resize(16);
 				}
 				fig_ext_hash[fig_id][format] = fig_hash;

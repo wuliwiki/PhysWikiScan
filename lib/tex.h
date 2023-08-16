@@ -711,7 +711,6 @@ inline void check_display_eq_punc(Str_I str)
 如果的确没必要，请在最后添加 "~"。 当前公式为：
 )";
 				sb << str.substr(start, end+1-start);
-				SLS_WARN(sb);
 				throw scan_err(sb);
 			}
 		}

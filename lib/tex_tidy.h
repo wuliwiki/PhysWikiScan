@@ -55,7 +55,7 @@ inline void global_forbid_char(Str_I str)
 	Long ikey, ind = find(ikey, str, forbidden);
 	if (ind >= 0) {
 		Long beg = max(Long(0),ind-30);
-		SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + u8"？？？");
+		scan_warn(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, ind-beg) + u8"？？？");
 		// TODO: scan 应该搞一个批量替换功能
 		illegal_chars.insert(char32(str, ind));
 	}
@@ -66,7 +66,7 @@ inline void global_forbid_char(Str_I str)
 	for (; it != it_end; ++it) {
 		if (u32(*it)[0] > 65536) {
 			Long beg = max(Long(0), (Long)it-30);
-			SLS_WARN(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, (Long)it-beg) + u8"？？？");
+			scan_warn(u8"latex 代码中出现非法字符，建议使用公式环境和命令表示： " + str.substr(beg, (Long)it-beg) + u8"？？？");
 			illegal_chars.insert(str[ind]);
 		}
 	}
@@ -131,7 +131,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 			return N;
 		try {ind0 = skip_command(str, ind0, 1);}
 		catch (...) {
-			SLS_WARN(u8"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
+			scan_warn(u8"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
 		}
 		if (ind0 >= size(str))
 			return N;
@@ -149,7 +149,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 		if (error)
 			throw scan_err(msg);
 		else
-			SLS_WARN(msg);
+			scan_warn(msg);
 		++N;
 	}
 }
@@ -268,7 +268,7 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
 					if (error)
 						throw scan_err(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”");
 					else
-						SLS_WARN(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”\n");
+						scan_warn(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”\n");
 				}
 			}
 		}

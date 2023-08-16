@@ -250,7 +250,7 @@ inline Long NormalTextEscape(Str_IO str)
 		str1 = str.substr(intv.L(i), intv.R(i) - intv.L(i) + 1);
 	    tie(N1, has_br) = TextEscape(str1);
 		if (has_br && !warned) {
-				SLS_WARN(u8R"(正文中发现 "\\" 强制换行！)"); warned = true;
+			scan_warn(u8R"(正文中发现 "\\" 强制换行！)"); warned = true;
 	    }
 	    if (N1 < 0)
 	        continue;

@@ -256,7 +256,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			else if (type == "sub") kind = u8"子节";
 			else if (type == "lst") {
 				kind = u8"代码";
-				SLS_WARN(u8"autoref lstlisting 功能未完成！");
+				scan_warn(u8"autoref lstlisting 功能未完成！");
 				++ind0; continue;
 			}
 			else
@@ -275,7 +275,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			else if (type == "sub") kind = "sub. ";
 			else if (type == "lst") {
 				kind = "code. ";
-				SLS_WARN(u8"autoref lstlisting 功能未完成！");
+				scan_warn(u8"autoref lstlisting 功能未完成！");
 				++ind0; continue;
 			}
 			else
