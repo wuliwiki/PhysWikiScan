@@ -444,7 +444,7 @@ inline Long footnote(Str_IO str, Str_I entry, Str_I url)
 	    str << "<a href = \"" << url << entry << ".html#ret" << idNo << "\" id = \"note"
 			<< idNo << "\">" << idNo << ". <b>^</b></a> " << sb << "<br>\n";
 	    ind0 -= eatL(str, ind0 - 1, " \n");
-		sb.clear(); sb << "<sup><a href = \"" << url << entry << ".html#note"
+		clear(sb) << "<sup><a href = \"" << url << entry << ".html#note"
 			<< idNo << "\" id = \"ret" << idNo << "\"><b>" << idNo << "</b></a></sup>";
 	    str.replace(ind0, skip_command(str, ind0, 1) - ind0,sb);
 	    ++ind0;
@@ -467,7 +467,7 @@ inline Long subsections(Str_IO str)
 	    ++N;
 	    command_arg(subtitle, str, ind0);
 	    Long ind1 = skip_command(str, ind0, 1);
-		sb.clear(); sb << "<h2 class = \"w3-text-indigo\"><b>" << N << ". " << subtitle << "</b></h2>";
+		clear(sb) << "<h2 class = \"w3-text-indigo\"><b>" << N << ". " << subtitle << "</b></h2>";
 	    str.replace(ind0, ind1 - ind0, sb);
 	}
 }
@@ -500,7 +500,7 @@ inline Long href(Str_IO str)
 	    }
 	    replace(url, "\\%", "%"); replace(url, "\\_", "_"); replace(url, "\\#", "#");
 	    Long ind1 = skip_command(str, ind0, 2);
-		sb.clear(); sb << "<a href=\"" << url << R"(" target = "_blank">)" << name << "</a>";
+		clear(sb) << "<a href=\"" << url << R"(" target = "_blank">)" << name << "</a>";
 	    str.replace(ind0, ind1 - ind0, sb);
 	    ++N; ++ind0;
 	}

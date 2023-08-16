@@ -848,7 +848,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
 		bool db_deleted = (int)stmt_select.getColumn(1);
-		sb.clear(); sb << gv::path_in << "contents/" << entry << ".tex";
+		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (db_deleted) {
 			if (file_exist(sb))
 				db_deleted = false;
@@ -938,7 +938,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 			stmt_update3.exec(); stmt_update3.reset();
 		}
 		else {
-			sb.clear(); sb << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
+			clear(sb) << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
 				<< entry << '.' << figure;
 			SLS_WARN(sb);
 		}
@@ -953,7 +953,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		}
 		stmt_select2.reset();
 		if (!sb.empty()) {
-			sb1.clear(); sb1 << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
+			clear(sb1) << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
 			throw internal_err(sb1);
 		}
 
@@ -1021,7 +1021,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 					throw internal_err(SLS_WHERE);
 				if (entry != (const char*)stmt_select2.getColumn(2))
 					throw internal_err(SLS_WHERE);
-				sb.clear(); sb << "../PhysWiki-backup/" << (const char*)stmt_select2.getColumn(0) << '_'
+				clear(sb) << "../PhysWiki-backup/" << (const char*)stmt_select2.getColumn(0) << '_'
 					<< (int)stmt_select2.getColumn(1) << '_' << entry << ".tex";
 				stmt_select2.reset();
 				stmt_delete.bind(1, hash);

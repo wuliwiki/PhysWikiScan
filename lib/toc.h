@@ -272,7 +272,7 @@ inline void table_of_contents(
 			}
 			if (!link_class.empty())
 				link_class = "class=\"" + link_class + "\" ";
-			sb.clear(); sb << "<a " << link_class << "href = \"" << gv::url << entry
+			clear(sb) << "<a " << link_class << "href = \"" << gv::url << entry
 				<< R"(.html" target = "_blank">)" << title << u8"</a>　\n";
 			ind0 = insert(html, sb, ind0);
 
@@ -348,7 +348,7 @@ inline void table_of_contents(
 			if (last_command != 'e')
 				throw scan_err(u8"\\bibli 必须放在最后, 且不允许空的 \\chapter{}");
 			title = u8"参考文献";
-			sb.clear(); sb << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
+			clear(sb) << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
 					<< title << u8"</a>　\n";
 			ind0 = insert(html, sb, ind0);
 			++ind1;

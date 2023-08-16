@@ -224,8 +224,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			}
 			// rename to new format
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
-			sb.clear(); sb << path << fname << ".tex";
-			sb1.clear(); sb1 << "moving " << fpath << " -> " << sb;
+			clear(sb) << path << fname << ".tex";
+			clear(sb1) << "moving " << fpath << " -> " << sb;
 			SLS_WARN(sb1);
 			file_move(sb, fpath);
 		}
@@ -256,7 +256,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			stmt_select4.bind(3, entry);
 			if (stmt_select4.executeStep()) {
 				const char *db_hash = stmt_select4.getColumn(0);
-				sb.clear(); sb << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
+				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
 								 << db_hash << " -> " << sha1 << ' ' << fname;
 				SLS_WARN(sb);
 				stmt_update.bind(1, sha1);
@@ -264,7 +264,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				stmt_update.exec(); stmt_update.reset();
 			}
 			else {
-				sb.clear(); sb << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
+				clear(sb) << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
 				SLS_WARN(sb);
 				stmt_insert.bind(1, sha1);
 				stmt_insert.bind(2, time);
@@ -337,7 +337,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			auto &hash = time_hash_last.second.first;
 			auto &db_last_hash = time_hash_last.second.second;
 			if (last_hash != db_last_hash) {
-				sb.clear(); sb << u8"检测到 history.last 改变，将模拟编辑器更新："
+				clear(sb) << u8"检测到 history.last 改变，将模拟编辑器更新："
 								 << db_last_hash << " -> " << last_hash;
 				SLS_WARN(sb);
 				stmt_update.bind(1, last_hash);
@@ -354,7 +354,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 		stmt_select2.reset();
 		const Str &last_backup = ((--e.second.end())->second).first;
 		if (last_backup != db_last_backup) {
-			sb.clear(); sb << u8"检测到 entry.last_backup 改变，将模拟编辑器更新："
+			clear(sb) << u8"检测到 entry.last_backup 改变，将模拟编辑器更新："
 				<< db_last_backup << " -> " << last_backup;
 			SLS_WARN(sb);
 			stmt_update2.bind(1, last_backup);
@@ -607,8 +607,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	const char *hash_last = stmt_select.getColumn(0);
 	stmt_select2.bind(1, hash_last);
 	if (!stmt_select2.executeStep()) {
-		sb.clear();
-		sb << u8"entries.hash_last 未找到： " << entry << '.' << hash_last;
+		clear(sb) << u8"entries.hash_last 未找到： " << entry << '.' << hash_last;
 		throw internal_err(sb);
 	}
 	const char *time_str_last = stmt_select2.getColumn(0);
@@ -638,7 +637,6 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 
 	// calculate char add/del
 	Str str2;
-	sb.clear();
 	if (replace) {
 		// SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
 		//	stmt_select2.bind(1, hash);
@@ -648,11 +646,11 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		const char *time_last_last = stmt_select2.getColumn(0);
 		int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
-		sb << "../PhysWiki-backup/"
+		clear(sb) << "../PhysWiki-backup/"
 			<< time_last_last << '_' << author_id_last_last << '_' << entry << ".tex";
 	}
 	else {
-		sb << gv::path_in << "../PhysWiki-backup/"
+		clear(sb) << gv::path_in << "../PhysWiki-backup/"
 			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
 	}
 	read(str2, sb);
@@ -660,7 +658,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	str_add_del(char_add, char_del, str2, str);
 
 	// write or replace file
-	sb.clear(); sb << gv::path_in << "../PhysWiki-backup/"
+	clear(sb) << gv::path_in << "../PhysWiki-backup/"
 					 << time_backup << '_' << author_id << '_' << entry << ".tex";
 	write(str, sb);
 

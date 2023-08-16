@@ -144,7 +144,7 @@ inline Long figure_env(unordered_set<Str> &img_to_delete, vector<unordered_map<S
 		// insert html code
 		widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);
 		href.clear(); href << gv::url << fig_hash << "." << format;
-		sb.clear(); sb << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
+		clear(sb) << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
 				"<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
 				<< "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
 				<< "\" style = \"width:100%;\"></a>\n</div>\n<div align = \"center\"> "
@@ -192,7 +192,7 @@ inline Long theorem_like_env(Str_IO str)
 			// replace
 			str.replace(ind2, ind3 - ind2, "</div>\n");
 			// str.replace(ind1, ind2 - ind1, temp);
-			sb.clear(); sb << "<div class = \"w3-panel " << envBorderColors[i]
+			clear(sb) << "<div class = \"w3-panel " << envBorderColors[i]
 					<< " w3-leftbar\">\n <h3 style=\"margin-top: 0; padding-top: 0;\"><b>"
 					<< envCnNames[i] << " "
 					<< env_num << u8"</b>　" << env_title << "</h3>\n";

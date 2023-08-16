@@ -178,7 +178,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 			Long ind2 = find(label, '_');
 			if (ind2 < 0)
 				throw scan_err("\\autoref{" + label + u8"} 中必须有下划线， 请使用“内部引用”或“外部引用”按钮");
-			ind5 = str.rfind("\\upref", ind5-1); entry2.clear();
+			ind5 = (Long)str.rfind("\\upref", ind5-1); entry2.clear();
 			if (ind5 > 0 && ExpectKeyReverse(str, "~", ind5 - 1) < 0)
 				command_arg(entry2, str, ind5);
 			sb = label_entry_old(label);
@@ -191,7 +191,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 			throw scan_err(u8"\\autoref{} 后面不应该有单独的 ~");
 		command_arg(entry1, str, ind2 - 6);
 		if (label_entry_old(label) != entry1) {
-			sb.clear(); sb << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
+			clear(sb) << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
 			throw scan_err(sb);
 		}
 		str.erase(ind1-1, 1); // delete ~

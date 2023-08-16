@@ -104,10 +104,10 @@ inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
 		
 		// check label format and save label
 		ind0 = expect(str, "{", ind5 + 6);
-		sb.clear(); sb << type << '_' << entry;
+		clear(sb) << type << '_' << entry;
 		ind3 = expect(str, sb, ind0);
 		if (ind3 < 0) {
-			sb.clear(); sb << "label " << str.substr(ind0, 20)
+			clear(sb) << "label " << str.substr(ind0, 20)
 				<< u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
 			throw scan_err(sb);
 		}
@@ -319,7 +319,7 @@ inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
 			str.insert(ind3 + 1, " </a>");
 		str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
 		if (!inEq) {
-			sb.clear(); sb << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
+			clear(sb) << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
 			str.insert(ind3 + 1, sb);
 		}
 		str.erase(ind0, ind3 - ind0 + 1);
@@ -665,8 +665,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 
 			Long ind = search(label, db_labels);
 			if (ind < 0) {
-				sb.clear();
-				sb << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
+				clear(sb) << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
 				SLS_WARN(sb);
 				stmt_insert.bind(1, label);
@@ -681,8 +680,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			db_labels_used[ind] = true;
 			bool changed = false;
 			if (entry != db_label_entries[ind]) {
-				sb.clear();
-				sb << "label "; sb << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+				clear(sb) << "label " << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
 									 << db_label_entries[ind] << " -> " << entry << SLS_WHERE;
 				throw scan_err(sb);
 				changed = true;
@@ -750,8 +748,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");
-				sb.clear();
-				sb << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
+				clear(sb) << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
 					<< ref_by_str << SLS_WHERE;
 				throw scan_err(sb);
 			}

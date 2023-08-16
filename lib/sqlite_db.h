@@ -61,8 +61,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 	Str str, title;
 
 	for (auto &entry : entries) {
-		sb.clear();
-		sb << gv::path_in; sb << "contents/" << entry << ".tex";
+		clear(sb) << gv::path_in; sb << "contents/" << entry << ".tex";
 		if (!file_exist(sb))
 			SLS_ERR("词条文件不存在：" + entry + ".tex");
 		stmt_select.bind(1, entry);
@@ -82,7 +81,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 			deleted = (int)stmt_select.getColumn(1);
 			if (deleted) {
 				title = (const char*)stmt_select.getColumn(0);
-				sb.clear(); sb << u8"词条文件存在，但数据库却标记了已删除（将恢复）："
+				clear(sb) << u8"词条文件存在，但数据库却标记了已删除（将恢复）："
 					<< entry << " (" << title << ')';
 				SLS_WARN(sb);
 				stmt_undelete.bind(1, entry);
@@ -120,12 +119,10 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		parse(info.ref_by, ref_by_str);
 		if (search(id, bib_labels) < 0) {
 			if (!info.ref_by.empty()) {
-				sb.clear();
-				sb << u8"检测到删除的文献： " << id << u8"， 但被以下词条引用： " << ref_by_str;
+				clear(sb) << u8"检测到删除的文献： " << id << u8"， 但被以下词条引用： " << ref_by_str;
 				throw scan_err(sb);
 			}
-			sb.clear();
-			sb << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
+			clear(sb) << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
 			SLS_WARN(sb);
 			stmt_delete.bind(1, id);
 			stmt_delete.exec(); stmt_delete.reset();
@@ -146,8 +143,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			auto &info = db_bib_info[id];
 			bool changed = false;
 			if (order != info.order) {
-				sb.clear();
-				sb << u8"数据库中文献 "; sb << id << " 编号改变（将更新）： " << to_string(info.order)
+				clear(sb) << u8"数据库中文献 "; sb << id << " 编号改变（将更新）： " << to_string(info.order)
 						<< " -> " << to_string(order);
 				SLS_WARN(sb);
 				changed = true;
@@ -155,8 +151,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 				stmt_update.bind(1, -(int)order); // to avoid unique constraint
 			}
 			if (bib_detail != info.detail) {
-				sb.clear();
-				sb << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
+				clear(sb) << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
 				SLS_WARN(sb);
 				changed = true;
 				stmt_update.bind(1, (int)order); // to avoid unique constraint
@@ -276,27 +271,27 @@ inline void db_update_entries_from_toc(
 
 			bool changed = false;
 			if (titles[i] != db_title) {
-				sb.clear(); sb << entry << ": title has changed from " << db_title << " to " << titles[i];
+				clear(sb) << entry << ": title has changed from " << db_title << " to " << titles[i];
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (part_ids[entry_part[i]] != db_part) {
-				sb.clear(); sb << entry << ": part has changed from " << db_part << " to " << part_ids[entry_part[i]];
+				clear(sb) << entry << ": part has changed from " << db_part << " to " << part_ids[entry_part[i]];
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (chap_ids[entry_chap[i]] != db_chapter) {
-				sb.clear(); sb << entry << ": chapter has changed from " << db_chapter << " to " << chap_ids[entry_chap[i]];
+				clear(sb) << entry << ": chapter has changed from " << db_chapter << " to " << chap_ids[entry_chap[i]];
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (entry_last != db_last) {
-				sb.clear(); sb << entry << ": 'last' has changed from " << db_last << " to " << entry_last;
+				clear(sb) << entry << ": 'last' has changed from " << db_last << " to " << entry_last;
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (entry_next != db_next) {
-				sb.clear(); sb << entry << ": 'next' has changed from " << db_next << " to " << entry_next;
+				clear(sb) << entry << ": 'next' has changed from " << db_next << " to " << entry_next;
 				SLS_WARN(sb);
 				changed = true;
 			}
@@ -816,7 +811,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 			throw internal_err(u8"暂时不允许多于一个 image_old！");
 		stmt_select4.bind(1, image_hash);
 		if (!stmt_select4.executeStep()) {
-			sb.clear(); sb << u8"图片 " << fig_id << " 的 image " << image_hash << u8" 不存在！";
+			clear(sb) << u8"图片 " << fig_id << " 的 image " << image_hash << u8" 不存在！";
 			throw internal_err(sb);
 		}
 		stmt_select4.reset();
@@ -834,7 +829,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	SQLite::Statement stmt_delete4(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	for (auto &image_hash : db_images) {
 		if (!images_figures.count(image_hash) && !images_figures_old.count(image_hash)) {
-			sb.clear(); sb << u8"图片 image " << image_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
+			clear(sb) << u8"图片 image " << image_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
 			SLS_WARN(sb);
 			stmt_delete4.bind(1, image_hash);
 			stmt_delete4.exec(); stmt_delete4.reset();
@@ -911,7 +906,7 @@ inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new)
 	replace(str_new, "[-", u8"[➖"); replace(str_new, "-]", u8"➖]");
 	write(str_new, file2);
 
-	sb.clear(); sb << "git diff --no-index --word-diff-regex=. "
+	clear(sb) << "git diff --no-index --word-diff-regex=. "
 		<< '"' << file1 << "\" \"" << file2 << '"';
 	// git diff will return 0 iff there is no difference
 	if (exec_str(str, sb) == 0)

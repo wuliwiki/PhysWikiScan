@@ -21,7 +21,7 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 			auto &image_hash = ext_hash.second;
 			stmt_select.bind(1, ext_hash.second);
 			if (!stmt_select.executeStep()) {
-				sb.clear(); sb << "数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
+				clear(sb) << "数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
 				SLS_WARN(sb);
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
@@ -31,7 +31,7 @@ inline void db_update_images(Str_I entry, vecStr_I fig_ids,
 			else {
 				db_image_ext = (const char*)stmt_select.getColumn(0);
 				if (image_ext != db_image_ext) {
-					sb.clear(); sb << u8"图片文件拓展名不允许改变: " << image_hash << '.'
+					clear(sb) << u8"图片文件拓展名不允许改变: " << image_hash << '.'
 									 << db_image_ext << " -> " << image_ext;
 					throw internal_err(sb);
 				}
@@ -116,7 +116,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				image = map.at("pdf"); ext = "pdf";
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
-				sb.clear(); sb << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
+				clear(sb) << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
 								 << id << ", " << entry << ", " << to_string(order);
 				SLS_WARN(sb);
 				stmt_insert.bind(1, id);
@@ -135,13 +135,13 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				changed = true;
 			}
 			if (entry != db_fig_entries[ind]) {
-				sb.clear(); sb << u8"发现数据库中图片 entry 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 entry 改变（将更新）：" << id << ": "
 								 << db_fig_entries[ind] << " -> " << entry;
 				SLS_WARN(sb);
 				changed = true;
 			}
 			if (order != db_fig_orders[ind]) {
-				sb.clear(); sb << u8"发现数据库中图片 order 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 order 改变（将更新）：" << id << ": "
 								 << to_string(db_fig_orders[ind]) << " -> " << to_string(order);
 				SLS_WARN(sb);
 				changed = true;
@@ -153,11 +153,11 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 				}
 			}
 			if (image != db_fig_image[ind]) {
-				sb.clear(); sb << u8"发现数据库中图片 image 改变（将更新）：" << id << ": "
+				clear(sb) << u8"发现数据库中图片 image 改变（将更新）：" << id << ": "
 								 << db_fig_image[ind] << " -> " << image;
 				SLS_WARN(sb);
 				if (!db_fig_aka[id].empty()) {
-					sb.clear(); sb << u8"图片环境（" << id << "）是另一环境（" << db_fig_aka[id] << "）的镜像，不支持手动修改图片文件，请撤回 "
+					clear(sb) << u8"图片环境（" << id << "）是另一环境（" << db_fig_aka[id] << "）的镜像，不支持手动修改图片文件，请撤回 "
 						<< image << '.' << ext << "， 并新建一个 figure 环境。 TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。";
 					// TODO: 其实不应该报错。例如用户替换了图片，应该把原来环境的 id 重命名，然后把新版本图片用原来的 id。
 					throw scan_err(sb);
@@ -195,7 +195,7 @@ inline void db_update_figures(unordered_set<Str> &update_entries, // [out] entri
 		if (!figs_used[i] && db_figs_used[i]) {
 			if (db_fig_ref_bys[i].empty() ||
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
-				sb.clear(); sb << u8"检测到 \\label{fig_"
+				clear(sb) << u8"检测到 \\label{fig_"
 								 << db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
 				SLS_WARN(sb);
 				// set "figures.entry" = ''
@@ -244,7 +244,7 @@ inline void db_delete_images(
 			SLS_WARN(u8"要删除的 image 不属于任何环境， 即 images.figure 和 .figures_aka 都为空（将继续删除）：" + image + SLS_WHERE);
 			stmt_delete.bind(1, image);
 			stmt_delete.exec(); stmt_delete.reset();
-			sb.clear(); sb << gv::path_in << "figures/" << image << ext;
+			clear(sb) << gv::path_in << "figures/" << image << ext;
 			file_remove(sb);
 			cout << "正在删除：" << image << ext << endl;
 		}
@@ -254,11 +254,10 @@ inline void db_delete_images(
 			bool has_aka = (fig == figure);
 			stmt_select2.bind(1, fig);
 			if (!stmt_select2.executeStep()) {
-				sb.clear();
 				if (has_aka)
-					sb << u8"images.figure 中";
+					clear(sb) << u8"images.figure 中";
 				else
-					sb << u8"images.figures_aka 中";
+					clear(sb) << u8"images.figures_aka 中";
 				sb << u8"引用 image " << image << u8" 的图片环境 " << fig << u8" 不存在（将忽略）"
 					<< SLS_WHERE;
 				SLS_WARN(sb);
@@ -303,9 +302,9 @@ inline void db_delete_images(
 		// delete from images
 		stmt_delete.bind(1, image);
 		stmt_delete.exec(); stmt_delete.reset();
-		sb.clear(); sb << gv::path_in << "figures/" << image << '.' << ext;
+		clear(sb) << gv::path_in << "figures/" << image << '.' << ext;
 		file_remove(sb);
-		sb.clear(); sb << gv::path_out << image << '.' << ext;
+		clear(sb) << gv::path_out << image << '.' << ext;
 		file_remove(sb);
 	}
 }
