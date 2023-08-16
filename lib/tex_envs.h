@@ -13,7 +13,6 @@ inline void figure_env(
 	Str_IO str, Str_I entry,
 	vecStr_I fig_ids, vecLong_I fig_orders, SQLite::Database &db_read)
 {
-	fig_ext_hash.clear();
 	Long N = 0;
 	Intvs intvFig;
 	Str figName, fname_in, fname_out, href, format, caption, widthPt, figNo;

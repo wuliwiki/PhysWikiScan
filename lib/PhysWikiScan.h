@@ -413,7 +413,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
-	Pentry_O pentry, Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
+	Pentry_O pentry, set<Char32> &illegal_chars,
+	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -495,7 +496,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// get entry type
 	get_entry_type(type, str, db_read);
 	// check globally forbidden char
-	global_forbid_char(str);
+	global_forbid_char(illegal_chars, str);
 	// save and replace verbatim code with an index
 	vecStr str_verb;
 	verbatim(str_verb, str);
@@ -609,7 +610,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 }
 
 // might append to `entries` if `order` of eq, fig, etc are updated
-inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
+inline void PhysWikiOnlineN_round1(
+		map<Str, Str> &entry_err, // entry -> err msg
+		set<Char32> &illegal_chars,
 		vecStr_O titles, vecStr_IO entries, Bool_I clear, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	vecStr rules;  // for newcommand()
@@ -643,7 +646,7 @@ inline void PhysWikiOnlineN_round1(map<Str, Str> &entry_err, // entry -> err msg
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
 				fig_ids, fig_orders, fig_ext_hash, isdraft, keywords, license,
 				type, labels, label_orders, entry_uprefs_change[entry],
-				entry_bibs_change[entry], pentry, entry, clear, rules, db_read);
+				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules, db_read);
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");
@@ -812,7 +815,8 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
-	PhysWikiOnlineN_round1(entry_err, titles, entries, clear, db_read, db_rw);
+	set<Char32> illegal_chars;
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, clear, db_read, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
@@ -1077,12 +1081,13 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	arg_bib(db_rw);
 	arg_toc(db_rw);
 	map<Str, Str> entry_err;
+	set<Char32> illegal_chars;
 
-	PhysWikiOnlineN_round1(entry_err, titles, entries, false, db_read, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, false, db_read, db_rw);
 
 	// generate dep.json
-//	if (file_exist(gv::path_out + "../tree/data/dep.json"))
-//		dep_json(db_read);
+	if (file_exist(gv::path_out + "../tree/data/dep.json"))
+		dep_json(db_read);
 
 	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
 
@@ -1091,13 +1096,12 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	if (!illegal_chars.empty()) {
 		scan_warn(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
 		ofstream fout("data/illegal_chars.txt");
-		for (auto c: illegal_chars) {
-			fout << Long(c) << endl;
-		}
+		for (auto c: illegal_chars)
+			fout << u8(c) << endl;
 	}
 
 	if (!entry_err.empty()) {
-		cout << SLS_RED_BOLD << entry_err.size() << "个词条编译失败： " SLS_NO_STYLE << endl;
+		cout << SLS_RED_BOLD << entry_err.size() << u8"个词条编译失败： " SLS_NO_STYLE << endl;
 		for (auto &e : entry_err) {
 			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
 			cout << e.second << endl;
