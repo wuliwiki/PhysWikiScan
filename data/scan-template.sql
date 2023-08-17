@@ -129,7 +129,7 @@ CREATE TABLE "figures" (
 	"files"       TEXT    NOT NULL DEFAULT '',  -- "files.hash1 hash2" 附件（创作该图片的项目文件、源码等）
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
 	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（被标记 deleted 也没关系）管理除了： "authors", "image_alt", "last", "next", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的 "image/image_alt" 中。
+	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： "authors", "image_alt", "last", "next", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的 "image/image_alt" 中。
 	"deleted"     INTEGER NOT NULL DEFAULT 0,   -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	"remark"      TEXT    NOT NULL DEFAULT '',  -- 备注信息
 	PRIMARY KEY("id"),
