@@ -62,6 +62,7 @@ inline void scan_log(Str_I str, bool print_time = false)
 }
 
 // db log, also output to stdout
+// in case of warning about db, use scan_warn()
 inline void db_log(Str_I str)
 {
 	cout << SLS_CYAN_BOLD << "[DB] " << str << SLS_NO_STYLE << endl;

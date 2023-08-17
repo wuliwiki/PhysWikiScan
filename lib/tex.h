@@ -836,7 +836,7 @@ inline Long FindNormalText(Intvs_O intvNorm, Str_I str)
 	// Figure environments
 	find_env(intv1, str, "figure", 'o');
 	combine(intv, intv1);
-	// Table environments
+	// table environments
 	find_env(intv1, str, "table", 'o');
 	combine(intv, intv1);
 	// subsubsection command

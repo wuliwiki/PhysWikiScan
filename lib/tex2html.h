@@ -38,7 +38,7 @@ inline Bool is_in_tag(Str_I str, Str_I name, Long_I ind)
 
 // ensure space around '<' and '>' in equation env. and $$ env
 // return number of spaces added
-inline Long EqOmitTag(Str_IO str)
+inline Long eq_escape(Str_IO str)
 {
 	Long i{}, N{}, Nrange{};
 	Intvs intv, indInline;
@@ -262,8 +262,8 @@ inline Long NormalTextEscape(Str_IO str)
 
 // process table
 // return number of tables processed
-// must be used after EnvLabel()
-inline Long Table(Str_IO str)
+// must be used after env_labels()
+inline Long table(Str_IO str)
 {
 	Long N{}, ind0{}, ind1{}, Nline;
 	Intvs intv;
@@ -324,9 +324,9 @@ inline Long Table(Str_IO str)
 	return N;
 }
 
-// process Itemize environments
+// process itemize environments
 // return number processed
-inline Long Itemize(Str_IO str)
+inline Long itemize(Str_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;
@@ -377,8 +377,8 @@ inline Long Itemize(Str_IO str)
 }
 
 // process enumerate environments
-// similar to Itemize()
-inline Long Enumerate(Str_IO str)
+// similar to itemize()
+inline Long enumerate(Str_IO str)
 {
 	Long i{}, j{}, N{}, Nitem{}, ind0{};
 	Intvs intvIn, intvOut;

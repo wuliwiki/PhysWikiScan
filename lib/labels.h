@@ -31,8 +31,8 @@ inline Str label_entry_old(Str_I label)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long EnvLabel(vecStr_O fig_ids, vecLong_O fig_orders,
-					vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
+inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
+					   vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
 {
 	Long ind0{}, ind2{}, ind3{}, ind4{}, N{},
 		Ngather{}, Nalign{}, i{}, j{};

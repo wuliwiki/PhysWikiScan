@@ -148,7 +148,7 @@
 // print an error with file and line number
 #ifndef SLS_THROW_ERR
 	#define SLS_ERR(str) do { \
-		std::cout << SLS_RED_BOLD "Error: " << str << SLS_NO_STYLE " " SLS_WHERE << std::endl; std::exit(1); \
+		std::cerr << SLS_RED_BOLD "Error: " << str << SLS_NO_STYLE " " SLS_WHERE << std::endl; std::exit(1); \
 	} while(0)
 #else
 	#define SLS_ERR(str) do { \

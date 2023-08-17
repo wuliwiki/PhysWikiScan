@@ -531,15 +531,15 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// add paragraph tags
 	paragraph_tag(str);
 	// add html id for links
-	EnvLabel(fig_ids, fig_orders,labels, label_orders, entry, str);
+	env_labels(fig_ids, fig_orders, labels, label_orders, entry, str);
 	// replace environments with html tags
 	equation_tag(str, "equation"); equation_tag(str, "align"); equation_tag(str, "gather");
 	// itemize and enumerate
-	Itemize(str); Enumerate(str);
+	itemize(str); enumerate(str);
 	// process table environments
-	Table(str);
+	table(str);
 	// ensure '<' and '>' has spaces around them
-	EqOmitTag(str);
+	eq_escape(str);
 	// process example and exercise environments
 	theorem_like_env(str);
 	// process figure environments
