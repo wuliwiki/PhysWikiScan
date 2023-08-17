@@ -71,11 +71,20 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防
 -- 词条占用列表
 CREATE TABLE "occupied" (
 	"entry"    TEXT    NOT NULL UNIQUE, -- entries.id
-	"author"   INTEGER NOT NULL, -- authors.id
-	"time"     TEXT    NOT NULL, -- 开始占用的时间
+	"author"   INTEGER NOT NULL,        -- authors.id
+	"time"     TEXT    NOT NULL,        -- 开始占用的时间
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
+);
+
+-- 词条打开列表
+CREATE TABLE "opened" (
+	"author"   INTEGER NOT NULL UNIQUE, -- authors.id
+	"entries"  TEXT    NOT NULL,        -- "entry1 entry2"
+	"time"     TEXT    NOT NULL,        -- 打开时间
+	PRIMARY KEY("author"),
+	FOREIGN KEY("author")  REFERENCES "authors"("id")
 );
 
 -- 部分
