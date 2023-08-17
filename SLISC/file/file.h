@@ -638,6 +638,8 @@ inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 // read whole file to Str
 inline void read(Str_O str, Str_I fname)
 {
+	if (!file_exist(fname))
+		throw runtime_error("file not found: " + fname);
 	str.resize(file_size(fname));
 	read(&str[0], str.size(), fname);
 }

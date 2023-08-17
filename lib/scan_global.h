@@ -82,6 +82,9 @@ inline void limit_log()
 	// limit file size (reduce size to size_min if size > size_max)
 	// only delete whole lines
 	static Str log_file = "scan_log.txt";
+	if (!file_exist(log_file)) {
+		write("", log_file); return;
+	}
 	read(sb, log_file);
 	if (size(sb) > size_max) {
 		Long ind = find(sb, '\n', size(sb)-size_min);

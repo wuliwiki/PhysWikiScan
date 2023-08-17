@@ -405,9 +405,9 @@ int main(int argc, const char *argv[]) {
 			cerr << sb << endl;
 			return 1;
 		}
-		
-		cout.precision(3);
-		clear(sb) << "all done! time (s): " << timer.toc() << '\n';
+		stringstream time_str;
+		time_str << std::fixed << std::setprecision(3) << timer.toc();
+		clear(sb) << "all done! time (s): " << time_str.str() << '\n';
 		cout << sb << endl;
 		scan_log(sb);
 		if (argc <= 1) {
