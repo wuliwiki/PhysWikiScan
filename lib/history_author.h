@@ -92,7 +92,7 @@ inline void db_update_authors(SQLite::Database &db)
 		R"(SELECT "id" FROM "entries";)");
 	Str entry; vecLong author_ids, counts;
 	while (stmt_select.executeStep()) {
-		entry = (const char*)stmt_select.getColumn(0);
+		entry = stmt_select.getColumn(0).getString();
 		db_update_authors1(author_ids, counts, entry, db);
 	}
 	stmt_select.reset();
@@ -264,7 +264,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			stmt_select4.bind(2, (int)authorID);
 			stmt_select4.bind(3, entry);
 			if (stmt_select4.executeStep()) {
-				const char *db_hash = stmt_select4.getColumn(0);
+				const Str &db_hash = stmt_select4.getColumn(0);
+				stmt_select4.reset();
 				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
 								 << db_hash << " -> " << sha1 << ' ' << fname;
 				db_log(sb);
@@ -284,7 +285,6 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				stmt_insert.reset();
 				db_history[sha1] = make_tuple(time, authorID, entry, true);
 			}
-			stmt_select4.reset();
 		}
 	}
 
@@ -424,7 +424,7 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 				fname_exist = false; continue;
 			}
 			fname_exist = true;
-			const char *hash = stmt_select2.getColumn(0);
+			const Str &hash = stmt_select2.getColumn(0);
 			read(str, fname); CRLF_to_LF(str);
 			if (fname_old.empty()) // first backup
 				hist_add_del[hash] = make_pair(u8count(str), 0);
@@ -592,7 +592,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select2.bind(1, hash);
 	if (stmt_select2.executeStep()) {
-		const char *time_str = stmt_select2.getColumn(0);
+		const Str &time_str = stmt_select2.getColumn(0);
 		// int author_id_last = stmt_select2.getColumn(1);
 		cout << "exist " << time_str << '_' << author_id << '_' << entry << ".tex "
 			 << hash;
@@ -606,15 +606,15 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
-	const char *hash_last = stmt_select.getColumn(0);
+	const Str &hash_last = stmt_select.getColumn(0);
 	stmt_select2.bind(1, hash_last);
 	if (!stmt_select2.executeStep()) {
 		clear(sb) << u8"entries.hash_last 未找到： " << entry << '.' << hash_last;
 		throw internal_err(sb);
 	}
-	const char *time_str_last = stmt_select2.getColumn(0);
+	const Str &time_str_last = stmt_select2.getColumn(0);
 	int author_id_last = stmt_select2.getColumn(1);
-	const char *hash_last_last = stmt_select2.getColumn(2);
+	const Str &hash_last_last = stmt_select2.getColumn(2);
 	stmt_select2.reset();
 	std::time_t time_last = str2time_t(time_str_last);
 
@@ -645,7 +645,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		stmt_select2.bind(1, hash_last_last);
 		if (!stmt_select2.executeStep())
 			throw internal_err(SLS_WHERE);
-		const char *time_last_last = stmt_select2.getColumn(0);
+		const Str &time_last_last = stmt_select2.getColumn(0);
 		int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
 		clear(sb) << "../PhysWiki-backup/"

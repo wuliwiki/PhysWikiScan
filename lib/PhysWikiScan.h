@@ -339,7 +339,7 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		stmt_select.bind(1, last);
 		if (!stmt_select.executeStep())
 			throw internal_err(u8"词条未找到： " + last + SLS_WHERE);
-		last_title = (const char*)stmt_select.getColumn(0);
+		last_title = stmt_select.getColumn(0).getString();
 		stmt_select.reset();
 	}
 
@@ -355,7 +355,7 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		stmt_select.bind(1, next);
 		if (!stmt_select.executeStep())
 			throw internal_err(u8"词条未找到： " + next + SLS_WHERE);
-		next_title = (const char*)stmt_select.getColumn(0);
+		next_title = stmt_select.getColumn(0).getString();
 		stmt_select.reset();
 	}
 
@@ -443,15 +443,15 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
-	db_title = (const char*)stmt_select.getColumn(0);
-	chapter = (const char*)stmt_select.getColumn(1);
-	last_entry = (const char*)stmt_select.getColumn(2);
-	next_entry = (const char*)stmt_select.getColumn(3);
-	db_keys_str = (const char*)stmt_select.getColumn(4);
-	db_pentry_str = (const char*)stmt_select.getColumn(5);
+	db_title = stmt_select.getColumn(0).getString();
+	chapter = stmt_select.getColumn(1).getString();
+	last_entry = stmt_select.getColumn(2).getString();
+	next_entry = stmt_select.getColumn(3).getString();
+	db_keys_str = stmt_select.getColumn(4).getString();
+	db_pentry_str = stmt_select.getColumn(5).getString();
 	db_draft = (int)stmt_select.getColumn(6);
-	db_license = (const char*)stmt_select.getColumn(7);
-	db_type = (const char*)stmt_select.getColumn(8);
+	db_license = stmt_select.getColumn(7).getString();
+	db_type = stmt_select.getColumn(8).getString();
 	stmt_select.reset();
 
 	bool in_main = !chapter.empty(); // entry in main.tex
@@ -899,89 +899,6 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 	}
 }
 
-// delete all related db data and files of a figure
-// must be marked figures.deleted and not referenced by figures.aka
-inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
-{
-	vecStr image_hash, images, images_alt, images_old;
-	set<Str> entries_figures;
-
-	check_foreign_key(db_rw, false);
-
-	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
-	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
-	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
-
-	for (auto &figure : figures) {
-		cout << "deleting figure: " << figure << endl;
-		stmt_select.bind(1, figure);
-		if (!stmt_select.executeStep()) {
-			scan_warn(u8"arg_delete_fig()：要删除的图片未找到（将忽略）：" + figure);
-			stmt_select.reset();
-			continue;
-		}
-		const char* entry = stmt_select.getColumn(2);
-
-		// check figures.deleted
-		bool deleted = (int) stmt_select.getColumn(3);
-		if (!deleted)
-			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
-
-		// erase figure from entries.figures
-		stmt_select3.bind(1, entry);
-		if (!stmt_select3.executeStep())
-			throw internal_err(SLS_WHERE);
-		parse(entries_figures, stmt_select3.getColumn(0));
-		if (entries_figures.count(figure)) {
-			entries_figures.erase(figure);
-			join(sb, entries_figures);
-			stmt_update3.bind(1, sb);
-			stmt_update3.bind(2, entry);
-			stmt_update3.exec(); stmt_update3.reset();
-		}
-		else {
-			clear(sb) << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
-				<< entry << '.' << figure;
-			db_log(sb);
-		}
-		stmt_select3.reset();
-
-		// check figures.aka
-		stmt_select2.bind(1, entry);
-		sb.clear();
-		while (stmt_select2.executeStep()) {
-			const Str &id = (const char*)stmt_select2.getColumn(0);
-			sb << " " << id;
-		}
-		stmt_select2.reset();
-		if (!sb.empty()) {
-			clear(sb1) << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
-			throw internal_err(sb1);
-		}
-
-		// delete figures.image*
-		parse(images, stmt_select.getColumn(0));
-		db_delete_images(images, db_read, db_rw);
-
-		parse(images_alt, stmt_select.getColumn(1));
-		db_delete_images(images_alt, db_read, db_rw);
-
-		parse(images_old, stmt_select.getColumn(4));
-		db_delete_images(images_old, db_read, db_rw);
-
-		stmt_select.reset();
-
-		// delete figures record
-		stmt_delete.bind(1, figure);
-		stmt_delete.executeStep(); stmt_delete.reset();
-	}
-
-	check_foreign_key(db_rw);
-}
-
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
@@ -1023,9 +940,9 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 				stmt_select2.bind(1, hash);
 				if (!stmt_select2.executeStep())
 					throw internal_err(SLS_WHERE);
-				if (entry != (const char*)stmt_select2.getColumn(2))
+				if (entry != stmt_select2.getColumn(2).getString())
 					throw internal_err(SLS_WHERE);
-				clear(sb) << "../PhysWiki-backup/" << (const char*)stmt_select2.getColumn(0) << '_'
+				clear(sb) << "../PhysWiki-backup/" << stmt_select2.getColumn(0).getString() << '_'
 					<< (int)stmt_select2.getColumn(1) << '_' << entry << ".tex";
 				stmt_select2.reset();
 				stmt_delete.bind(1, hash);

@@ -366,7 +366,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		stmt_select_fig.bind(2, (int)order);
 		if (stmt_select_fig.executeStep()) {
 			label = "fig_";
-			label += (const char *) stmt_select_fig.getColumn(0);
+			label += stmt_select_fig.getColumn(0).getString();
 			stmt_select_fig.reset();
 			return 1;
 		}
@@ -380,7 +380,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		stmt_select_label.bind(2, entry);
 		stmt_select_label.bind(3, (int) order);
 		if (stmt_select_label.executeStep()) {
-			label = (const char *) stmt_select_label.getColumn(0);
+			label = stmt_select_label.getColumn(0).getString();
 			stmt_select_label.reset();
 			return 1;
 		}

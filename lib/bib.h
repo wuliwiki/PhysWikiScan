@@ -16,11 +16,11 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 	unordered_map<Str, BibInfo> db_bib_info; // id -> (order, details, ref_by)
 
 	while (stmt_select.executeStep()) {
-		const Str &id = (const char*)stmt_select.getColumn(0);
+		const Str &id = stmt_select.getColumn(0);
 		auto &info = db_bib_info[id];
 		info.order = (int)stmt_select.getColumn(1);
-		info.detail = (const char*)stmt_select.getColumn(2);
-		const Str &ref_by_str = (const char*)stmt_select.getColumn(3);
+		info.detail = stmt_select.getColumn(2).getString();
+		const Str &ref_by_str = stmt_select.getColumn(3);
 		parse(info.ref_by, ref_by_str);
 		if (search(id, bib_labels) < 0) {
 			if (!info.ref_by.empty()) {
@@ -121,7 +121,6 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 		else
 			db_bibs_cited[bib_ind] = true;
 		Long ibib = (int)stmt_select.getColumn(0);
-		// bib_detail = (const char*)stmt_select.getColumn(1);
 		stmt_select.reset();
 		Long ind1 = skip_command(str, ind0, 1);
 		str.replace(ind0, ind1 - ind0, " <a href=\"" + gv::url + "bibliography.html#"

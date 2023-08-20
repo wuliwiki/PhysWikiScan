@@ -97,7 +97,7 @@ inline void db_get_entry_info(
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err("entry not found: " + entry + " " SLS_WHERE);
-	get<0>(info) = (const char*)stmt_select.getColumn(0); // title
+	get<0>(info) = stmt_select.getColumn(0).getString(); // title
 	parse_pentry(pentry, stmt_select.getColumn(1));
 	stmt_select.reset();
 }
@@ -303,9 +303,9 @@ inline void db_get_tree(
 	while (stmt_select.executeStep()) {
 		const Str &entry = stmt_select.getColumn(0);
 		auto &info = entry_info[entry];
-		get<0>(info) = (const char*)stmt_select.getColumn(1); // titles
-		get<1>(info) = (const char*)stmt_select.getColumn(2); // parts
-		get<2>(info) = (const char*)stmt_select.getColumn(3); // chapter
+		get<0>(info) = stmt_select.getColumn(1).getString(); // titles
+		get<1>(info) = stmt_select.getColumn(2).getString(); // parts
+		get<2>(info) = stmt_select.getColumn(3).getString(); // chapter
 		parse_pentry(get<3>(info), stmt_select.getColumn(4)); // pentry
 	}
 

@@ -80,7 +80,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		else {
 			deleted = (int)stmt_select.getColumn(1);
 			if (deleted) {
-				title = (const char*)stmt_select.getColumn(0);
+				title = stmt_select.getColumn(0).getString();
 				clear(sb) << u8"词条文件存在，但数据库却标记了已删除（将恢复）："
 					<< entry << " (" << title << ')';
 				db_log(sb);
@@ -162,19 +162,19 @@ inline void db_update_entries_from_toc(
 		auto &entry_next = (i == N-1 ? empty : entries[i+1]);
 
 		// does entry already exist (expected)?
-		Bool entry_exist;
+		bool entry_exist;
 		entry_exist = exist("entries", "id", entry, db_rw);
 		if (entry_exist) {
 			// check if there is any change (unexpected)
 			stmt_select.bind(1, entry);
 			SLS_ASSERT(stmt_select.executeStep());
-			Str db_title = (const char*) stmt_select.getColumn(0);
-			Str db_key_str = (const char*) stmt_select.getColumn(1);
-			Str db_pentry_str = (const char*) stmt_select.getColumn(2);
-			Str db_part = (const char*) stmt_select.getColumn(3);
-			Str db_chapter = (const char*) stmt_select.getColumn(4);
-			Str db_last = (const char*) stmt_select.getColumn(5);
-			Str db_next = (const char*) stmt_select.getColumn(6);
+			const Str &db_title = stmt_select.getColumn(0);
+			const Str &db_key_str = stmt_select.getColumn(1);
+			const Str &db_pentry_str = stmt_select.getColumn(2);
+			const Str &db_part = stmt_select.getColumn(3);
+			const Str &db_chapter = stmt_select.getColumn(4);
+			const Str &db_last = stmt_select.getColumn(5);
+			const Str &db_next = stmt_select.getColumn(6);
 			stmt_select.reset();
 
 			bool changed = false;
@@ -596,7 +596,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
 	unordered_set<Str> labels;
 	while (stmt_select_labels.executeStep()) {
-		entry = (const char*)stmt_select_labels.getColumn(0);
+		entry = stmt_select_labels.getColumn(0).getString();
 		parse(labels, stmt_select_labels.getColumn(1));
 		for (auto &label : labels) {
 			db_labels_unused.erase(label);
@@ -613,7 +613,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	SQLite::Statement stmt_update_figs_entry(db_rw, R"(UPDATE "figures" SET "entry"=? WHERE "id"=?;)");
 	unordered_set<Str> figs;
 	while (stmt_select_figs.executeStep()) {
-		entry = (const char*)stmt_select_figs.getColumn(0);
+		entry = stmt_select_figs.getColumn(0).getString();
 		parse(figs, stmt_select_figs.getColumn(1));
 		for (auto &fig_id : figs) {
 			db_figs_unused.erase(fig_id);
@@ -634,7 +634,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	cout << R"(regenerate "figures.ref_by", "labels.ref_by" from "entries.refs...")" << endl;
 	SQLite::Statement stmt_select_refs(db_rw, R"(SELECT "id", "refs" FROM "entries" WHERE "refs" != '';)");
 	while (stmt_select_refs.executeStep()) {
-		entry = (const char*)stmt_select_refs.getColumn(0);
+		entry = stmt_select_refs.getColumn(0).getString();
 		parse(refs, stmt_select_refs.getColumn(1));
 		for (auto &ref : refs) {
 			if (label_type(ref) == "fig")
@@ -674,7 +674,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	cout << R"(regenerate "bibliography.ref_by"  from "entries.bibs ...")" << endl;
 	SQLite::Statement stmt_select_bibs(db_rw, R"(SELECT "id", "bibs" FROM "entries" WHERE "bibs" != '';)");
 	while (stmt_select_bibs.executeStep()) {
-		entry = (const char*)stmt_select_bibs.getColumn(0);
+		entry = stmt_select_bibs.getColumn(0).getString();
 		parse(bibs, stmt_select_bibs.getColumn(1));
 		for (auto &bib : bibs) {
 			bib_ref_by[bib].insert(entry);
@@ -697,9 +697,10 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select3(db_read, R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id" != '';)");
 	SQLite::Statement stmt_select4(db_read, R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
 	vecStr image_alt, image_old;
+	Str fig_id, image_hash;
 	while (stmt_select3.executeStep()) {
-		const char *fig_id = stmt_select3.getColumn(0);
-		const char *image_hash = stmt_select3.getColumn(1);
+		fig_id = stmt_select3.getColumn(0).getString();
+		image_hash = stmt_select3.getColumn(1).getString();
 		parse(image_alt, stmt_select3.getColumn(2));
 		if (size(image_alt) > 1)
 			throw internal_err(u8"暂时不允许多于一个 image_alt！");
@@ -719,23 +720,24 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 		if (!image_old.empty())
 			images_figures_old[image_old[0]].insert(fig_id);
 	}
+	stmt_select3.reset();
 
 	vecStr db_images;
 	get_column(db_images, "images", "hash", db_read);
 	SQLite::Statement stmt_update4(db_rw, R"(UPDATE "images" SET "figures"=?, "figures_old"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete4(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
-	for (auto &image_hash : db_images) {
-		if (!images_figures.count(image_hash) && !images_figures_old.count(image_hash)) {
-			clear(sb) << u8"图片 " << image_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
+	for (auto &img_hash : db_images) {
+		if (!images_figures.count(img_hash) && !images_figures_old.count(img_hash)) {
+			clear(sb) << u8"图片 " << img_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
 			db_log(sb);
-			stmt_delete4.bind(1, image_hash);
+			stmt_delete4.bind(1, img_hash);
 			stmt_delete4.exec(); stmt_delete4.reset();
 		}
-		join(sb, images_figures[image_hash]);
+		join(sb, images_figures[img_hash]);
 		stmt_update4.bind(1, sb);
-		join(sb, images_figures_old[image_hash]);
+		join(sb, images_figures_old[img_hash]);
 		stmt_update4.bind(2, sb);
-		stmt_update4.bind(3, image_hash);
+		stmt_update4.bind(3, img_hash);
 		stmt_update4.exec(); stmt_update4.reset();
 	}
 
