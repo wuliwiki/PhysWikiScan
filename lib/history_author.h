@@ -112,7 +112,6 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		 << " backup) ..." << endl; cout.flush();
 
 	check_foreign_key(db_rw, false);
-	SQLite::Transaction transaction(db_rw);
 
 	// update "history" table
 	check_foreign_key(db_rw);
@@ -314,7 +313,6 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		stmt_contrib.exec(); stmt_contrib.reset();
 	}
 
-	transaction.commit();
 	check_foreign_key(db_rw);
 	cout << "done." << endl;
 }
@@ -333,7 +331,6 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 	}
 
 	// update db
-	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "last"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_select2(db_rw,
@@ -373,7 +370,6 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			stmt_update2.exec(); stmt_update2.reset();
 		}
 	}
-	transaction.commit();
 	cout << "done." << endl;
 }
 
@@ -450,7 +446,6 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 
 	// update db "history.add/del"
 	cout << "\n\nupdating db history.add/del..." << endl;
-	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
 	for (auto &e : hist_add_del) {
@@ -462,7 +457,6 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 		stmt_update.exec(); stmt_update.reset();
 	}
 	cout << "committing transaction..." << endl;
-	transaction.commit();
 	cout << "done." << endl;
 }
 
@@ -536,7 +530,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 
 	// remove or rename files, and update db
 	check_foreign_key(db_rw, false);
-	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw,
@@ -582,7 +575,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 			}
 		}
 	}
-	transaction.commit();
 	check_foreign_key(db_rw);
 	db_update_history_last(db_rw);
 }
@@ -591,7 +583,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
 	Str str;
-	SQLite::Transaction transaction(db_rw);
 
 	// get hash, check existence
 	sb << gv::path_in << "contents/" << entry << ".tex";
@@ -699,5 +690,4 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		stmt_insert2.bind(1, hash_last);
 		stmt_insert2.exec(); stmt_insert2.reset();
 	}
-	transaction.commit();
 }

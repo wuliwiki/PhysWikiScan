@@ -103,7 +103,6 @@ inline void db_update_parts_chapters(
 		 << chap_name.size() << " chapters) ..." << endl;
 	cout.flush();
 	check_foreign_key(db_rw, false);
-	SQLite::Transaction transaction(db_rw);
 	cout << "clear parts and chatpers tables" << endl;
 	table_clear("parts", db_rw); table_clear("chapters", db_rw);
 
@@ -137,7 +136,6 @@ inline void db_update_parts_chapters(
 		stmt_insert_chap.bind(6, entry_last[i]);
 		stmt_insert_chap.exec(); stmt_insert_chap.reset();
 	}
-	transaction.commit();
 	check_foreign_key(db_rw, false);
 	cout << "done." << endl;
 }
@@ -155,7 +153,6 @@ inline void db_update_entries_from_toc(
 		R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "last"=?, "next"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "keys", "pentry", "part", "chapter", "last", "next" FROM "entries" WHERE "id"=?;)");
-	SQLite::Transaction transaction(db_rw);
 	Str empty;
 	Long N = size(entries);
 
@@ -219,7 +216,6 @@ inline void db_update_entries_from_toc(
 		else // entry_exist == false
 			throw scan_err(u8"main.tex 中的词条在数据库中未找到： " + entry);
 	}
-	transaction.commit();
 	cout << "done." << endl;
 }
 
@@ -595,7 +591,6 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 
 	// === regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels" ======
 	cout << R"(regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels"...)" << endl;
-	SQLite::Transaction transaction(db_rw);
 
 	SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id", "labels" FROM "entries" WHERE "labels" != '';)");
 	SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
@@ -745,8 +740,6 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	}
 
 	cout << "done!" << endl;
-
-	transaction.commit();
 }
 
 // upgrade `user-notes/*/cmd_data/scan.db` with the schema of `note-template/cmd_data/scan.db`

@@ -224,15 +224,11 @@ int main(int argc, const char *argv[]) {
 		if (args[0] == "." && args.size() == 1) {
 			PhysWikiOnline(db_read, db_rw);
 		}
-		else if (args[0] == "--titles" && args.size() == 1) {
-			// update entries.txt and titles.txt
-			vecStr titles, entries, isDraft;
-			entries_titles(entries, titles);
-			write_vec_str(titles, gv::path_data + "titles.txt");
-			write_vec_str(entries, gv::path_data + "entries.txt");
-		}
-		else if (args[0] == "--toc" && args.size() == 1)
+		else if (args[0] == "--toc" && args.size() == 1) {
+			SQLite::Transaction transaction(db_rw);
 			arg_toc(db_rw);
+			transaction.commit();
+		}
 		else if (args[0] == "--wc" && args.size() == 1)
 			word_count(db_read);
 		else if (args[0] == "--inline-eq-space")
@@ -247,7 +243,9 @@ int main(int argc, const char *argv[]) {
 			Str label;
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
+			SQLite::Transaction transaction(db_rw);
 			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw);
+			transaction.commit();
 			vecStr output;
 			if (ret == 0) { // added
 				Str id = args[2] + args[3];
@@ -264,7 +262,9 @@ int main(int argc, const char *argv[]) {
 			Str label;
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
+			SQLite::Transaction transaction(db_rw);
 			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw, true);
+			transaction.commit();
 			vecStr output;
 			if (ret == 0) // added
 				output = {label, "added"};
@@ -284,7 +284,9 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
+			SQLite::Transaction transaction(db_rw);
 			PhysWikiOnlineN(entries, false, db_read, db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--tree" && args.size() == 1) {
 			dep_json(db_read);
@@ -324,7 +326,9 @@ int main(int argc, const char *argv[]) {
 					break;
 				figures.push_back(arg);
 			}
+			SQLite::Transaction transaction(db_rw);
 			arg_delete_figs_hard(figures, db_read, db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--delete-image" && args.size() > 1) {
 			vecStr images;
@@ -335,23 +339,38 @@ int main(int argc, const char *argv[]) {
 					break;
 				images.push_back(arg);
 			}
+			SQLite::Transaction transaction(db_rw);
 			db_delete_images(images, db_read, db_rw);
+			transaction.commit();
 		}
-		else if (args[0] == "--bib")
+		else if (args[0] == "--bib") {
+			SQLite::Transaction transaction(db_rw);
 			arg_bib(db_rw);
+			transaction.commit();
+		}
 		else if (args[0] == "--history-all" && args.size() <= 2) {
+			SQLite::Transaction transaction(db_rw);
 			arg_history("../PhysWiki-backup/", db_rw);
+			transaction.commit();
+			SQLite::Transaction transaction2(db_rw);
 			db_update_history_last(db_rw);
+			transaction2.commit();
+			SQLite::Transaction transaction3(db_rw);
 			if (args.size() == 2)
 				history_add_del_all(db_read, db_rw, true);
 			else
 				history_add_del_all(db_read, db_rw, false);
+			transaction3.commit();
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
+			SQLite::Transaction transaction(db_rw);
 			history_normalize(db_read, db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--backup" && args.size() == 3) {
+			SQLite::Transaction transaction(db_rw);
 			arg_backup(args[1], str2Int(args[2]), db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			author_char_stat(args[1], args[2], args[3], db_read);

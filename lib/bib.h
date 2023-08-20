@@ -8,8 +8,6 @@ struct BibInfo {
 
 // update "bibliography" table of sqlite db
 inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Database &db) {
-	SQLite::Transaction transaction(db);
-
 	// read the whole db bibliography table
 	SQLite::Statement stmt_select(db,
 								  R"(SELECT "id", "order", "details", "ref_by" FROM "bibliography" WHERE "id" != '';)");
@@ -86,7 +84,6 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		stmt_update2.bind(1, id);
 		stmt_update2.exec(); stmt_update2.reset();
 	}
-	transaction.commit();
 }
 
 // replace "\cite{}" with `[?]` cytation linke
