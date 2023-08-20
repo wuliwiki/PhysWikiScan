@@ -414,7 +414,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, set<Char32> &illegal_chars,
-	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
+	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -543,7 +543,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// process example and exercise environments
 	theorem_like_env(str);
 	// process figure environments
-	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read);
+	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read, db_rw);
 	// get dependent entries from \pentry{}
 	get_pentry(pentry, str, db_read);
 	// issues environment
@@ -646,7 +646,8 @@ inline void PhysWikiOnlineN_round1(
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
 				fig_ids, fig_orders, fig_ext_hash, isdraft, keywords, license,
 				type, labels, label_orders, entry_uprefs_change[entry],
-				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules, db_read);
+				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules, db_read,
+				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");

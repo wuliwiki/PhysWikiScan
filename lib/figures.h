@@ -9,14 +9,14 @@ inline void figure_env(
 		Str_IO str, Str_I entry,
 		vecStr_I fig_ids, // parsed from env_labels(), `\label{}` already deleted
 		vecLong_I fig_orders, // figures.order
-		SQLite::Database &db_read)
+		SQLite::Database &db_read, SQLite::Database &db_rw)
 {
 	Intvs intvFig;
 	Str fig_fname, fname_in, fname_out, href, ext, caption, widthPt;
 	Str fname_in2, str_mod, tex_fname, caption_div, image_hash;
 	const char *tmp1 = "id = \"fig_";
 	const Long tmp1_len = (Long)strlen(tmp1);
-	SQLite::Statement stmt_update(db_read, u8R"(UPDATE "figures" SET "image_alt"='' WHERE "id"=?;)");
+	SQLite::Statement stmt_update(db_rw, u8R"(UPDATE "figures" SET "image_alt"=? WHERE "id"=?;)");
 
 	Long Nfig = find_env(intvFig, str, "figure", 'o');
 	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
@@ -104,7 +104,6 @@ inline void figure_env(
 
 			// ==== svg =====
 			ext = "svg";
-			// svg and pdf hashes not the same (new standard)
 			image_hash = get_text("figures", "id", fig_id, "image_alt", db_read);
 			if(find(image_hash, ' ') >= 0)
 				throw internal_err(u8"目前 figures.image_alt 仅支持一张 svg");
@@ -114,15 +113,25 @@ inline void figure_env(
 					throw internal_err(u8"pdf 图片找不到对应的 svg 且 figures.aka 为空：" + fig_id);
 				image_hash = get_text("figures", "id", aka, "image_alt", db_read);
 			}
-			else if (!aka.empty()) {
-				clear(sb) << u8"图片环境 " << fig_id << u8" 的 figures.aka 不为空， 且 figures.image_alt 不为空（将清空）。";
-				scan_warn(sb);
-				stmt_update.bind(1, fig_id);
-				stmt_update.exec(); stmt_update.reset();
-			}
-			if (size(image_hash) != 16) {
-				clear(sb) << u8"图片环境 " << fig_id << u8" 的图片 images.id 长度不对：" << image_hash;
-				throw internal_err(u8"发现 images.image_alt 仍然带有拓展名，将模拟编辑器删除。");
+			else { // !image_hash.empty()
+				if (!aka.empty()) {
+					clear(sb) << u8"图片环境 " << fig_id
+						<< u8" 的 figures.aka 不为空， 且 figures.image_alt 不为空（将清空）。";
+					scan_warn(sb);
+					stmt_update.bind(1, "");
+					stmt_update.bind(2, fig_id);
+					stmt_update.exec(); stmt_update.reset();
+				}
+				if (size(image_hash) != 16) {
+					if (size(image_hash) > 16 && image_hash.substr(16) == ".svg") {
+						scan_warn(u8"发现 images.image_alt 仍然带有 svg 拓展名，将模拟编辑器删除。");
+						image_hash.resize(16);
+						stmt_update.bind(1, image_hash);
+						stmt_update.bind(2, fig_id);
+						stmt_update.exec(); stmt_update.reset();
+					}
+					clear(sb) << u8"图片环境 " << fig_id << u8" 的图片 images_alt 长度不对：" << image_hash;
+				}
 			}
 			fig_ext_hash[fig_id][ext] = image_hash;
 			clear(fname_in2) << gv::path_in << "figures/" << image_hash << '.' << ext;
@@ -149,14 +158,14 @@ inline void figure_env(
 		href.clear(); href << gv::url << image_hash << "." << ext;
 		caption_div.clear();
 		if (!caption.empty())
-			caption = u8"：" + caption;
+			caption.insert(0, u8"：");
 		clear(sb) << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
-																					  "<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
-				  << "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
-				  << "\" style = \"width:100%;\"></a>\n</div>\n"
-				  << "<div align = \"center\"> "
-				  << (gv::is_eng ? "Fig. " : u8"图 ") << i_fig + 1
-				  << caption << "</div>";
+			"<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
+			<< "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
+			<< "\" style = \"width:100%;\"></a>\n</div>\n"
+			<< "<div align = \"center\"> "
+			<< (gv::is_eng ? "Fig. " : u8"图 ") << i_fig + 1
+			<< caption << "</div>";
 		str.replace(intvFig.L(i_fig), intvFig.R(i_fig) - intvFig.L(i_fig) + 1, sb);
 	}
 }
