@@ -396,7 +396,7 @@ inline void db_update_figures(
 	// 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
 	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "fig"=?;)");
+	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "id"=?;)");
 	for (Long i = 0; i < size(figs_used); ++i) {
 		if (!figs_used[i] && !db_figs_deleted[i]) {
 			if (db_fig_ref_bys[i].empty() ||
