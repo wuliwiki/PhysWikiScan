@@ -518,14 +518,16 @@ inline void db_delete_images(
 }
 
 // delete all related db data and files of a figure
-// must be marked figures.deleted and not referenced by figures.aka
+// must be marked figures.deleted
+// if figures.aka is empty, must not be referenced by figures.aka
+// if figures.aka is not empty, will only delete the record in figures, nothing else
 inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	vecStr image_hash, images, images_alt, images_old;
+	vecStr image_hash, images_alt;
 	set<Str> entries_figures;
 
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "entry", "image", "image_alt", "deleted", "aka", "last", "next" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
@@ -539,12 +541,22 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 			stmt_select.reset();
 			continue;
 		}
-		const Str &entry = stmt_select.getColumn(2);
+		const Str &entry = stmt_select.getColumn(0);
+		const Str &image = stmt_select.getColumn(1);
+		parse(images_alt, stmt_select.getColumn(2));
 		bool deleted = (int)stmt_select.getColumn(3);
-		parse(images, stmt_select.getColumn(0));
-		parse(images_alt, stmt_select.getColumn(1));
-		parse(images_old, stmt_select.getColumn(4));
+		bool has_aka = !stmt_select.getColumn(4).getString().empty();
+		bool has_last = !stmt_select.getColumn(5).getString().empty();
+		bool has_next = !stmt_select.getColumn(6).getString().empty();
 		stmt_select.reset();
+		if (has_last || has_next) // TODO: deal with figures.last and figures.next
+			throw internal_err("not implemented!" SLS_WHERE);
+		if (has_aka) {
+			// just delete 1 record from `entries` and done
+			stmt_delete.bind(1, figure);
+			stmt_delete.executeStep(); stmt_delete.reset();
+			return;
+		}
 		if (!deleted)
 			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
 
@@ -581,13 +593,11 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		}
 
 		// delete figures.image/image_alt
-		db_delete_images(images, db_read, db_rw);
+		db_delete_images({image}, db_read, db_rw);
 		db_delete_images(images_alt, db_read, db_rw);
-		db_delete_images(images_old, db_read, db_rw);
 
 		// delete figures record
 		stmt_delete.bind(1, figure);
 		stmt_delete.executeStep(); stmt_delete.reset();
 	}
-
 }
