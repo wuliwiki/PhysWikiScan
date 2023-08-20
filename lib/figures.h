@@ -176,7 +176,6 @@ inline void db_update_images(
 		const unordered_map<Str, unordered_map<Str,Str>> &fig_ext_hash, // figures.id -> (ext -> hash)
 		SQLite::Database &db_rw)
 {
-	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "ext", "figure", "figures_aka" FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
@@ -248,7 +247,6 @@ inline void db_update_images(
 			stmt_select.reset();
 		}
 	}
-	transaction.commit();
 }
 
 // db table "figures"
@@ -263,7 +261,6 @@ inline void db_update_figures(
 	// cout << "updating db for figures environments..." << endl;
 	update_entries.clear();  //entries that needs to rerun autoref(), since label order updated
 	Long order;
-	SQLite::Transaction transaction(db_rw);
 	SQLite::Statement stmt_select0(db_rw,
 		R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
@@ -278,7 +275,7 @@ inline void db_update_figures(
 	// db_xxx[i] are from the same row of "labels" table
 	vecStr db_figs, db_fig_entries, db_fig_image;
 	unordered_map<Str, Str> db_fig_aka; // figures.id -> figures.aka
-	vecBool db_figs_used, figs_used;
+	vecBool db_figs_deleted, figs_used;
 	vecLong db_fig_orders;
 	vector<vecStr> db_fig_ref_bys;
 	set<Str> db_entry_figs;
@@ -300,11 +297,11 @@ inline void db_update_figures(
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
 			db_fig_aka[fig_id] = stmt_select1.getColumn(4).getString();
-			db_figs_used.push_back(!(bool)stmt_select1.getColumn(3).getInt());
+			db_figs_deleted.push_back((int)stmt_select1.getColumn(3));
 			stmt_select1.reset();
 		}
 	}
-	figs_used.resize(db_figs_used.size(), false);
+	figs_used.resize(db_figs_deleted.size(), false);
 	Str figs_str, image, ext;
 	set<Str> new_figs, figs;
 	for (Long i = 0; i < size(entries); ++i) {
@@ -339,7 +336,7 @@ inline void db_update_figures(
 			figs_used[ind] = true;
 			bool changed = false;
 			// 图片 label 在 entries.figures 中，检查是否未被使用
-			if (!db_figs_used[ind]) {
+			if (db_figs_deleted[ind]) {
 				db_log(u8"发现数据库中未使用的图片被重新使用（将更新）：" + fig_id);
 				changed = true;
 			}
@@ -401,13 +398,12 @@ inline void db_update_figures(
 	Str ref_by_str;
 	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "fig"=?;)");
 	for (Long i = 0; i < size(figs_used); ++i) {
-		if (!figs_used[i] && db_figs_used[i]) {
+		if (!figs_used[i] && !db_figs_deleted[i]) {
 			if (db_fig_ref_bys[i].empty() ||
 				(db_fig_ref_bys[i].size() == 1 && db_fig_ref_bys[i][0] == db_fig_entries[i])) {
 				clear(sb) << u8"检测到 \\label{fig_"
-								 << db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
+					<< db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
 				db_log(sb);
-				// set "figures.entry" = ''
 				stmt_update3.bind(1, db_figs[i]);
 				stmt_update3.exec(); stmt_update3.reset();
 			}
@@ -417,7 +413,6 @@ inline void db_update_figures(
 			}
 		}
 	}
-	transaction.commit();
 	// cout << "done!" << endl;
 }
 

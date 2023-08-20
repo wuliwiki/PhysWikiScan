@@ -490,7 +490,6 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 
 	if (!dry_run) {
 		// insert into "labels"
-		SQLite::Transaction transaction(db_rw);
 		SQLite::Statement stmt_insert(db_rw,
 			R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
 		stmt_insert.bind(1, label);
@@ -509,7 +508,6 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		stmt_update.bind(1, labels_str);
 		stmt_update.bind(2, entry);
 		stmt_update.exec(); stmt_update.reset();
-		transaction.commit();
 	}
 	return 0;
 }
@@ -601,7 +599,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 							 const vector<vecLong> &entry_label_orders,
 							 SQLite::Database &db_rw)
 {
-	SQLite::Transaction transaction(db_rw);
 	// cout << "updating db for labels..." << endl;
 	update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
 	SQLite::Statement stmt_select0(db_rw,
@@ -761,6 +758,5 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 		stmt_update0.bind(2, e.first); // label
 		stmt_update0.exec(); stmt_update0.reset();
 	}
-	transaction.commit();
 	// cout << "done!" << endl;
 }

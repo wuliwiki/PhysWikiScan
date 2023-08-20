@@ -282,8 +282,6 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 // update entries.bibs and bibliography.ref_by
 inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Bool>> &entry_bibs_change, SQLite::Database &db_rw)
 {
-	SQLite::Transaction transaction(db_rw);
-
 	// convert arguments
 	unordered_map<Str, unordered_map<Str, Bool>> bib_ref_bys_change; // bib -> (entry -> [1]add/[0]del)
 	for (auto &e : entry_bibs_change) {
@@ -342,7 +340,6 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 		stmt_update_entry_bibs.exec(); stmt_update_entry_bibs.reset();
 	}
 	cout << "done!" << endl;
-	transaction.commit();
 }
 
 // update entries.uprefs, entries.ref_by
@@ -350,8 +347,6 @@ inline void db_update_uprefs(
 		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change,
 		SQLite::Database &db_read, SQLite::Database &db_rw)
 {
-	SQLite::Transaction transaction(db_rw);
-
 	cout << "updating entries.uprefs ..." << endl;
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
@@ -407,7 +402,6 @@ inline void db_update_uprefs(
 		stmt_update2.exec(); stmt_update2.reset();
 	}
 
-	transaction.commit();
 }
 
 // update entries.refs, labels.ref_by, figures.ref_by
@@ -415,8 +409,6 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 	unordered_map<Str, unordered_set<Str>> &entry_del_refs,
 	SQLite::Database &db_rw)
 {
-	SQLite::Transaction transaction(db_rw);
-
 	// transform arguments
 	unordered_map<Str, unordered_set<Str>> label_add_ref_bys, fig_add_ref_bys;
 	for (auto &e : entry_add_refs) {
@@ -580,7 +572,6 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		stmt_update_entry_refs.exec(); stmt_update_entry_refs.reset();
 	}
 	cout << "done!" << endl;
-	transaction.commit();
 }
 
 // make db consistent

@@ -298,7 +298,9 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
+			SQLite::Transaction transaction(db_rw);
 			arg_delete(entries, db_read, db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--delete-hard" && args.size() > 1) {
 			vecStr entries;
@@ -309,7 +311,9 @@ int main(int argc, const char *argv[]) {
 					break;
 				entries.push_back(arg);
 			}
+			SQLite::Transaction transaction(db_rw);
 			arg_delete_hard(entries, db_read, db_rw);
+			transaction.commit();
 		}
 		else if (args[0] == "--delete-figure" && args.size() > 1) {
 			vecStr figures;

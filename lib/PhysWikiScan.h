@@ -613,8 +613,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 inline void PhysWikiOnlineN_round1(
 		map<Str, Str> &entry_err, // entry -> err msg
 		set<Char32> &illegal_chars,
-		vecStr_O titles, vecStr_IO entries, Bool_I clear, SQLite::Database &db_read, SQLite::Database &db_rw)
-{
+		vecStr_O titles, vecStr_IO entries, bool clear,
+		SQLite::Database &db_read, SQLite::Database &db_rw
+) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
 	titles.clear(); titles.resize(entries.size()); entry_err.clear();
@@ -906,7 +907,6 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 	set<Str> entries_figures;
 
 	check_foreign_key(db_rw, false);
-	SQLite::Transaction transaction(db_rw);
 
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
@@ -979,7 +979,6 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		stmt_delete.executeStep(); stmt_delete.reset();
 	}
 
-	transaction.commit();
 	check_foreign_key(db_rw);
 }
 
