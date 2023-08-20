@@ -433,7 +433,7 @@ inline void db_delete_images(
 	set<Str> figures, figures_image_alt; // images.figure + images.figures_aka
 
 	for (auto &image : images) {
-		cout << "deleting image with hash: " << image << endl;
+		db_log("尝试删除图片 hash: " + image);
 		stmt_select.bind(1, image);
 		if (!stmt_select.executeStep()) {
 			clear(sb) << u8"要删除的图片文件 hash 不存在（将忽略）：" << image << SLS_WHERE;
@@ -470,9 +470,9 @@ inline void db_delete_images(
 				figures.erase(fig);
 				continue;
 			}
-			// const char *fig_image = stmt_select2.getColumn(0);
 			parse(figures_image_alt, stmt_select2.getColumn(1));
 			bool deleted = (int)stmt_select2.getColumn(2);
+			stmt_select2.reset();
 			if (!deleted) {
 				bool in_figures_image = (fig == figure);
 				bool in_figures_image_alt = figures_image_alt.count(fig);
@@ -485,9 +485,12 @@ inline void db_delete_images(
 		for (auto &fig : figures) {
 			// bool has_aka = (fig == figure);
 			stmt_select2.bind(1, fig);
-			const char *fig_image = stmt_select2.getColumn(0);
+			if (!stmt_select2.executeStep())
+				throw internal_err(SLS_WHERE);
+			const Str &fig_image = stmt_select2.getColumn(0);
 			parse(figures_image_alt, stmt_select2.getColumn(1));
 			// bool deleted = (int)stmt_select2.getColumn(3);
+			stmt_select2.reset();
 
 			bool in_figures_image = (fig == fig_image);
 			bool in_figures_image_alt = figures_image_alt.count(fig);
