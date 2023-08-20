@@ -910,7 +910,6 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
-	SQLite::Statement stmt_select4(db_read, R"(SELECT "id" FROM "figures" WHERE "aka"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"='1' WHERE "id"=?;)");
 

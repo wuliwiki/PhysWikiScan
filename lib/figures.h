@@ -289,8 +289,11 @@ inline void db_update_figures(
 			db_figs.push_back(fig_id);
 			db_fig_entries.push_back(entry);
 			stmt_select1.bind(1, fig_id);
-			if (!stmt_select1.executeStep())
-				throw scan_err("图片标签不存在： fig_" + fig_id);
+			if (!stmt_select1.executeStep()) {
+				scan_warn("entries.figures 中图片标签不存在（将忽略，请手动删除）： fig_" + fig_id);
+				stmt_select1.reset();
+				continue;
+			}
 			db_fig_orders.push_back((int)stmt_select1.getColumn(0));
 			db_fig_ref_bys.emplace_back();
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
