@@ -111,11 +111,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	cout << "updating sqlite database \"history\" table (" << fnames.size()
 		 << " backup) ..." << endl; cout.flush();
 
-	check_foreign_key(db_rw, false);
-
 	// update "history" table
-	check_foreign_key(db_rw);
-
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
 
@@ -265,7 +261,6 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 			stmt_select4.bind(3, entry);
 			if (stmt_select4.executeStep()) {
 				const Str &db_hash = stmt_select4.getColumn(0);
-				stmt_select4.reset();
 				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
 								 << db_hash << " -> " << sha1 << ' ' << fname;
 				db_log(sb);
@@ -285,6 +280,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				stmt_insert.reset();
 				db_history[sha1] = make_tuple(time, authorID, entry, true);
 			}
+			stmt_select4.reset();
 		}
 	}
 
@@ -313,7 +309,6 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		stmt_contrib.exec(); stmt_contrib.reset();
 	}
 
-	check_foreign_key(db_rw);
 	cout << "done." << endl;
 }
 
@@ -529,7 +524,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 	}
 
 	// remove or rename files, and update db
-	check_foreign_key(db_rw, false);
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw,
@@ -575,7 +569,6 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 			}
 		}
 	}
-	check_foreign_key(db_rw);
 	db_update_history_last(db_rw);
 }
 

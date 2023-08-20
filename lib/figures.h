@@ -524,10 +524,8 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 	vecStr image_hash, images, images_alt, images_old;
 	set<Str> entries_figures;
 
-	check_foreign_key(db_rw, false);
-
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "image", "image_alt", "entry", "deleted", "image_old" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
@@ -543,6 +541,9 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		}
 		const Str &entry = stmt_select.getColumn(2);
 		bool deleted = (int)stmt_select.getColumn(3);
+		parse(images, stmt_select.getColumn(0));
+		parse(images_alt, stmt_select.getColumn(1));
+		parse(images_old, stmt_select.getColumn(4));
 		stmt_select.reset();
 		if (!deleted)
 			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
@@ -561,7 +562,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		}
 		else {
 			clear(sb) << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
-					  << entry << '.' << figure;
+				<< entry << '.' << figure;
 			db_log(sb);
 		}
 		stmt_select3.reset();
@@ -579,14 +580,9 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 			throw internal_err(sb1);
 		}
 
-		// delete figures.image*
-		parse(images, stmt_select.getColumn(0));
+		// delete figures.image/image_alt
 		db_delete_images(images, db_read, db_rw);
-
-		parse(images_alt, stmt_select.getColumn(1));
 		db_delete_images(images_alt, db_read, db_rw);
-
-		parse(images_old, stmt_select.getColumn(4));
 		db_delete_images(images_old, db_read, db_rw);
 
 		// delete figures record
@@ -594,5 +590,4 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		stmt_delete.executeStep(); stmt_delete.reset();
 	}
 
-	check_foreign_key(db_rw);
 }

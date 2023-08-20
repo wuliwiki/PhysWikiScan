@@ -102,7 +102,6 @@ inline void db_update_parts_chapters(
 	cout << "updating sqlite database (" << part_name.size() << " parts, "
 		 << chap_name.size() << " chapters) ..." << endl;
 	cout.flush();
-	check_foreign_key(db_rw, false);
 	cout << "clear parts and chatpers tables" << endl;
 	table_clear("parts", db_rw); table_clear("chapters", db_rw);
 
@@ -136,7 +135,6 @@ inline void db_update_parts_chapters(
 		stmt_insert_chap.bind(6, entry_last[i]);
 		stmt_insert_chap.exec(); stmt_insert_chap.reset();
 	}
-	check_foreign_key(db_rw, false);
 	cout << "done." << endl;
 }
 
