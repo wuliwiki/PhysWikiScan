@@ -353,14 +353,14 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 // if doesn't exist, return 0
 // dry_run : don't actually modify tex file
 inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
-	SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I dry_run = false)
+	SQLite::Database &db_rw, Bool_I dry_run = false)
 {
 	Long ind0 = 0;
 	Str label0, newtab;
 
 	// check if label exist
 	if (type == "fig") {
-		SQLite::Statement stmt_select_fig(db_read,
+		SQLite::Statement stmt_select_fig(db_rw,
 			R"(SELECT "id" FROM "figures" WHERE "entry"=? AND "order"=?;)");
 		stmt_select_fig.bind(1, entry);
 		stmt_select_fig.bind(2, (int)order);
@@ -374,7 +374,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 			throw scan_err(u8"找不到图片， 请确认图片存在且成功编译， 且用 \\label{} 定义了标签。 要上传图片请使用菜单栏的【上传图片】按钮， 成功后会自动插入图片环境并创建 label。");
 	}
 	else {
-		SQLite::Statement stmt_select_label(db_read,
+		SQLite::Statement stmt_select_label(db_rw,
 			R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
 		stmt_select_label.bind(1, type);
 		stmt_select_label.bind(2, entry);

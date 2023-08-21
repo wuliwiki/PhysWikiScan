@@ -248,7 +248,7 @@ inline void check_existing_foreign_keys(
 		}
 	}
 	catch (std::exception& e) {
-		throw runtime_error("check_existing_foreign_keys(): " + e.what());
+		throw runtime_error(Str("check_existing_foreign_keys(): ") + e.what());
 	}
 }
 

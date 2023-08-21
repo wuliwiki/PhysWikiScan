@@ -339,7 +339,7 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 // update entries.uprefs, entries.ref_by
 inline void db_update_uprefs(
 		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change,
-		SQLite::Database &db_read, SQLite::Database &db_rw)
+		SQLite::Database &db_rw)
 {
 	cout << "updating entries.uprefs ..." << endl;
 	SQLite::Statement stmt_select(db_rw,
@@ -359,7 +359,7 @@ inline void db_update_uprefs(
 		for (auto &ee : uprefs_change) {
 			auto &entry_refed = ee.first;
 			auto &is_add = ee.second;
-			bool deleted = get_int("entries", "id", entry_refed, "deleted", db_read);
+			bool deleted = get_int("entries", "id", entry_refed, "deleted", db_rw);
 			if (deleted) {
 				if (is_add)
 					throw scan_err(u8"不允许 \\upref{被删除的词条}：" + entry_refed + SLS_WHERE);
@@ -571,7 +571,7 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 // make db consistent
 // (regenerate derived fields)
 // TODO: fix other generated field, i.e. entries.ref_by
-inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void arg_fix_db(SQLite::Database &db_rw)
 {
 	Str refs_str, entry;
 	set<Str> refs;
@@ -692,8 +692,8 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 
 	// === regenerate images.figures from figures.image ========
 	unordered_map<Str, set<Str>> images_figures, images_figures_old; // images.figures* generated from figures.image
-	SQLite::Statement stmt_select3(db_read, R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id" != '';)");
-	SQLite::Statement stmt_select4(db_read, R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id" != '';)");
+	SQLite::Statement stmt_select4(db_rw, R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
 	vecStr image_alt, image_old;
 	Str fig_id, image_hash;
 	while (stmt_select3.executeStep()) {
@@ -721,7 +721,7 @@ inline void arg_fix_db(SQLite::Database &db_read, SQLite::Database &db_rw)
 	stmt_select3.reset();
 
 	vecStr db_images;
-	get_column(db_images, "images", "hash", db_read);
+	get_column(db_images, "images", "hash", db_rw);
 	SQLite::Statement stmt_update4(db_rw, R"(UPDATE "images" SET "figures"=?, "figures_old"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete4(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	for (auto &img_hash : db_images) {

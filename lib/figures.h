@@ -9,7 +9,7 @@ inline void figure_env(
 		Str_IO str, Str_I entry,
 		vecStr_I fig_ids, // parsed from env_labels(), `\label{}` already deleted
 		vecLong_I fig_orders, // figures.order
-		SQLite::Database &db_read, SQLite::Database &db_rw)
+		SQLite::Database &db_rw)
 {
 	Intvs intvFig;
 	Str fig_fname, fname_in, fname_out, href, ext, caption, widthPt;
@@ -23,7 +23,7 @@ inline void figure_env(
 
 	for (Long i_fig = Nfig - 1; i_fig >= 0; --i_fig) {
 		auto &fig_id = fig_ids[i_fig];
-		const Str &aka = get_text("figures", "id", fig_id, "aka", db_read);
+		const Str &aka = get_text("figures", "id", fig_id, "aka", db_rw);
 
 		// verify label
 		Long ind_label = rfind(str, tmp1, intvFig.L(i_fig));
@@ -103,14 +103,14 @@ inline void figure_env(
 
 			// ==== svg =====
 			ext = "svg";
-			image_hash = get_text("figures", "id", fig_id, "image_alt", db_read);
+			image_hash = get_text("figures", "id", fig_id, "image_alt", db_rw);
 			if(find(image_hash, ' ') >= 0)
 				throw internal_err(u8"目前 figures.image_alt 仅支持一张 svg");
 			// if current record has non-empty "aka", then use that figure
 			if (image_hash.empty()) {
 				if (aka.empty())
 					throw internal_err(u8"pdf 图片找不到对应的 svg 且 figures.aka 为空：" + fig_id);
-				image_hash = get_text("figures", "id", aka, "image_alt", db_read);
+				image_hash = get_text("figures", "id", aka, "image_alt", db_rw);
 			}
 			else { // !image_hash.empty()
 				if (!aka.empty()) {
@@ -423,11 +423,11 @@ inline void db_update_figures(
 //     then it must have `figures.deleted==1`
 inline void db_delete_images(
 		vecStr_I images, // hashes, no extension
-		SQLite::Database &db_read, SQLite::Database &db_rw, Str_I fig_id = "")
+		SQLite::Database &db_rw, Str_I fig_id = "")
 {
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "figure", "figures_aka", "ext" FROM "images" WHERE "hash"=?;)");
-	SQLite::Statement stmt_select2(db_read,
+	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "image", "image_alt", "deleted" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "images" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "image"='' WHERE "id"=?;)");
@@ -524,15 +524,15 @@ inline void db_delete_images(
 // must be marked figures.deleted
 // if figures.aka is empty, must not be referenced by figures.aka
 // if figures.aka is not empty, will only delete the record in figures, nothing else
-inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 {
 	vecStr image_hash, images_alt;
 	set<Str> entries_figures;
 
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "entry", "image", "image_alt", "deleted", "aka", "last", "next" FROM "figures" WHERE "id"=?;)");
-	SQLite::Statement stmt_select2(db_read, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
-	SQLite::Statement stmt_select3(db_read, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "figures" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 
@@ -596,8 +596,8 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_read, SQ
 		}
 
 		// delete figures.image/image_alt
-		db_delete_images({image}, db_read, db_rw);
-		db_delete_images(images_alt, db_read, db_rw);
+		db_delete_images({image}, db_rw);
+		db_delete_images(images_alt, db_rw);
 
 		// delete figures record
 		stmt_delete.bind(1, figure);

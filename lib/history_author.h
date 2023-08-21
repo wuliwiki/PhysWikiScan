@@ -393,14 +393,14 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 }
 
 // calculate all "history.add" and "history.del"
-inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I redo_all = false) {
+inline void history_add_del_all(SQLite::Database &db_rw, Bool_I redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
-	SQLite::Statement stmt_select(db_read, R"(SELECT "id" FROM "entries";)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
 	while (stmt_select.executeStep())
 		entries.push_back(stmt_select.getColumn(0));
 
-	SQLite::Statement stmt_select2(db_read,
+	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "hash", "time", "author", "add", "del" FROM "history"
 			WHERE "entry"=? ORDER BY "time";)");
 	Str fname_old, fname, str, str_old;
@@ -456,9 +456,9 @@ inline void history_add_del_all(SQLite::Database &db_read, SQLite::Database &db_
 }
 
 // simulate 5min backup rule, by renaming backup files
-inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void history_normalize(SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "entry", "author", "time", "hash" FROM "history" WHERE "hash" <> '';)");
 	//            entry                author     time         hash  time2 (new time, or "" for nothing, "d" to delete)
 	unordered_map<Str,   unordered_map<Str,    map<Str,   pair<Str,  Str>>>> entry_author_time_hash_time2;
@@ -658,7 +658,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		if (!stmt_select2.executeStep())
 			throw internal_err(SLS_WHERE);
 		const Str &time_last_last = stmt_select2.getColumn(0);
-		int author_id_last_last = stmt_select2.getColumn(1);
+		// int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
 		// TODO: 对比两个文件
 

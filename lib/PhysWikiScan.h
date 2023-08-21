@@ -414,7 +414,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, set<Char32> &illegal_chars,
-	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read, SQLite::Database &db_rw)
+	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_rw)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -437,7 +437,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	isdraft = is_draft(str);
 	Str db_title, authors, db_keys_str, db_license, db_type, db_pentry_str, chapter, last_entry, next_entry;
 	Long db_draft;
-	SQLite::Statement stmt_select(db_read,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "chapter", "last", "next", "keys", "pentry", "isdraft", "license", "type" )"
 		R"(FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
@@ -492,9 +492,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	if (replace(html, "PhysWikiHTMLtitle", db_title) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 	// get license
-	get_entry_license(license, str, db_read);
+	get_entry_license(license, str, db_rw);
 	// get entry type
-	get_entry_type(type, str, db_read);
+	get_entry_type(type, str, db_rw);
 	// check globally forbidden char
 	global_forbid_char(illegal_chars, str);
 	// save and replace verbatim code with an index
@@ -543,9 +543,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// process example and exercise environments
 	theorem_like_env(str);
 	// process figure environments
-	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_read, db_rw);
+	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_rw);
 	// get dependent entries from \pentry{}
-	get_pentry(pentry, str, db_read);
+	get_pentry(pentry, str, db_rw);
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
@@ -553,9 +553,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// check dependency tree and auto mark redundant pentry with ~
 	vector<DGnode> tree; vector<Node> nodes;
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
-	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_read);
+	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_rw);
 	// update entries.pentry if changed
-	db_pentry_str = get_text("entries", "id", entry, "pentry", db_read);
+	db_pentry_str = get_text("entries", "id", entry, "pentry", db_rw);
 	// process \pentry{}
 	pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
 	// replace user defined commands
@@ -567,9 +567,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Command2Tag("textsl", "<i>", "</i>", str);
 	pay2div(str); // deal with "\pay" "\paid" pseudo command
 	// replace \upref{} with link icon
-	upref(uprefs_change, str, entry, db_read);
+	upref(uprefs_change, str, entry, db_rw);
 	href(str); // hyperlinks
-	cite(bibs_change, str, entry, db_read); // citation
+	cite(bibs_change, str, entry, db_rw); // citation
 	
 	// footnote
 	footnote(str, entry, gv::url);
@@ -597,9 +597,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 			throw internal_err(u8"\"PhysWikiNnode\" 在 entry_template.html 中数量不对");
 	}
 
-	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
+	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_rw);
 
-	if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
+	if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_rw)) != 1)
 		throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
 	// update db "entries" table
@@ -614,7 +614,7 @@ inline void PhysWikiOnlineN_round1(
 		map<Str, Str> &entry_err, // entry -> err msg
 		set<Char32> &illegal_chars,
 		vecStr_O titles, vecStr_IO entries, bool clear,
-		SQLite::Database &db_read, SQLite::Database &db_rw
+		SQLite::Database &db_rw
 ) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
@@ -647,7 +647,7 @@ inline void PhysWikiOnlineN_round1(
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
 				fig_ids, fig_orders, fig_ext_hash, isdraft, keywords, license,
 				type, labels, label_orders, entry_uprefs_change[entry],
-				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules, db_read,
+				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
@@ -704,7 +704,7 @@ inline void PhysWikiOnlineN_round1(
 		// update entries.bibs & bibliography.ref_by
 		db_update_entry_bibs(entry_bibs_change, db_rw);
 		// update entries.uprefs & entries.ref_by
-		db_update_uprefs(entry_uprefs_change, db_read, db_rw);
+		db_update_uprefs(entry_uprefs_change, db_rw);
 	}
 	catch (const std::exception &e) {
 		entry_err["entry_unknown"] = e.what();
@@ -716,7 +716,7 @@ inline void PhysWikiOnlineN_round1(
 
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_I entries, vecStr_I titles, SQLite::Database &db_read, SQLite::Database &db_rw)
+		vecStr_I entries, vecStr_I titles, SQLite::Database &db_rw)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
@@ -730,7 +730,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		fname = gv::path_out + entry + ".html";
 		read(html, fname + ".tmp"); // read html file
 		// process \autoref and \upref
-		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_read);
+		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);
 		write(html, fname); // save html file
 		file_remove(fname + ".tmp");
 	}
@@ -812,19 +812,19 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &db_rw)
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, clear, db_read, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, clear, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
@@ -841,7 +841,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 
 // delete entries
 // if failed, db will not change
-inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Database &db_rw, Bool_I no_throw = false)
+inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
 	vecStr ref_by, vtmp;
 	Str stmp, err_msg;
@@ -878,7 +878,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 
 		// make sure no one is referencing anything else
 		vtmp.push_back(entry);
-		try { PhysWikiOnlineN(vtmp, true, db_read, db_rw); }
+		try { PhysWikiOnlineN(vtmp, true, db_rw); }
 		catch (std::exception &e) {
 			err_msg << "\n\n" << e.what();
 		}
@@ -901,15 +901,15 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_read, SQLite::Data
 
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
-inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 {
 	vecStr history_hash, figures, figs_dangling;
-	SQLite::Statement stmt_select(db_read, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_select3(db_read, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"='1' WHERE "id"=?;)");
 
@@ -926,11 +926,11 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 		parse(figures, stmt_select.getColumn(0));
 		stmt_select.reset();
 		if (!deleted) // do normal delete first
-			arg_delete({entry}, db_read, db_rw, true);
-		arg_delete_figs_hard(figures, db_read, db_rw);
+			arg_delete({entry}, db_rw, true);
+		arg_delete_figs_hard(figures, db_rw);
 
 		// delete all history records and files
-		db_get_history(history_hash, entry, db_read);
+		db_get_history(history_hash, entry, db_rw);
 		stmt_update.bind(1, entry);
 		stmt_update.exec(); stmt_update.reset();
 		if (!history_hash.empty()) {
@@ -967,7 +967,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 				for (auto &fig_id : figs_dangling) {
 					stmt_update2.bind(1, fig_id);
 					stmt_update2.exec(); stmt_update2.reset();
-					arg_delete_figs_hard({Str(fig_id)}, db_read, db_rw);
+					arg_delete_figs_hard({Str(fig_id)}, db_rw);
 				}
 			}
 		}
@@ -976,7 +976,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_read, SQLite
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
 // goal: should not need to be used!
-inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
+inline void PhysWikiOnline(SQLite::Database &db_rw)
 {
 	gv::is_entire = true; // compiling the whole wiki
 
@@ -999,13 +999,13 @@ inline void PhysWikiOnline(SQLite::Database &db_read, SQLite::Database &db_rw)
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, false, db_read, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, false, db_rw);
 
 	// generate dep.json
 	if (file_exist(gv::path_out + "../tree/data/dep.json"))
-		dep_json(db_read);
+		dep_json(db_rw);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_read, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw);
 
 	// TODO: warn unused figures, based on "ref_by"
 

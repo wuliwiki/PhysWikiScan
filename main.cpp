@@ -218,10 +218,9 @@ int main(int argc, const char *argv[]) {
 			gv::is_eng = true;
 
 		// === parse arguments ===
-		SQLite::Database db_read(gv::path_data + "scan.db", SQLite::OPEN_READONLY);
 		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
 		if (args[0] == "." && args.size() == 1) {
-			PhysWikiOnline(db_read, db_rw);
+			PhysWikiOnline(db_rw);
 		}
 		else if (args[0] == "--toc" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);
@@ -229,7 +228,7 @@ int main(int argc, const char *argv[]) {
 			transaction.commit();
 		}
 		else if (args[0] == "--wc" && args.size() == 1)
-			word_count(db_read);
+			word_count(db_rw);
 		else if (args[0] == "--inline-eq-space")
 			// check format and auto correct .tex files
 			add_space_around_inline_eq(gv::path_in);
@@ -243,7 +242,7 @@ int main(int argc, const char *argv[]) {
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
 			SQLite::Transaction transaction(db_rw);
-			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw);
+			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]),db_rw);
 			transaction.commit();
 			vecStr output;
 			if (ret == 0) { // added
@@ -262,7 +261,7 @@ int main(int argc, const char *argv[]) {
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
 			SQLite::Transaction transaction(db_rw);
-			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_read, db_rw, true);
+			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_rw, true);
 			transaction.commit();
 			vecStr output;
 			if (ret == 0) // added
@@ -284,11 +283,11 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			PhysWikiOnlineN(entries, false, db_read, db_rw);
+			PhysWikiOnlineN(entries, false, db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--tree" && args.size() == 1) {
-			dep_json(db_read);
+			dep_json(db_rw);
 		}
 		else if (args[0] == "--delete" && args.size() > 1) {
 			vecStr entries;
@@ -300,7 +299,7 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			arg_delete(entries, db_read, db_rw);
+			arg_delete(entries, db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--delete-hard" && args.size() > 1) {
@@ -313,7 +312,7 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			arg_delete_hard(entries, db_read, db_rw);
+			arg_delete_hard(entries, db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--delete-figure" && args.size() > 1) {
@@ -326,7 +325,7 @@ int main(int argc, const char *argv[]) {
 				figures.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			arg_delete_figs_hard(figures, db_read, db_rw);
+			arg_delete_figs_hard(figures, db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--delete-image" && args.size() > 1) {
@@ -339,7 +338,7 @@ int main(int argc, const char *argv[]) {
 				images.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			db_delete_images(images, db_read, db_rw);
+			db_delete_images(images, db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--bib") {
@@ -356,14 +355,14 @@ int main(int argc, const char *argv[]) {
 			transaction2.commit();
 			SQLite::Transaction transaction3(db_rw);
 			if (args.size() == 2)
-				history_add_del_all(db_read, db_rw, true);
+				history_add_del_all(db_rw, true);
 			else
-				history_add_del_all(db_read, db_rw, false);
+				history_add_del_all(db_rw, false);
 			transaction3.commit();
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);
-			history_normalize(db_read, db_rw);
+			history_normalize(db_rw);
 			transaction.commit();
 		}
 		else if (args[0] == "--backup" && args.size() == 3) {
@@ -372,10 +371,10 @@ int main(int argc, const char *argv[]) {
 			transaction.commit();
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
-			author_char_stat(args[1], args[2], args[3], db_read);
+			author_char_stat(args[1], args[2], args[3], db_rw);
 		}
 		else if (args[0] == "--fix-db" && size(args) == 1) {
-			arg_fix_db(db_read, db_rw);
+			arg_fix_db(db_rw);
 		}
 		else if (args[0] == "--migrate-db" && size(args) == 3) {
 			// copy old database to a new database with different schema
