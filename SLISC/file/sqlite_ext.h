@@ -228,4 +228,28 @@ inline void migrate_db(Str_I file_db_new, Str_I file_db_old)
 	}
 }
 
+// check all foreign keys in a db
+// rowId is an invisible column `ROWID` of int64
+inline void check_existing_foreign_keys(
+		unordered_map<Str, tuple<Str, Str, Str>> &table_rowId_tableParent_foreignKeyInd,
+		SQLite::Database &db)
+{
+	table_rowId_tableParent_foreignKeyInd.clear();
+	try {
+		check_foreign_key(db);
+		SQLite::Statement query(db, "PRAGMA foreign_key_check;");
+
+		while (query.executeStep()) {
+			table_rowId_tableParent_foreignKeyInd[query.getColumn(0)] = make_tuple(
+				query.getColumn(1).getString(),
+				query.getColumn(2).getString(),
+				query.getColumn(3).getString()
+			);
+		}
+	}
+	catch (std::exception& e) {
+		throw runtime_error("check_existing_foreign_keys(): " + e.what());
+	}
+}
+
 } // namespace slisc

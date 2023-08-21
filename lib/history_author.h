@@ -576,63 +576,82 @@ inline void history_normalize(SQLite::Database &db_read, SQLite::Database &db_rw
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
 	Str str;
+	cerr << "--backup 选项正在拼命实现中……" << endl;
+	exit(1);
 
 	// get hash, check existence
 	sb << gv::path_in << "contents/" << entry << ".tex";
 	read(str, sb);
+	if (str.empty())
+		db_log(u8"--backup 忽略空文件：" + entry);
 	CRLF_to_LF(str);
 	Str hash = sha1sum(str);
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select2.bind(1, hash);
 	if (stmt_select2.executeStep()) {
-		const Str &time_str = stmt_select2.getColumn(0);
-		// int author_id_last = stmt_select2.getColumn(1);
-		cout << "exist " << time_str << '_' << author_id << '_' << entry << ".tex "
+		const Str &db_time_str = stmt_select2.getColumn(0);
+		Long db_author_id = (int)stmt_select2.getColumn(1);
+		const Str &db_entry = stmt_select2.getColumn(2);
+		clear(sb) << "要备份的文件已经存在： " << db_time_str << '_' << db_author_id << '_' << db_entry << ".tex "
 			 << hash;
 		stmt_select2.reset();
+		if (db_entry != entry)
+			throw scan_err(u8"已存在的备份文件属于另一个词条（这不可能，因为标题 entries.caption 禁止重复）");
 		return;
 	}
 	stmt_select2.reset();
 
-	// get last backup from `entries.hash_last`
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "hash_last" FROM "entries" WHERE "id"=?;)");
+	// get last backup from `entries.last_backup`
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
-	const Str &hash_last = stmt_select.getColumn(0);
+	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
 	stmt_select2.bind(1, hash_last);
 	if (!stmt_select2.executeStep()) {
-		clear(sb) << u8"entries.hash_last 未找到： " << entry << '.' << hash_last;
+		clear(sb) << u8"entries.last_backup 未找到： " << entry << '.' << hash_last;
 		throw internal_err(sb);
 	}
-	const Str &time_str_last = stmt_select2.getColumn(0);
+	std::time_t time_last = str2time_t(stmt_select2.getColumn(0));
 	int author_id_last = stmt_select2.getColumn(1);
-	const Str &hash_last_last = stmt_select2.getColumn(2);
+	const Str &hash_last_last = stmt_select2.getColumn(3);
+	if (stmt_select2.getColumn(3).getString() != entry)
+		throw scan_err(SLS_WHERE);
 	stmt_select2.reset();
-	std::time_t time_last = str2time_t(time_str_last);
 
-	// calculate time in current backup file name
+	// calculate time_new in current backup file name
 	bool replace = false; // replace the last backup
 	std::time_t time = std::time(nullptr);
-	std::time_t time_backup = time;
+	std::time_t time_new = time;
 	if (author_id == author_id_last) {
 		if (time > time_last && time < time_last + 30*60) {
 			if ((time-time_last) % 300 != 0)
-				time_backup = time_last + ((time-time_last)/300+1)*300;
+				time_new = time_last + ((time-time_last)/300+1)*300;
 		}
 		else if (time <= time_last)
 			replace = true;
 	}
 	else { // author_id != author_id_last
 		if (time < time_last)
-			time_backup = time_last + 1;
+			time_new = time_last + 1;
 	}
-	Str time_backup_str;
-	time_t2yyyymmddhhmm(time_backup_str, time_backup);
+	Str time_new_str;
+	time_t2yyyymmddhhmm(time_new_str, time_new);
 
 	// calculate char add/del
 	Str str2;
 	if (replace) {
+		clear(sb) << "../PhysWiki-backup/"
+			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
+		write(str, sb);
+
+		SQLite::Statement stmt_update(db_rw,
+			R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
+		stmt_update.bind(1, hash);
+		stmt_update.bind(2, hash_last);
+		stmt_update.exec(); stmt_update.reset();
+
 		// SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
 		//	stmt_select2.bind(1, hash);
 		stmt_select2.bind(1, hash_last_last);
@@ -641,20 +660,23 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		const Str &time_last_last = stmt_select2.getColumn(0);
 		int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
-		clear(sb) << "../PhysWiki-backup/"
-			<< time_last_last << '_' << author_id_last_last << '_' << entry << ".tex";
+		// TODO: 对比两个文件
+
+		return;
 	}
-	else {
+	else { // new backup
 		clear(sb) << gv::path_in << "../PhysWiki-backup/"
-			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
+			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 	}
+
+
 	read(str2, sb);
 	Long char_add, char_del;
 	str_add_del(char_add, char_del, str2, str);
 
 	// write or replace file
 	clear(sb) << gv::path_in << "../PhysWiki-backup/"
-					 << time_backup << '_' << author_id << '_' << entry << ".tex";
+					 << time_new << '_' << author_id << '_' << entry << ".tex";
 	write(str, sb);
 
 	// insert db
@@ -662,7 +684,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )"
 		R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
 	stmt_insert.bind(1, hash);
-	stmt_insert.bind(2, time_backup_str);
+	stmt_insert.bind(2, time_new_str);
 	stmt_insert.bind(3, author_id);
 	stmt_insert.bind(4, entry);
 	stmt_insert.bind(5, (int)char_add);
