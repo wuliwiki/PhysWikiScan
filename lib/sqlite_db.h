@@ -67,7 +67,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		stmt_select.bind(1, entry);
 		bool deleted = false;
 		if (!stmt_select.executeStep()) {
-			db_log(u8"词条不存在数据库中， 将模拟 editor 添加： " + entry);
+			scan_warn(u8"内部警告：词条不存在数据库中， 将模拟 editor 添加： " + entry);
 			// 从 tex 文件获取标题
 			read(str, sb); // read tex file
 			CRLF_to_LF(str);

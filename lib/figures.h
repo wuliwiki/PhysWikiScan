@@ -123,7 +123,7 @@ inline void figure_env(
 				}
 				if (size(image_hash) != 16) {
 					if (size(image_hash) > 16 && image_hash.substr(16) == ".svg") {
-						scan_warn(u8"发现 images.image_alt 仍然带有 svg 拓展名，将模拟编辑器删除。");
+						scan_warn(u8"内部警告：发现 images.image_alt 仍然带有 svg 拓展名，将模拟编辑器删除。");
 						image_hash.resize(16);
 						stmt_update.bind(1, image_hash);
 						stmt_update.bind(2, fig_id);
@@ -190,8 +190,8 @@ inline void db_update_images(
 			auto &image_hash = ext_hash.second;
 			stmt_select.bind(1, image_hash);
 			if (!stmt_select.executeStep()) {
-				clear(sb) << "数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
-				db_log(sb);
+				clear(sb) << "内部警告：数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
+				scan_warn(sb);
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
 				if (fig_aka.empty()) {
@@ -324,9 +324,9 @@ inline void db_update_figures(
 				image = ext_hash.at("pdf"); ext = "pdf";
 			}
 			if (ind < 0) { // 图片 label 不在 entries.figures 中
-				clear(sb) << u8"发现数据库中没有的图片环境（将模拟 editor 添加）："
+				clear(sb) << u8"内部警告：发现数据库中没有的图片环境（将模拟 editor 添加）："
 						  << fig_id << ", " << entry << ", " << to_string(order);
-				db_log(sb);
+				scan_warn(sb);
 				stmt_insert.bind(1, fig_id);
 				stmt_insert.bind(2, entry);
 				stmt_insert.bind(3, (int)order);

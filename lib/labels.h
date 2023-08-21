@@ -662,9 +662,9 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 
 			Long ind = search(label, db_labels);
 			if (ind < 0) {
-				clear(sb) << u8"数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
+				clear(sb) << u8"内部警告：数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
-				db_log(sb);
+				scan_warn(sb);
 				stmt_insert.bind(1, label);
 				stmt_insert.bind(2, type);
 				stmt_insert.bind(3, entry);

@@ -229,7 +229,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		author_contrib[authorID] += 5;
 		if (entries.count(entry) == 0 &&
 			entries_deleted_inserted.count(entry) == 0) {
-			db_log(u8"备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
+			scan_warn(u8"内部警告：备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
 			entries_deleted_inserted.insert(entry);
@@ -340,9 +340,9 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			auto &hash = time_hash_last.second.first;
 			auto &db_last_hash = time_hash_last.second.second;
 			if (last_hash != db_last_hash) {
-				clear(sb) << u8"检测到 history.last 改变，将模拟编辑器更新："
-								 << db_last_hash << " -> " << last_hash;
-				db_log(sb);
+				clear(sb) << u8"内部警告：检测到 history.last 改变，将模拟编辑器更新："
+					<< db_last_hash << " -> " << last_hash;
+				scan_warn(sb);
 				stmt_update.bind(1, last_hash);
 				stmt_update.bind(2, hash);
 				stmt_update.exec(); stmt_update.reset();
@@ -357,9 +357,9 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 		stmt_select2.reset();
 		const Str &last_backup = ((--e.second.end())->second).first;
 		if (last_backup != db_last_backup) {
-			clear(sb) << u8"检测到 entry.last_backup 改变，将模拟编辑器更新："
+			clear(sb) << u8"内部警告：检测到 entry.last_backup 改变，将模拟编辑器更新："
 				<< db_last_backup << " -> " << last_backup;
-			db_log(sb);
+			scan_warn(sb);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
 			stmt_update2.exec(); stmt_update2.reset();
