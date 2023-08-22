@@ -1028,7 +1028,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 // reverse process of verbatim()
 inline Long verb_recover(Str_IO str, vecStr_IO str_verb)
 {
-	SLS_ERR("unfinished!");
+	throw internal_err("verb_recover() unfinished!");
 	Long N = 0, ind0 = 0;
 	Str ind_str;
 

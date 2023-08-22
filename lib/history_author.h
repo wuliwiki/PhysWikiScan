@@ -575,16 +575,17 @@ inline void history_normalize(SQLite::Database &db_rw)
 // backup an entry to PhysWiki-backup
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
-	Str str;
-	throw scan_err(u8"--backup 选项正在拼命实现中……");
+	Str str; // content of entry
 
 	// get hash, check existence
-	sb << gv::path_in << "contents/" << entry << ".tex";
+	clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 	read(str, sb);
 	if (str.empty())
 		db_log(u8"--backup 忽略空文件：" + entry);
 	CRLF_to_LF(str);
-	Str hash = sha1sum(str);
+	Str hash = sha1sum(str).substr(0, 16);
+
+	// check if hash exist
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select2.bind(1, hash);
@@ -592,16 +593,17 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		const Str &db_time_str = stmt_select2.getColumn(0);
 		Long db_author_id = (int)stmt_select2.getColumn(1);
 		const Str &db_entry = stmt_select2.getColumn(2);
-		clear(sb) << "要备份的文件已经存在： " << db_time_str << '_' << db_author_id << '_' << db_entry << ".tex "
-			 << hash;
 		stmt_select2.reset();
+		clear(sb) << "要备份的文件 hash 已经存在（将忽略）： " << db_time_str << '_' << db_author_id << '_' << db_entry << ".tex "
+			<< hash;
+		SLS_WARN(sb);
 		if (db_entry != entry)
-			throw scan_err(u8"已存在的备份文件属于另一个词条（这不可能，因为标题 entries.caption 禁止重复）");
+			throw scan_err(u8"已存在的备份文件属于另一个词条（这不可能，因为标题 entries.caption 禁止重复，不同词条的内容不可能一样）");
 		return;
 	}
 	stmt_select2.reset();
 
-	// get last backup from `entries.last_backup`
+	// get last (latest) backup from `entries.last_backup`
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
@@ -609,99 +611,111 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
 	stmt_select2.bind(1, hash_last);
 	if (!stmt_select2.executeStep()) {
-		clear(sb) << u8"entries.last_backup 未找到： " << entry << '.' << hash_last;
+		clear(sb) << u8"entries.last_backup 在 history 中未找到： " << entry << '.' << hash_last;
 		throw internal_err(sb);
 	}
-	std::time_t time_last = str2time_t(stmt_select2.getColumn(0));
+	Str time_last_str = stmt_select2.getColumn(0);
+	std::time_t time_last = str2time_t(time_last_str);
 	int author_id_last = stmt_select2.getColumn(1);
-	const Str &hash_last_last = stmt_select2.getColumn(3);
-	if (stmt_select2.getColumn(3).getString() != entry)
+	if (stmt_select2.getColumn(2).getString() != entry)
 		throw scan_err(SLS_WHERE);
+	const Str &hash_last_last = stmt_select2.getColumn(3);
 	stmt_select2.reset();
 
-	// calculate time_new in current backup file name
+	// calculate `time_new_str` in current backup file name
 	bool replace = false; // replace the last backup
-	std::time_t time = std::time(nullptr);
-	std::time_t time_new = time;
+	time_t time = std::time(nullptr);
+	time_t time_new = time;
 	if (author_id == author_id_last) {
-		if (time > time_last && time < time_last + 30*60) {
+		if (time <= time_last) {
+			replace = true;
+			time_new = time_last;
+		}
+		else if (time < time_last + 30*60) {
 			if ((time-time_last) % 300 != 0)
 				time_new = time_last + ((time-time_last)/300+1)*300;
 		}
-		else if (time <= time_last)
-			replace = true;
 	}
 	else { // author_id != author_id_last
-		if (time < time_last)
+		if (time <= time_last)
 			time_new = time_last + 1;
 	}
-	Str time_new_str;
-	time_t2yyyymmddhhmm(time_new_str, time_new);
 
-	// calculate char add/del
 	Str str2;
-	if (replace) {
-		clear(sb) << "../PhysWiki-backup/"
-			<< time_last << '_' << author_id_last << '_' << entry << ".tex";
-		write(str, sb);
+	Long char_add, char_del;
 
-		SQLite::Statement stmt_update(db_rw,
-			R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
-		stmt_update.bind(1, hash);
-		stmt_update.bind(2, hash_last);
-		stmt_update.exec(); stmt_update.reset();
-
-		// SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "last" FROM "history" WHERE "hash"=?;)");
-		//	stmt_select2.bind(1, hash);
+	if (replace) { // replace last (latest) backup
+		// calculate char add/del
 		stmt_select2.bind(1, hash_last_last);
 		if (!stmt_select2.executeStep())
 			throw internal_err(SLS_WHERE);
-		const Str &time_last_last = stmt_select2.getColumn(0);
-		// int author_id_last_last = stmt_select2.getColumn(1);
+		const Str &time_last_last_str = stmt_select2.getColumn(0);
+		int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
-		// TODO: 对比两个文件
+		clear(sb) << gv::path_in << "../PhysWiki-backup/"
+				  << time_last_last_str << '_' << author_id_last_last << '_' << entry << ".tex";
+		read(str2, sb);
+		str_add_del(char_add, char_del, str2, str);
 
-		return;
+		// update db
+		SQLite::Statement stmt_update(db_rw,
+			R"(UPDATE "history" SET "hash"=?, "add"=?, "del"=? WHERE "hash"=?;)");
+		stmt_update.bind(1, hash);
+		stmt_update.bind(2, (int)char_add);
+		stmt_update.bind(3, (int)char_del);
+		stmt_update.bind(4, hash_last);
+		stmt_update.exec(); stmt_update.reset();
+		clear(sb) << u8"更新 history： " << hash_last << " -> " << hash << ", add = " <<
+			char_add << ", del = " << char_del;
+		db_log(sb);
+
+		// replace last (latest) backup
+		clear(sb) << "../PhysWiki-backup/"
+				  << time_last_str << '_' << author_id_last << '_' << entry << ".tex";
+		if (!file_exist(sb))
+			SLS_WARN(u8"数据库中备份文件不存在：" + sb);
+		write(str, sb);
 	}
-	else { // new backup
+	else { // !replace  (new backup)
+		// calculate char add/del
+		clear(sb) << gv::path_in << "../PhysWiki-backup/"
+				  << time_last_str << '_' << author_id_last << '_' << entry << ".tex";
+		read(str2, sb);
+		str_add_del(char_add, char_del, str2, str);
+
+		// update db
+		Str time_new_str;
+		time_t2yyyymmddhhmm(time_new_str, time_new);
+
+		SQLite::Statement stmt_insert(db_rw,
+			R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
+VALUES (?, ?, ?, ?, ?, ?, ?);)");
+		stmt_insert.bind(1, hash);
+		stmt_insert.bind(2, time_new_str);
+		stmt_insert.bind(3, author_id);
+		stmt_insert.bind(4, entry);
+		stmt_insert.bind(5, (int)char_add);
+		stmt_insert.bind(6, (int)char_del);
+		stmt_insert.bind(7, hash_last);
+		stmt_insert.exec(); stmt_insert.reset();
+
+		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id
+			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
+		db_log(sb);
+
+		// write new file
 		clear(sb) << gv::path_in << "../PhysWiki-backup/"
 			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
+		if (file_exist(sb))
+			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
+		write(str, sb);
 	}
 
-
-	read(str2, sb);
-	Long char_add, char_del;
-	str_add_del(char_add, char_del, str2, str);
-
-	// write or replace file
-	clear(sb) << gv::path_in << "../PhysWiki-backup/"
-					 << time_new << '_' << author_id << '_' << entry << ".tex";
-	write(str, sb);
-
-	// insert db
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last") )"
-		R"(VALUES (?, ?, ?, ?, ?, ?, ?) WHERE "hash"=?;)");
-	stmt_insert.bind(1, hash);
-	stmt_insert.bind(2, time_new_str);
-	stmt_insert.bind(3, author_id);
-	stmt_insert.bind(4, entry);
-	stmt_insert.bind(5, (int)char_add);
-	stmt_insert.bind(6, (int)char_del);
-	if (!replace)
-		stmt_insert.bind(7, hash_last);
-	else
-		stmt_insert.bind(7, hash_last_last);
-	stmt_insert.exec(); stmt_insert.reset();
-
-	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
 	stmt_update2.bind(1, hash);
 	stmt_update2.bind(2, entry);
 	stmt_update2.exec(); stmt_update2.reset();
 
-	if (replace) {
-		SQLite::Statement stmt_insert2(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
-		stmt_insert2.bind(1, hash_last);
-		stmt_insert2.exec(); stmt_insert2.reset();
-	}
+	clear(sb) << u8"更新 entries.last_backup： " << entry << '.' << hash;
+	db_log(sb);
 }

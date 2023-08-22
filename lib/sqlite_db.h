@@ -31,7 +31,7 @@ inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
 	}
 	for (Long i = 0; i < size(orders); ++i)
 		if (orders[i] != i)
-			SLS_ERR("something wrong!");
+			throw internal_err(SLS_WHERE);
 }
 
 // get table of content info from db "parts", in ascending "order"
@@ -47,7 +47,7 @@ inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 	}
 	for (Long i = 0; i < size(orders); ++i)
 		if (orders[i] != i)
-			SLS_ERR("something wrong!");
+			throw internal_err(SLS_WHERE);
 }
 
 inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Database &db_rw)
@@ -63,7 +63,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 	for (auto &entry : entries) {
 		clear(sb) << gv::path_in; sb << "contents/" << entry << ".tex";
 		if (!file_exist(sb))
-			SLS_ERR("词条文件不存在：" + entry + ".tex");
+			throw scan_err("词条文件不存在：" + entry + ".tex");
 		stmt_select.bind(1, entry);
 		bool deleted = false;
 		if (!stmt_select.executeStep()) {
@@ -754,7 +754,7 @@ inline void migrate_user_db() {
 		file_old = folder + "cmd_data/scan-old.db";
 		file = folder + "cmd_data/scan.db";
 		if (!file_exist(file))
-			SLS_ERR("file not found:" + file);
+			throw scan_err("文件不存在：" + file);
 		cout << "migrating " << file << endl;
 		file_move(file_old, file, true);
 		file_copy(file, "../user-notes/note-template/cmd_data/scan.db", true);

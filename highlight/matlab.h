@@ -8,7 +8,7 @@ namespace slisc {
 inline Long Matlab_is_trans(Str32_I str, Long_I ind)
 {
 	if (str.at(ind) != U'\'')
-	    SLS_ERR("not an apostrophe!");
+	    throw runtime_error("not an apostrophe!");
 	Long ind0 = ind - 1;
 	if (ind0 >= 0 && (is_alphanum_(str[ind0]) || str[ind0] == U'.' ||
 	    str[ind0] == U']' || str[ind0] == U')'))
