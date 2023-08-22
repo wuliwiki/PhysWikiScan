@@ -716,7 +716,7 @@ inline void PhysWikiOnlineN_round1(
 
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_I entries, vecStr_I titles, SQLite::Database &db_rw)
+		vecStr_I entries, vecStr_I titles, SQLite::Database &db_rw, bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
@@ -731,7 +731,8 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		read(html, fname + ".tmp"); // read html file
 		// process \autoref and \upref
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);
-		write(html, fname); // save html file
+		if (write_html)
+			write(html, fname); // save html file
 		file_remove(fname + ".tmp");
 	}
 	cout << endl; cout.flush();
@@ -824,7 +825,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw, !clear);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
@@ -843,7 +844,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 // if failed, db will not change
 inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
-	vecStr ref_by, vtmp;
+	vecStr ref_by, vtmp(1);
 	Str stmp, err_msg;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
@@ -873,14 +874,19 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		const Str &ref_by_str = stmt_select.getColumn(0);
 		stmt_select.reset();
 		parse(ref_by, ref_by_str);
-		if (!ref_by.empty())
-			err_msg = u8"无法删除词条，因为被其他词条引用：" + ref_by_str;
+		if (!ref_by.empty()) {
+			err_msg << u8"无法删除词条，因为被其他词条引用：" << ref_by_str << "\n\n";
+			continue;
+		}
 
 		// make sure no one is referencing anything else
-		vtmp.push_back(entry);
+		vtmp[0] = entry;
 		try { PhysWikiOnlineN(vtmp, true, db_rw); }
-		catch (std::exception &e) {
-			err_msg << "\n\n" << e.what();
+		catch (const std::exception &e) {
+			err_msg << "\n\n" << e.what() << "\n\n";
+		}
+		catch (...) {
+			throw internal_err(SLS_WHERE);
 		}
 
 		// TODO: check if hash is the same with latest backup
@@ -895,8 +901,10 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		// delete file
 		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
 		file_remove(stmp);
-		cout << "successfully (shallow) deleted " << stmp;
+		cout << "成功(浅)删除： " << stmp;
 	}
+	if (!err_msg.empty())
+		throw scan_err(err_msg);
 }
 
 // arg_delete(), plus everything associated with this entry
