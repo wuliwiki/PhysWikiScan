@@ -748,19 +748,28 @@ inline void migrate_user_db() {
 	Str file_old, file;
 	vecStr folders;
 	folder_list_full(folders, "../user-notes/");
+	Str err_msg;
 	for (auto &folder: folders) {
-		if (!file_exist(folder + "main.tex") || folder == "../user-notes/note-template/")
-			continue;
-		file_old = folder + "cmd_data/scan-old.db";
-		file = folder + "cmd_data/scan.db";
-		if (!file_exist(file))
-			throw scan_err("文件不存在：" + file);
-		cout << "migrating " << file << endl;
-		file_move(file_old, file, true);
-		file_copy(file, "../user-notes/note-template/cmd_data/scan.db", true);
-		migrate_db(file, file_old);
-		file_remove(file_old);
+		try {
+			if (!file_exist(folder + "main.tex") || folder == "../user-notes/note-template/")
+				continue;
+			file_old = folder + "cmd_data/scan-old.db";
+			file = folder + "cmd_data/scan.db";
+			if (!file_exist(file))
+				throw scan_err("文件不存在：" + file);
+			cout << "migrating " << file << endl;
+			file_move(file_old, file, true);
+			file_copy(file, "../user-notes/note-template/cmd_data/scan.db", true);
+			migrate_db(file, file_old);
+			file_remove(file_old);
+		}
+		catch (const std::exception &e) {
+			err_msg << e.what() << '\n';
+			SLS_WARN(e.what());
+		}
 	}
+	if (!err_msg.empty())
+		throw internal_err(err_msg);
 }
 
 // `git diff --no-index --word-diff-regex=. file1.tex file2.tex`
