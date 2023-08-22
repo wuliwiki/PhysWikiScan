@@ -576,8 +576,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
 	Str str;
-	cerr << "--backup 选项正在拼命实现中……" << endl;
-	exit(1);
+	throw scan_err(u8"--backup 选项正在拼命实现中……");
 
 	// get hash, check existence
 	sb << gv::path_in << "contents/" << entry << ".tex";

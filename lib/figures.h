@@ -130,6 +130,7 @@ inline void figure_env(
 						stmt_update.exec(); stmt_update.reset();
 					}
 					clear(sb) << u8"图片环境 " << fig_id << u8" 的图片 images_alt 长度不对：" << image_hash;
+					throw internal_err(sb);
 				}
 			}
 			fig_ext_hash[fig_id][ext] = image_hash;

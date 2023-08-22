@@ -91,12 +91,6 @@ ifeq ($(opt_static), true)
 endif
 libs = $(static_flag) $(mplapack_lib) $(boost_lib) $(sqlitecpp_lib) -l pthread -l dl
 
-# subfolders of SLISC, including SLISC, e.g. "SLISC/:SLISC/prec/:...:SLISC/lin/"
-in_paths = $(shell find SLISC -maxdepth 1 -type d -printf "../%p/:" | head -c -2)/
-
-# number of cpu
-Ncpu = $(shell getconf _NPROCESSORS_ONLN)
-
 # default target
 PhysWikiScan: main.o # link
 	@printf "\n\n   --- link ---\n\n"

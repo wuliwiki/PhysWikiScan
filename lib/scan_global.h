@@ -18,7 +18,7 @@ namespace gv {
 	Bool is_entire = false; // running one tex or the entire wiki
 }
 
-Str sb, sb1; // string buffer
+Str sb, sb1; // string buffer (danger if passed into function that use them!)
 
 class scan_err : public std::exception
 {
@@ -40,9 +40,11 @@ public:
 };
 
 // write log
+// if `print_time`, time will be inserted at first none LF
 inline void scan_log(Str_I str, bool print_time = false)
 {
-	static Str log_file = "scan_log.txt";
+	static const Str log_file = "scan_log.txt";
+	static Str str1, time_str;
 
 	// write to file
 	ofstream file(log_file, std::ios::app);
@@ -53,11 +55,16 @@ inline void scan_log(Str_I str, bool print_time = false)
 		time_t time = std::time(nullptr);
 		std::tm *ptm = localtime(&time);
 		stringstream ss;
-		ss << std::put_time(ptm, "%Y-%m-%d %H:%M:%S");
-		static Str time_str = std::move(ss.str());
-		file << time_str << "  ";
+		ss << std::put_time(ptm, "%Y-%m-%d %H:%M:%S  ");
+		time_str = std::move(ss.str());
+		Long ind = 0;
+		while (str[ind] == '\n') ++ind;
+		str1 = str;
+		str1.insert(ind, time_str);
+		file << str1 << endl;
 	}
-	file << str << endl;
+	else
+		file << str << endl;
 	file.close();
 }
 
@@ -65,24 +72,34 @@ inline void scan_log(Str_I str, bool print_time = false)
 // in case of warning about db, use scan_warn()
 inline void db_log(Str_I str)
 {
-	cout << SLS_CYAN_BOLD << "[DB] " << str << SLS_NO_STYLE << endl;
-	scan_log(str);
+	static Str str1;
+	clear(str1) << "[DB] " << str;
+	cout << SLS_CYAN_BOLD << str1 << SLS_NO_STYLE << endl;
+	scan_log(str1);
 }
 
+// warning
 inline void scan_warn(Str_I str)
 {
 	SLS_WARN(str);
 	scan_log("[Warning] " + str);
 }
 
-// limit log size
-inline void limit_log()
+// error
+inline void scan_cerr(Str_I str)
 {
-	const Long size_min = 5e6, size_max = 10e6;
+	scan_log("[Error] " + str);
+	cerr << sb << endl;
+}
+
+// limit log size
+inline void scan_log_limit()
+{
+	static const Str log_file = "scan_log.txt";
+	static const Long size_min = 5e6, size_max = 10e6;
 
 	// limit file size (reduce size to size_min if size > size_max)
 	// only delete whole lines
-	static Str log_file = "scan_log.txt";
 	if (!file_exist(log_file)) {
 		write("", log_file); return;
 	}

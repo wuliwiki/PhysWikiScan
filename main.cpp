@@ -199,9 +199,10 @@ int main(int argc, const char *argv[]) {
 
 	// write command to log
 	try {
-		limit_log();
+		scan_log_limit();
+		sb = "\n参数 ";
 		for (int i = 1; i < argc; ++i)
-			clear(sb) << "$" << i << ' ' << argv[i] << ' ';
+			sb << " [" << argv[i] << ']';
 		scan_log(sb, true);
 
 		Timer timer;
@@ -421,14 +422,11 @@ int main(int argc, const char *argv[]) {
 			check_url(entries, args[1]);
 		}
 		else {
-			sb = u8"scan 内部错误： 命令不合法\n";
-			scan_log(sb);
-			cerr << sb << endl;
-			return 1;
+			throw scan_err(u8"scan 内部错误： 命令不合法");
 		}
 		stringstream time_str;
 		time_str << std::fixed << std::setprecision(3) << timer.toc();
-		clear(sb) << "all done! time (s): " << time_str.str() << '\n';
+		clear(sb) << "all done! time (s): " << time_str.str();
 		cout << sb << endl;
 		scan_log(sb);
 		if (argc <= 1) {
@@ -439,21 +437,16 @@ int main(int argc, const char *argv[]) {
 	}
 	catch (const std::exception &e) {
 		if (e.what() == Str("database is locked")) {
-			sb = u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。\n";
-			scan_log(sb);
-			cerr << sb << endl;
+			scan_cerr(u8"scan 错误：数据库被占用，请稍后重试。如果该错误持超过 5 分钟，请联系管理员。");
 		}
 		else {
-			clear(sb) << u8"scan 错误：" << e.what() << '\n';
-			scan_log(sb);
-			cerr << sb << endl;
+			clear(sb) << u8"scan 错误：" << e.what();
+			scan_cerr(sb);
 		}
 		exit(1);
 	}
 	catch (...) {
-		clear(sb) << u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！\n";
-		scan_log(sb);
-		cerr << sb << endl;
+		scan_cerr(u8"scan 内部错误： 不要 throw 除了 scan_err 和 internal_err 之外的东西！");
 		exit(1);
 	}
 
