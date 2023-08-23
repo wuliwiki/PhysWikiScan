@@ -575,7 +575,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 // backup an entry to PhysWiki-backup
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
-	Str str; // content of entry
+	Str str, time_new_str; // content of entry
 
 	// get hash, check existence
 	clear(sb) << gv::path_in << "contents/" << entry << ".tex";
@@ -609,6 +609,41 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
+VALUES (?, ?, ?, ?, ?, ?, ?);)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+
+	// check first backup
+	if (hash_last.empty()) {
+		db_log(u8"emtries.last_backup 为空， 当前为第一次备份。");
+
+		time_t2yyyymmddhhmm(time_new_str, std::time(nullptr));
+		stmt_insert.bind(1, hash);
+		stmt_insert.bind(2, time_new_str);
+		stmt_insert.bind(3, author_id);
+		stmt_insert.bind(4, entry);
+		stmt_insert.bind(5, (int)u8count(str));
+		stmt_insert.bind(6, 0);
+		stmt_insert.bind(7, "");
+		stmt_insert.exec(); stmt_insert.reset();
+
+		stmt_update2.bind(1, hash);
+		stmt_update2.bind(2, entry);
+		stmt_update2.exec(); stmt_update2.reset();
+
+		clear(sb) << "../PhysWiki-backup/"
+			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
+		if (file_exist(sb))
+			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
+		write(str, sb);
+		return;
+	}
+	else if (size(hash_last) != 16) {
+		clear(sb) << u8"备份词条的 entries.last_backup 长度不对：" << entry << '.' << hash_last;
+		throw internal_err(sb);
+	}
+
 	stmt_select2.bind(1, hash_last);
 	if (!stmt_select2.executeStep()) {
 		clear(sb) << u8"entries.last_backup 在 history 中未找到： " << entry << '.' << hash_last;
@@ -684,12 +719,8 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		str_add_del(char_add, char_del, str2, str);
 
 		// update db
-		Str time_new_str;
 		time_t2yyyymmddhhmm(time_new_str, time_new);
 
-		SQLite::Statement stmt_insert(db_rw,
-			R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
-VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
 		stmt_insert.bind(3, author_id);
@@ -711,7 +742,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		write(str, sb);
 	}
 
-	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
 	stmt_update2.bind(1, hash);
 	stmt_update2.bind(2, entry);
 	stmt_update2.exec(); stmt_update2.reset();
