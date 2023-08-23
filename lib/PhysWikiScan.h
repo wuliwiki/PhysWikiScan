@@ -4,6 +4,7 @@
 #include "check_entry.h"
 #include "labels.h"
 #include "sqlite_db.h"
+#include "fix_db.h"
 #include "tree.h"
 #include "history_author.h"
 #include "figures.h"

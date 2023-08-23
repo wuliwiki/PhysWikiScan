@@ -27,7 +27,7 @@ CREATE TABLE "entries" (
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 	"figures"      TEXT    NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），以 figures.entry 为准
-	"labels"       TEXT    NOT NULL DEFAULT '', -- "label1 label2" 定义的 labels （除图片和代码）
+	"labels"       TEXT    NOT NULL DEFAULT '', -- 【生成】"label1 label2" 定义的 labels （除图片和代码）
 	"refs"         TEXT    NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
 	"files"        TEXT    NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
@@ -157,7 +157,7 @@ CREATE TABLE "images" (
 	"ext"          TEXT    NOT NULL,            -- [pdf|svg|png|jpg|gif|...] 拓展名
 	"figure"       TEXT    NOT NULL DEFAULT '', -- 【生成】本图片文件归哪个图片环境管理，该环境的 figures.aka 为空。 本图的 hash 可能出现在该环境的 figures.image/image_alt 中的一个。
 	"figures_aka"  TEXT    NOT NULL DEFAULT '', -- 【生成】"id1 id2" 被 figures 中哪些环境作为 image 或 image_alt， 且它们的 figures.aka 都是本图的 "figure"
-	"author"       INTEGER NOT NULL DEFAULT '', -- 当前版本作者/修改者
+	"author"       INTEGER NOT NULL DEFAULT -1, -- 当前版本作者/修改者
 	"license"      TEXT    NOT NULL DEFAULT '', -- 当前版本协议
 	"time"         TEXT    NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
@@ -202,7 +202,7 @@ CREATE TABLE "code" (
 CREATE TABLE "labels" (
 	"id"       TEXT    NOT NULL UNIQUE,     -- \label{yyy_xxxx} 中 yyy_xxxx 是 id， yyy 是 "type"
 	"type"     TEXT    NOT NULL,            -- [sub|tab|def|lem|the|cor|ex|exe] 标签类型
-	"entry"    TEXT    NOT NULL,            -- 【生成】所在词条（以 entries.labels 为准）
+	"entry"    TEXT    NOT NULL,            -- 所在词条（以 entries.labels 为准）
 	"order"    INTEGER NOT NULL,            -- 显示编号
 	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条引用（以 entries.refs 为准）
 	PRIMARY KEY("id"),
@@ -237,7 +237,7 @@ CREATE TABLE "history" (
 	UNIQUE("time", "author", "entry")
 );
 
-INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '000000000000', 0, ''); -- 防止 FOREIGN KEY 报错
+INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '', 0, ''); -- 防止 FOREIGN KEY 报错
 
 -- 审稿记录
 CREATE TABLE "review" (
@@ -257,7 +257,7 @@ CREATE TABLE "review" (
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
-INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '000000000000', 0, '', 0); -- 防止 FOREIGN KEY 报错
+INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '', 0, '', 0); -- 防止 FOREIGN KEY 报错
 
 -- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
 CREATE TABLE "contribution" (

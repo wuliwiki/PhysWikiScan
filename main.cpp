@@ -377,6 +377,11 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--fix-db" && size(args) == 1) {
 			arg_fix_db(db_rw);
 		}
+		else if (args[0] == "--fix-foreign-keys" && size(args) == 1) {
+			SQLite::Transaction transaction(db_rw);
+			fix_foreign_keys(db_rw);
+			transaction.commit();
+		}
 		else if (args[0] == "--migrate-db" && size(args) == 3) {
 			// copy old database to a new database with different schema
 			migrate_db(args[2], args[1]);

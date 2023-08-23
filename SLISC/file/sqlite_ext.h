@@ -228,23 +228,27 @@ inline void migrate_db(Str_I file_db_new, Str_I file_db_old)
 	}
 }
 
-// check all foreign keys in a db
-// rowId is an invisible column `ROWID` of int64
+// check all existing foreign key violations in a db
+// `rowid` is an invisible column of type int64, each primary key has a unique `rowid`
+// the `rowid` of `table` has foreign key violation, with the `fkid`-th key referencing `parent` table
+// `fkid` is the reversed order of froeign key definition of `table`, starting from 0
+// `parent` is actually redundant
 inline void check_existing_foreign_keys(
-		unordered_map<Str, tuple<Str, Str, Str>> &table_rowId_tableParent_foreignKeyInd,
+		// table -> (fkid -> (rowid -> parent))
+		unordered_map<Str, unordered_map<Long, unordered_map<Long, Str>>> &table_fkid_rowid_parent,
 		SQLite::Database &db)
 {
-	table_rowId_tableParent_foreignKeyInd.clear();
+	table_fkid_rowid_parent.clear();
 	try {
 		check_foreign_key(db);
-		SQLite::Statement query(db, "PRAGMA foreign_key_check;");
+		SQLite::Statement stmt(db, "PRAGMA foreign_key_check;");
 
-		while (query.executeStep()) {
-			table_rowId_tableParent_foreignKeyInd[query.getColumn(0)] = make_tuple(
-				query.getColumn(1).getString(),
-				query.getColumn(2).getString(),
-				query.getColumn(3).getString()
-			);
+		// 0:table  1:rowid  2:parent  3:fkid
+		while (stmt.executeStep()) {
+			table_fkid_rowid_parent[stmt.getColumn(0)] // table
+				[stmt.getColumn(3).getInt64()] // fkid
+				[stmt.getColumn(1).getInt64()] // rowid
+				= stmt.getColumn(2).getString();  // parent
 		}
 	}
 	catch (std::exception& e) {
