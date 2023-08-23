@@ -166,6 +166,8 @@ CREATE TABLE "images" (
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
+INSERT INTO "images" ("hash", "ext") VALUES ('', ''); -- 防止 FOREIGN KEY 报错
+
 -- 文件
 CREATE TABLE "files" (
 	"hash"             TEXT    NOT NULL UNIQUE,     -- 文件 SHA1 的前 16 位
