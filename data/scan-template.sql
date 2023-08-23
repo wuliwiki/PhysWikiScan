@@ -279,6 +279,7 @@ CREATE TABLE "contribution" (
 -- 所有作者
 CREATE TABLE "authors" (
 	"id"              INTEGER NOT NULL UNIQUE,     -- ID
+	"uuid"            TEXT    NOT NULL DEFAULT '', -- "8-4-4-4-12" 网站用户系统的 ID
 	"name"            TEXT    NOT NULL,            -- 昵称
 	"applied"         INTEGER NOT NULL DEFAULT 0,  -- [0|1] 已申请
 	"salary"          INTEGER NOT NULL DEFAULT 0,  -- 时薪
