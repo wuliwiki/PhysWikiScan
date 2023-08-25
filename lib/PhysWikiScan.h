@@ -908,6 +908,36 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		throw scan_err(err_msg);
 }
 
+// delete an entry if the tex file no longer exist but entries.deleted==0
+// use --delete, skip if failed, throw when finished
+inline void auto_delete_entries(SQLite::Database &db_rw)
+{
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "id" FROM "entries" WHERE "deleted"=0;)");
+	vecStr entries_to_delete;
+	Str err_msg;
+	while(stmt_select.executeStep()) {
+		const Str &entry = stmt_select.getColumn(0);
+		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
+		if (!file_exist(sb)) {
+			scan_warn(u8"发现 entries.deleted=0 但是词条文件不存在（尝试用 --delete 删除）：" + entry);
+			try {
+				SQLite::Transaction transaction(db_rw);
+				arg_delete({entry}, db_rw);
+				transaction.commit();
+			}
+			catch (const std::exception &e) {
+				err_msg << u8"发现 entries.deleted=0 但是词条文件不存在， 尝试删除失败（" << e.what() << u8"）：" << entry << '\n';
+			}
+			catch (...) {
+				err_msg << u8"发现 entries.deleted=0 但是词条文件不存在， 尝试删除失败：" << entry << '\n';
+			}
+		}
+	}
+	if (!err_msg.empty())
+		throw scan_err(err_msg);
+}
+
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)

@@ -303,6 +303,9 @@ int main(int argc, const char *argv[]) {
 			arg_delete(entries, db_rw);
 			transaction.commit();
 		}
+		else if (args[0] == "--auto-delete" && args.size() == 1) {
+			auto_delete_entries(db_rw);
+		}
 		else if (args[0] == "--delete-hard" && args.size() > 1) {
 			vecStr entries;
 			Str arg;
