@@ -847,15 +847,25 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 {
 	vecStr ref_by, vtmp(1);
 	Str stmp, err_msg;
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "ref_by", "deleted" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "deleted"=1 WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "ref_by", "deleted", "caption", "keys", "type", "license", "draft" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_update(db_rw,
+		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=? WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		// check entries.ref_by
 		stmt_select.bind(1,entry);
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
+		const Str &ref_by_str = stmt_select.getColumn(0);
 		bool db_deleted = (int)stmt_select.getColumn(1);
+		const Str &db_title = stmt_select.getColumn(2);
+		const Str &db_keys_str = stmt_select.getColumn(3);
+		const Str &db_type_str = stmt_select.getColumn(4);
+		const Str &db_license_str = stmt_select.getColumn(5);
+		bool db_draft = (int)stmt_select.getColumn(6);
+		stmt_select.reset();
+
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (db_deleted) {
 			if (file_exist(sb))
@@ -869,11 +879,10 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		else { // !db_deleted
 			if (!file_exist(sb)) {
 				scan_warn(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
-				write("% dummy\n\n", sb);
+				clear(sb1) << "% " << db_title << "\n\n";
+				write(sb1, sb);
 			}
 		}
-		const Str &ref_by_str = stmt_select.getColumn(0);
-		stmt_select.reset();
 		parse(ref_by, ref_by_str);
 		if (!ref_by.empty()) {
 			err_msg << u8"无法删除词条，因为被其他词条引用：" << ref_by_str << "\n\n";
@@ -896,13 +905,18 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 			throw scan_err(err_msg);
 
 		// update entries.deleted
-		stmt_update.bind(1, entry);
+		stmt_update.bind(1, db_title);
+		stmt_update.bind(2, db_keys_str);
+		stmt_update.bind(3, db_type_str);
+		stmt_update.bind(4, db_license_str);
+		stmt_update.bind(5, db_draft);
+		stmt_update.bind(6, entry);
 		stmt_update.exec(); stmt_update.reset();
 
 		// delete file
 		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
 		file_remove(stmp);
-		cout << "成功(浅)删除： " << stmp;
+		cout << "成功(浅)删除： " << stmp << endl;
 	}
 	if (!err_msg.empty())
 		throw scan_err(err_msg);
