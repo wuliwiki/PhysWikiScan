@@ -600,7 +600,7 @@ inline Long read(void *data, Long_I Nbyte, Str_I fname)
 // write Str to file
 inline void write(Str_I str, Str_I fname)
 {
-	write(str.c_str(), str.size(), fname);
+	write(str.c_str(), size(str), fname);
 }
 
 // write UTF-32 Str32 into a UTF-8 file
@@ -638,10 +638,8 @@ inline void write_vec_str(vecStr32_I vec_str, Str32_I fname)
 // read whole file to Str
 inline void read(Str_O str, Str_I fname)
 {
-	if (!file_exist(fname))
-		throw runtime_error("file not found: " + fname);
 	str.resize(file_size(fname));
-	read(&str[0], str.size(), fname);
+	read(&str[0], size(str), fname);
 }
 
 // read a UTF-8 file into UTF-32 Str32
@@ -759,7 +757,7 @@ inline void read(ifstream &fin, Comp_O s)
 // string
 inline void write(ofstream &fout, Str_I str)
 {
-	fout.write(str.data(), str.size());
+	fout.write(str.data(), size(str));
 }
 
 // if end of file reached before data is filled, it will be resized

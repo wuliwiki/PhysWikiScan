@@ -137,15 +137,18 @@
 #define SLS_TO_STR(x) SLS_STRINGIFY(x)
 
 // get a string literal of file and line number
-#define SLS_WHERE "[file: " __FILE__ ", line: " SLS_TO_STR(__LINE__) "]"
+#define SLS_WHERE " [file: " __FILE__ ", line: " SLS_TO_STR(__LINE__) "]"
 
 // print a warning with file and line number
+#ifndef SLS_WARN
 #define SLS_WARN(str) do { \
 		std::cout << SLS_YELLOW_BOLD "Warning: " << str << SLS_NO_STYLE " " SLS_WHERE << std::endl; \
 		std::cout.flush(); \
 	} while(0)
+#endif
 
 // print an error with file and line number
+#ifndef SLS_ERR
 #ifndef SLS_THROW_ERR
 	#define SLS_ERR(str) do { \
 		std::cerr << SLS_RED_BOLD "Error: " << str << SLS_NO_STYLE " " SLS_WHERE << std::endl; std::exit(1); \
@@ -155,6 +158,7 @@
 		std::stringstream ss; ss << SLS_RED_BOLD "Error: " << str << SLS_NO_STYLE " " SLS_WHERE; \
 		throw slisc::sls_err(std::move(ss.str()));
 	} while(0)
+#endif
 #endif
 
 #define SLS_FAIL SLS_ERR("failed!")
@@ -195,6 +199,7 @@ using std::exp; using std::log; using std::log10;
 using std::expm1; using std::log1p; using std::hypot;
 using std::sinh; using std::cosh; using std::tanh;
 using std::runtime_error;
+constexpr size_t npos = std::string::npos; // `using` doesn't work
 
 // Scalar types
 
