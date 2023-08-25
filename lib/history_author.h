@@ -575,7 +575,9 @@ inline void history_normalize(SQLite::Database &db_rw)
 // backup an entry to PhysWiki-backup
 inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 {
-	Str str, time_new_str; // content of entry
+	Str str; // content of entry
+	Str time_new_str;
+	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
 
 	// get hash, check existence
 	clear(sb) << gv::path_in << "contents/" << entry << ".tex";
@@ -594,8 +596,9 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 		Long db_author_id = (int)stmt_select2.getColumn(1);
 		const Str &db_entry = stmt_select2.getColumn(2);
 		stmt_select2.reset();
-		clear(sb) << "要备份的文件 hash 已经存在（将忽略）： " << db_time_str << '_' << db_author_id << '_' << db_entry << ".tex "
-			<< hash;
+		clear(sb) << "要备份的文件 hash 已经存在（将忽略）： "
+			<< db_time_str << '_' << db_author_id << '_' << db_entry << ".tex"
+			<< " hash=" << hash;
 		SLS_WARN(sb);
 		if (db_entry != entry)
 			throw scan_err(u8"已存在的备份文件属于另一个词条（这不可能，因为标题 entries.caption 禁止重复，不同词条的内容不可能一样）");
@@ -631,8 +634,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update2.bind(1, hash);
 		stmt_update2.bind(2, entry);
 		stmt_update2.exec(); stmt_update2.reset();
-
-		clear(sb) << "../PhysWiki-backup/"
+		clear(sb) << backup_path
 			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
 			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
@@ -687,8 +689,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		const Str &time_last_last_str = stmt_select2.getColumn(0);
 		int author_id_last_last = stmt_select2.getColumn(1);
 		stmt_select2.reset();
-		clear(sb) << gv::path_in << "../PhysWiki-backup/"
-				  << time_last_last_str << '_' << author_id_last_last << '_' << entry << ".tex";
+		clear(sb) << backup_path
+			<< time_last_last_str << '_' << author_id_last_last << '_' << entry << ".tex";
 		read(str2, sb);
 		str_add_del(char_add, char_del, str2, str);
 
@@ -705,16 +707,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		db_log(sb);
 
 		// replace last (latest) backup
-		clear(sb) << "../PhysWiki-backup/"
-				  << time_last_str << '_' << author_id_last << '_' << entry << ".tex";
+		clear(sb) << backup_path
+			<< time_last_str << '_' << author_id_last << '_' << entry << ".tex";
 		if (!file_exist(sb))
 			SLS_WARN(u8"数据库中备份文件不存在：" + sb);
 		write(str, sb);
 	}
 	else { // !replace  (new backup)
 		// calculate char add/del
-		clear(sb) << gv::path_in << "../PhysWiki-backup/"
-				  << time_last_str << '_' << author_id_last << '_' << entry << ".tex";
+		clear(sb) << backup_path
+			<< time_last_str << '_' << author_id_last << '_' << entry << ".tex";
 		read(str2, sb);
 		str_add_del(char_add, char_del, str2, str);
 
@@ -735,7 +737,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		db_log(sb);
 
 		// write new file
-		clear(sb) << gv::path_in << "../PhysWiki-backup/"
+		clear(sb) << backup_path
 			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
 			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
