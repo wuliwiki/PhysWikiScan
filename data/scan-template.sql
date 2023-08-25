@@ -6,7 +6,7 @@
 CREATE TABLE "entries" (
 	"id"        TEXT NOT NULL UNIQUE,
 	"caption"   TEXT NOT NULL DEFAULT '', -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
-	"authors"   TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID
+	"authors"   TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
 	"part"      TEXT NOT NULL DEFAULT '', -- 部分， 空代表不在目录中
 	"chapter"   TEXT NOT NULL DEFAULT '', -- 章， 空代表不在目录中
 	"last"      TEXT NOT NULL DEFAULT '', -- 目录中的上一个词条， 空代表这是第一个或不在目录中
@@ -26,8 +26,6 @@ CREATE TABLE "entries" (
 	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
-	"figures"      TEXT    NOT NULL DEFAULT '', -- 【生成】"figId1 figId2" 图片环境（包括删除的），以 figures.entry 为准
-	"labels"       TEXT    NOT NULL DEFAULT '', -- 【生成】"label1 label2" 定义的 labels （除图片和代码）
 	"refs"         TEXT    NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
 	"files"        TEXT    NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
@@ -127,19 +125,16 @@ CREATE TABLE "figures" (
 	"id"          TEXT    NOT NULL UNIQUE,
 	"caption"     TEXT    NOT NULL DEFAULT '',  -- 标题 \caption{xxx}
 	"width"       TEXT    NOT NULL DEFAULT '6', -- 图片环境宽度（单位 cm）
-	"authors"     TEXT    NOT NULL DEFAULT '',  -- 【生成】"作者id1 作者id2" 相同（由所有历史版本的 images.author 生成）
+	"authors"     TEXT    NOT NULL DEFAULT '',  -- 【生成】"作者id1 作者id2" 相同（由所有历史版本的 images.author 根据某种算法生成）
 	"entry"       TEXT    NOT NULL DEFAULT '',  -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter"     TEXT    NOT NULL DEFAULT '',  -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 	"order"       INTEGER NOT NULL DEFAULT 0,   -- 显示编号（从 1 开始， 0 代表未知）
-	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 代码中图片文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF）
-	"image_alt"   TEXT    NOT NULL DEFAULT '',  -- "hash1 hash2 ..." 其他格式的图片的 SHA1 前 16 位（pdf 必须有对应的 svg）
+	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure 中的一个
 	"last"        TEXT    NOT NULL DEFAULT '',  -- "figures.id" 上一个版本（若从百科其他图修改而来）。 可以生成一个版本树。
-	"next"        TEXT    NOT NULL DEFAULT '',  -- 【生成】"id1 id2 ..." 被哪些记录作为 "last"
 	"files"       TEXT    NOT NULL DEFAULT '',  -- "files.hash1 hash2" 附件（创作该图片的项目文件、源码等）
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
-	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【生成】"entry1 entry2" 引用的词条（以 entries.refs 为准）
-	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： "authors", "image_alt", "last", "next", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的 "image/image_alt" 中。
-	"aka_by"      TEXT    NOT NULL DEFAULT '',  -- "id1 id2" 被哪些记录作为 "aka"
+	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【生成】"entry1 entry2" 引用本图的词条（以 entries.refs 为准）
+	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： 所有图片文件（"images.figure"）, "authors", "last", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的图片文件中。
 	"deleted"     INTEGER NOT NULL DEFAULT 0,   -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	"remark"      TEXT    NOT NULL DEFAULT '',  -- 备注信息
 	PRIMARY KEY("id"),
@@ -150,24 +145,30 @@ CREATE TABLE "figures" (
 );
 
 INSERT INTO "figures" ("id", "caption") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
+CREATE INDEX idx_figures_entry ON "figures"("entry");
+CREATE INDEX idx_figures_image ON "figures"("image");
+CREATE INDEX idx_figures_last ON "figures"("last");
+CREATE INDEX idx_figures_aka ON "figures"("aka");
 
 -- 图片文件
 -- 一个记录是一个图片文件
+-- pdf 和 svg 必须一一对应且 images.figure 相同
 CREATE TABLE "images" (
 	"hash"         TEXT    NOT NULL UNIQUE,     -- 文件 SHA1 的前 16 位（如果 svg 需要先把 CRLF 变为 LF）
 	"ext"          TEXT    NOT NULL,            -- [pdf|svg|png|jpg|gif|...] 拓展名
-	"figure"       TEXT    NOT NULL DEFAULT '', -- 【生成】本图片文件归哪个图片环境管理，该环境的 figures.aka 为空。 本图的 hash 可能出现在该环境的 figures.image/image_alt 中的一个。
-	"figures_aka"  TEXT    NOT NULL DEFAULT '', -- 【生成】"id1 id2" 被 figures 中哪些环境作为 image 或 image_alt， 且它们的 figures.aka 都是本图的 "figure"
+	"figure"       TEXT    NOT NULL DEFAULT '', -- 本图片文件归哪个图片环境管理（figures.aka 必须为空）。 可以多条记录（具有不同的 ext）对应一个 figures 记录， 但有且只有一个是 figures.image
 	"author"       INTEGER NOT NULL DEFAULT -1, -- 当前版本作者/修改者
 	"license"      TEXT    NOT NULL DEFAULT '', -- 当前版本协议
 	"time"         TEXT    NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
+	UNIQUE ("figure", "ext"),
 	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
 	FOREIGN KEY("author")  REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
 INSERT INTO "images" ("hash", "ext") VALUES ('', ''); -- 防止 FOREIGN KEY 报错
+CREATE INDEX idx_images_figure ON "images"("figure");
 
 -- 文件
 CREATE TABLE "files" (
@@ -175,7 +176,6 @@ CREATE TABLE "files" (
 	"name"             TEXT    NOT NULL UNIQUE,     -- 文件名（含拓展名）
 	"description"      TEXT    NOT NULL UNIQUE,     -- 备注（类似 commit 信息）
 	"last"             TEXT    NOT NULL UNIQUE,     -- 上一个版本
-	"next"             TEXT    NOT NULL UNIQUE,     -- 【生成】"hash1 hash2" 被哪些记录作为 "last"
 	"ref_by"           TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"used_by_figures"  TEXT    NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"           INTEGER NOT NULL,            -- 当前版本修改者
@@ -185,6 +185,8 @@ CREATE TABLE "files" (
 	FOREIGN KEY("author")  REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
+
+CREATE INDEX idx_files_last ON "files"("last");
 
 -- 带标签的代码环境
 CREATE TABLE "code" (
@@ -212,6 +214,8 @@ CREATE TABLE "labels" (
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	UNIQUE("type", "entry", "order")
 );
+
+CREATE INDEX idx_labels_entry ON "labels"("entry");
 
 -- 参考文献
 CREATE TABLE "bibliography" (
