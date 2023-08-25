@@ -957,7 +957,8 @@ inline void auto_delete_entries(SQLite::Database &db_rw)
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 {
 	vecStr history_hash, figures, figs_dangling;
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "figures", "deleted" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select0(db_rw, R"(SELECT "deleted" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select1(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
@@ -969,15 +970,17 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 	for (auto &entry : entries) {
 		cout << "--- deleting everything about entry: " << entry << " ---" << endl;
 		// delete entries.figures and all associated images
-		stmt_select.bind(1, entry);
-		if (!stmt_select.executeStep()) {
+		stmt_select0.bind(1, entry);
+		if (!stmt_select0.executeStep()) {
 			db_log(u8"arg_delete(): 数据库中找不到要删除的词条（将忽略）： " + entry);
-			stmt_select.reset();
+			stmt_select0.reset();
 			continue;
 		}
-		bool deleted = (int)stmt_select.getColumn(1);
-		parse(figures, stmt_select.getColumn(0));
-		stmt_select.reset();
+		bool deleted = (int)stmt_select0.getColumn(0);
+		stmt_select1.bind(1, entry);
+		while (stmt_select1.executeStep())
+			figures.push_back(stmt_select1.getColumn(0));
+		stmt_select1.reset();
 		if (!deleted) // do normal delete first
 			arg_delete({entry}, db_rw, true);
 		arg_delete_figs_hard(figures, db_rw);

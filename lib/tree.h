@@ -106,7 +106,7 @@ inline void db_get_entry_info(
 struct Node {
 	Str entry;
 	Long i_node;
-	Node(Str_I entry, Long_I i_node): entry(entry), i_node(i_node) {};
+	Node(Str entry, Long_I i_node): entry(std::move(entry)), i_node(i_node) {};
 };
 
 typedef const Node &Node_I;

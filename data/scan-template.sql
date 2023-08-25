@@ -129,7 +129,7 @@ CREATE TABLE "figures" (
 	"entry"       TEXT    NOT NULL DEFAULT '',  -- 所在词条，若环境被删除就显示最后所在的词条，'' 代表从未被使用
 	"chapter"     TEXT    NOT NULL DEFAULT '',  -- 所属章（即使 entry 为空也需要把图片归类， 否则很难找到）
 	"order"       INTEGER NOT NULL DEFAULT 0,   -- 显示编号（从 1 开始， 0 代表未知）
-	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure 中的一个
+	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure=id 中的一个
 	"last"        TEXT    NOT NULL DEFAULT '',  -- "figures.id" 上一个版本（若从百科其他图修改而来）。 可以生成一个版本树。
 	"files"       TEXT    NOT NULL DEFAULT '',  -- "files.hash1 hash2" 附件（创作该图片的项目文件、源码等）
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
@@ -139,15 +139,14 @@ CREATE TABLE "figures" (
 	"remark"      TEXT    NOT NULL DEFAULT '',  -- 备注信息
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("image") REFERENCES "images"("hash"),
 	FOREIGN KEY("aka")   REFERENCES "figures"("id"),
 	FOREIGN KEY("last")  REFERENCES "figures"("id")
 );
 
 INSERT INTO "figures" ("id", "caption") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
 CREATE INDEX idx_figures_entry ON "figures"("entry");
-CREATE INDEX idx_figures_image ON "figures"("image");
 CREATE INDEX idx_figures_last ON "figures"("last");
+CREATE INDEX idx_figures_image ON "figures"("image");
 CREATE INDEX idx_figures_aka ON "figures"("aka");
 
 -- 图片文件
