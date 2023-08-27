@@ -93,14 +93,16 @@ inline bool file_exist(Str32_I fname) {
 }
 
 // remove a file with error handling
+// if file doesn't exist, do nothing
+// if file exist after delete, throw
 inline void file_remove(Str_I fname)
 {
 #ifndef SLS_USE_MSVC
 	if (remove(fname.c_str()) && file_exist(fname))
-		throw Str("failed to remove, file being used? (" + fname + ")");
+		throw runtime_error("failed to remove, file being used? (" + fname + ")");
 #else
 	if (file_exist(fname) && DeleteFile(utf82wstr(fname).c_str()) == 0)
-		throw Str("failed to remove, file being used? (" + fname + ")");
+		throw runtime_error("failed to remove, file being used? (" + fname + ")");
 #endif
 }
 

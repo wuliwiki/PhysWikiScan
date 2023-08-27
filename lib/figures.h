@@ -418,7 +418,7 @@ inline void db_update_figures(
 }
 
 // delete from "images" table, and the image file
-// if "images.ext" != pdf/svg/png, delete without checking anything
+// if "images.ext" != pdf/svg/png, delete without checking anything else
 // "images.figure" must have `figures.deleted==1` and must not be violate `figures.last` foreign key
 // check figures.image foreign key (might > 1), figure must have `figures.deleted==1`
 inline void db_delete_images(
@@ -449,7 +449,9 @@ inline void db_delete_images(
 			db_log(sb);
 			continue;
 		}
+		const Str &img_figure = stmt_select.getColumn(0); // images.figure
 		const Str &ext = stmt_select.getColumn(1); // images.ext
+		stmt_select.reset();
 
 		// check extension
 		if (!(ext == "png" || ext == "pdf" || ext == "svg")) {
@@ -457,75 +459,69 @@ inline void db_delete_images(
 			stmt_delete.exec(); stmt_delete.reset();
 			clear(sb) << gv::path_in << "figures/" << image << ext;
 			file_remove(sb);
-			cout << "正在删除：" << image << ext << endl;
+			cout << "正在删除：" << image << '.' << ext << endl;
 			continue;
 		}
 
-		// check figures.last foreign key violation
-		const Str &img_figure = stmt_select.getColumn(0); // images.figure
+		// check images.figure's figures.last foreign key violation
 		stmt_select3.bind(1, img_figure);
 		if (stmt_select3.executeStep()) {
 			clear(sb) << u8"图片所属的环境 " << img_figure << u8" 被图片环境 " <<
 				stmt_select3.getColumn(0).getString() << u8" 的 figures.last 引用，无法删除（将忽略）。";
+			scan_warn(sb);
 			continue;
 		}
 
-		// check related figures
-		figures.insert(img_figure);
+		// check other related figures.deleted=1
+		figures.clear();
 		stmt_select4.bind(image);
 		while (stmt_select4.executeStep())
 			figures.insert(stmt_select4.getColumn(0));
-		stmt_select.reset();
-		if (figures.empty()) {
-			clear(sb) << u8"要删除的 image 不属于任何环境， 即 images.figure 为空也没有被 figures.image 引用（将继续删除）：" << image;
-			db_log(sb);
-			stmt_delete.bind(1, image);
-			stmt_delete.exec(); stmt_delete.reset();
-			clear(sb) << gv::path_in << "figures/" << image << ext;
-			file_remove(sb);
+		if (img_figure.empty()) {
+			clear(sb) << u8"要删除的 image " << image << u8" 的 image.figure 为空，";
+			if (figures.empty()) {
+				clear(sb) << u8"也没有被 figures.image 引用（将继续删除）";
+				scan_warn(sb);
+				stmt_delete.bind(1, image);
+				stmt_delete.exec(); stmt_delete.reset();
+				clear(sb) << gv::path_in << "figures/" << image << '.' << ext;
+				file_remove(sb);
+			}
+			else {
+				clear(sb) << u8"但被以下 figures 环境的 figures.image 引用（将忽略，请手动处理）：";
+				for (auto &fig : figures) sb << ' ' << fig;
+				scan_warn(sb);
+			}
+			continue;
 		}
+		figures.insert(img_figure);
 
 		// check "figures.deleted"
+		bool deleted = true;
 		for (auto &fig : figures) {
 			stmt_select2.bind(1, fig);
 			if (!stmt_select2.executeStep())
 				throw internal_err(SLS_WHERE);
-			bool deleted = (int)stmt_select2.getColumn(1);
+			deleted = (int)stmt_select2.getColumn(1);
 			stmt_select2.reset();
-			if (!deleted)
-				throw scan_err(u8"无法删除被 figure 环境使用的 image，请先删除：" + fig);
+			if (!deleted) {
+				scan_warn(u8"无法删除被 figure 环境使用的 image，请先删除（将忽略）：" + fig);
+				break;
+			}
 		}
+		if (!deleted) continue;
 
 		// now delete db, set related "figures.image"='';
 		for (auto &fig : figures) {
-			// bool has_aka = (fig == figure);
-			stmt_select2.bind(1, fig);
-			if (!stmt_select2.executeStep())
-				throw internal_err(SLS_WHERE);
-			const Str &fig_image = stmt_select2.getColumn(0);
-			parse(figures_image_alt, stmt_select2.getColumn(1));
-			// bool deleted = (int)stmt_select2.getColumn(3);
-			stmt_select2.reset();
-
-			bool in_figures_image = (fig == fig_image);
-			bool in_figures_image_alt = figures_image_alt.count(fig);
-
-			if (in_figures_image) {
-				// set figures.image = ''
-				stmt_update.bind(1, fig);
-				stmt_update.exec(); stmt_update.reset();
-			}
-			if (in_figures_image_alt) {
-				join(sb, figures_image_alt);
-				stmt_update2.bind(1, sb);
-				stmt_update2.bind(2, fig);
-				stmt_update2.exec(); stmt_update2.reset();
-			}
+			stmt_update.bind(1, fig);
+			stmt_update.exec(); stmt_update.reset();
 		}
 
 		// delete from images
 		stmt_delete.bind(1, image);
 		stmt_delete.exec(); stmt_delete.reset();
+
+		// remove image file
 		clear(sb) << gv::path_in << "figures/" << image << '.' << ext;
 		file_remove(sb);
 		clear(sb) << gv::path_out << image << '.' << ext;

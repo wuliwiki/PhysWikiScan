@@ -102,7 +102,7 @@ inline Long fix_foreign_key_figures(
 			stmt_select.executeStep();
 			const Str &fig_id = stmt_select.getColumn(0);
 			const Str &entry = stmt_select.getColumn(1);
-			bool deleted = stmt_select.getColumn(2).getInt();
+			// bool deleted = stmt_select.getColumn(2).getInt();
 			const Str &image_hash = stmt_select.getColumn(3);
 			stmt_select.reset();
 

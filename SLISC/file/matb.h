@@ -1781,7 +1781,7 @@ inline void load(Char_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (1 != matb.m_type[i])
@@ -1804,7 +1804,7 @@ inline void load(Int_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -1827,7 +1827,7 @@ inline void load(Llong_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -1850,7 +1850,7 @@ inline void load(Doub_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -1874,7 +1874,7 @@ inline void load(Comp_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -1898,7 +1898,7 @@ inline void load(vecDoub_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -1925,7 +1925,7 @@ inline void load(vecComp_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -1952,7 +1952,7 @@ inline void load(VecChar_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (1 != matb.m_type[i])
@@ -1978,7 +1978,7 @@ inline void load(VecInt_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2004,7 +2004,7 @@ inline void load(VecLlong_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2030,7 +2030,7 @@ inline void load(VecDoub_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2057,7 +2057,7 @@ inline void load(VecComp_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2085,7 +2085,7 @@ inline void load(MatInt_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2113,7 +2113,7 @@ inline void load(MatLlong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2141,7 +2141,7 @@ inline void load(MatDoub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2169,7 +2169,7 @@ inline void load(MatComp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2197,7 +2197,7 @@ inline void load(Mat3Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2227,7 +2227,7 @@ inline void load(Mat3Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2257,7 +2257,7 @@ inline void load(CmatInt_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2285,7 +2285,7 @@ inline void load(CmatLlong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2313,7 +2313,7 @@ inline void load(CmatDoub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2342,7 +2342,7 @@ inline void load(CmatComp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2371,7 +2371,7 @@ inline void load(Cmat3Int_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2401,7 +2401,7 @@ inline void load(Cmat3Llong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2431,7 +2431,7 @@ inline void load(Cmat3Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2462,7 +2462,7 @@ inline void load(Cmat3Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2493,7 +2493,7 @@ inline void load(Cmat4Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2525,7 +2525,7 @@ inline void load(Cmat4Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw runtime_error("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
