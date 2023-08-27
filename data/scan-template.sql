@@ -299,6 +299,7 @@ CREATE TABLE "authors" (
 
 -- 防止 FOREIGN KEY 报错
 INSERT INTO "authors" ("id", "name") VALUES (-1, '');
+CREATE INDEX idx_authors_uuid ON "authors"("uuid");
 
 -- 工资历史
 CREATE TABLE "salary" (
