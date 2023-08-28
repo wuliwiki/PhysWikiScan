@@ -9,13 +9,16 @@ inline void figure_env(
 		Str_IO str, Str_I entry,
 		vecStr_I fig_ids, // parsed from env_labels(), `\label{}` already deleted
 		vecLong_I fig_orders, // figures.order
-		SQLite::Database &db_rw)
+		SQLite::Database &db_read)
 {
 	Intvs intvFig;
 	Str fig_fname, fname_in, fname_out, href, ext, caption, widthPt;
 	Str fname_in2, str_mod, tex_fname, caption_div, image_hash;
 	static const Str tmp1 = "id = \"fig_";
-	SQLite::Statement stmt_update(db_rw, u8R"(UPDATE "figures" SET "image_alt"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "aka" FROM "figures"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_read,
+		R"(SELECT "hash" FROM "images" WHERE "ext"='svg' AND "figure"=?;)");
 
 	Long Nfig = find_env(intvFig, str, "figure", 'o');
 	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
@@ -23,7 +26,6 @@ inline void figure_env(
 
 	for (Long i_fig = Nfig - 1; i_fig >= 0; --i_fig) {
 		auto &fig_id = fig_ids[i_fig];
-		const Str &aka = get_text("figures", "id", fig_id, "aka", db_rw);
 
 		// verify label
 		Long ind_label = rfind(str, tmp1, intvFig.L(i_fig));
@@ -80,6 +82,7 @@ inline void figure_env(
 		}
 		else if (fig_fname.substr(Nname - 4, 4) == ".pdf") {
 			fig_fname = fig_fname.substr(0, Nname - 4);
+
 			// ==== pdf ====
 			ext = "pdf";
 			clear(fname_in) << gv::path_in << "figures/" << fig_fname << "." << ext;
@@ -87,59 +90,60 @@ inline void figure_env(
 				throw internal_err(u8"图片 \"" + fname_in + u8"\" 未找到");
 			image_hash = sha1sum_f(fname_in).substr(0, 16);
 			fig_ext_hash[fig_id][ext] = image_hash;
+
 			// rename figure files with hash
-			fname_in2.clear(); fname_in2 << gv::path_in << "figures/" << image_hash << "." << ext;
+			clear(fname_in2) << gv::path_in << "figures/" << image_hash << "." << ext;
 			if (fig_fname != image_hash) {
 				file_copy(fname_in2, fname_in, true);
 				img_to_delete.insert(fname_in);
 				// modify .tex file
-				tex_fname.clear(); tex_fname << gv::path_in << "contents/" << entry << ".tex";
+				clear(tex_fname) << gv::path_in << "contents/" << entry << ".tex";
 				read(str_mod, tex_fname);
 				clear(sb) << fig_fname << '.' << ext;
 				clear(sb1) << image_hash << '.' << ext;
 				replace(str_mod, sb, sb1);
 				write(str_mod, tex_fname);
+				clear(sb) << u8"检测到图片文件名 " << fname_in << u8"不等于图片 sha1 的前 16 位："
+					<< image_hash << u8" 已经重命名，请关闭并重新打开词条。";
+				throw internal_err(sb);
 			}
 
 			// ==== svg =====
 			ext = "svg";
-			image_hash = get_text("figures", "id", fig_id, "image_alt", db_rw);
-			if(find(image_hash, ' ') >= 0)
-				throw internal_err(u8"目前 figures.image_alt 仅支持一张 svg");
+
 			// if current record has non-empty "aka", then use that figure
-			if (image_hash.empty()) {
-				if (aka.empty())
-					throw internal_err(u8"pdf 图片找不到对应的 svg 且 figures.aka 为空：" + fig_id);
-				image_hash = get_text("figures", "id", aka, "image_alt", db_rw);
+			stmt_select.bind(1, fig_id);
+			if (!stmt_select.executeStep())
+				throw internal_err(SLS_WHERE);
+			const Str &aka = stmt_select.getColumn(0);
+			stmt_select.reset();
+
+			if (aka.empty())
+				stmt_select2.bind(1, fig_id);
+			else
+				stmt_select2.bind(1, aka);
+			if (!stmt_select2.executeStep()) {
+				clear(sb) << u8"pdf 图片 " << fname_in;
+				if (!aka.empty())
+					sb << u8"（aka " << aka << u8"）"
+				sb << u8" 在数据库中找不到对应的 svg";
+				throw internal_err(sb);
 			}
-			else { // !image_hash.empty()
-				if (!aka.empty()) {
-					clear(sb) << u8"图片环境 " << fig_id
-						<< u8" 的 figures.aka 不为空， 且 figures.image_alt 不为空（将清空）。";
-					scan_warn(sb);
-					stmt_update.bind(1, "");
-					stmt_update.bind(2, fig_id);
-					stmt_update.exec(); stmt_update.reset();
-				}
-				if (size(image_hash) != 16) {
-					if (size(image_hash) > 16 && image_hash.substr(16) == ".svg") {
-						scan_warn(u8"内部警告：发现 images.image_alt 仍然带有 svg 拓展名，将模拟编辑器删除。");
-						image_hash.resize(16);
-						stmt_update.bind(1, image_hash);
-						stmt_update.bind(2, fig_id);
-						stmt_update.exec(); stmt_update.reset();
-					}
-					clear(sb) << u8"图片环境 " << fig_id << u8" 的图片 images_alt 长度不对：" << image_hash;
-					throw internal_err(sb);
-				}
+			image_hash = stmt_select2.getColumn(0).getString();
+			stmt_select2.reset();
+
+			if (size(image_hash) != 16) {
+				clear(sb) << u8"图片环境 " << fig_id << u8" 的 " << image_hash << u8".svg 长度不对。";
+				throw internal_err(sb);
 			}
+
 			fig_ext_hash[fig_id][ext] = image_hash;
 			clear(fname_in2) << gv::path_in << "figures/" << image_hash << '.' << ext;
 		}
 		else
 			throw internal_err(u8"图片格式暂不支持：" + fig_fname);
 
-		if (aka.empty()) {
+		if (ext == "svg" && aka.empty()) {
 			clear(fname_out) << gv::path_out << image_hash << "." << ext;
 			file_copy(fname_out, fname_in2, true);
 		}
@@ -535,18 +539,19 @@ inline void db_delete_images(
 // if figures.aka is not empty, will only delete the record in figures, nothing else
 inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 {
-	vecStr image_hash, images_alt;
+	vecStr image_hash, images;
 	set<Str> entries_figures;
 
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "entry", "image", "image_alt", "deleted", "aka", "last", "next" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "entry", "image", "deleted", "aka", "last" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "deleted" FROM "figures" WHERE "aka"=?;)");
-	SQLite::Statement stmt_select1(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
-	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "hash" FROM "images" WHERE "figure"=?;)");
+	SQLite::Statement stmt_select4(db_rw, R"(SELECT "id" FROM "figures" WHERE "last"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 
 	for (auto &figure : figures) {
-		cout << "deleting figure: " << figure << endl;
+		// get figure info
+		cout << "永久删除图片和所有相关数据: " << figure << endl;
 		stmt_select.bind(1, figure);
 		if (!stmt_select.executeStep()) {
 			scan_warn(u8"arg_delete_fig()：要删除的图片未找到（将忽略）：" + figure);
@@ -555,12 +560,14 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		}
 		const Str &entry = stmt_select.getColumn(0);
 		const Str &image = stmt_select.getColumn(1);
-		parse(images_alt, stmt_select.getColumn(2));
-		bool deleted = (int)stmt_select.getColumn(3);
-		bool has_aka = !stmt_select.getColumn(4).getString().empty();
-		bool has_last = !stmt_select.getColumn(5).getString().empty();
-		bool has_next = !stmt_select.getColumn(6).getString().empty();
+		bool deleted = (int)stmt_select.getColumn(2);
+		bool has_aka = !stmt_select.getColumn(3).getString().empty();
+		bool has_last = !stmt_select.getColumn(4).getString().empty();
 		stmt_select.reset();
+		stmt_select4.bind(1, entry);
+		bool has_next = stmt_select4.execStep();
+		stmt_select4.reset();
+
 		if (has_last || has_next) // TODO: deal with figures.last and figures.next
 			throw internal_err("not implemented!" SLS_WHERE);
 		if (has_aka) {
@@ -572,40 +579,23 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		if (!deleted)
 			throw internal_err(u8"不允许删除未被标记 figures.deleted 的图片：" + figure);
 
-		// erase figure from entries.figures
-		stmt_select1.bind(1, entry);
-		while(stmt_select1.executeStep())
-			entries_figures.insert(stmt_select1.getColumn(0));
-		stmt_select1.reset();
-		if (entries_figures.count(figure)) {
-			entries_figures.erase(figure);
-			join(sb, entries_figures);
-			stmt_update3.bind(1, sb);
-			stmt_update3.bind(2, entry);
-			stmt_update3.exec(); stmt_update3.reset();
-		}
-		else {
-			clear(sb) << u8"要删除的 fig 环境已经标记 deleted，但不在 entries.figures 中（将忽略）："
-				<< entry << '.' << figure;
-			db_log(sb);
-		}
-
 		// check figures.aka
-		stmt_select2.bind(1, entry);
+		stmt_select2.bind(1, figure);
 		sb.clear();
-		while (stmt_select2.executeStep()) {
-			const Str &id = stmt_select2.getColumn(0);
-			sb << " " << id;
-		}
+		while (stmt_select2.executeStep())
+			sb << " " << stmt_select2.getColumn(0).getString();
 		stmt_select2.reset();
 		if (!sb.empty()) {
-			clear(sb1) << u8"不允许删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
+			clear(sb1) << u8"不允许永久删除未被 figures.aka 引用的图片：" << figure << u8"请先删除：" << sb;
 			throw internal_err(sb1);
 		}
 
-		// delete figures.image/image_alt
-		db_delete_images({image}, db_rw);
-		db_delete_images(images_alt, db_rw);
+		// delete all related images
+		stmt_select3.bind(figure);
+		while (stmt_select3.executeStep())
+			images.push_back(stmt_select3.getColumn(0));
+		stmt_select3.reset();
+		db_delete_images(images, db_rw);
 
 		// delete figures record
 		stmt_delete.bind(1, figure);

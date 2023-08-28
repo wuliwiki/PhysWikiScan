@@ -32,7 +32,7 @@ inline Str label_entry_old(Str_I label)
 // no comment allowed
 // return number of labels processed, or -1 if failed
 inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
-					   vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
+	vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
 {
 	Long ind0{}, ind2{}, ind3{}, ind4{}, N{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -199,10 +199,11 @@ inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
 // return number of autoref replaced, or -1 if failed
 // new_label_ref_by: in database, these labels should append `entry` to "ref_by"
 // new_fig_ref_by: in database, these figures should append `entry` to "ref_by"
-inline Long autoref(unordered_set<Str> &add_refs, // labels to add to entry.refs
-					unordered_set<Str> &del_refs, // labels to delete from entry.refs
-					Str_IO str, Str_I entry, SQLite::Database &db_read)
-{
+inline Long autoref(
+	unordered_set<Str> &add_refs, // labels to add to entry.refs
+	unordered_set<Str> &del_refs, // labels to delete from entry.refs
+	Str_IO str, Str_I entry, SQLite::Database &db_read
+) {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
 	Bool inEq;
 	Str entry1, label0, fig_id, type, kind, newtab, file;
