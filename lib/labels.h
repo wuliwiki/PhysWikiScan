@@ -594,26 +594,25 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
 
 // update labels table of database
 // order change means `update_entries` needs to be updated with autoref() as well.
-inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
-							 vecStr_I entries,
-							 const vector<vecStr> &entry_labels,
-							 const vector<vecLong> &entry_label_orders,
-							 SQLite::Database &db_rw)
+inline void db_update_labels(
+		unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
+		vecStr_I entries,
+		const vector<vecStr> &entry_labels,
+		const vector<vecLong> &entry_label_orders,
+		SQLite::Database &db_rw)
 {
 	// cout << "updating db for labels..." << endl;
 	update_entries.clear(); //entries that needs to rerun autoref(), since label order updated
 	SQLite::Statement stmt_select0(db_rw,
-								   R"(SELECT "labels" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "id" FROM "labels" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-								   R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-								  R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+		R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update0(db_rw,
-								   R"(UPDATE "labels" SET "order"=? WHERE "id"=?;)");
+		R"(UPDATE "labels" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-								  R"(UPDATE "labels" SET "entry"=?, "order"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_update2(db_rw,
-								   R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
+		R"(UPDATE "labels" SET "entry"=?, "order"=? WHERE "id"=?;)");
 
 	Long order;
 	Str type;
@@ -629,10 +628,10 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 	set<Str> db_entry_labels;
 	for (Long j = 0; j < size(entries); ++j) {
 		auto &entry = entries[j];
+		db_entry_labels.clear();
 		stmt_select0.bind(1, entry);
-		if (!stmt_select0.executeStep())
-			throw scan_err("词条不存在： " + entry + SLS_WHERE);
-		parse(db_entry_labels, stmt_select0.getColumn(0));
+		while (stmt_select0.executeStep())
+			db_entry_labels.insert(stmt_select0.getColumn(0));
 		stmt_select0.reset();
 		for (auto &label: db_entry_labels) {
 			db_labels.push_back(label);
@@ -647,8 +646,7 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 		}
 	}
 	db_labels_used.resize(db_labels.size(), false);
-	Str labels_str;
-	set<Str> new_labels, labels;
+	set<Str> new_labels;
 	// {label, order}, negated label order， to avoid UNIQUE constraint
 	vector<pair<Str,Long>> label_order_neg;
 	for (Long j = 0; j < size(entries); ++j) {
@@ -702,21 +700,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 				label_order_neg.emplace_back(label, order);
 			}
 		}
-
-		// add to entries.labels
-		if (!new_labels.empty()) {
-			stmt_select0.bind(1, entry);
-			if (!stmt_select0.executeStep())
-				throw internal_err("db_update_labels(): entry 不存在： " + entry + SLS_WHERE);
-			parse(labels, stmt_select0.getColumn(0));
-			for (auto &e : new_labels)
-				labels.insert(e);
-			join(labels_str, labels);
-			stmt_update2.bind(1, labels_str);
-			stmt_update2.bind(2, entry);
-			stmt_update2.exec(); stmt_update2.reset();
-			stmt_select0.reset();
-		}
 	}
 
 	// 检查被删除的标签（如果只被本词条引用， 就留给 \autoref() 报错）
@@ -733,16 +716,6 @@ inline void db_update_labels(unordered_set<Str> &update_entries, // [out] entrie
 				// delete from "labels"
 				stmt_delete.bind(1, db_label);
 				stmt_delete.exec(); stmt_delete.reset();
-				// delete from "entries.labels"
-				stmt_select0.bind(1, entry);
-				SLS_ASSERT(stmt_select0.executeStep());
-				parse(labels, stmt_select0.getColumn(0));
-				labels.erase(db_label);
-				stmt_select0.reset();
-				join(labels_str, labels);
-				stmt_update2.bind(1, labels_str);
-				stmt_update2.bind(2, entry);
-				stmt_update2.exec(); stmt_update2.reset();
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");

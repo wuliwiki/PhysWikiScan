@@ -590,7 +590,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 	// === regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels" ======
 	cout << R"(regenerate "figures.entry", "labels.entry" from "entries.figures", "entries.labels"...)" << endl;
 
-	SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id", "labels" FROM "entries" WHERE "labels" != '';)");
+	SQLite::Statement stmt_select_labels(db_rw, R"(SELECT "id" FROM "entries";)");
 	SQLite::Statement stmt_update_labels_entry(db_rw, R"(UPDATE "labels" SET "entry"=? WHERE "id"=?;)");
 	unordered_set<Str> labels;
 	while (stmt_select_labels.executeStep()) {
@@ -692,17 +692,14 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 
 	// === regenerate images.figures from figures.image ========
 	unordered_map<Str, set<Str>> images_figures, images_figures_old; // images.figures* generated from figures.image
-	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id", "image", "image_alt", "image_old" FROM "figures" WHERE "id" != '';)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id", "image", "image_old" FROM "figures" WHERE "id" != '';)");
 	SQLite::Statement stmt_select4(db_rw, R"(SELECT "figures" FROM "images" WHERE "hash"=?;)");
-	vecStr image_alt, image_old;
+	vecStr image_old;
 	Str fig_id, image_hash;
 	while (stmt_select3.executeStep()) {
 		fig_id = stmt_select3.getColumn(0).getString();
 		image_hash = stmt_select3.getColumn(1).getString();
-		parse(image_alt, stmt_select3.getColumn(2));
-		if (size(image_alt) > 1)
-			throw internal_err(u8"暂时不允许多于一个 image_alt！");
-		parse(image_old, stmt_select3.getColumn(3));
+		parse(image_old, stmt_select3.getColumn(2));
 		if (size(image_old) > 1)
 			throw internal_err(u8"暂时不允许多于一个 image_old！");
 		stmt_select4.bind(1, image_hash);
@@ -713,8 +710,8 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		stmt_select4.reset();
 
 		images_figures[image_hash].insert(fig_id);
-		if (!image_alt.empty())
-			images_figures[image_alt[0]].insert(fig_id);
+//		if (!image_alt.empty())
+//			images_figures[image_alt[0]].insert(fig_id);
 		if (!image_old.empty())
 			images_figures_old[image_old[0]].insert(fig_id);
 	}

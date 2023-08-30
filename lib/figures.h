@@ -13,10 +13,10 @@ inline void figure_env(
 {
 	Intvs intvFig;
 	Str fig_fname, fname_in, fname_out, href, ext, caption, widthPt;
-	Str fname_in2, str_mod, tex_fname, caption_div, image_hash;
+	Str fname_in2, str_mod, tex_fname, caption_div, image_hash, aka;
 	static const Str tmp1 = "id = \"fig_";
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "aka" FROM "figures"=? WHERE "id"=?;)");
+		R"(SELECT "aka" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_read,
 		R"(SELECT "hash" FROM "images" WHERE "ext"='svg' AND "figure"=?;)");
 
@@ -115,7 +115,7 @@ inline void figure_env(
 			stmt_select.bind(1, fig_id);
 			if (!stmt_select.executeStep())
 				throw internal_err(SLS_WHERE);
-			const Str &aka = stmt_select.getColumn(0);
+			aka = stmt_select.getColumn(0).getString();
 			stmt_select.reset();
 
 			if (aka.empty())
@@ -125,7 +125,7 @@ inline void figure_env(
 			if (!stmt_select2.executeStep()) {
 				clear(sb) << u8"pdf 图片 " << fname_in;
 				if (!aka.empty())
-					sb << u8"（aka " << aka << u8"）"
+					sb << u8"（aka " << aka << u8"）";
 				sb << u8" 在数据库中找不到对应的 svg";
 				throw internal_err(sb);
 			}
@@ -143,9 +143,10 @@ inline void figure_env(
 		else
 			throw internal_err(u8"图片格式暂不支持：" + fig_fname);
 
-		if (ext == "svg" && aka.empty()) {
-			clear(fname_out) << gv::path_out << image_hash << "." << ext;
-			file_copy(fname_out, fname_in2, true);
+		if (ext == "svg") {
+			clear(fname_out) << gv::path_out << image_hash << '.' << ext;
+			if (!file_exist(fname_out))
+				file_copy(fname_out, fname_in2, true);
 		}
 
 		// get caption of figure
@@ -181,15 +182,18 @@ inline void db_update_images(
 		SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "ext", "figure", "figures_aka" FROM "images" WHERE "hash"=?;)");
+		R"(SELECT "ext", "figure" FROM "images" WHERE "hash"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "aka" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "images" ("hash", "ext", "figure", "figures_aka") VALUES (?,?,?,?);)");
+		R"(INSERT INTO "images" ("hash", "ext", "figure") VALUES (?,?,?);)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "images" SET "figure"=? WHERE "hash"=?;)");
-	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "images" SET "figures_aka"=? WHERE "hash"=?;)");
-	set<Str> db_image_figures_aka;
 
 	for (auto &fig_id : fig_ids) {
-		const Str &fig_aka = get_text("figures", "id", fig_id, "aka", db_rw);
+		stmt_select2.bind(1, fig_id);
+		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+		const Str &fig_aka = stmt_select2.getColumn(0);
+		stmt_select2.reset();
 		for (auto &ext_hash: fig_ext_hash.at(fig_id)) {
 			auto &image_ext = ext_hash.first;
 			auto &image_hash = ext_hash.second;
@@ -200,7 +204,6 @@ inline void db_update_images(
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
 				if (fig_aka.empty()) {
-					stmt_insert.bind(3, fig_id);
 					stmt_insert.bind(4, "");
 				}
 				else {
@@ -212,7 +215,6 @@ inline void db_update_images(
 			else {
 				const Str &db_image_ext = stmt_select.getColumn(0);
 				const Str &db_image_figure = stmt_select.getColumn(1);
-				parse(db_image_figures_aka, stmt_select.getColumn(2));
 				stmt_select.reset();
 				if (image_ext != db_image_ext) {
 					clear(sb) << u8"图片文件拓展名不允许手动改变： " << image_hash << '.'
@@ -229,24 +231,13 @@ inline void db_update_images(
 						stmt_update.exec(); stmt_update.reset();
 					}
 				}
-				else {
-					if (db_image_figure != fig_aka) {
+				else if (db_image_figure != fig_aka) {
 						clear(sb) << u8"检测到 images.figure 改变（将更新）： "
 							<< image_hash << '.' <<  db_image_figure << " -> " << fig_aka;
 						db_log(sb);
 						stmt_update.bind(1, fig_id);
 						stmt_update.bind(2, fig_aka);
 						stmt_update.exec(); stmt_update.reset();
-					}
-					if (!db_image_figures_aka.count(fig_id)) {
-						clear(sb) << u8"检测到新增的 images.figures_aka（将更新）： " <<  image_hash << '.' << fig_id;
-						db_log(sb);
-						db_image_figures_aka.insert(fig_id);
-						join(sb, db_image_figures_aka);
-						stmt_update2.bind(1, sb);
-						stmt_update2.bind(2, image_hash);
-						stmt_update2.exec(); stmt_update2.reset();
-					}
 				}
 			}
 		}
@@ -273,8 +264,6 @@ inline void db_update_figures(
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "deleted"=0 WHERE "id"=?;)");
-	SQLite::Statement stmt_update2(db_rw,
-		R"(UPDATE "entries" SET "figures"=? WHERE "id"=?;)");
 	// get all figure envs defined in `entries`, to detect deleted figures
 	// db_xxx[i] are from the same row of "labels" table
 	vecStr db_figs, db_fig_entries, db_fig_image;
@@ -308,7 +297,7 @@ inline void db_update_figures(
 		}
 	}
 	figs_used.resize(db_figs_deleted.size(), false);
-	Str figs_str, image, ext;
+	Str image, ext;
 	set<Str> new_figs, figs;
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -391,10 +380,6 @@ inline void db_update_figures(
 				figs.insert(stmt_select.getColumn(0));
 			for (auto &e : new_figs)
 				figs.insert(e);
-			join(figs_str, figs);
-			stmt_update2.bind(1, figs_str);
-			stmt_update2.bind(2, entry);
-			stmt_update2.exec(); stmt_update2.reset();
 		}
 		stmt_select.reset();
 	}
@@ -565,7 +550,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		bool has_last = !stmt_select.getColumn(4).getString().empty();
 		stmt_select.reset();
 		stmt_select4.bind(1, entry);
-		bool has_next = stmt_select4.execStep();
+		bool has_next = stmt_select4.executeStep();
 		stmt_select4.reset();
 
 		if (has_last || has_next) // TODO: deal with figures.last and figures.next
