@@ -463,7 +463,7 @@ inline void db_delete_images(
 
 		// check other related figures.deleted=1
 		figures.clear();
-		stmt_select4.bind(image);
+		stmt_select4.bind(1, image);
 		while (stmt_select4.executeStep())
 			figures.insert(stmt_select4.getColumn(0));
 		if (img_figure.empty()) {
