@@ -493,7 +493,7 @@ inline void db_delete_images(
 			stmt_select2.reset();
 			if (!deleted) {
 				scan_warn(u8"无法删除被 figure 环境使用的 image，请先删除（将忽略）：" + fig);
-				break;
+				continue;
 			}
 		}
 		if (!deleted) continue;
@@ -522,7 +522,7 @@ inline void db_delete_images(
 // if figures.aka is not empty, will only delete the record in figures, nothing else
 inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 {
-	vecStr image_hash, images, entry;
+	vecStr image_hash, images;
 	set<Str> entries_figures;
 
 	SQLite::Statement stmt_select(db_rw,
@@ -567,6 +567,8 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 			throw internal_err("not implemented!" SLS_WHERE);
 		if (has_aka) {
 			// just delete 1 record from `entries` and done
+			sb = u8"要删除的图片 aka 不为空，图片文件将不会删除。";
+			cout << sb; scan_log(sb);
 			stmt_delete.bind(1, figure);
 			stmt_delete.executeStep(); stmt_delete.reset();
 			return;
@@ -595,6 +597,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		}
 
 		// delete all related images
+		images.clear();
 		stmt_select3.bind(1, figure);
 		while (stmt_select3.executeStep())
 			images.push_back(stmt_select3.getColumn(0));
