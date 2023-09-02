@@ -220,6 +220,8 @@ int main(int argc, const char *argv[]) {
 
 		// === parse arguments ===
 		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+		db_rw.exec("PRAGMA busy_timeout = 3000;");
+
 		if (args[0] == "." && args.size() == 1) {
 			PhysWikiOnline(db_rw);
 		}
