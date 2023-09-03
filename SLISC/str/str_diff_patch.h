@@ -27,18 +27,20 @@ inline void str_diff(vector<tuple<size_t, size_t, Str>> &diff, Str_I str1, Str_I
 {
 	size_t ind1 = 0, ind2 = 0, start1, start2, end1, end2, ind, N_match = 10, N_skip = 10;
 	diff.clear();
+	static Str tmp;
 	while (ind1 < str1.size() && ind2 < str2.size() && str1[ind1] == str2[ind2])
 		++ind1, ++ind2;
 	if (ind1 == str1.size() || ind2 == str2.size()) {
 		diff.emplace_back(ind1, str1.size()-ind1, str2.substr(ind2));
 		if (debug) {
-			static Str tmp;
 			str_patch(tmp, str1, diff);
 			if (tmp != str2) {
-				cout<< "\n----- str2 reconstruct ------\n"
-					<< tmp
+				cout<< "\n----- str1 ------------------\n"
+					<< str1
 					<< "\n----- str2 ------------------\n"
 					<< str2
+					<< "\n----- str2 reconstruct ------\n"
+					<< tmp
 					<< "\n-----------------------------\n" << endl;
 				exit(1);
 			}
@@ -57,30 +59,31 @@ inline void str_diff(vector<tuple<size_t, size_t, Str>> &diff, Str_I str1, Str_I
 			ind1 = ind+N_match; ind2 += N_match;
 			while (ind1 < str1.size() && ind2 < str2.size() && str1[ind1] == str2[ind2])
 				++ind1, ++ind2;
-			if (ind1 == str1.size() || ind2 == str2.size())
+			if (ind1 == str1.size() || ind2 == str2.size()) {
+				start1 = ind1; start2 = ind2;
 				break;
+			}
 			start1 = ind1; start2 = ind2; // where diff start
 			continue;
 		}
 		else { // match not found
 			ind2 += N_skip;
-			if (str2.size() - ind2 >= N_match) {
+			if (str2.size() - ind2 >= N_match)
 				continue;
-			}
-			else {
-				diff.emplace_back(start1, str1.size()-start1, str2.substr(start2));
-			}
+			else
+				break;
 		}
 	}
-	diff.emplace_back(ind1, str1.size()-ind1, str2.substr(ind2));
+	diff.emplace_back(start1, str1.size()-start1, str2.substr(start2));
 	if (debug) {
-		static Str tmp;
 		str_patch(tmp, str1, diff);
 		if (tmp != str2) {
-			cout<< "\n----- str2 reconstruct ------\n"
-				<< tmp
+			cout<< "\n----- str1 ------------------\n"
+				<< str1
 				<< "\n----- str2 ------------------\n"
 				<< str2
+				<< "\n----- str2 reconstruct ------\n"
+				<< tmp
 				<< "\n-----------------------------\n" << endl;
 			exit(1);
 		}
