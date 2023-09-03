@@ -1,5 +1,6 @@
 #pragma once
 #include "sqlite_db.h"
+#include "../SLISC/str/str_diff_patch.h"
 
 // calculate author list of an entry, based on "history" table counts in db_read
 // consider authors.aka
@@ -393,7 +394,7 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 }
 
 // calculate all "history.add" and "history.del"
-inline void history_add_del_all(SQLite::Database &db_rw, Bool_I redo_all = false) {
+inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
@@ -434,6 +435,8 @@ inline void history_add_del_all(SQLite::Database &db_rw, Bool_I redo_all = false
 				read(str_old, fname_old);
 				// compare str and str_old
 				str_add_del(add, del, str_old, str);
+				static vector<tuple<size_t, size_t, Str>> diff;
+				str_diff(diff, str_old, str, true);
 			}
 		}
 		stmt_select2.reset();
