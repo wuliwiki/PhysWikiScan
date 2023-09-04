@@ -6,14 +6,16 @@
 inline void figure_env(
 		unordered_set<Str> &img_to_delete, // [out] image files to delete
 		unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash, // [append] figures.id -> (ext -> hash)
-		Str_IO str, Str_I entry,
-		vecStr_I fig_ids, // parsed from env_labels(), `\label{}` already deleted
-		vecLong_I fig_orders, // figures.order
+		Str_IO str, // on input, all `\label{}` already deleted
+		vecStr_O fig_captions, // [out] figures.caption
+		Str_I entry,
+		vecStr_I fig_ids, // parsed from env_labels(), with the correct order
 		SQLite::Database &db_read)
 {
 	Intvs intvFig;
 	Str fig_fname, fname_in, fname_out, href, ext, caption, widthPt;
 	Str fname_in2, str_mod, tex_fname, caption_div, image_hash, aka;
+	fig_captions.clear();
 	static const Str tmp1 = "id = \"fig_";
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "aka" FROM "figures" WHERE "id"=?;)");
@@ -21,16 +23,16 @@ inline void figure_env(
 		R"(SELECT "hash" FROM "images" WHERE "ext"='svg' AND "figure"=?;)");
 
 	Long Nfig = find_env(intvFig, str, "figure", 'o');
-	if (size(fig_orders) != Nfig || size(fig_ids) != Nfig)
+	if (size(fig_ids) != Nfig)
 		throw scan_err(u8"请确保每个图片环境都有一个 \\label{} 标签");
 
 	for (Long i_fig = Nfig - 1; i_fig >= 0; --i_fig) {
-		auto &fig_id = fig_ids[i_fig];
+		const Str &fig_id = fig_ids[i_fig];
 
 		// verify label
 		Long ind_label = rfind(str, tmp1, intvFig.L(i_fig));
 		if (ind_label < 0 || (i_fig > 0 && ind_label < intvFig.R(i_fig - 1)))
-			throw scan_err(u8"图片必须有标签， 请使用上传图片按钮。");
+			throw scan_err(u8"图片必须有标签 \\label{}， 请使用上传图片按钮。");
 		ind_label += size(tmp1);
 		Long ind_label_end = find(str, '\"', ind_label);
 		SLS_ASSERT(ind_label_end > 0);
@@ -161,6 +163,7 @@ inline void figure_env(
 		widthPt = num2str((33 / 14.25 * width * 100)/100.0, 4);
 		href.clear(); href << gv::url << image_hash << "." << ext;
 		caption_div.clear();
+		fig_captions.push_back(caption);
 		if (!caption.empty())
 			caption.insert(0, u8"：");
 		clear(sb) << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
@@ -241,8 +244,7 @@ inline void db_update_images(
 inline void db_update_figures(
 	unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
 	vecStr_I entries,
-	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures.id in entries[i]
-	const vector<vecLong> &entry_fig_orders, // entry_fig_orders[i] are the figures.order in entries[i]
+	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures.id in entries[i], in order of appearance
 	const unordered_map<Str, unordered_map<Str,Str>> &fig_ext_hash, // fig_id -> (ext -> hash)
 	SQLite::Database &db_rw)
 {
@@ -296,7 +298,8 @@ inline void db_update_figures(
 		auto &entry = entries[i];
 		new_figs.clear();
 		for (Long j = 0; j < size(entry_figs[i]); ++j) {
-			const Str &fig_id = entry_figs[i][j]; order = entry_fig_orders[i][j];
+			const Str &fig_id = entry_figs[i][j];
+			order = j+1;
 			Long ind = search(fig_id, db_figs);
 			auto &ext_hash = fig_ext_hash.at(fig_id);
 			if (ext_hash.size() == 1) { // png

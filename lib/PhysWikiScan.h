@@ -411,7 +411,8 @@ inline void arg_history(Str_I path, SQLite::Database &db_rw)
 // output title from first line comment
 // use `clear=true` to only keep the title line and key-word line of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
-	Str_O title, vecStr_O fig_ids, vecLong_O fig_orders, unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
+	Str_O title, vecStr_O fig_ids, vecStr_O fig_captions,
+	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, set<Char32> &illegal_chars,
@@ -532,7 +533,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// add paragraph tags
 	paragraph_tag(str);
 	// add html id for links
-	env_labels(fig_ids, fig_orders, labels, label_orders, entry, str);
+	env_labels(fig_ids, labels, label_orders, entry, str);
 	// replace environments with html tags
 	equation_tag(str, "equation"); equation_tag(str, "align"); equation_tag(str, "gather");
 	// itemize and enumerate
@@ -544,7 +545,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// process example and exercise environments
 	theorem_like_env(str);
 	// process figure environments
-	figure_env(img_to_delete, fig_ext_hash, str, entry, fig_ids, fig_orders, db_rw);
+	figure_env(img_to_delete, fig_ext_hash, str, fig_captions,
+		entry, fig_ids, db_rw);
 	// get dependent entries from \pentry{}
 	get_pentry(pentry, str, db_rw);
 	// issues environment
@@ -625,8 +627,8 @@ inline void PhysWikiOnlineN_round1(
 	Bool update_db, isdraft;
 	Str key_str, license, type;
 	unordered_set<Str> update_entries;
-	vecLong fig_orders, label_orders;
-	vecStr keywords, fig_ids, labels;
+	vecLong label_orders;
+	vecStr keywords, fig_ids, labels, fig_captions;
 	Pentry pentry;
 	unordered_map<Str, unordered_map<Str, Str>> fig_ext_hash; // figures.id -> (ext -> hash)
 	Long N0 = size(entries);
@@ -646,8 +648,8 @@ inline void PhysWikiOnlineN_round1(
 
 			// =================================================================
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
-				fig_ids, fig_orders, fig_ext_hash, isdraft, keywords, license,
-				type, labels, label_orders, entry_uprefs_change[entry],
+				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
+				license, type, labels, label_orders, entry_uprefs_change[entry],
 				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
@@ -672,8 +674,7 @@ inline void PhysWikiOnlineN_round1(
 
 			// update db labels, figures
 			db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
-			db_update_figures(update_entries, {entry}, {fig_ids}, {fig_orders},
-							  fig_ext_hash, db_rw);
+			db_update_figures(update_entries, {entry}, {fig_ids}, fig_ext_hash, db_rw);
 			db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
 
 			// order change means `update_entries` needs to be updated with autoref() as well.

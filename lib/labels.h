@@ -31,8 +31,8 @@ inline Str label_entry_old(Str_I label)
 // `idNum` is in the idNum-th environment of the same name (not necessarily equal to displayed number)
 // no comment allowed
 // return number of labels processed, or -1 if failed
-inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
-	vecStr_O labels, vecLong_O label_orders, Str_I entry, Str_IO str)
+inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
+	vecLong_O label_orders, Str_I entry, Str_IO str)
 {
 	Long ind0{}, ind2{}, ind3{}, ind4{}, N{},
 		Ngather{}, Nalign{}, i{}, j{};
@@ -40,8 +40,9 @@ inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
 	Str envName; // "equation" or "figure" or "example"...
 	Long idN{}; // convert to idNum
 	Str label, fig_id;
-	fig_ids.clear(); fig_orders.clear();
+	fig_ids.clear();
 	labels.clear(); label_orders.clear();
+	vecLong fig_orders;
 	while (1) {
 		const Long ind5 = find_command(str, "label", ind4);
 		if (ind5 < 0) return N;
@@ -53,7 +54,8 @@ inline Long env_labels(vecStr_O fig_ids, vecLong_O fig_orders,
 			Long ind7 = (Long)str.rfind("\\subsection", ind5);
 			Long ind8 = (Long)str.rfind('\n', ind5);
 			if (ind7 < 0 || ind8 > ind7)
-				throw scan_err(u8"环境外的 \\label 视为 \\subsection{} 的标签， 必须紧接在后面（不能换行）： " + str.substr(ind5, 22));
+				throw scan_err(u8"环境外的 \\label 视为 \\subsection{} 的标签， 必须紧接在后面（不能换行）： "
+					+ str.substr(ind5, 22));
 			type = "sub"; envName = "subsection";
 		}
 		else {
