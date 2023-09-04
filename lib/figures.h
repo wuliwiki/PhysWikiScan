@@ -245,6 +245,7 @@ inline void db_update_figures(
 	unordered_set<Str> &update_entries, // [out] entries to be updated due to order change
 	vecStr_I entries,
 	const vector<vecStr> &entry_figs, // entry_figs[i] are the figures.id in entries[i], in order of appearance
+	const vector<vecStr> &entry_fig_captions, // entry_fig_captions[i][j] is the figures.caption of entry_figs[i][j]
 	const unordered_map<Str, unordered_map<Str,Str>> &fig_ext_hash, // fig_id -> (ext -> hash)
 	SQLite::Database &db_rw)
 {
@@ -254,14 +255,14 @@ inline void db_update_figures(
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by", "image", "deleted", "aka" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "ref_by", "image", "deleted", "aka", "caption" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "deleted"=0 WHERE "id"=?;)");
+		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "caption"=?, "deleted"=0 WHERE "id"=?;)");
 	// get all figure envs defined in `entries`, to detect deleted figures
 	// db_xxx[i] are from the same row of "labels" table
-	vecStr db_figs, db_fig_entries, db_fig_image;
+	vecStr db_figs, db_fig_entries, db_fig_image, db_figs_caption;
 	unordered_map<Str, Str> db_fig_aka; // figures.id -> figures.aka
 	vecBool db_figs_deleted, figs_used;
 	vecLong db_fig_orders;
@@ -286,8 +287,9 @@ inline void db_update_figures(
 			db_fig_ref_bys.emplace_back();
 			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
 			db_fig_image.push_back(stmt_select1.getColumn(2));
-			db_fig_aka[fig_id] = stmt_select1.getColumn(4).getString();
 			db_figs_deleted.push_back((int)stmt_select1.getColumn(3));
+			db_fig_aka[fig_id] = stmt_select1.getColumn(4).getString();
+			db_figs_caption.push_back(stmt_select1.getColumn(5));
 			stmt_select1.reset();
 		}
 	}
@@ -299,6 +301,7 @@ inline void db_update_figures(
 		new_figs.clear();
 		for (Long j = 0; j < size(entry_figs[i]); ++j) {
 			const Str &fig_id = entry_figs[i][j];
+			const Str &fig_caption = entry_fig_captions[i][j];
 			order = j+1;
 			Long ind = search(fig_id, db_figs);
 			auto &ext_hash = fig_ext_hash.at(fig_id);
@@ -329,6 +332,12 @@ inline void db_update_figures(
 			// 图片 label 在 entries.figures 中，检查是否未被使用
 			if (db_figs_deleted[ind]) {
 				db_log(u8"发现数据库中未使用的图片被重新使用（将更新）：" + fig_id);
+				changed = true;
+			}
+			if (fig_caption != db_figs_caption[ind]) {
+				clear(sb) << u8"发现数据库中图片标题改变（将更新）："
+					<< db_figs_caption[ind] << " -> " << fig_caption;
+				db_log(sb);
 				changed = true;
 			}
 			if (entry != db_fig_entries[ind]) {
@@ -365,7 +374,8 @@ inline void db_update_figures(
 				stmt_update.bind(1, entry);
 				stmt_update.bind(2, (int)order);
 				stmt_update.bind(3, image);
-				stmt_update.bind(4, fig_id);
+				stmt_update.bind(4, fig_caption);
+				stmt_update.bind(5, fig_id);
 				stmt_update.exec(); stmt_update.reset();
 			}
 		}

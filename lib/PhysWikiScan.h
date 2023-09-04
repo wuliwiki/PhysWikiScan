@@ -674,7 +674,7 @@ inline void PhysWikiOnlineN_round1(
 
 			// update db labels, figures
 			db_update_labels(update_entries, {entry}, {labels}, {label_orders}, db_rw);
-			db_update_figures(update_entries, {entry}, {fig_ids}, fig_ext_hash, db_rw);
+			db_update_figures(update_entries, {entry}, {fig_ids}, {fig_captions}, fig_ext_hash, db_rw);
 			db_update_images(entry, fig_ids, fig_ext_hash, db_rw);
 
 			// order change means `update_entries` needs to be updated with autoref() as well.
