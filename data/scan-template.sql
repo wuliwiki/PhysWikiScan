@@ -245,6 +245,7 @@ CREATE TABLE "history" (
 
 INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '', 0, ''); -- 防止 FOREIGN KEY 报错
 CREATE INDEX idx_history_author ON "history"("author");
+CREATE INDEX idx_history_last ON "history"("last");
 
 -- 审稿记录
 CREATE TABLE "review" (
