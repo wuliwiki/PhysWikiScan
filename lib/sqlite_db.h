@@ -288,6 +288,8 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 	cout << "add & delete bibliography.ref_by..." << endl;
 	SQLite::Statement stmt_update_ref_by(db_rw,
 		R"(UPDATE "bibliography" SET "ref_by"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "ref_by" FROM "bibliography" WHERE "id"=?;)");
 	Str ref_by_str;
 	set<Str> ref_by;
 
@@ -295,7 +297,10 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 		auto &bib = e.first;
 		auto &by_entries = e.second;
 		ref_by.clear();
-		ref_by_str = get_text("bibliography", "id", bib, "ref_by", db_rw);
+		stmt_select.bind(1, bib);
+		if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+		ref_by_str = stmt_select.getColumn(0).getString();
+		stmt_select.reset();
 		parse(ref_by, ref_by_str);
 		change_set(ref_by, by_entries);
 		join(ref_by_str, ref_by);
@@ -428,16 +433,23 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 
 	// =========== add & delete labels.ref_by =================
 	cout << "add & delete labels ref_by..." << endl;
-	SQLite::Statement stmt_update_ref_by(db_rw,
-		R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
 	Str ref_by_str;
 	set<Str> ref_by;
+	SQLite::Statement stmt_update_ref_by(db_rw,
+		R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "ref_by" FROM "labels" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "ref_by" FROM "figures" WHERE "id"=?;)");
 
 	for (auto &e : label_add_ref_bys) {
 		auto &label = e.first;
 		auto &by_entries = e.second;
 		ref_by.clear();
-		ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+		stmt_select.bind(1, label);
+		if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+		ref_by_str = stmt_select.getColumn(0).getString();
+		stmt_select.reset();
 		parse(ref_by, ref_by_str);
 		for (auto &by_entry : by_entries)
 			ref_by.insert(by_entry);
@@ -463,7 +475,10 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		auto &fig_id = e.first;
 		auto &by_entries = e.second;
 		ref_by.clear();
-		ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+		stmt_select2.bind(1, fig_id);
+		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+		ref_by_str = stmt_select2.getColumn(0).getString();
+		stmt_select2.reset();
 		parse(ref_by, ref_by_str);
 		for (auto &by_entry : by_entries)
 			ref_by.insert(by_entry);
@@ -486,7 +501,10 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		auto &label = e.first;
 		auto &by_entries = e.second;
 		try {
-			ref_by_str = get_text("labels", "id", label, "ref_by", db_rw);
+			stmt_select.bind(1, label);
+			if (!stmt_select.executeStep()) throw internal_err(SLS_WHERE);
+			ref_by_str = stmt_select.getColumn(0).getString();
+			stmt_select.reset();
 		}
 		catch (const std::exception &e) {
 			if (find(e.what(), "row not found") >= 0)
@@ -507,7 +525,10 @@ inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_a
 		auto &fig_id = e.first;
 		auto &by_entries = e.second;
 		try {
-			ref_by_str = get_text("figures", "id", fig_id, "ref_by", db_rw);
+			stmt_select2.bind(1, fig_id);
+			if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
+			ref_by_str = stmt_select2.getColumn(0).getString();
+			stmt_select2.reset();
 		}
 		catch (const std::exception &e) {
 			if (find(e.what(), "row not found") >= 0)
@@ -654,7 +675,8 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		stmt_update_fig_ref_by.reset();
 	}
 
-	SQLite::Statement stmt_update_labels_ref_by(db_rw, R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update_labels_ref_by(db_rw,
+		R"(UPDATE "labels" SET "ref_by"=? WHERE "id"=?;)");
 	for (auto &e : labels_ref_by) {
 		join(ref_by_str, e.second);
 		stmt_update_labels_ref_by.bind(1, ref_by_str);

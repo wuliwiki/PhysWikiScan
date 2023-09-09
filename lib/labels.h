@@ -500,17 +500,6 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		stmt_insert.bind(3, entry);
 		stmt_insert.bind(4, (int)order);
 		stmt_insert.exec(); stmt_insert.reset();
-
-		// update "entries.refs"
-		set<Str> labels;
-		parse(labels, get_text("entries", "id", entry, "labels", db_rw));
-		labels.insert(label);
-		Str labels_str; join(labels_str, labels);
-		SQLite::Statement stmt_update(db_rw,
-			R"(UPDATE "entries" SET "labels"=? WHERE "id"=?;)");
-		stmt_update.bind(1, labels_str);
-		stmt_update.bind(2, entry);
-		stmt_update.exec(); stmt_update.reset();
 	}
 	return 0;
 }
