@@ -37,6 +37,7 @@ PhysWikiScan 是小时百科 wuli.wiki 词条编辑器后台负责把 latex 转�
 ***统计与数据库更新***
 * `PhysWikiScan --wc` 统计中文字符数（含标点）
 * `PhysWikiScan --history-all` 把 `../PhysWiki-backup/*.tex` 备份文件信息更新到数据库。 更新 `entries.authors`， `history.last`， 未计算的 `history.add/del`。 若在 `--history-all` 后面加一个任意参数， 则重新计算所有 `history.add/del`。
+* `PhysWikiScan --stat yyyymmddhhmm yyyymmddhhmm` 统计一段时间内所有作者的贡献详情
 * `PhysWikiScan --author-char-stat yyyymmddhhmm yyyymmddhhmm 用户名` 统计某个作者在某段时间内（包括）的字符数增减（数据库 history.add/del）
 * `PhysWikiScan --history-normalize` 有时候编辑器不到 5 分钟就会产生备份（并非 bug）， 该功能把备份删除或重命名以模拟 5 分钟备份， 半小时不编辑重新开始计时。
 * `PhysWikiScan --fix-db` 重新生成数据库中标记为【生成】的数据（用于 debug）。

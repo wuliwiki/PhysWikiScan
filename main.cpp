@@ -376,6 +376,9 @@ int main(int argc, const char *argv[]) {
 			arg_backup(args[1], str2Int(args[2]), db_rw);
 			transaction.commit();
 		}
+		else if (args[0] == "--stat" && args.size() == 3) {
+			arg_stat(args[1], args[2]);
+		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			author_char_stat(args[1], args[2], args[3], db_rw);
 		}

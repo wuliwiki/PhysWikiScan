@@ -313,7 +313,9 @@ CREATE TABLE "salary" (
 -- 时薪折扣（例如用于小众词条）
 CREATE TABLE "discount" (
 	"entry"    TEXT    NOT NULL, -- 词条
-	"begin"    TEXT    NOT NULL, -- 生效时间
+	"begin"    TEXT    NOT NULL, -- 生效时间，空代表词条创建的时间
 	"percent"  INTEGER NOT NULL, -- 时薪折扣 %
 	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
+
+CREATE INDEX idx_discount_entry ON "discount"("entry");
