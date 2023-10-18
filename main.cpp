@@ -211,7 +211,7 @@ int main(int argc, const char *argv[]) {
 		timer.tic();
 
 		get_path(gv::path_in, gv::path_out, gv::path_data, gv::url, args);
-		if (gv::url == "https://wuli.wiki/online/" || gv::url == "https://wuli.wiki/changed/")
+		if (find(gv::path_in, "/PhysWiki/") >= 0)
 			gv::is_wiki = true;
 		else
 			gv::is_wiki = false;
@@ -377,7 +377,7 @@ int main(int argc, const char *argv[]) {
 			transaction.commit();
 		}
 		else if (args[0] == "--stat" && args.size() == 3) {
-			arg_stat(args[1], args[2]);
+			SLS_ERR("not finished!"); // arg_stat(args[1], args[2]);
 		}
 		else if (args[0] == "--author-char-stat" && args.size() == 4) {
 			author_char_stat(args[1], args[2], args[3], db_rw);
