@@ -41,8 +41,8 @@ struct TexNode
 	TexNode *last, *next; // null if doesn't exist
 	TexNode *child; // 1st child (null if doesn't exist)
 
-	TexNode(u8iter begin, u8iter end) :
-		type(node_type::Tex), begin(begin), end(end), parent(0), last(0), next(0), child(0) {}
+	TexNode(u8iter begin) :
+		type(node_type::Tex), begin(begin), end(-1), parent(0), last(0), next(0), child(0) {}
 
 	Long nchild() { // # of child
 		if (!child) return 0;
@@ -107,11 +107,17 @@ struct CmdNode : public TexNode
 // 	Long nbody() { return nchild()-1-has_opt-Nargs; }
 // };
 
-// equation with a (optional) single label
+// equation with a (optional) single label and a number
 // child: body1 body2...
 struct Eq1Node : public TexNode {
 	Str label;
+	int order; // displayed number
 	Eq1Node(u8iter begin, u8iter end) : TexNode(begin, end) {};
+}
+
+// align environment, with multiple Eq1Node
+struct AliNode : public TexNode {
+	Eq1Node *eq() { return dynamic_cast<Eq1Node>(child); }
 }
 
 // figure
@@ -159,12 +165,24 @@ inline TexNode tex_ast_parser(Str_I str)
 {
 	Str tmp;
 	u8iter it(str);
+	stack<node_type> where;
 	while((Long)it < size(str)) {
 		if (*it == '\\') {
-			if (is_alpha(*(it+1))) { // command
-				command_name(tmp, it, str);
+			++it;
+			if (is_alpha(*it)) { // command
+				Long ind = (Long)it-1;
+				command_name(tmp, ind, str);
 				if (tmp == "begin") { // \begin{}
-					
+					command_arg(tmp, ind, str);
+					if (tmp == "equation") {
+						Eq1Node(it);
+					}
+					else if (tmp == "figure") {
+						
+					}
+					else {
+
+					}
 				}
 				else if (tmp == "end") { // \end{}
 
@@ -182,6 +200,10 @@ inline TexNode tex_ast_parser(Str_I str)
 			else if (*it == '[') { // display equation
 				
 			}
+			else if (*it == ']') { // end of display equation
+
+			}
+			else if (*it == '\\')
 			// ignore otherwise leave it for later
 		}
 		else if (*it == '\n') {
