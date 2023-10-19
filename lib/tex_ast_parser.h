@@ -13,7 +13,8 @@ enum class node_type
 	Ssub, // SsubNode: subsubsection
 	Par,  // ParNode:  paragraph
 	EqIn, // EqInNode: inline equation $...$ and \(...\)
-	Ent  // EntNode:  entry
+	Ent,  // EntNode:  entry
+	Brac, // BracNode: {...}
 	// Fig,  // FigNode:  figure
 	// Exm,  // ExmNode:  example
 	// Exe   // ExeNode:  exercise
@@ -40,6 +41,9 @@ struct TexNode
 	TexNode *last, *next; // null if doesn't exist
 	TexNode *child; // 1st child (null if doesn't exist)
 
+	TexNode(u8iter begin, u8iter end) :
+		type(node_type::Tex), begin(begin), end(end), parent(0), last(0), next(0), child(0) {}
+
 	Long nchild() { // # of child
 		if (!child) return 0;
 		else {
@@ -62,6 +66,8 @@ struct TexNode
 	}
 };
 
+struct BracNode : TexNode {};
+
 typedef vector<TexNode*> vecNode;
 typedef const vecNode &vecNode_I;
 typedef vecNode &vecNode_IO;
@@ -70,6 +76,7 @@ typedef vecNode &vecNode_IO;
 // child: sub1 sub2...
 struct EntNode : public TexNode
 {
+	EntNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
@@ -80,6 +87,7 @@ struct CmdNode : public TexNode
 {
 	Str name;
 	bool has_opt; // has 1 optional argument
+	CmdNode(u8iter begin, u8iter end, Str_I name) : TexNode(begin, end), name(name) {};
 	TexNode *name() { return child; } // name of command, not including '\'
 	TexNode *arg_opt() { return has_opt ? child.next : nullptr; }
 	TexNode *arg() { return has_opt ? child.next.next : child.next; }
@@ -101,7 +109,10 @@ struct CmdNode : public TexNode
 
 // equation with a (optional) single label
 // child: body1 body2...
-struct Eq1Node : public TexNode { Str label; }
+struct Eq1Node : public TexNode {
+	Str label;
+	Eq1Node(u8iter begin, u8iter end) : TexNode(begin, end) {};
+}
 
 // figure
 // child: caption
@@ -110,6 +121,7 @@ struct FigNode : public TexNode
 	Str label;
 	Str file;  // path
 	Str width; // unit cm
+	FigNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
 	TexNode *caption() { return child; }
 };
 
@@ -117,6 +129,7 @@ struct FigNode : public TexNode
 struct SubNode : public TexNode
 {
 	Str label;
+	SubNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
@@ -124,25 +137,24 @@ struct SubNode : public TexNode
 // subsubsection
 struct SsubNode : public TexNode
 {
+	SsubNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
 
+// deep first search traverse the whole AST
 inline void traverse_DFS(TexNode *node)
 {
-	if (is(node, TexNode::Cmd)) {
-
-	}
-	else if (is(node, TexNode::Env)) {
-
-	}
-	else if (is(node, TexNode::EqIn)) {
-		
+	assert(node);
+	TexNode *p = node.child;
+	while (!p) {
+		; // do something
+		traverse_DFS(p);
+		p = p.next;
 	}
 }
 
-// parser
-
+// first time parser of source code
 inline TexNode tex_ast_parser(Str_I str)
 {
 	Str tmp;
@@ -173,7 +185,8 @@ inline TexNode tex_ast_parser(Str_I str)
 			// ignore otherwise leave it for later
 		}
 		else if (*it == '\n') {
-			if (*(it+1) == '\n') { // paragraph
+			if (*(++it) == '\n') { // paragraph
+				while (*(++it) == '\n') ;
 
 			}
 		}
