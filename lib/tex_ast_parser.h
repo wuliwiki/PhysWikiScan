@@ -13,30 +13,19 @@ enum class node_type
 	Ssub, // SsubNode: subsubsection
 	Par,  // ParNode:  paragraph
 	EqIn, // EqInNode: inline equation $...$ and \(...\)
+	Eq1,  // Eq1Node: equation with (optional) label and number
 	Ent,  // EntNode:  entry
 	Brac, // BracNode: {...}
-	// Fig,  // FigNode:  figure
+	Fig  // FigNode:  figure
 	// Exm,  // ExmNode:  example
 	// Exe   // ExeNode:  exercise
-};
-
-enum class Env
-{
-	Ent,  // EntNode:  entry
-	Sub,  // SubNode:  subsection
-	Ssub, // SsubNode: subsubsection
-	Par,  // ParNode:  paragraph
-	EqIn, // EqInNode: inline equation $...$ and \(...\)
-	Fig,  // FigNode:  figure
-	Exm,  // ExmNode:  example
-	Exe   // ExeNode:  exercise
 };
 
 // the base of all nodes
 struct TexNode
 {
 	node_type type;
-	u8iter begin, end; // range in source string
+	Long begin, end; // range in source string
 	TexNode *parent;
 	TexNode *last, *next; // null if doesn't exist
 	TexNode *child; // 1st child (null if doesn't exist)
@@ -76,7 +65,7 @@ typedef vecNode &vecNode_IO;
 // child: sub1 sub2...
 struct EntNode : public TexNode
 {
-	EntNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
+	EntNode(Long begin) : TexNode(begin) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
@@ -87,11 +76,13 @@ struct CmdNode : public TexNode
 {
 	Str name;
 	bool has_opt; // has 1 optional argument
-	CmdNode(u8iter begin, u8iter end, Str_I name) : TexNode(begin, end), name(name) {};
+	CmdNode(Long begin, Str_I name) : TexNode(begin), name(name) {};
 	TexNode *name() { return child; } // name of command, not including '\'
 	TexNode *arg_opt() { return has_opt ? child.next : nullptr; }
 	TexNode *arg() { return has_opt ? child.next.next : child.next; }
 };
+
+struct ParNode : public TexNode {}
 
 // generic environment
 // child: name [arg_opt] arg1 arg2... body1 body2...
@@ -110,9 +101,10 @@ struct CmdNode : public TexNode
 // equation with a (optional) single label and a number
 // child: body1 body2...
 struct Eq1Node : public TexNode {
+	char dlm;  // one of '$' (for $$...$$), '[' (for \[...\]), 'e' (for equation env);
 	Str label;
 	int order; // displayed number
-	Eq1Node(u8iter begin, u8iter end) : TexNode(begin, end) {};
+	Eq1Node(Long begin) : TexNode(begin) {};
 }
 
 // align environment, with multiple Eq1Node
@@ -127,7 +119,7 @@ struct FigNode : public TexNode
 	Str label;
 	Str file;  // path
 	Str width; // unit cm
-	FigNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
+	FigNode(Long begin) : TexNode(begin) {};
 	TexNode *caption() { return child; }
 };
 
@@ -135,7 +127,7 @@ struct FigNode : public TexNode
 struct SubNode : public TexNode
 {
 	Str label;
-	SubNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
+	SubNode(Long begin) : TexNode(begin) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
@@ -143,7 +135,7 @@ struct SubNode : public TexNode
 // subsubsection
 struct SsubNode : public TexNode
 {
-	SsubNode(u8iter begin, u8iter end) : TexNode(begin, end) {};
+	SsubNode(Long begin) : TexNode(begin) {};
 	TexNode *caption() { return child; }
 	TexNode *body() { return child.next; }
 };
@@ -165,7 +157,7 @@ inline TexNode tex_ast_parser(Str_I str)
 {
 	Str tmp;
 	u8iter it(str);
-	stack<node_type> where;
+	stack<node_type> st;
 	while((Long)it < size(str)) {
 		if (*it == '\\') {
 			++it;
@@ -175,47 +167,67 @@ inline TexNode tex_ast_parser(Str_I str)
 				if (tmp == "begin") { // \begin{}
 					command_arg(tmp, ind, str);
 					if (tmp == "equation") {
+						st.push(node_type::Eq1);
 						Eq1Node(it);
 					}
 					else if (tmp == "figure") {
-						
+						st.push(node_type::Fig);
 					}
 					else {
-
+						;
 					}
 				}
 				else if (tmp == "end") { // \end{}
-
+					if (tmp == "equation") {
+						if (st.top != node_type::Eq1) SLS_ERR("\\end{} doesn't match \\begin{}");
+						st.pop();
+					}
+					else if (tmp == "figure") {
+						if (st.top != node_type::Fig) SLS_ERR("\\end{} doesn't match \\begin{}");
+						st.pop();
+					}
+					else {
+						;
+					}
 				}
 				else if (tmp == "subsection") {
-
+					st.push(node_type::Sub);
 				}
 				else if (tmp == "subsubsection") {
-
+					st.push(node_type::Ssub);
 				}
 				else { // generic command
-
+					;
 				}
 			}
 			else if (*it == '[') { // display equation
-				
+				st.push(node_type::Eq1);
 			}
 			else if (*it == ']') { // end of display equation
-
+				if (st.top != node_type::Eq1) SLS_ERR("\\] doesn't match \\[");
+				st.pop();
 			}
-			else if (*it == '\\')
-			// ignore otherwise leave it for later
+			else if (*it == '\\') { // line break
+				;
+			}
+			else { // escaped character (*it not a letter)
+				; // do nothing for now
+			}
 		}
 		else if (*it == '\n') {
 			if (*(++it) == '\n') { // paragraph
 				while (*(++it) == '\n') ;
-
+				if (st.top == node_type::Par)
+					st.pop();
+				p.child == new ParNode;
 			}
 		}
 		else if (*it == '$') {
 			++it;
 			if (*it == '$') { // equation environment
-
+				if (st.top == node_type::Eq1)
+					st.pop();
+				st.push(node_type::Eq1);
 			}
 		}
 		else if (*it == '}') { // end of command?
