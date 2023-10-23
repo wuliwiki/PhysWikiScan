@@ -428,153 +428,6 @@ inline void save_matb(Comp_I s, Str_I varname, Str_I matb_file, Bool_I replace =
 
 
 // save() for containers
-inline void save(VecChar_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(1));
-	// write shape info
-	write(fout, Llong(1));
-	// write matrix data
-	write(fout, (Llong)v.size());
-	for (Long i = 0; i < (Long)v.size(); ++i)
-		write(fout, v[i]);
-}
-
-inline void save_matb(VecChar_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-inline void save(VecInt_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(2));
-	// write shape info
-	write(fout, Llong(1));
-	// write matrix data
-	write(fout, (Llong)v.size());
-	for (Long i = 0; i < (Long)v.size(); ++i)
-		write(fout, v[i]);
-}
-
-inline void save_matb(VecInt_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-inline void save(VecLlong_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(3));
-	// write shape info
-	write(fout, Llong(1));
-	// write matrix data
-	write(fout, (Llong)v.size());
-	for (Long i = 0; i < (Long)v.size(); ++i)
-		write(fout, v[i]);
-}
-
-inline void save_matb(VecLlong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-inline void save(VecDoub_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(21));
-	// write shape info
-	write(fout, Llong(1));
-	// write matrix data
-	write(fout, (Llong)v.size());
-	for (Long i = 0; i < (Long)v.size(); ++i)
-		write(fout, v[i]);
-}
-
-inline void save_matb(VecDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-
-inline void save(VecComp_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(41));
-	// write shape info
-	write(fout, Llong(1));
-	// write matrix data
-	write(fout, (Llong)v.size());
-	for (Long i = 0; i < (Long)v.size(); ++i)
-		write(fout, v[i]);
-}
-
-inline void save_matb(VecComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-
 inline void save(SvecChar_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
@@ -598,6 +451,35 @@ inline void save(SvecChar_I v, Str_I varname, Matb_IO matb)
 }
 
 inline void save_matb(SvecChar_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+{
+	Matb matb(matb_file, "w", replace);
+	save(v, varname, matb);
+	matb.close();
+}
+
+inline void save(SvecInt_I v, Str_I varname, Matb_IO matb)
+{
+	if (matb.search(varname) >= 0)
+		SLS_ERR("variable already exist: " + varname);
+	ofstream &fout = matb.m_out;
+	if (!fout.is_open())
+		SLS_ERR("matb file not open!");
+	// record position
+	matb.m_name.push_back(varname);
+	matb.m_ind.push_back(fout.tellp());
+	// write variable name info
+	write(fout, (Llong)varname.size()); write(fout, varname);
+	// write data type info
+	write(fout, Llong(2));
+	// write shape info
+	write(fout, Llong(1));
+	// write matrix data
+	write(fout, (Llong)v.size());
+	for (Long i = 0; i < (Long)v.size(); ++i)
+		write(fout, v[i]);
+}
+
+inline void save_matb(SvecInt_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -900,7 +782,7 @@ inline void save_matb(DvecComp_I v, Str_I varname, Str_I matb_file, Bool_I repla
 }
 
 
-inline void save(CmatChar_I v, Str_I varname, Matb_IO matb)
+inline void save(ScmatChar_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -923,14 +805,14 @@ inline void save(CmatChar_I v, Str_I varname, Matb_IO matb)
 			write(fout, v(i, j));
 }
 
-inline void save_matb(CmatChar_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(ScmatChar_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
 	matb.close();
 }
 
-inline void save(CmatInt_I v, Str_I varname, Matb_IO matb)
+inline void save(ScmatInt_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -953,14 +835,14 @@ inline void save(CmatInt_I v, Str_I varname, Matb_IO matb)
 			write(fout, v(i, j));
 }
 
-inline void save_matb(CmatInt_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(ScmatInt_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
 	matb.close();
 }
 
-inline void save(CmatLlong_I v, Str_I varname, Matb_IO matb)
+inline void save(ScmatLlong_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -983,14 +865,14 @@ inline void save(CmatLlong_I v, Str_I varname, Matb_IO matb)
 			write(fout, v(i, j));
 }
 
-inline void save_matb(CmatLlong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(ScmatLlong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
 	matb.close();
 }
 
-inline void save(CmatDoub_I v, Str_I varname, Matb_IO matb)
+inline void save(ScmatDoub_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1013,7 +895,7 @@ inline void save(CmatDoub_I v, Str_I varname, Matb_IO matb)
 			write(fout, v(i, j));
 }
 
-inline void save_matb(CmatDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(ScmatDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1021,7 +903,7 @@ inline void save_matb(CmatDoub_I v, Str_I varname, Str_I matb_file, Bool_I repla
 }
 
 
-inline void save(CmatComp_I v, Str_I varname, Matb_IO matb)
+inline void save(ScmatComp_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1044,7 +926,7 @@ inline void save(CmatComp_I v, Str_I varname, Matb_IO matb)
 			write(fout, v(i, j));
 }
 
-inline void save_matb(CmatComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(ScmatComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1202,127 +1084,6 @@ inline void save_matb(MatComp_I v, Str_I varname, Str_I matb_file, Bool_I replac
 	matb.close();
 }
 
-inline void save(ScmatInt_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(2));
-	// write shape info
-	write(fout, Llong(2));
-	// write matrix data
-	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
-	for (Long j = 0; j < v.n1(); ++j)
-		for (Long i = 0; i < v.n0(); ++i)
-			write(fout, v(i, j));
-}
-
-inline void save_matb(ScmatInt_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-inline void save(ScmatLlong_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(3));
-	// write shape info
-	write(fout, Llong(2));
-	// write matrix data
-	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
-	for (Long j = 0; j < v.n1(); ++j)
-		for (Long i = 0; i < v.n0(); ++i)
-			write(fout, v(i, j));
-}
-
-inline void save_matb(ScmatLlong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-inline void save(ScmatDoub_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(21));
-	// write shape info
-	write(fout, Llong(2));
-	// write matrix data
-	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
-	for (Long j = 0; j < v.n1(); ++j)
-		for (Long i = 0; i < v.n0(); ++i)
-			write(fout, v(i, j));
-}
-
-inline void save_matb(ScmatDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
-
-inline void save(ScmatComp_I v, Str_I varname, Matb_IO matb)
-{
-	if (matb.search(varname) >= 0)
-		SLS_ERR("variable already exist: " + varname);
-	ofstream &fout = matb.m_out;
-	if (!fout.is_open())
-		SLS_ERR("matb file not open!");
-	// record position
-	matb.m_name.push_back(varname);
-	matb.m_ind.push_back(fout.tellp());
-	// write variable name info
-	write(fout, (Llong)varname.size()); write(fout, varname);
-	// write data type info
-	write(fout, Llong(41));
-	// write shape info
-	write(fout, Llong(2));
-	// write matrix data
-	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
-	for (Long j = 0; j < v.n1(); ++j)
-		for (Long i = 0; i < v.n0(); ++i)
-			write(fout, v(i, j));
-}
-
-inline void save_matb(ScmatComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
-{
-	Matb matb(matb_file, "w", replace);
-	save(v, varname, matb);
-	matb.close();
-}
-
 inline void save(DcmatInt_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
@@ -1445,7 +1206,131 @@ inline void save_matb(DcmatComp_I v, Str_I varname, Str_I matb_file, Bool_I repl
 }
 
 
-inline void save(Cmat3Int_I v, Str_I varname, Matb_IO matb)
+inline void save(CmobdDoub_I v, Str_I varname, Matb_IO matb)
+{
+	if (matb.search(varname) >= 0)
+		SLS_ERR("variable already exist: " + varname);
+	ofstream &fout = matb.m_out;
+	if (!fout.is_open())
+		SLS_ERR("matb file not open!");
+	// record position
+	matb.m_name.push_back(varname);
+	matb.m_ind.push_back(fout.tellp());
+	// write variable name info
+	write(fout, (Llong)varname.size()); write(fout, varname);
+	// write data type info
+	write(fout, Llong(21));
+	// write shape info
+	write(fout, Llong(2));
+	// write matrix data
+	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
+	for (Long j = 0; j < v.n1(); ++j)
+		for (Long i = 0; i < v.n0(); ++i)
+			write(fout, v(i, j));
+}
+
+inline void save_matb(CmobdDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+{
+	Matb matb(matb_file, "w", replace);
+	save(v, varname, matb);
+	matb.close();
+}
+
+
+inline void save(CmobdComp_I v, Str_I varname, Matb_IO matb)
+{
+	if (matb.search(varname) >= 0)
+		SLS_ERR("variable already exist: " + varname);
+	ofstream &fout = matb.m_out;
+	if (!fout.is_open())
+		SLS_ERR("matb file not open!");
+	// record position
+	matb.m_name.push_back(varname);
+	matb.m_ind.push_back(fout.tellp());
+	// write variable name info
+	write(fout, (Llong)varname.size()); write(fout, varname);
+	// write data type info
+	write(fout, Llong(41));
+	// write shape info
+	write(fout, Llong(2));
+	// write matrix data
+	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
+	for (Long j = 0; j < v.n1(); ++j)
+		for (Long i = 0; i < v.n0(); ++i)
+			write(fout, v(i, j));
+}
+
+inline void save_matb(CmobdComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+{
+	Matb matb(matb_file, "w", replace);
+	save(v, varname, matb);
+	matb.close();
+}
+
+
+inline void save(McooDoub_I v, Str_I varname, Matb_IO matb)
+{
+	if (matb.search(varname) >= 0)
+		SLS_ERR("variable already exist: " + varname);
+	ofstream &fout = matb.m_out;
+	if (!fout.is_open())
+		SLS_ERR("matb file not open!");
+	// record position
+	matb.m_name.push_back(varname);
+	matb.m_ind.push_back(fout.tellp());
+	// write variable name info
+	write(fout, (Llong)varname.size()); write(fout, varname);
+	// write data type info
+	write(fout, Llong(21));
+	// write shape info
+	write(fout, Llong(2));
+	// write matrix data
+	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
+	for (Long j = 0; j < v.n1(); ++j)
+		for (Long i = 0; i < v.n0(); ++i)
+			write(fout, v(i, j));
+}
+
+inline void save_matb(McooDoub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+{
+	Matb matb(matb_file, "w", replace);
+	save(v, varname, matb);
+	matb.close();
+}
+
+
+inline void save(McooComp_I v, Str_I varname, Matb_IO matb)
+{
+	if (matb.search(varname) >= 0)
+		SLS_ERR("variable already exist: " + varname);
+	ofstream &fout = matb.m_out;
+	if (!fout.is_open())
+		SLS_ERR("matb file not open!");
+	// record position
+	matb.m_name.push_back(varname);
+	matb.m_ind.push_back(fout.tellp());
+	// write variable name info
+	write(fout, (Llong)varname.size()); write(fout, varname);
+	// write data type info
+	write(fout, Llong(41));
+	// write shape info
+	write(fout, Llong(2));
+	// write matrix data
+	write(fout, (Llong)v.n0()); write(fout, (Llong)v.n1());
+	for (Long j = 0; j < v.n1(); ++j)
+		for (Long i = 0; i < v.n0(); ++i)
+			write(fout, v(i, j));
+}
+
+inline void save_matb(McooComp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+{
+	Matb matb(matb_file, "w", replace);
+	save(v, varname, matb);
+	matb.close();
+}
+
+
+inline void save(Scmat3Int_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1469,14 +1354,14 @@ inline void save(Cmat3Int_I v, Str_I varname, Matb_IO matb)
 				write(fout, v(i, j, k));
 }
 
-inline void save_matb(Cmat3Int_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat3Int_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
 	matb.close();
 }
 
-inline void save(Cmat3Llong_I v, Str_I varname, Matb_IO matb)
+inline void save(Scmat3Llong_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1500,14 +1385,14 @@ inline void save(Cmat3Llong_I v, Str_I varname, Matb_IO matb)
 				write(fout, v(i, j, k));
 }
 
-inline void save_matb(Cmat3Llong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat3Llong_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
 	matb.close();
 }
 
-inline void save(Cmat3Doub_I v, Str_I varname, Matb_IO matb)
+inline void save(Scmat3Doub_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1531,7 +1416,7 @@ inline void save(Cmat3Doub_I v, Str_I varname, Matb_IO matb)
 				write(fout, v(i, j, k));
 }
 
-inline void save_matb(Cmat3Doub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat3Doub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1539,7 +1424,7 @@ inline void save_matb(Cmat3Doub_I v, Str_I varname, Str_I matb_file, Bool_I repl
 }
 
 
-inline void save(Cmat3Comp_I v, Str_I varname, Matb_IO matb)
+inline void save(Scmat3Comp_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1563,7 +1448,7 @@ inline void save(Cmat3Comp_I v, Str_I varname, Matb_IO matb)
 				write(fout, v(i, j, k));
 }
 
-inline void save_matb(Cmat3Comp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat3Comp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1695,7 +1580,7 @@ inline void save_matb(Mat3Comp_I v, Str_I varname, Str_I matb_file, Bool_I repla
 	matb.close();
 }
 
-inline void save(Cmat4Doub_I v, Str_I varname, Matb_IO matb)
+inline void save(Scmat4Doub_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1721,7 +1606,7 @@ inline void save(Cmat4Doub_I v, Str_I varname, Matb_IO matb)
 					write(fout, v(i, j, k, l));
 }
 
-inline void save_matb(Cmat4Doub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat4Doub_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1729,7 +1614,7 @@ inline void save_matb(Cmat4Doub_I v, Str_I varname, Str_I matb_file, Bool_I repl
 }
 
 
-inline void save(Cmat4Comp_I v, Str_I varname, Matb_IO matb)
+inline void save(Scmat4Comp_I v, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
 		SLS_ERR("variable already exist: " + varname);
@@ -1755,7 +1640,7 @@ inline void save(Cmat4Comp_I v, Str_I varname, Matb_IO matb)
 					write(fout, v(i, j, k, l));
 }
 
-inline void save_matb(Cmat4Comp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
+inline void save_matb(Scmat4Comp_I v, Str_I varname, Str_I matb_file, Bool_I replace = false)
 {
 	Matb matb(matb_file, "w", replace);
 	save(v, varname, matb);
@@ -1764,7 +1649,7 @@ inline void save_matb(Cmat4Comp_I v, Str_I varname, Str_I matb_file, Bool_I repl
 
 
 
-// save string as VecChar
+// save string as SvecChar
 inline void save(Str_I str, Str_I varname, Matb_IO matb)
 {
 	if (matb.search(varname) >= 0)
@@ -1781,7 +1666,7 @@ inline void load(Char_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (1 != matb.m_type[i])
@@ -1804,7 +1689,7 @@ inline void load(Int_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -1827,7 +1712,7 @@ inline void load(Llong_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -1850,7 +1735,7 @@ inline void load(Doub_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -1874,7 +1759,7 @@ inline void load(Comp_O s, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -1898,7 +1783,7 @@ inline void load(vecDoub_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -1925,7 +1810,7 @@ inline void load(vecComp_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -1952,7 +1837,7 @@ inline void load(VecChar_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (1 != matb.m_type[i])
@@ -1978,7 +1863,7 @@ inline void load(VecInt_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2004,7 +1889,7 @@ inline void load(VecLlong_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2030,7 +1915,7 @@ inline void load(VecDoub_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2057,7 +1942,7 @@ inline void load(VecComp_O v, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	Long i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2085,7 +1970,7 @@ inline void load(MatInt_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2113,7 +1998,7 @@ inline void load(MatLlong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2141,7 +2026,7 @@ inline void load(MatDoub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2169,7 +2054,7 @@ inline void load(MatComp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2197,7 +2082,7 @@ inline void load(Mat3Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2227,7 +2112,7 @@ inline void load(Mat3Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2257,7 +2142,7 @@ inline void load(CmatInt_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2285,7 +2170,7 @@ inline void load(CmatLlong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2313,7 +2198,7 @@ inline void load(CmatDoub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2342,7 +2227,7 @@ inline void load(CmatComp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2371,7 +2256,7 @@ inline void load(Cmat3Int_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (2 != matb.m_type[i])
@@ -2401,7 +2286,7 @@ inline void load(Cmat3Llong_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (3 != matb.m_type[i])
@@ -2431,7 +2316,7 @@ inline void load(Cmat3Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2462,7 +2347,7 @@ inline void load(Cmat3Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])
@@ -2493,7 +2378,7 @@ inline void load(Cmat4Doub_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (21 != matb.m_type[i])
@@ -2525,7 +2410,7 @@ inline void load(Cmat4Comp_O a, Str_I varname, Matb_IO matb)
 	ifstream &fin = matb.m_in;
 	i = matb.search(varname);
 	if (i < 0)
-		throw runtime_error("variable not found!");
+		throw Str("variable not found!");
 	fin.seekg(matb.data_pos(i));
 
 	if (41 != matb.m_type[i])

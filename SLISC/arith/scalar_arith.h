@@ -264,6 +264,14 @@ inline Doub abs2(Doub_I a) { return a * a; }
 inline Doub abs2(Comp_I a) { return sqr(real(a)) + sqr(imag(a)); }
 
 
+inline Float conj(Float_I r) { return r; }
+
+inline Doub conj(Doub_I r) { return r; }
+
+inline Ldoub conj(Ldoub_I r) { return r; }
+
+
+
 inline Llong factorial_ll(int n) {
 	if (n > 20)
 		SLS_ERR("n too large!");
@@ -312,29 +320,28 @@ template <class T, class U> inline Long size(const map<T,U> &v) { return (Long)v
 template <class T, class U> inline Long size(const unordered_map<T,U> &v) { return (Long)v.size(); }
 
 
+template <class T>
+inline const T *ptr(const vector<T> &v)
+{
+#ifdef SLS_CHECK_BOUNDS
+	SLS_ASSERT(v.size());
+#endif
+	return v.data();
+}
+
+template <class T>
+inline T *ptr(vector<T> &v)
+{
+#ifdef SLS_CHECK_BOUNDS
+	SLS_ASSERT(v.size());
+#endif
+	return v.data();
+}
+
 // get the size of an std::tuple
 // see also `std::tuple_size()`
 template <typename... Ts>
 constexpr Long size(const std::tuple<Ts...>&) { return (Long)sizeof...(Ts); }
-
-// get pointer
-template <class T>
-inline const T *ptr(const T &v)
-{
-#ifdef SLS_CHECK_BOUNDS
-	SLS_ASSERT(!v.empty());
-#endif
-	return v.data();
-}
-
-template <class T>
-inline T *ptr(T &v)
-{
-#ifdef SLS_CHECK_BOUNDS
-	SLS_ASSERT(!v.empty());
-#endif
-	return v.data();
-}
 
 // number of prime numbers smaller than n
 // verified with leetcode 204

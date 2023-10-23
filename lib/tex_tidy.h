@@ -47,7 +47,7 @@ inline void global_forbid_char(set<Char32> &illegal_chars, Str_I str)
 
 	// overleaf only suppors Basic Multilingual Plane (BMP) characters
 	// we should do that too (except for comments)
-	u8_iter it(str), it_end(str, -1);
+	u8_iter it(str), it_end(str, size(str)); --it_end;
 	for (; it != it_end; ++it) {
 		Char32 c32 = u32(*it)[0];
 		Long ind = search(c32, forbidden32);
@@ -193,7 +193,7 @@ inline Long rm_chinese_punc_space(Str_IO str)
 {
 	vecStr keys = { u8"，", u8"、", u8"．", u8"。", u8"？", u8"（", u8"）", u8"：", u8"；", u8"【", u8"】", u8"…"};
 	Long N = 0, ikey;
-	u8_iter it(str, 0);
+	u8_iter it(str);
 	while (1) {
 		Long ind = find(ikey, str, keys, it);
 		if (ind < 0)
@@ -288,7 +288,7 @@ inline Long check_normal_text_escape(Str_IO str)
 inline Long chinese_alpha_num_space(Str_IO str)
 {
 	Long N = 0;
-	u8_iter it(str, -1);
+	u8_iter it(str, size(str)); --it;
 	for (; it >= 1; --it) {
 		Long ind = it-1;
 		if (is_chinese(str, ind) && is_alphanum(str[it])) {

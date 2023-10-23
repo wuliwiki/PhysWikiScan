@@ -1,10 +1,201 @@
 // basic vector
 #pragma once
-#include "../global.h"
 #include "../arith/Imag.h"
 #include "../str/str.h"
+#include "Svec.h"
 
 namespace slisc {
+class VbaseBool
+{
+protected:
+	Bool *m_p; // pointer to the first element
+	Long m_N; // number of elements
+public:
+	// constructors
+	VbaseBool(); // default constructor
+	explicit VbaseBool(Long_I N);
+	VbaseBool(const VbaseBool &rhs); // copy constructor
+	VbaseBool(VbaseBool&&); // move constructor
+
+	VbaseBool &operator=(const VbaseBool &); // copy asignment
+	VbaseBool &operator=(VbaseBool &&); // move asignment
+
+	// get properties
+	Bool* p(); // get pointer
+	const Bool* p() const;
+	Long size() const;
+	void resize(Long_I N);
+	Bool &operator[](Long_I i);
+	const Bool &operator[](Long_I i) const;
+	Bool& end();
+	const Bool& end() const;
+	Bool& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
+	const Bool& end(Long_I i) const;
+
+	~VbaseBool();
+};
+
+// m_p doesn't need to be initialized, but g++ will complain
+inline VbaseBool::VbaseBool() : m_p(nullptr), m_N(0) {}
+
+inline VbaseBool::VbaseBool(Long_I N)
+{
+#ifdef SLS_CHECK_SHAPES
+	if (N < 0)
+		SLS_ERR("size less than 0!");
+#endif
+	m_N = N;
+	if (N > 0)
+		m_p = new Bool[N];
+	else
+		m_p = nullptr;
+}
+
+inline VbaseBool::VbaseBool(const VbaseBool &rhs)
+{
+#ifdef SLS_NO_CPY_CONSTRUCTOR
+	SLS_ERR("Copy constructor or move constructor is forbidden!");
+#endif
+	m_N = rhs.m_N;
+	if (m_N > 0) {
+		m_p = new Bool[m_N];
+		memcpy(m_p, rhs.p(), m_N*sizeof(Bool));
+	}
+	else
+		m_p = nullptr;
+}
+
+inline VbaseBool::VbaseBool(VbaseBool &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseBool &VbaseBool::operator=(const VbaseBool &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Bool)*m_N);
+	return *this;
+}
+
+inline VbaseBool &VbaseBool::operator=(VbaseBool &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
+}
+
+inline Bool * VbaseBool::p()
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (m_N == 0)
+		SLS_ERR("using p() for empty container!");
+#endif
+	return m_p;
+}
+
+inline const Bool * VbaseBool::p() const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (m_N == 0)
+		SLS_ERR("using p() for empty container!");
+#endif
+	return m_p;
+}
+
+inline Long VbaseBool::size() const
+{
+	return m_N;
+}
+
+inline void VbaseBool::resize(Long_I N)
+{
+	if (N != m_N) {
+		if (m_N == 0) { // N != 0
+			m_N = N; m_p = new Bool[N];
+		}
+		else { // m_N != 0
+			delete[] m_p;
+			if (N == 0)
+				m_N = 0;
+			else {
+				m_N = N;
+				m_p = new Bool[N];
+			}
+		}
+	}
+}
+
+inline Bool &VbaseBool::operator[](Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+if (i<0 || i>=m_N)
+	SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+	return m_p[i];
+}
+
+inline const Bool &VbaseBool::operator[](Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i<0 || i>=m_N)
+		SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(m_N));
+#endif
+	return m_p[i];
+}
+
+inline Bool &VbaseBool::end()
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (m_N == 0)
+		SLS_ERR("tring to use end() on empty vector!");
+#endif
+	return m_p[m_N - 1];
+}
+
+inline const Bool &VbaseBool::end() const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (m_N == 0)
+		SLS_ERR("tring to use end() on empty vector!");
+#endif
+	return m_p[m_N - 1];
+}
+
+inline Bool &VbaseBool::end(Long_I i)
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i <= 0 || i > m_N)
+		SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+	return m_p[m_N - i];
+}
+
+inline const Bool &VbaseBool::end(Long_I i) const
+{
+#ifdef SLS_CHECK_BOUNDS
+	if (i <= 0 || i > m_N)
+		SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(m_N));
+#endif
+	return m_p[m_N - i];
+}
+
+inline VbaseBool::~VbaseBool()
+{
+	if (m_N != 0)
+		delete[] m_p;
+}
+
+typedef const VbaseBool &VbaseBool_I;
+typedef VbaseBool &VbaseBool_O, &VbaseBool_IO;
+
+
 class VbaseChar
 {
 protected:
@@ -12,9 +203,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseChar();
+	VbaseChar(); // default constructor
 	explicit VbaseChar(Long_I N);
 	VbaseChar(const VbaseChar &rhs); // copy constructor
+	VbaseChar(VbaseChar&&); // move constructor
+
+	VbaseChar &operator=(const VbaseChar &); // copy asignment
+	VbaseChar &operator=(VbaseChar &&); // move asignment
 
 	// get properties
 	Char* p(); // get pointer
@@ -27,7 +222,7 @@ public:
 	const Char& end() const;
 	Char& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Char& end(Long_I i) const;
-	void operator<<(VbaseChar &rhs); // move data
+
 	~VbaseChar();
 };
 
@@ -47,7 +242,6 @@ inline VbaseChar::VbaseChar(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseChar::VbaseChar(const VbaseChar &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -60,6 +254,32 @@ inline VbaseChar::VbaseChar(const VbaseChar &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseChar::VbaseChar(VbaseChar &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseChar &VbaseChar::operator=(const VbaseChar &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Char)*m_N);
+	return *this;
+}
+
+inline VbaseChar &VbaseChar::operator=(VbaseChar &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Char * VbaseChar::p()
@@ -101,16 +321,6 @@ inline void VbaseChar::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseChar::operator<<(VbaseChar &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Char &VbaseChar::operator[](Long_I i)
@@ -173,6 +383,10 @@ inline VbaseChar::~VbaseChar()
 		delete[] m_p;
 }
 
+typedef const VbaseChar &VbaseChar_I;
+typedef VbaseChar &VbaseChar_O, &VbaseChar_IO;
+
+
 class VbaseUchar
 {
 protected:
@@ -180,9 +394,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseUchar();
+	VbaseUchar(); // default constructor
 	explicit VbaseUchar(Long_I N);
 	VbaseUchar(const VbaseUchar &rhs); // copy constructor
+	VbaseUchar(VbaseUchar&&); // move constructor
+
+	VbaseUchar &operator=(const VbaseUchar &); // copy asignment
+	VbaseUchar &operator=(VbaseUchar &&); // move asignment
 
 	// get properties
 	Uchar* p(); // get pointer
@@ -195,7 +413,7 @@ public:
 	const Uchar& end() const;
 	Uchar& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Uchar& end(Long_I i) const;
-	void operator<<(VbaseUchar &rhs); // move data
+
 	~VbaseUchar();
 };
 
@@ -215,7 +433,6 @@ inline VbaseUchar::VbaseUchar(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseUchar::VbaseUchar(const VbaseUchar &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -228,6 +445,32 @@ inline VbaseUchar::VbaseUchar(const VbaseUchar &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseUchar::VbaseUchar(VbaseUchar &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseUchar &VbaseUchar::operator=(const VbaseUchar &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Uchar)*m_N);
+	return *this;
+}
+
+inline VbaseUchar &VbaseUchar::operator=(VbaseUchar &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Uchar * VbaseUchar::p()
@@ -269,16 +512,6 @@ inline void VbaseUchar::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseUchar::operator<<(VbaseUchar &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Uchar &VbaseUchar::operator[](Long_I i)
@@ -341,6 +574,10 @@ inline VbaseUchar::~VbaseUchar()
 		delete[] m_p;
 }
 
+typedef const VbaseUchar &VbaseUchar_I;
+typedef VbaseUchar &VbaseUchar_O, &VbaseUchar_IO;
+
+
 class VbaseInt
 {
 protected:
@@ -348,9 +585,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseInt();
+	VbaseInt(); // default constructor
 	explicit VbaseInt(Long_I N);
 	VbaseInt(const VbaseInt &rhs); // copy constructor
+	VbaseInt(VbaseInt&&); // move constructor
+
+	VbaseInt &operator=(const VbaseInt &); // copy asignment
+	VbaseInt &operator=(VbaseInt &&); // move asignment
 
 	// get properties
 	Int* p(); // get pointer
@@ -363,7 +604,7 @@ public:
 	const Int& end() const;
 	Int& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Int& end(Long_I i) const;
-	void operator<<(VbaseInt &rhs); // move data
+
 	~VbaseInt();
 };
 
@@ -383,7 +624,6 @@ inline VbaseInt::VbaseInt(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseInt::VbaseInt(const VbaseInt &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -396,6 +636,32 @@ inline VbaseInt::VbaseInt(const VbaseInt &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseInt::VbaseInt(VbaseInt &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseInt &VbaseInt::operator=(const VbaseInt &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Int)*m_N);
+	return *this;
+}
+
+inline VbaseInt &VbaseInt::operator=(VbaseInt &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Int * VbaseInt::p()
@@ -437,16 +703,6 @@ inline void VbaseInt::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseInt::operator<<(VbaseInt &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Int &VbaseInt::operator[](Long_I i)
@@ -509,6 +765,10 @@ inline VbaseInt::~VbaseInt()
 		delete[] m_p;
 }
 
+typedef const VbaseInt &VbaseInt_I;
+typedef VbaseInt &VbaseInt_O, &VbaseInt_IO;
+
+
 class VbaseLlong
 {
 protected:
@@ -516,9 +776,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseLlong();
+	VbaseLlong(); // default constructor
 	explicit VbaseLlong(Long_I N);
 	VbaseLlong(const VbaseLlong &rhs); // copy constructor
+	VbaseLlong(VbaseLlong&&); // move constructor
+
+	VbaseLlong &operator=(const VbaseLlong &); // copy asignment
+	VbaseLlong &operator=(VbaseLlong &&); // move asignment
 
 	// get properties
 	Llong* p(); // get pointer
@@ -531,7 +795,7 @@ public:
 	const Llong& end() const;
 	Llong& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Llong& end(Long_I i) const;
-	void operator<<(VbaseLlong &rhs); // move data
+
 	~VbaseLlong();
 };
 
@@ -551,7 +815,6 @@ inline VbaseLlong::VbaseLlong(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseLlong::VbaseLlong(const VbaseLlong &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -564,6 +827,32 @@ inline VbaseLlong::VbaseLlong(const VbaseLlong &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseLlong::VbaseLlong(VbaseLlong &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseLlong &VbaseLlong::operator=(const VbaseLlong &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Llong)*m_N);
+	return *this;
+}
+
+inline VbaseLlong &VbaseLlong::operator=(VbaseLlong &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Llong * VbaseLlong::p()
@@ -605,16 +894,6 @@ inline void VbaseLlong::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseLlong::operator<<(VbaseLlong &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Llong &VbaseLlong::operator[](Long_I i)
@@ -677,6 +956,10 @@ inline VbaseLlong::~VbaseLlong()
 		delete[] m_p;
 }
 
+typedef const VbaseLlong &VbaseLlong_I;
+typedef VbaseLlong &VbaseLlong_O, &VbaseLlong_IO;
+
+
 class VbaseFloat
 {
 protected:
@@ -684,9 +967,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseFloat();
+	VbaseFloat(); // default constructor
 	explicit VbaseFloat(Long_I N);
 	VbaseFloat(const VbaseFloat &rhs); // copy constructor
+	VbaseFloat(VbaseFloat&&); // move constructor
+
+	VbaseFloat &operator=(const VbaseFloat &); // copy asignment
+	VbaseFloat &operator=(VbaseFloat &&); // move asignment
 
 	// get properties
 	Float* p(); // get pointer
@@ -699,7 +986,7 @@ public:
 	const Float& end() const;
 	Float& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Float& end(Long_I i) const;
-	void operator<<(VbaseFloat &rhs); // move data
+
 	~VbaseFloat();
 };
 
@@ -719,7 +1006,6 @@ inline VbaseFloat::VbaseFloat(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseFloat::VbaseFloat(const VbaseFloat &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -732,6 +1018,32 @@ inline VbaseFloat::VbaseFloat(const VbaseFloat &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseFloat::VbaseFloat(VbaseFloat &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseFloat &VbaseFloat::operator=(const VbaseFloat &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Float)*m_N);
+	return *this;
+}
+
+inline VbaseFloat &VbaseFloat::operator=(VbaseFloat &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Float * VbaseFloat::p()
@@ -773,16 +1085,6 @@ inline void VbaseFloat::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseFloat::operator<<(VbaseFloat &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Float &VbaseFloat::operator[](Long_I i)
@@ -845,6 +1147,10 @@ inline VbaseFloat::~VbaseFloat()
 		delete[] m_p;
 }
 
+typedef const VbaseFloat &VbaseFloat_I;
+typedef VbaseFloat &VbaseFloat_O, &VbaseFloat_IO;
+
+
 class VbaseDoub
 {
 protected:
@@ -852,9 +1158,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseDoub();
+	VbaseDoub(); // default constructor
 	explicit VbaseDoub(Long_I N);
 	VbaseDoub(const VbaseDoub &rhs); // copy constructor
+	VbaseDoub(VbaseDoub&&); // move constructor
+
+	VbaseDoub &operator=(const VbaseDoub &); // copy asignment
+	VbaseDoub &operator=(VbaseDoub &&); // move asignment
 
 	// get properties
 	Doub* p(); // get pointer
@@ -867,7 +1177,7 @@ public:
 	const Doub& end() const;
 	Doub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Doub& end(Long_I i) const;
-	void operator<<(VbaseDoub &rhs); // move data
+
 	~VbaseDoub();
 };
 
@@ -887,7 +1197,6 @@ inline VbaseDoub::VbaseDoub(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseDoub::VbaseDoub(const VbaseDoub &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -900,6 +1209,32 @@ inline VbaseDoub::VbaseDoub(const VbaseDoub &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseDoub::VbaseDoub(VbaseDoub &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseDoub &VbaseDoub::operator=(const VbaseDoub &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Doub)*m_N);
+	return *this;
+}
+
+inline VbaseDoub &VbaseDoub::operator=(VbaseDoub &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Doub * VbaseDoub::p()
@@ -941,16 +1276,6 @@ inline void VbaseDoub::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseDoub::operator<<(VbaseDoub &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Doub &VbaseDoub::operator[](Long_I i)
@@ -1013,6 +1338,10 @@ inline VbaseDoub::~VbaseDoub()
 		delete[] m_p;
 }
 
+typedef const VbaseDoub &VbaseDoub_I;
+typedef VbaseDoub &VbaseDoub_O, &VbaseDoub_IO;
+
+
 class VbaseLdoub
 {
 protected:
@@ -1020,9 +1349,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseLdoub();
+	VbaseLdoub(); // default constructor
 	explicit VbaseLdoub(Long_I N);
 	VbaseLdoub(const VbaseLdoub &rhs); // copy constructor
+	VbaseLdoub(VbaseLdoub&&); // move constructor
+
+	VbaseLdoub &operator=(const VbaseLdoub &); // copy asignment
+	VbaseLdoub &operator=(VbaseLdoub &&); // move asignment
 
 	// get properties
 	Ldoub* p(); // get pointer
@@ -1035,7 +1368,7 @@ public:
 	const Ldoub& end() const;
 	Ldoub& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Ldoub& end(Long_I i) const;
-	void operator<<(VbaseLdoub &rhs); // move data
+
 	~VbaseLdoub();
 };
 
@@ -1055,7 +1388,6 @@ inline VbaseLdoub::VbaseLdoub(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseLdoub::VbaseLdoub(const VbaseLdoub &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1068,6 +1400,32 @@ inline VbaseLdoub::VbaseLdoub(const VbaseLdoub &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseLdoub::VbaseLdoub(VbaseLdoub &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseLdoub &VbaseLdoub::operator=(const VbaseLdoub &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Ldoub)*m_N);
+	return *this;
+}
+
+inline VbaseLdoub &VbaseLdoub::operator=(VbaseLdoub &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Ldoub * VbaseLdoub::p()
@@ -1109,16 +1467,6 @@ inline void VbaseLdoub::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseLdoub::operator<<(VbaseLdoub &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Ldoub &VbaseLdoub::operator[](Long_I i)
@@ -1181,6 +1529,10 @@ inline VbaseLdoub::~VbaseLdoub()
 		delete[] m_p;
 }
 
+typedef const VbaseLdoub &VbaseLdoub_I;
+typedef VbaseLdoub &VbaseLdoub_O, &VbaseLdoub_IO;
+
+
 
 class VbaseFcomp
 {
@@ -1189,9 +1541,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseFcomp();
+	VbaseFcomp(); // default constructor
 	explicit VbaseFcomp(Long_I N);
 	VbaseFcomp(const VbaseFcomp &rhs); // copy constructor
+	VbaseFcomp(VbaseFcomp&&); // move constructor
+
+	VbaseFcomp &operator=(const VbaseFcomp &); // copy asignment
+	VbaseFcomp &operator=(VbaseFcomp &&); // move asignment
 
 	// get properties
 	Fcomp* p(); // get pointer
@@ -1204,7 +1560,7 @@ public:
 	const Fcomp& end() const;
 	Fcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Fcomp& end(Long_I i) const;
-	void operator<<(VbaseFcomp &rhs); // move data
+
 	~VbaseFcomp();
 };
 
@@ -1224,7 +1580,6 @@ inline VbaseFcomp::VbaseFcomp(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseFcomp::VbaseFcomp(const VbaseFcomp &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1237,6 +1592,32 @@ inline VbaseFcomp::VbaseFcomp(const VbaseFcomp &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseFcomp::VbaseFcomp(VbaseFcomp &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseFcomp &VbaseFcomp::operator=(const VbaseFcomp &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Fcomp)*m_N);
+	return *this;
+}
+
+inline VbaseFcomp &VbaseFcomp::operator=(VbaseFcomp &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Fcomp * VbaseFcomp::p()
@@ -1278,16 +1659,6 @@ inline void VbaseFcomp::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseFcomp::operator<<(VbaseFcomp &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Fcomp &VbaseFcomp::operator[](Long_I i)
@@ -1350,6 +1721,10 @@ inline VbaseFcomp::~VbaseFcomp()
 		delete[] m_p;
 }
 
+typedef const VbaseFcomp &VbaseFcomp_I;
+typedef VbaseFcomp &VbaseFcomp_O, &VbaseFcomp_IO;
+
+
 class VbaseComp
 {
 protected:
@@ -1357,9 +1732,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseComp();
+	VbaseComp(); // default constructor
 	explicit VbaseComp(Long_I N);
 	VbaseComp(const VbaseComp &rhs); // copy constructor
+	VbaseComp(VbaseComp&&); // move constructor
+
+	VbaseComp &operator=(const VbaseComp &); // copy asignment
+	VbaseComp &operator=(VbaseComp &&); // move asignment
 
 	// get properties
 	Comp* p(); // get pointer
@@ -1372,7 +1751,7 @@ public:
 	const Comp& end() const;
 	Comp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Comp& end(Long_I i) const;
-	void operator<<(VbaseComp &rhs); // move data
+
 	~VbaseComp();
 };
 
@@ -1392,7 +1771,6 @@ inline VbaseComp::VbaseComp(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseComp::VbaseComp(const VbaseComp &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1405,6 +1783,32 @@ inline VbaseComp::VbaseComp(const VbaseComp &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseComp::VbaseComp(VbaseComp &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseComp &VbaseComp::operator=(const VbaseComp &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Comp)*m_N);
+	return *this;
+}
+
+inline VbaseComp &VbaseComp::operator=(VbaseComp &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Comp * VbaseComp::p()
@@ -1446,16 +1850,6 @@ inline void VbaseComp::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseComp::operator<<(VbaseComp &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Comp &VbaseComp::operator[](Long_I i)
@@ -1518,6 +1912,10 @@ inline VbaseComp::~VbaseComp()
 		delete[] m_p;
 }
 
+typedef const VbaseComp &VbaseComp_I;
+typedef VbaseComp &VbaseComp_O, &VbaseComp_IO;
+
+
 class VbaseLcomp
 {
 protected:
@@ -1525,9 +1923,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseLcomp();
+	VbaseLcomp(); // default constructor
 	explicit VbaseLcomp(Long_I N);
 	VbaseLcomp(const VbaseLcomp &rhs); // copy constructor
+	VbaseLcomp(VbaseLcomp&&); // move constructor
+
+	VbaseLcomp &operator=(const VbaseLcomp &); // copy asignment
+	VbaseLcomp &operator=(VbaseLcomp &&); // move asignment
 
 	// get properties
 	Lcomp* p(); // get pointer
@@ -1540,7 +1942,7 @@ public:
 	const Lcomp& end() const;
 	Lcomp& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Lcomp& end(Long_I i) const;
-	void operator<<(VbaseLcomp &rhs); // move data
+
 	~VbaseLcomp();
 };
 
@@ -1560,7 +1962,6 @@ inline VbaseLcomp::VbaseLcomp(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseLcomp::VbaseLcomp(const VbaseLcomp &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1573,6 +1974,32 @@ inline VbaseLcomp::VbaseLcomp(const VbaseLcomp &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseLcomp::VbaseLcomp(VbaseLcomp &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseLcomp &VbaseLcomp::operator=(const VbaseLcomp &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Lcomp)*m_N);
+	return *this;
+}
+
+inline VbaseLcomp &VbaseLcomp::operator=(VbaseLcomp &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Lcomp * VbaseLcomp::p()
@@ -1614,16 +2041,6 @@ inline void VbaseLcomp::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseLcomp::operator<<(VbaseLcomp &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Lcomp &VbaseLcomp::operator[](Long_I i)
@@ -1686,6 +2103,10 @@ inline VbaseLcomp::~VbaseLcomp()
 		delete[] m_p;
 }
 
+typedef const VbaseLcomp &VbaseLcomp_I;
+typedef VbaseLcomp &VbaseLcomp_O, &VbaseLcomp_IO;
+
+
 
 class VbaseFimag
 {
@@ -1694,9 +2115,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseFimag();
+	VbaseFimag(); // default constructor
 	explicit VbaseFimag(Long_I N);
 	VbaseFimag(const VbaseFimag &rhs); // copy constructor
+	VbaseFimag(VbaseFimag&&); // move constructor
+
+	VbaseFimag &operator=(const VbaseFimag &); // copy asignment
+	VbaseFimag &operator=(VbaseFimag &&); // move asignment
 
 	// get properties
 	Fimag* p(); // get pointer
@@ -1709,7 +2134,7 @@ public:
 	const Fimag& end() const;
 	Fimag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Fimag& end(Long_I i) const;
-	void operator<<(VbaseFimag &rhs); // move data
+
 	~VbaseFimag();
 };
 
@@ -1729,7 +2154,6 @@ inline VbaseFimag::VbaseFimag(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseFimag::VbaseFimag(const VbaseFimag &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1742,6 +2166,32 @@ inline VbaseFimag::VbaseFimag(const VbaseFimag &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseFimag::VbaseFimag(VbaseFimag &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseFimag &VbaseFimag::operator=(const VbaseFimag &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Fimag)*m_N);
+	return *this;
+}
+
+inline VbaseFimag &VbaseFimag::operator=(VbaseFimag &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Fimag * VbaseFimag::p()
@@ -1783,16 +2233,6 @@ inline void VbaseFimag::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseFimag::operator<<(VbaseFimag &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Fimag &VbaseFimag::operator[](Long_I i)
@@ -1855,6 +2295,10 @@ inline VbaseFimag::~VbaseFimag()
 		delete[] m_p;
 }
 
+typedef const VbaseFimag &VbaseFimag_I;
+typedef VbaseFimag &VbaseFimag_O, &VbaseFimag_IO;
+
+
 class VbaseImag
 {
 protected:
@@ -1862,9 +2306,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseImag();
+	VbaseImag(); // default constructor
 	explicit VbaseImag(Long_I N);
 	VbaseImag(const VbaseImag &rhs); // copy constructor
+	VbaseImag(VbaseImag&&); // move constructor
+
+	VbaseImag &operator=(const VbaseImag &); // copy asignment
+	VbaseImag &operator=(VbaseImag &&); // move asignment
 
 	// get properties
 	Imag* p(); // get pointer
@@ -1877,7 +2325,7 @@ public:
 	const Imag& end() const;
 	Imag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Imag& end(Long_I i) const;
-	void operator<<(VbaseImag &rhs); // move data
+
 	~VbaseImag();
 };
 
@@ -1897,7 +2345,6 @@ inline VbaseImag::VbaseImag(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseImag::VbaseImag(const VbaseImag &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -1910,6 +2357,32 @@ inline VbaseImag::VbaseImag(const VbaseImag &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseImag::VbaseImag(VbaseImag &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseImag &VbaseImag::operator=(const VbaseImag &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Imag)*m_N);
+	return *this;
+}
+
+inline VbaseImag &VbaseImag::operator=(VbaseImag &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Imag * VbaseImag::p()
@@ -1951,16 +2424,6 @@ inline void VbaseImag::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseImag::operator<<(VbaseImag &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Imag &VbaseImag::operator[](Long_I i)
@@ -2023,6 +2486,10 @@ inline VbaseImag::~VbaseImag()
 		delete[] m_p;
 }
 
+typedef const VbaseImag &VbaseImag_I;
+typedef VbaseImag &VbaseImag_O, &VbaseImag_IO;
+
+
 class VbaseLimag
 {
 protected:
@@ -2030,9 +2497,13 @@ protected:
 	Long m_N; // number of elements
 public:
 	// constructors
-	VbaseLimag();
+	VbaseLimag(); // default constructor
 	explicit VbaseLimag(Long_I N);
 	VbaseLimag(const VbaseLimag &rhs); // copy constructor
+	VbaseLimag(VbaseLimag&&); // move constructor
+
+	VbaseLimag &operator=(const VbaseLimag &); // copy asignment
+	VbaseLimag &operator=(VbaseLimag &&); // move asignment
 
 	// get properties
 	Limag* p(); // get pointer
@@ -2045,7 +2516,7 @@ public:
 	const Limag& end() const;
 	Limag& end(Long_I i); // i = 1 for the last, i = 2 for the second last...
 	const Limag& end(Long_I i) const;
-	void operator<<(VbaseLimag &rhs); // move data
+
 	~VbaseLimag();
 };
 
@@ -2065,7 +2536,6 @@ inline VbaseLimag::VbaseLimag(Long_I N)
 		m_p = nullptr;
 }
 
-// copy constructor
 inline VbaseLimag::VbaseLimag(const VbaseLimag &rhs)
 {
 #ifdef SLS_NO_CPY_CONSTRUCTOR
@@ -2078,6 +2548,32 @@ inline VbaseLimag::VbaseLimag(const VbaseLimag &rhs)
 	}
 	else
 		m_p = nullptr;
+}
+
+inline VbaseLimag::VbaseLimag(VbaseLimag &&rhs)
+	: m_N(rhs.m_N), m_p(rhs.m_p)
+{
+#ifndef NDEBUG
+	if (this == &rhs)
+		SLS_ERR("self move is forbidden!");
+#endif
+	rhs.m_N = 0;
+}
+
+inline VbaseLimag &VbaseLimag::operator=(const VbaseLimag &rhs)
+{
+	resize(rhs.m_N);
+	if (m_N > 0)
+		memcpy(m_p, rhs.m_p, sizeof(Limag)*m_N);
+	return *this;
+}
+
+inline VbaseLimag &VbaseLimag::operator=(VbaseLimag &&rhs)
+{
+	if (m_N > 0) delete [] m_p;
+	m_p = rhs.m_p;
+	m_N = rhs.m_N; rhs.m_N = 0;
+	return *this;
 }
 
 inline Limag * VbaseLimag::p()
@@ -2119,16 +2615,6 @@ inline void VbaseLimag::resize(Long_I N)
 			}
 		}
 	}
-}
-
-inline void VbaseLimag::operator<<(VbaseLimag &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	if (m_N != 0)
-		delete[] m_p;
-	m_N = rhs.m_N; rhs.m_N = 0;
-	m_p = rhs.m_p;
 }
 
 inline Limag &VbaseLimag::operator[](Long_I i)
@@ -2191,121 +2677,10 @@ inline VbaseLimag::~VbaseLimag()
 		delete[] m_p;
 }
 
+typedef const VbaseLimag &VbaseLimag_I;
+typedef VbaseLimag &VbaseLimag_O, &VbaseLimag_IO;
 
-#ifdef SLS_USE_INT_AS_LONG
-typedef VbaseInt VbaseLong;
-#else
-typedef VbaseLlong VbaseLong;
-#endif
 
-class VbaseBool
-{
-protected:
-	std::vector<bool> m_v;
-public:
-	typedef std::vector<bool>::reference ref;
-	// constructors
-	VbaseBool() = default;
-	explicit VbaseBool(Long_I N);
-	VbaseBool(const VbaseBool &rhs); // copy constructor
 
-	// get properties
-	Long size() const;
-	void resize(Long_I N);
-	ref operator[](Long_I i);
-	bool operator[](Long_I i) const;
-	ref end();
-	bool end() const;
-	ref end(Long_I i); // i = 1 for the last, i = 2 for the second last...
-	bool end(Long_I i) const;
-	void operator<<(VbaseBool &rhs); // move data
-};
 
-inline VbaseBool::VbaseBool(Long_I N)
-{
-#ifdef SLS_CHECK_SHAPES
-	if (N < 0)
-		SLS_ERR("size less than 0!");
-#endif
-	if (N > 0)
-		m_v.resize(N);
-}
-
-inline VbaseBool::VbaseBool(const VbaseBool &rhs): m_v(rhs.m_v)
-{
-#ifdef SLS_NO_CPY_CONSTRUCTOR
-	SLS_ERR("Copy constructor or move constructor is forbidden!");
-#endif
-}
-
-inline Long VbaseBool::size() const
-{
-	return m_v.size();
-}
-
-inline void VbaseBool::resize(Long_I N)
-{
-	m_v.resize(N);
-}
-
-inline void VbaseBool::operator<<(VbaseBool &rhs)
-{
-	if (this == &rhs)
-		SLS_ERR("self move is forbidden!");
-	m_v.swap(rhs.m_v);
-}
-
-inline VbaseBool::ref VbaseBool::operator[](Long_I i)
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (i<0 || i>=size())
-		SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(size()));
-#endif
-	return m_v[i];
-}
-
-inline bool VbaseBool::operator[](Long_I i) const
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (i<0 || i>=size())
-		SLS_ERR("VbaseBool index (" + num2str(i) + ") out of bounds: size = " + num2str(size()));
-#endif
-	return m_v[i];
-}
-
-inline VbaseBool::ref VbaseBool::end()
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (m_v.empty())
-		SLS_ERR("tring to use end() on empty vector!");
-#endif
-	return m_v.back();
-}
-
-inline bool VbaseBool::end() const
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (m_v.empty())
-		SLS_ERR("tring to use end() on empty vector!");
-#endif
-	return m_v.back();
-}
-
-inline VbaseBool::ref VbaseBool::end(Long_I i)
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (i <= 0 || i > size())
-		SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(size()));
-#endif
-	return m_v[size() - i];
-}
-
-inline bool VbaseBool::end(Long_I i) const
-{
-#ifdef SLS_CHECK_BOUNDS
-	if (i <= 0 || i > size())
-		SLS_ERR("end(i) index (i = " + num2str(i) + ") out of bound: size = " + num2str(size()));
-#endif
-	return m_v[size() - i];
-}
 } // namespace slisc

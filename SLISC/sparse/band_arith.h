@@ -36,73 +36,6 @@ inline DcmatCompC band(CbandComp_I a)
 
 // detect band width of dense matrix
 // a(i,j) < tol is considered 0
-inline void nband(Long_O Nup, Long_O Nlow, CmatDoub_I a, Doub_I tol = 0)
-{
-	bool found = false;
-	// check upper diagonals
-	for (Long k = a.n1() - 1; k > 0 && !found; --k) {
-		Long i = 0;
-		for (Long j = k; j < a.n1() && !found; ++j) {
-			if (i > a.n0()) break;
-			if (abs(a(i, j)) > tol)  {
-				Nup = k; found = true;
-			}
-			++i;
-		}
-	}
-	if (!found)
-		Nup = 0;
-	
-	// check lower diagonals
-	found = false;
-	for (Long k = a.n0() - 1; k > 0  && !found; --k) {
-		Long j = 0;
-		for (Long i = k; i < a.n0() && !found; ++i) {
-			if (j > a.n1()) break;
-			if (abs(a(i, j)) > tol) {
-				Nlow = k; found = true;
-			}
-			++j;
-		}
-	}
-	if (!found)
-		Nlow = 0;
-}
-
-
-inline void nband(Long_O Nup, Long_O Nlow, CmatComp_I a, Doub_I tol = 0)
-{
-	bool found = false;
-	// check upper diagonals
-	for (Long k = a.n1() - 1; k > 0 && !found; --k) {
-		Long i = 0;
-		for (Long j = k; j < a.n1() && !found; ++j) {
-			if (i > a.n0()) break;
-			if (abs(a(i, j)) > tol)  {
-				Nup = k; found = true;
-			}
-			++i;
-		}
-	}
-	if (!found)
-		Nup = 0;
-	
-	// check lower diagonals
-	found = false;
-	for (Long k = a.n0() - 1; k > 0  && !found; --k) {
-		Long j = 0;
-		for (Long i = k; i < a.n0() && !found; ++i) {
-			if (j > a.n1()) break;
-			if (abs(a(i, j)) > tol) {
-				Nlow = k; found = true;
-			}
-			++j;
-		}
-	}
-	if (!found)
-		Nlow = 0;
-}
-
 inline void nband(Long_O Nup, Long_O Nlow, ScmatDoub_I a, Doub_I tol = 0)
 {
 	bool found = false;
@@ -213,7 +146,7 @@ inline void copy_diag_real(CbandComp_O b, Doub_I s)
 // copy double dense matrix to imag part of band matrix
 inline void copy_imag(CbandComp_O b, ScmatDoub_I a)
 {
-	assert_same_shape(a, b);
+	assert_same_shape2(a, b);
 	Long N0 = a.n0(), N1 = a.n1();
 	for (Long j = 0; j < N1; ++j) {
 		SvecComp cut_b = cut0(b.cmat(), j);
@@ -229,7 +162,7 @@ inline void copy_imag(CbandComp_O b, ScmatDoub_I a)
 // b = 1/2 + I*dt*a/4
 inline void cn_band_mat(CbandComp_O b, ScmatDoub_I a, Doub_I dt, Bool_I imag_time)
 {
-	assert_same_shape(a, b);
+	assert_same_shape2(a, b);
 	Long N0 = a.n0(), N1 = a.n1();
 	Doub dt4 = 0.25*dt;
 	for (Long j = 0; j < N1; ++j) {
@@ -260,7 +193,7 @@ inline void cn_band_mat(CbandComp_O b, ScmatDoub_I a, Doub_I dt, Bool_I imag_tim
 // B = 1/2 + I*dt*A/4
 inline void cn_band_mat(CbandComp_O b, McooDoub_I a, Doub_I dt, Bool_I imag_time, Bool_I append = false)
 {
-	assert_same_shape(a, b);
+	assert_same_shape2(a, b);
 	Doub dt4 = 0.25*dt;
 	if (!append) {
 		copy(b, 0);
@@ -288,7 +221,7 @@ inline void cn_band_mat(CbandComp_O b, SvecDoub_I coeff, const vector<McooDoub> 
 {
 #ifdef SLS_CHECK_SHAPES
 	for (Long l = 0; l < (Long)a.size(); ++l)
-		assert_same_shape(a[l], b);
+		assert_same_shape2(a[l], b);
 	if (coeff.size() != (Long)a.size())
 		SLS_ERR("wrong shape!");
 #endif
@@ -320,7 +253,7 @@ inline void cn_band_mat(CbandComp_O b, SvecDoub_I coeff, const vector<McooDoub> 
 
 inline void times(CbandComp_O v, CbandComp_I v1, Doub_I s)
 {
-	assert_same_shape(v, v1);
+	assert_same_shape2(v, v1);
 	times(band(v), band(v1), s);
 }
 

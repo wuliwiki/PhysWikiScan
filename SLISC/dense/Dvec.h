@@ -12,14 +12,17 @@ protected:
 public:
 	DvecCharC();
 	DvecCharC(const Char *p, Long_I N, Long_I step);
+	DvecCharC(const DvecCharC &v) = default; // copy constructor (shalow)
+	DvecCharC &operator=(const DvecCharC &v) = default; // copy assignment (shalow)
+
 	const Char* p() const;
+	Long size() const;
+	Long step() const;
 	const Char &operator[](Long_I i) const;
 	const Char &end() const;
 	const Char &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecCharC &operator=(const DvecCharC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Char *p);
@@ -124,6 +127,8 @@ inline DvecCharC::~DvecCharC() {}
 
 typedef const DvecCharC &DvecChar_I;
 
+inline Long size(const DvecCharC &v) { return v.size(); }
+
 class DvecChar
 {
 protected:
@@ -133,15 +138,18 @@ protected:
 public:
 	DvecChar();
 	DvecChar(Char *p, Long_I N, Long_I step);
+	DvecChar(const DvecChar &v) = default; // copy constructor (shalow)
+	DvecChar &operator=(const DvecChar &v) = default; // copy assignment (shalow)
+
 	Char* p() const;
+	Long size() const;
+	Long step() const;
 	Char &operator[](Long_I i) const;
 	Char &end() const;
 	Char &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecCharC() const;
-	DvecChar &operator=(const DvecChar &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Char *p);
@@ -251,6 +259,8 @@ inline DvecChar::~DvecChar() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecChar &DvecChar_O, &DvecChar_IO;
 
+inline Long size(const DvecChar &v) { return v.size(); }
+
 class DvecUcharC
 {
 protected:
@@ -260,14 +270,17 @@ protected:
 public:
 	DvecUcharC();
 	DvecUcharC(const Uchar *p, Long_I N, Long_I step);
+	DvecUcharC(const DvecUcharC &v) = default; // copy constructor (shalow)
+	DvecUcharC &operator=(const DvecUcharC &v) = default; // copy assignment (shalow)
+
 	const Uchar* p() const;
+	Long size() const;
+	Long step() const;
 	const Uchar &operator[](Long_I i) const;
 	const Uchar &end() const;
 	const Uchar &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecUcharC &operator=(const DvecUcharC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Uchar *p);
@@ -372,6 +385,8 @@ inline DvecUcharC::~DvecUcharC() {}
 
 typedef const DvecUcharC &DvecUchar_I;
 
+inline Long size(const DvecUcharC &v) { return v.size(); }
+
 class DvecUchar
 {
 protected:
@@ -381,15 +396,18 @@ protected:
 public:
 	DvecUchar();
 	DvecUchar(Uchar *p, Long_I N, Long_I step);
+	DvecUchar(const DvecUchar &v) = default; // copy constructor (shalow)
+	DvecUchar &operator=(const DvecUchar &v) = default; // copy assignment (shalow)
+
 	Uchar* p() const;
+	Long size() const;
+	Long step() const;
 	Uchar &operator[](Long_I i) const;
 	Uchar &end() const;
 	Uchar &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecUcharC() const;
-	DvecUchar &operator=(const DvecUchar &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Uchar *p);
@@ -499,6 +517,8 @@ inline DvecUchar::~DvecUchar() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecUchar &DvecUchar_O, &DvecUchar_IO;
 
+inline Long size(const DvecUchar &v) { return v.size(); }
+
 class DvecIntC
 {
 protected:
@@ -508,14 +528,17 @@ protected:
 public:
 	DvecIntC();
 	DvecIntC(const Int *p, Long_I N, Long_I step);
+	DvecIntC(const DvecIntC &v) = default; // copy constructor (shalow)
+	DvecIntC &operator=(const DvecIntC &v) = default; // copy assignment (shalow)
+
 	const Int* p() const;
+	Long size() const;
+	Long step() const;
 	const Int &operator[](Long_I i) const;
 	const Int &end() const;
 	const Int &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecIntC &operator=(const DvecIntC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Int *p);
@@ -620,6 +643,8 @@ inline DvecIntC::~DvecIntC() {}
 
 typedef const DvecIntC &DvecInt_I;
 
+inline Long size(const DvecIntC &v) { return v.size(); }
+
 class DvecInt
 {
 protected:
@@ -629,15 +654,18 @@ protected:
 public:
 	DvecInt();
 	DvecInt(Int *p, Long_I N, Long_I step);
+	DvecInt(const DvecInt &v) = default; // copy constructor (shalow)
+	DvecInt &operator=(const DvecInt &v) = default; // copy assignment (shalow)
+
 	Int* p() const;
+	Long size() const;
+	Long step() const;
 	Int &operator[](Long_I i) const;
 	Int &end() const;
 	Int &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecIntC() const;
-	DvecInt &operator=(const DvecInt &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Int *p);
@@ -747,6 +775,8 @@ inline DvecInt::~DvecInt() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecInt &DvecInt_O, &DvecInt_IO;
 
+inline Long size(const DvecInt &v) { return v.size(); }
+
 class DvecLlongC
 {
 protected:
@@ -756,14 +786,17 @@ protected:
 public:
 	DvecLlongC();
 	DvecLlongC(const Llong *p, Long_I N, Long_I step);
+	DvecLlongC(const DvecLlongC &v) = default; // copy constructor (shalow)
+	DvecLlongC &operator=(const DvecLlongC &v) = default; // copy assignment (shalow)
+
 	const Llong* p() const;
+	Long size() const;
+	Long step() const;
 	const Llong &operator[](Long_I i) const;
 	const Llong &end() const;
 	const Llong &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecLlongC &operator=(const DvecLlongC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Llong *p);
@@ -868,6 +901,8 @@ inline DvecLlongC::~DvecLlongC() {}
 
 typedef const DvecLlongC &DvecLlong_I;
 
+inline Long size(const DvecLlongC &v) { return v.size(); }
+
 class DvecLlong
 {
 protected:
@@ -877,15 +912,18 @@ protected:
 public:
 	DvecLlong();
 	DvecLlong(Llong *p, Long_I N, Long_I step);
+	DvecLlong(const DvecLlong &v) = default; // copy constructor (shalow)
+	DvecLlong &operator=(const DvecLlong &v) = default; // copy assignment (shalow)
+
 	Llong* p() const;
+	Long size() const;
+	Long step() const;
 	Llong &operator[](Long_I i) const;
 	Llong &end() const;
 	Llong &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecLlongC() const;
-	DvecLlong &operator=(const DvecLlong &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Llong *p);
@@ -995,6 +1033,8 @@ inline DvecLlong::~DvecLlong() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecLlong &DvecLlong_O, &DvecLlong_IO;
 
+inline Long size(const DvecLlong &v) { return v.size(); }
+
 class DvecFloatC
 {
 protected:
@@ -1004,14 +1044,17 @@ protected:
 public:
 	DvecFloatC();
 	DvecFloatC(const Float *p, Long_I N, Long_I step);
+	DvecFloatC(const DvecFloatC &v) = default; // copy constructor (shalow)
+	DvecFloatC &operator=(const DvecFloatC &v) = default; // copy assignment (shalow)
+
 	const Float* p() const;
+	Long size() const;
+	Long step() const;
 	const Float &operator[](Long_I i) const;
 	const Float &end() const;
 	const Float &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecFloatC &operator=(const DvecFloatC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Float *p);
@@ -1116,6 +1159,8 @@ inline DvecFloatC::~DvecFloatC() {}
 
 typedef const DvecFloatC &DvecFloat_I;
 
+inline Long size(const DvecFloatC &v) { return v.size(); }
+
 class DvecFloat
 {
 protected:
@@ -1125,15 +1170,18 @@ protected:
 public:
 	DvecFloat();
 	DvecFloat(Float *p, Long_I N, Long_I step);
+	DvecFloat(const DvecFloat &v) = default; // copy constructor (shalow)
+	DvecFloat &operator=(const DvecFloat &v) = default; // copy assignment (shalow)
+
 	Float* p() const;
+	Long size() const;
+	Long step() const;
 	Float &operator[](Long_I i) const;
 	Float &end() const;
 	Float &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecFloatC() const;
-	DvecFloat &operator=(const DvecFloat &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Float *p);
@@ -1243,6 +1291,8 @@ inline DvecFloat::~DvecFloat() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecFloat &DvecFloat_O, &DvecFloat_IO;
 
+inline Long size(const DvecFloat &v) { return v.size(); }
+
 class DvecDoubC
 {
 protected:
@@ -1252,14 +1302,17 @@ protected:
 public:
 	DvecDoubC();
 	DvecDoubC(const Doub *p, Long_I N, Long_I step);
+	DvecDoubC(const DvecDoubC &v) = default; // copy constructor (shalow)
+	DvecDoubC &operator=(const DvecDoubC &v) = default; // copy assignment (shalow)
+
 	const Doub* p() const;
+	Long size() const;
+	Long step() const;
 	const Doub &operator[](Long_I i) const;
 	const Doub &end() const;
 	const Doub &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecDoubC &operator=(const DvecDoubC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Doub *p);
@@ -1364,6 +1417,8 @@ inline DvecDoubC::~DvecDoubC() {}
 
 typedef const DvecDoubC &DvecDoub_I;
 
+inline Long size(const DvecDoubC &v) { return v.size(); }
+
 class DvecDoub
 {
 protected:
@@ -1373,15 +1428,18 @@ protected:
 public:
 	DvecDoub();
 	DvecDoub(Doub *p, Long_I N, Long_I step);
+	DvecDoub(const DvecDoub &v) = default; // copy constructor (shalow)
+	DvecDoub &operator=(const DvecDoub &v) = default; // copy assignment (shalow)
+
 	Doub* p() const;
+	Long size() const;
+	Long step() const;
 	Doub &operator[](Long_I i) const;
 	Doub &end() const;
 	Doub &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecDoubC() const;
-	DvecDoub &operator=(const DvecDoub &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Doub *p);
@@ -1491,6 +1549,8 @@ inline DvecDoub::~DvecDoub() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecDoub &DvecDoub_O, &DvecDoub_IO;
 
+inline Long size(const DvecDoub &v) { return v.size(); }
+
 class DvecLdoubC
 {
 protected:
@@ -1500,14 +1560,17 @@ protected:
 public:
 	DvecLdoubC();
 	DvecLdoubC(const Ldoub *p, Long_I N, Long_I step);
+	DvecLdoubC(const DvecLdoubC &v) = default; // copy constructor (shalow)
+	DvecLdoubC &operator=(const DvecLdoubC &v) = default; // copy assignment (shalow)
+
 	const Ldoub* p() const;
+	Long size() const;
+	Long step() const;
 	const Ldoub &operator[](Long_I i) const;
 	const Ldoub &end() const;
 	const Ldoub &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecLdoubC &operator=(const DvecLdoubC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Ldoub *p);
@@ -1612,6 +1675,8 @@ inline DvecLdoubC::~DvecLdoubC() {}
 
 typedef const DvecLdoubC &DvecLdoub_I;
 
+inline Long size(const DvecLdoubC &v) { return v.size(); }
+
 class DvecLdoub
 {
 protected:
@@ -1621,15 +1686,18 @@ protected:
 public:
 	DvecLdoub();
 	DvecLdoub(Ldoub *p, Long_I N, Long_I step);
+	DvecLdoub(const DvecLdoub &v) = default; // copy constructor (shalow)
+	DvecLdoub &operator=(const DvecLdoub &v) = default; // copy assignment (shalow)
+
 	Ldoub* p() const;
+	Long size() const;
+	Long step() const;
 	Ldoub &operator[](Long_I i) const;
 	Ldoub &end() const;
 	Ldoub &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecLdoubC() const;
-	DvecLdoub &operator=(const DvecLdoub &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Ldoub *p);
@@ -1739,6 +1807,8 @@ inline DvecLdoub::~DvecLdoub() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecLdoub &DvecLdoub_O, &DvecLdoub_IO;
 
+inline Long size(const DvecLdoub &v) { return v.size(); }
+
 
 
 class DvecFcompC
@@ -1750,14 +1820,17 @@ protected:
 public:
 	DvecFcompC();
 	DvecFcompC(const Fcomp *p, Long_I N, Long_I step);
+	DvecFcompC(const DvecFcompC &v) = default; // copy constructor (shalow)
+	DvecFcompC &operator=(const DvecFcompC &v) = default; // copy assignment (shalow)
+
 	const Fcomp* p() const;
+	Long size() const;
+	Long step() const;
 	const Fcomp &operator[](Long_I i) const;
 	const Fcomp &end() const;
 	const Fcomp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecFcompC &operator=(const DvecFcompC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Fcomp *p);
@@ -1862,6 +1935,8 @@ inline DvecFcompC::~DvecFcompC() {}
 
 typedef const DvecFcompC &DvecFcomp_I;
 
+inline Long size(const DvecFcompC &v) { return v.size(); }
+
 class DvecFcomp
 {
 protected:
@@ -1871,15 +1946,18 @@ protected:
 public:
 	DvecFcomp();
 	DvecFcomp(Fcomp *p, Long_I N, Long_I step);
+	DvecFcomp(const DvecFcomp &v) = default; // copy constructor (shalow)
+	DvecFcomp &operator=(const DvecFcomp &v) = default; // copy assignment (shalow)
+
 	Fcomp* p() const;
+	Long size() const;
+	Long step() const;
 	Fcomp &operator[](Long_I i) const;
 	Fcomp &end() const;
 	Fcomp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecFcompC() const;
-	DvecFcomp &operator=(const DvecFcomp &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Fcomp *p);
@@ -1989,6 +2067,8 @@ inline DvecFcomp::~DvecFcomp() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecFcomp &DvecFcomp_O, &DvecFcomp_IO;
 
+inline Long size(const DvecFcomp &v) { return v.size(); }
+
 class DvecCompC
 {
 protected:
@@ -1998,14 +2078,17 @@ protected:
 public:
 	DvecCompC();
 	DvecCompC(const Comp *p, Long_I N, Long_I step);
+	DvecCompC(const DvecCompC &v) = default; // copy constructor (shalow)
+	DvecCompC &operator=(const DvecCompC &v) = default; // copy assignment (shalow)
+
 	const Comp* p() const;
+	Long size() const;
+	Long step() const;
 	const Comp &operator[](Long_I i) const;
 	const Comp &end() const;
 	const Comp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecCompC &operator=(const DvecCompC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Comp *p);
@@ -2110,6 +2193,8 @@ inline DvecCompC::~DvecCompC() {}
 
 typedef const DvecCompC &DvecComp_I;
 
+inline Long size(const DvecCompC &v) { return v.size(); }
+
 class DvecComp
 {
 protected:
@@ -2119,15 +2204,18 @@ protected:
 public:
 	DvecComp();
 	DvecComp(Comp *p, Long_I N, Long_I step);
+	DvecComp(const DvecComp &v) = default; // copy constructor (shalow)
+	DvecComp &operator=(const DvecComp &v) = default; // copy assignment (shalow)
+
 	Comp* p() const;
+	Long size() const;
+	Long step() const;
 	Comp &operator[](Long_I i) const;
 	Comp &end() const;
 	Comp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecCompC() const;
-	DvecComp &operator=(const DvecComp &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Comp *p);
@@ -2237,6 +2325,8 @@ inline DvecComp::~DvecComp() {}
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecComp &DvecComp_O, &DvecComp_IO;
 
+inline Long size(const DvecComp &v) { return v.size(); }
+
 class DvecLcompC
 {
 protected:
@@ -2246,14 +2336,17 @@ protected:
 public:
 	DvecLcompC();
 	DvecLcompC(const Lcomp *p, Long_I N, Long_I step);
+	DvecLcompC(const DvecLcompC &v) = default; // copy constructor (shalow)
+	DvecLcompC &operator=(const DvecLcompC &v) = default; // copy assignment (shalow)
+
 	const Lcomp* p() const;
+	Long size() const;
+	Long step() const;
 	const Lcomp &operator[](Long_I i) const;
 	const Lcomp &end() const;
 	const Lcomp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
-	DvecLcompC &operator=(const DvecLcompC &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(const Lcomp *p);
@@ -2358,6 +2451,8 @@ inline DvecLcompC::~DvecLcompC() {}
 
 typedef const DvecLcompC &DvecLcomp_I;
 
+inline Long size(const DvecLcompC &v) { return v.size(); }
+
 class DvecLcomp
 {
 protected:
@@ -2367,15 +2462,18 @@ protected:
 public:
 	DvecLcomp();
 	DvecLcomp(Lcomp *p, Long_I N, Long_I step);
+	DvecLcomp(const DvecLcomp &v) = default; // copy constructor (shalow)
+	DvecLcomp &operator=(const DvecLcomp &v) = default; // copy assignment (shalow)
+
 	Lcomp* p() const;
+	Long size() const;
+	Long step() const;
 	Lcomp &operator[](Long_I i) const;
 	Lcomp &end() const;
 	Lcomp &end(Long_I i) const;
-	Long size() const;
-	Long step() const;
 
 	operator DvecLcompC() const;
-	DvecLcomp &operator=(const DvecLcomp &) = delete;
+
 	// === other member functions ===
 	// There is no bound checking, use with care
 	void set(Lcomp *p);
@@ -2484,6 +2582,8 @@ inline DvecLcomp::~DvecLcomp() {}
 
 // use "const" so that it can be bind to a temporary e.g. copy(cut0(a), cut0(b))
 typedef const DvecLcomp &DvecLcomp_O, &DvecLcomp_IO;
+
+inline Long size(const DvecLcomp &v) { return v.size(); }
 
 
 

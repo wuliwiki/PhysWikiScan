@@ -539,7 +539,7 @@ inline void file_move(Str_I fname_out, Str_I fname_in, Str_IO buffer, Bool_I rep
 inline Long file_size(Str_I fname)
 {
 	if (!file_exist(fname))
-		return -1;
+		throw runtime_error("file_size(): file not exist: " + fname);
 #ifndef SLS_USE_MSVC
 	ifstream fin(fname, ifstream::ate | ifstream::binary);
 #else
@@ -759,7 +759,7 @@ inline void read(ifstream &fin, Comp_O s)
 // string
 inline void write(ofstream &fout, Str_I str)
 {
-	fout.write(str.data(), size(str));
+	fout.write(str.data(), str.size());
 }
 
 // if end of file reached before data is filled, it will be resized

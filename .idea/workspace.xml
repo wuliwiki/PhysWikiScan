@@ -29,10 +29,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="d8018292-1a38-4e70-931a-7d5e75d40aa6" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/SLISC/file/sqlite_ext.h" beforeDir="false" afterPath="$PROJECT_DIR$/SLISC/file/sqlite_ext.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/PhysWikiScan.h" beforeDir="false" afterPath="$PROJECT_DIR$/lib/PhysWikiScan.h" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,12 +103,12 @@
     </layout>
   </component>
   <component name="RunManager">
-    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS=". --path 1" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
+    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
       <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
       </method>
     </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
+    <configuration name="PhysWikiScan" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="--wc" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" WORKING_DIR="file://$PROJECT_DIR$/" PASS_PARENT_ENVS_2="true" PROJECT_NAME="PhysWikiScan" TARGET_NAME="PhysWikiScan" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="PhysWikiScan" RUN_TARGET_NAME="PhysWikiScan">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -135,6 +132,7 @@
       <workItem from="1679863691023" duration="2768000" />
       <workItem from="1679866524533" duration="2316000" />
       <workItem from="1680522427924" duration="4961000" />
+      <workItem from="1698015701069" duration="14000" />
     </task>
     <servers />
   </component>

@@ -27,9 +27,28 @@ inline void word_count(SQLite::Database &db_read)
 	vecStr entries;
 	Str str;
 	Long N = 0;
-	get_column(entries, "entries", "id", db_read);
-	for (Long i = 0; i < size(entries); ++i) {
-		read(str, gv::path_in + "contents/" + entries[i] + ".tex");
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "id" FROM "entries" WHERE "deleted"=0;)");
+	while (stmt_select.executeStep()) {
+		const Str &entry = stmt_select.getColumn(0);
+		if (entry.empty() || entry == "main") continue;
+		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
+		if (!file_exist(sb)) {
+			SLS_WARN("db entry not marked deleted but doesn't exist: " + entry);
+			continue;
+		}
+		read(str, sb);
+		rm_comments(str);
+		for (Long j = 0; j < (Long) str.size(); ++j) {
+			if (!is_char8_start(str, j)) continue;
+			if (is_chinese(str, j) || is_chinese_punc(str, j))
+				++N;
+		}
+	}
+	// for main.tex, bibliography.tex
+	vecStr vs = {"main", "bibliography"};
+	for (auto &entry : vs) {
+		read(str, gv::path_in + entry + ".tex");
 		rm_comments(str);
 		for (Long j = 0; j < (Long) str.size(); ++j) {
 			if (!is_char8_start(str, j)) continue;
