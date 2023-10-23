@@ -201,7 +201,7 @@ inline void db_update_images(
 			auto &image_hash = ext_hash.second;
 			stmt_select.bind(1, image_hash);
 			if (!stmt_select.executeStep()) {
-				clear(sb) << "内部警告：数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << image_ext;
+				clear(sb) << "内部警告：数据库中找不到图片文件（将模拟 editor 添加）：" << image_hash << '.' << image_ext;
 				scan_warn(sb);
 				stmt_insert.bind(1, image_hash);
 				stmt_insert.bind(2, image_ext);
