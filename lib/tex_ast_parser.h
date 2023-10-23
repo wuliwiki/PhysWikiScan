@@ -1,6 +1,7 @@
 #pragma once
 // AST nodes
-#include "../SLISC/str/unicode.h"
+#include "tex.h"
+#include "../SLISC/algo/ObjPool.h"
 
 enum class node_type
 {
@@ -30,7 +31,7 @@ struct TexNode
 	TexNode *last, *next; // null if doesn't exist
 	TexNode *child; // 1st child (null if doesn't exist)
 
-	TexNode(u8iter begin) :
+	TexNode(u8_iter begin) :
 		type(node_type::Tex), begin(begin), end(-1), parent(0), last(0), next(0), child(0) {}
 
 	Long nchild() { // # of child
@@ -75,7 +76,7 @@ struct EntNode : public TexNode
 struct CmdNode : public TexNode
 {
 	Str name;
-	bool has_opt; // has 1 optional argument
+	bool has_opt, has_star; // has 1 optional argument
 	CmdNode(Long begin, Str_I name) : TexNode(begin), name(name) {};
 	TexNode *name() { return child; } // name of command, not including '\'
 	TexNode *arg_opt() { return has_opt ? child.next : nullptr; }
@@ -152,55 +153,31 @@ inline void traverse_DFS(TexNode *node)
 	}
 }
 
+ObjPool<TexNode> pool_Tex;
+ObjPool<CmdNode> pool_Cmd;
+ObjPool<Eq1Node> pool_Eq1;
+
 // first time parser of source code
 inline TexNode tex_ast_parser(Str_I str)
 {
 	Str tmp;
-	u8iter it(str);
+	u8_iter it(str);
 	stack<node_type> st;
 	while((Long)it < size(str)) {
 		if (*it == '\\') {
 			++it;
 			if (is_alpha(*it)) { // command
+				st.push(node_type::Cmd);
 				Long ind = (Long)it-1;
-				command_name(tmp, ind, str);
-				if (tmp == "begin") { // \begin{}
-					command_arg(tmp, ind, str);
-					if (tmp == "equation") {
-						st.push(node_type::Eq1);
-						Eq1Node(it);
-					}
-					else if (tmp == "figure") {
-						st.push(node_type::Fig);
-					}
-					else {
-						;
-					}
-				}
-				else if (tmp == "end") { // \end{}
-					if (tmp == "equation") {
-						if (st.top != node_type::Eq1) SLS_ERR("\\end{} doesn't match \\begin{}");
-						st.pop();
-					}
-					else if (tmp == "figure") {
-						if (st.top != node_type::Fig) SLS_ERR("\\end{} doesn't match \\begin{}");
-						st.pop();
-					}
-					else {
-						;
-					}
-				}
-				else if (tmp == "subsection") {
-					st.push(node_type::Sub);
-				}
-				else if (tmp == "subsubsection") {
-					st.push(node_type::Ssub);
-				}
-				else { // generic command
-					;
-				}
+				auot cmd = pool_Cmd.get();
+				cmd->name = cmd_name(str, ind);
+				cmd->has_star = command_star(str, ind);
+				cmd->has_opt = command_has_opt(str, ind);
+				cmd->arg_opt = // get the range of opt arg as node
+				cmd->arg = // get the range of every args as node
 			}
 			else if (*it == '[') { // display equation
+				auto eq = pool_Eq1.get();
 				st.push(node_type::Eq1);
 			}
 			else if (*it == ']') { // end of display equation
@@ -236,3 +213,42 @@ inline TexNode tex_ast_parser(Str_I str)
 	}
 	find()
 }
+
+
+inline void second_parse(TexNode_IO root)
+{
+	if (tmp == "begin") { // \begin{}
+		command_arg(tmp, ind, str);
+		if (tmp == "equation") {
+			st.push(node_type::Eq1);
+			Eq1Node(it);
+		}
+		else if (tmp == "figure") {
+			st.push(node_type::Fig);
+		}
+		else {
+			;
+		}
+	}
+	else if (tmp == "end") { // \end{}
+		if (tmp == "equation") {
+			if (st.top != node_type::Eq1) SLS_ERR("\\end{} doesn't match \\begin{}");
+			st.pop();
+		}
+		else if (tmp == "figure") {
+			if (st.top != node_type::Fig) SLS_ERR("\\end{} doesn't match \\begin{}");
+			st.pop();
+		}
+		else {
+			;
+		}
+	}
+	else if (tmp == "subsection") {
+		st.push(node_type::Sub);
+	}
+	else if (tmp == "subsubsection") {
+		st.push(node_type::Ssub);
+	}
+}
+
+} // namespace ast

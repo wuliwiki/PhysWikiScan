@@ -152,6 +152,18 @@ inline Bool command_star(Str_I str, Long_I ind)
 	return false;
 }
 
+// get the name of a command starting with '\'
+// the command must consists of all letters, no number allowed
+inline Str cmd_name(Str_I str, Long ind)
+{
+	char c = str[ind++];
+	if (c != '\\' || !is_letter(str[ind]))
+		scan_err("cmd_name(): not a command! must start with a \\ and a letter");
+	for (Long i = ind+1; i < size(str); ++i)
+		if (!is_letter(str[i]))
+			return str.substr(ind, i-ind);
+}
+
 // check if an index is in a command \name{...}
 inline Bool is_in_cmd(Str_I str, Str_I name, Long_I ind)
 {
@@ -174,7 +186,7 @@ inline Bool command_has_opt(Str_I str, Long_I ind, Bool_I trim = true)
 {
 	Str arg;
 	if (str[ind] != '\\')
-	    throw scan_err("has_opt(): not a command!");
+	    throw scan_err("command_has_opt(): not a command!");
 	Long ind0 = skip_command(str, ind, 0, false);
 	ind0 = expect(str, "[", ind0);
 	if (ind0 < 0)
