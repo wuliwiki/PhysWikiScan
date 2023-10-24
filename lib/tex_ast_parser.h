@@ -141,6 +141,15 @@ struct SsubNode : public TexNode
 	TexNode *body() { return child.next; }
 };
 
+ObjPool<TexNode> pool_Tex;
+ObjPool<CmdNode> pool_Cmd;
+ObjPool<EqInNode> pool_EqIn;
+ObjPool<Eq1Node> pool_Eq1;
+ObjPool<BracNode> pool_Brac;
+ObjPool<FigNode> pool_Fig;
+ObjPool<ParNode> pool_Par;
+
+
 // deep first search traverse the whole AST
 inline void traverse_DFS(TexNode *node)
 {
@@ -153,9 +162,32 @@ inline void traverse_DFS(TexNode *node)
 	}
 }
 
-ObjPool<TexNode> pool_Tex;
-ObjPool<CmdNode> pool_Cmd;
-ObjPool<Eq1Node> pool_Eq1;
+inline void parse_cmd(CmdNode &cmd, Str_I str, Long_I ind)
+{
+	cmd->name = cmd_name(str, ind);
+	Long ind0 = ind + size(cmd->name);
+	cmd->has_star = command_star(str, ind);
+	cmd->has_opt = command_has_opt(str, ind);
+	if (cmd->has_opt) {
+		cmd->opt_arg()
+		ind0 = find(str, '[', ind0);
+		if (ind0 < 0)
+			SLS_ERR("???");
+		Long ind1 = find(str, ']', ind0);
+		if (ind1 < 0) SLS_ERR("[ not closed by ]");
+		auto tex = pool_Tex.get();
+		tex->begin = ind0+1;
+		tex->end = ind1;
+	}
+	Long Narg = command_Narg(str, ind);
+	if (Narg > 0) {
+		cmd->has_arg = command_arg(env, str, ind0);
+		for (Long i = 0; i < Narg; ++i) {
+			cmd->arg_opt = // get the range of opt arg as node
+			cmd->arg = // get the range of every args as node
+		}
+	}
+}
 
 // first time parser of source code
 inline TexNode tex_ast_parser(Str_I str)
@@ -170,11 +202,7 @@ inline TexNode tex_ast_parser(Str_I str)
 				st.push(node_type::Cmd);
 				Long ind = (Long)it-1;
 				auot cmd = pool_Cmd.get();
-				cmd->name = cmd_name(str, ind);
-				cmd->has_star = command_star(str, ind);
-				cmd->has_opt = command_has_opt(str, ind);
-				cmd->arg_opt = // get the range of opt arg as node
-				cmd->arg = // get the range of every args as node
+				parse_cmd(cmd, str, ind);
 			}
 			else if (*it == '[') { // display equation
 				auto eq = pool_Eq1.get();
@@ -213,7 +241,6 @@ inline TexNode tex_ast_parser(Str_I str)
 	}
 	find()
 }
-
 
 inline void second_parse(TexNode_IO root)
 {
