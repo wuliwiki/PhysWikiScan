@@ -83,12 +83,12 @@ inline void limit_env_cmd(Str_I str)
 
 	// allowed environments
 	// there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
-	vecStr envs_allow = { "equation", "gather", "gather*", "gathered", "align", "align*",
+	unordered_set<Str> envs_allow = { "equation", "gather", "gather*", "gathered", "align", "align*",
 		/*"alignat", "alignat*", "alignedat",*/ "aligned", "split", "figure", "itemize",
 		"enumerate", "lstlisting", "example", "exercise", "lemma", "theorem", "definition",
 		"corollary", "matrix", "pmatrix", "vmatrix", "table", "tabular", "cases", "array",
 		"case", "Bmatrix", "bmatrix", /*"eqnarray", "eqnarray*", "multline", "multline*",
-		"smallmatrix",*/ "subarray", "Vmatrix", "issues" };
+		"smallmatrix",*/ "subarray", "Vmatrix", "issues", "CD"};
 
 	Str env;
 	Long ind0 = -1;
@@ -97,7 +97,7 @@ inline void limit_env_cmd(Str_I str)
 		if (ind0 < 0)
 			break;
 		command_arg(env, str, ind0);
-		if (search(env, envs_allow) < 0) {
+		if (!envs_allow.count(env)) {
 			if (env == "document")
 				throw scan_err(u8"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明。");
 			else
