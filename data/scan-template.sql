@@ -173,13 +173,13 @@ CREATE INDEX idx_images_figure ON "images"("figure");
 CREATE TABLE "files" (
 	"hash"             TEXT    NOT NULL UNIQUE,     -- 文件 SHA1 的前 16 位
 	"name"             TEXT    NOT NULL UNIQUE,     -- 文件名（含拓展名）
-	"description"      TEXT    NOT NULL DEFAULT '',     -- 备注（类似 commit 信息）
-	"last"             TEXT    NOT NULL DEFAULT '',     -- 上一个版本
+	"description"      TEXT    NOT NULL DEFAULT '', -- 备注（类似 commit 信息）
+	"last"             TEXT    NOT NULL DEFAULT '', -- 上一个版本
 	"ref_by"           TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
 	"used_by_figures"  TEXT    NOT NULL DEFAULT '', -- 被哪些图片环境使用
-	"author"           INTEGER NOT NULL DEFAULT -1,            -- 当前版本修改者
-	"license"          TEXT    NOT NULL DEFAULT '',            -- 当前版本协议
-	"time"             TEXT    NOT NULL DEFAULT '',     -- 上传时间
+	"author"           INTEGER NOT NULL DEFAULT -1, -- 当前版本修改者
+	"license"          TEXT    NOT NULL DEFAULT '', -- 当前版本协议
+	"time"             TEXT    NOT NULL DEFAULT '', -- 上传时间
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("author")  REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id"),
