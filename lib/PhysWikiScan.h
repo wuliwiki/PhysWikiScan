@@ -249,22 +249,27 @@ inline Long addTODO(Str_IO str)
 }
 
 // replace "<" and ">" in equations
+// ref: https://docs.mathjax.org/en/latest/input/tex/html.html
 inline Long rep_eq_lt_gt(Str_IO str)
 {
 	Long N = 0;
 	Intvs intv, intv1;
 	find_inline_eq(intv, str);
 	find_display_eq(intv1, str); combine(intv, intv1);
-	Str sb;
+	Str buff;
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 		Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
-		sb = str.substr(ind0, Nstr);
-		find_env(intv1, sb, "CD");
-		if (intv1.size() > 0) {
-			continue;
+		buff = str.substr(ind0, Nstr);
+		Long ind = 0;
+		while (true) {
+			ind = find(buff, "<", ind);
+			if (ind < 0) break;
+			Long ind1 = ++ind;
+			if (ind >= size(buff)) break;
+			if (is_letter(buff[ind]))
+				buff.insert(ind1, " ");
 		}
-		N += ensure_space_around(sb, "<") + ensure_space_around(sb, ">");
-		str.replace(ind0, Nstr, sb);
+		str.replace(ind0, Nstr, buff);
 	}
 	return N;
 }
