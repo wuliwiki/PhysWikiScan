@@ -36,22 +36,6 @@ inline Bool is_in_tag(Str_I str, Str_I name, Long_I ind)
 	return false;
 }
 
-// ensure space around '<' and '>' in equation env. and $$ env
-// return number of spaces added
-inline Long eq_escape(Str_IO str)
-{
-	Long i{}, N{}, Nrange{};
-	Intvs intv, indInline;
-	find_display_eq(intv, str);
-	find_inline_eq(indInline, str);
-	Nrange = combine(intv, indInline);
-	for (i = Nrange - 1; i >= 0; --i) {
-	    N += EnsureSpace("<", str, intv.L(i), intv.R(i));
-	    N += EnsureSpace(">", str, intv.L(i), intv.R(i));
-	}
-	return N;
-}
-
 inline Long define_newcommands(vecStr_O rules)
 {
 	// rules (order matters for the same command name)

@@ -255,9 +255,14 @@ inline Long rep_eq_lt_gt(Str_IO str)
 	Intvs intv, intv1;
 	find_inline_eq(intv, str);
 	find_display_eq(intv1, str); combine(intv, intv1);
+	Str sb;
 	for (Long i = intv.size() - 1; i >= 0; --i) {
 		Long ind0 = intv.L(i), Nstr = intv.R(i) - intv.L(i) + 1;
 		sb = str.substr(ind0, Nstr);
+		find_env(intv1, sb, "CD");
+		if (intv1.size() > 0) {
+			continue;
+		}
 		N += ensure_space_around(sb, "<") + ensure_space_around(sb, ">");
 		str.replace(ind0, Nstr, sb);
 	}
@@ -540,8 +545,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	itemize(str); enumerate(str);
 	// process table environments
 	table(str);
-	// ensure '<' and '>' has spaces around them
-	eq_escape(str);
 	// process example and exercise environments
 	theorem_like_env(str);
 	// process figure environments
