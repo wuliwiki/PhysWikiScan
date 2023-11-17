@@ -289,11 +289,16 @@ inline Long table(Str_IO str)
 	// delete latex code
 	// TODO: add title
 	find_env(intv, str, "table", 'o');
+	Intvs intv_eq;
 	for (Long i = N - 1; i >= 0; --i) {
 	    ind0 = intv.L(i) + 12; ind1 = intv.R(i);
 	    while (true) {
 	        ind0 = find(str, '&', ind0);
 	        if (ind0 < 0 || ind0 > ind1) break;
+		find_inline_eq(intv_eq, str);
+		if (is_in(ind0, intv_eq)) {
+			++ind0; continue;
+		}
 	        str.erase(ind0, 1);
 	        str.insert(ind0, "</td><td>");
 	        ind1 += 8;
