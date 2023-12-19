@@ -28,7 +28,6 @@ CREATE TABLE "entries" (
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 	"refs"         TEXT    NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
-	"files"        TEXT    NOT NULL DEFAULT '', -- "id1 id2" 引用的附件
 	"uprefs"       TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的其他词条（所有的 upref）
 	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些词条列为 "uprefs"， 包括 pentry 中的（为空才能删除本词条）
 	PRIMARY KEY("id"),
@@ -71,6 +70,16 @@ CREATE TABLE "occupied" (
 	"entry"    TEXT    NOT NULL UNIQUE, -- entries.id
 	"author"   INTEGER NOT NULL,        -- authors.id
 	"time"     TEXT    NOT NULL,        -- 开始占用的时间
+	PRIMARY KEY("entry"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("author") REFERENCES "authors"("id")
+);
+
+-- 词条锁定列表 (任何人无法编辑词条内容和信息，除非先解锁)
+CREATE TABLE "locked" (
+	"entry"    TEXT    NOT NULL UNIQUE, -- entries.id
+	"author"   INTEGER NOT NULL,        -- authors.id
+	"time"     TEXT    NOT NULL,        -- 开始锁定时间
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
@@ -131,7 +140,6 @@ CREATE TABLE "figures" (
 	"order"       INTEGER NOT NULL DEFAULT 0,   -- 显示编号（从 1 开始， 0 代表未知）
 	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure=id 中的一个
 	"last"        TEXT    NOT NULL DEFAULT '',  -- "figures.id" 上一个版本（若从百科其他图修改而来）。 可以生成一个版本树。
-	"files"       TEXT    NOT NULL DEFAULT '',  -- "files.hash1 hash2" 附件（创作该图片的项目文件、源码等）
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
 	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【生成】"entry1 entry2" 引用本图的词条（以 entries.refs 为准）
 	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： 所有图片文件（"images.figure"）, "authors", "last", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的图片文件中。
@@ -175,8 +183,6 @@ CREATE TABLE "files" (
 	"name"             TEXT    NOT NULL UNIQUE,     -- 文件名（含拓展名）
 	"description"      TEXT    NOT NULL DEFAULT '', -- 备注（类似 commit 信息）
 	"last"             TEXT    NOT NULL DEFAULT '', -- 上一个版本
-	"ref_by"           TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的词条
-	"used_by_figures"  TEXT    NOT NULL DEFAULT '', -- 被哪些图片环境使用
 	"author"           INTEGER NOT NULL DEFAULT -1, -- 当前版本修改者
 	"license"          TEXT    NOT NULL DEFAULT '', -- 当前版本协议
 	"time"             TEXT    NOT NULL DEFAULT '', -- 上传时间
@@ -188,6 +194,28 @@ CREATE TABLE "files" (
 
 INSERT INTO "files" ("hash", "name") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
 CREATE INDEX idx_files_last ON "files"("last");
+
+-- 图片附件
+CREATE TABLE "figure_files" (
+	"figure"           TEXT    NOT NULL UNIQUE,     -- figures.id
+	"file"             TEXT    NOT NULL UNIQUE,     -- files.hash
+	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
+	FOREIGN KEY("file") REFERENCES "files"("hash")
+);
+
+CREATE INDEX idx_figure_files_figure ON "figure_files"("figure");
+CREATE INDEX idx_figure_files_file ON "figure_files"("file");
+
+-- 词条附件
+CREATE TABLE "entry_files" (
+	"entry"            TEXT    NOT NULL UNIQUE,     -- entries.id
+	"file"             TEXT    NOT NULL UNIQUE,     -- files.hash
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("file") REFERENCES "files"("hash")
+);
+
+CREATE INDEX idx_entry_files_figure ON "entry_files"("entry");
+CREATE INDEX idx_entry_files_file ON "entry_files"("file");
 
 -- 带标签的代码环境
 CREATE TABLE "code" (
