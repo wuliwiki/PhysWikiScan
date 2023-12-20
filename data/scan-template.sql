@@ -318,7 +318,6 @@ CREATE TABLE "authors" (
 	"uuid"            TEXT    NOT NULL DEFAULT '', -- "8-4-4-4-12" 网站用户系统的 ID
 	"name"            TEXT    NOT NULL,            -- 昵称
 	"applied"         INTEGER NOT NULL DEFAULT 0,  -- [0|1] 已申请
-	"salary"          INTEGER NOT NULL DEFAULT 0,  -- 时薪
 	"banned"          INTEGER NOT NULL DEFAULT 0,  -- [0|1] 禁用编辑器
 	"hide"            INTEGER NOT NULL DEFAULT 0,  -- [0|1] 不出现在文章作者列表
 	"aka"             INTEGER NOT NULL DEFAULT -1, -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
@@ -335,20 +334,34 @@ CREATE INDEX idx_authors_name ON "authors"("name");
 CREATE INDEX idx_authors_applied ON "authors"("applied");
 CREATE INDEX idx_authors_aka ON "authors"("aka");
 
--- 工资历史
+-- 工资规则
 CREATE TABLE "salary" (
-	"author"  INTEGER NOT NULL,           -- 作者
-	"begin"   TEXT    NOT NULL,           -- 生效时间
-	"salary"  INTEGER NOT NULL DEFAULT 0, -- 时薪（元）
-	FOREIGN KEY("author") REFERENCES "authors"("id")
+	"author"  INTEGER NOT NULL DEFAULT '',      -- 作者（空代表所有）
+	"entry"   TEXT    NOT NULL DEFAULT '',      -- 词条（空代表所有）
+	"license" TEXT    NOT NULL DEFAULT '',      -- 协议（空代表所有）
+	"begin"   TEXT    NOT NULL DEFAULT '',      -- 生效时间（空代表所有）
+	"end"     TEXT    NOT NULL DEFAULT '',      -- 截至时间（空代表所有）
+	"value"   REAL    NOT NULL,                 -- 时薪（元）（-1 代表 NULL）
+	"scale"   REAL    NOT NULL DEFAULT 1,       -- 缩放（若不为 1，salary 必须为 -1）
+	FOREIGN KEY("author") REFERENCES "authors"("id"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
--- 时薪折扣（例如用于小众词条）
-CREATE TABLE "discount" (
-	"entry"    TEXT    NOT NULL, -- 词条
-	"begin"    TEXT    NOT NULL, -- 生效时间，空代表词条创建的时间
-	"percent"  INTEGER NOT NULL, -- 时薪折扣 %
-	FOREIGN KEY("entry") REFERENCES "entries"("id")
+CREATE INDEX idx_salary_author ON "salary"("author");
+CREATE INDEX idx_salary_entry ON "salary"("entry");
+CREATE INDEX idx_salary_license ON "salary"("license");
+CREATE INDEX idx_salary_begin ON "salary"("begin");
+CREATE INDEX idx_salary_end ON "salary"("end");
+
+-- 工资手动调整
+CREATE TABLE "salary_change" (
+	"author"  INTEGER NOT NULL,             -- 作者（空代表所有）
+	"entry"   TEXT    NOT NULL DEFAULT '',  -- 词条
+	"time"    TEXT    NOT NULL DEFAULT '',  -- 时间
+	"value"   REAL    NOT NULL              -- 金额
 );
 
-CREATE INDEX idx_discount_entry ON "discount"("entry");
+CREATE INDEX idx_salary_change_author ON "salary_change"("author");
+CREATE INDEX idx_salary_change_entry ON "salary_change"("entry");
+CREATE INDEX idx_salary_change_time ON "salary_change"("time");
