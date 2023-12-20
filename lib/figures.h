@@ -106,7 +106,7 @@ inline void figure_env(
 				replace(str_mod, sb, sb1);
 				write(str_mod, tex_fname);
 				clear(sb) << u8"检测到图片文件名 " << fname_in << u8"不等于图片 sha1 的前 16 位："
-					<< image_hash << u8" 已经重命名，请关闭并重新打开词条。";
+					<< image_hash << u8" 已经重命名，请关闭并重新打开文章。";
 				throw internal_err(sb);
 			}
 
@@ -389,8 +389,8 @@ inline void db_update_figures(
 		}
 		stmt_select.reset();
 	}
-	// 检查被删除的图片（如果只被本词条引用， 就留给 autoref() 报错）
-	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
+	// 检查被删除的图片（如果只被本文章引用， 就留给 autoref() 报错）
+	// 这是因为入本文章的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
 	SQLite::Statement stmt_update3(db_rw, R"(UPDATE "figures" SET "deleted"=1, "order"=0 WHERE "id"=?;)");
 	for (Long i = 0; i < size(figs_used); ++i) {
@@ -405,7 +405,7 @@ inline void db_update_figures(
 			}
 			else {
 				join(ref_by_str, db_fig_ref_bys[i], ", ");
-				throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些词条引用。请撤销删除，把引用删除后再试： " + ref_by_str);
+				throw scan_err(u8"检测到 \\label{fig_" + db_figs[i] + u8"}  被删除， 但是被这些文章引用。请撤销删除，把引用删除后再试： " + ref_by_str);
 			}
 		}
 	}
@@ -589,7 +589,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		if (!deleted) {
 			if (figures_entry_exist) {
 				throw internal_err(
-					u8"不允许删除未被标记 figures.deleted 的图片，请在词条代码中删除 figure 环境并运行编译："
+					u8"不允许删除未被标记 figures.deleted 的图片，请在文章代码中删除 figure 环境并运行编译："
 					+ figure);
 			}
 			else {

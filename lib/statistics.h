@@ -95,7 +95,7 @@ inline void arg_stat(Str_I time_start, Str_I time_end, SQLite::Database &db_read
 				const Str &discount_begin = stmt_select4.getColumn(1);
 				if (discount_begin > time_end) continue;
 				else if (discount_begin > time_start)
-					throw internal_err(u8"暂不支持词条报酬折扣在所选时间内具有多个值： entry=" + entry);
+					throw internal_err(u8"暂不支持文章报酬折扣在所选时间内具有多个值： entry=" + entry);
 				else {
 					Long discount = (int)stmt_select4.getColumn(1);
 					entry_info[entry].second = discount;

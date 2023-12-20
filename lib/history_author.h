@@ -9,7 +9,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	SQLite::Statement stmt_select(db_read, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
-		throw internal_err(u8"author_list(): 数据库中不存在词条： " + entry);
+		throw internal_err(u8"author_list(): 数据库中不存在文章： " + entry);
 
 	vecLong author_ids;
 	Str str = stmt_select.getColumn(0);
@@ -26,7 +26,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	for (auto &id : author_ids) {
 		stmt_select2.bind(1, (int)id);
 		if (!stmt_select2.executeStep())
-			throw internal_err(u8"词条： " + entry + u8" 作者 id 不存在： " + num2str(id));
+			throw internal_err(u8"文章： " + entry + u8" 作者 id 不存在： " + num2str(id));
 		authors.push_back(stmt_select2.getColumn(0));
 		stmt_select2.reset();
 	}
@@ -230,7 +230,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 		author_contrib[authorID] += 5;
 		if (entries.count(entry) == 0 &&
 			entries_deleted_inserted.count(entry) == 0) {
-			scan_warn(u8"内部警告：备份文件中的词条不在数据库中（将模拟编辑器添加）： " + entry);
+			scan_warn(u8"内部警告：备份文件中的文章不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
 			entries_deleted_inserted.insert(entry);
@@ -380,7 +380,7 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 		R"(SELECT "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
-		throw internal_err(u8"db_get_history()： 词条不存在：" + entry + SLS_WHERE);
+		throw internal_err(u8"db_get_history()： 文章不存在：" + entry + SLS_WHERE);
 	history_hash.push_back(stmt_select.getColumn(0));
 	stmt_select.reset();
 	while (!history_hash.back().empty()) {
@@ -604,7 +604,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 			<< " hash=" << hash;
 		SLS_WARN(sb);
 		if (db_entry != entry)
-			throw scan_err(u8"已存在的备份文件属于另一个词条（这不可能，因为标题 entries.caption 禁止重复，不同词条的内容不可能一样）");
+			throw scan_err(u8"已存在的备份文件属于另一个文章（这不可能，因为标题 entries.caption 禁止重复，不同文章的内容不可能一样）");
 		return;
 	}
 	stmt_select2.reset();
@@ -613,7 +613,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
-		throw internal_err(u8"arg_backup(): 找不到要备份的词条：" + entry);
+		throw internal_err(u8"arg_backup(): 找不到要备份的文章：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
@@ -645,7 +645,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		return;
 	}
 	else if (size(hash_last) != 16) {
-		clear(sb) << u8"备份词条的 entries.last_backup 长度不对：" << entry << '.' << hash_last;
+		clear(sb) << u8"备份文章的 entries.last_backup 长度不对：" << entry << '.' << hash_last;
 		throw internal_err(sb);
 	}
 

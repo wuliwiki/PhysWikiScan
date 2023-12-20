@@ -65,21 +65,21 @@ inline void limit_env_cmd(Str_I str)
 {
 	// commands not supported
 	if (find_command(str, "documentclass") >= 0)
-		throw scan_err(u8"\"documentclass\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
+		throw scan_err(u8"\"documentclass\" 命令已经在 main.tex 中，每个文章文件是一个 section，请先阅读说明");
 	if (find_command(str, "newcommand") >= 0)
 		throw scan_err(u8"不支持用户 \"newcommand\" 命令， 可以尝试在设置面板中定义自动补全规则， 或者向管理员申请 newcommand");
 	if (find_command(str, "renewcommand") >= 0)
 		throw scan_err(u8"不支持用户 \"renewcommand\" 命令， 可以尝试在设置面板中定义自动补全规则");
 	if (find_command(str, "usepackage") >= 0)
-		throw scan_err(u8"不支持 \"usepackage\" 命令， 每个词条文件是一个 section，请先阅读说明");
+		throw scan_err(u8"不支持 \"usepackage\" 命令， 每个文章文件是一个 section，请先阅读说明");
 	if (find_command(str, "newpage") >= 0)
 		throw scan_err(u8"暂不支持 \"newpage\" 命令");
 	if (find_command(str, "title") >= 0)
-		throw scan_err(u8"\"title\" 命令已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明");
+		throw scan_err(u8"\"title\" 命令已经在 main.tex 中，每个文章文件是一个 section，请先阅读说明");
 	if (find_command(str, "author") >= 0)
-		throw scan_err(u8"不支持 \"author\" 命令， 每个词条文件是一个 section，请先阅读说明");
+		throw scan_err(u8"不支持 \"author\" 命令， 每个文章文件是一个 section，请先阅读说明");
 	if (find_command(str, "maketitle") >= 0)
-		throw scan_err(u8"不支持 \"maketitle\" 命令， 每个词条文件是一个 section，请先阅读说明");
+		throw scan_err(u8"不支持 \"maketitle\" 命令， 每个文章文件是一个 section，请先阅读说明");
 
 	// allowed environments
 	// there are bugs when auto inserting label into align or gather, e.g. when there are "\\" within matrices
@@ -99,7 +99,7 @@ inline void limit_env_cmd(Str_I str)
 		command_arg(env, str, ind0);
 		if (!envs_allow.count(env)) {
 			if (env == "document")
-				throw scan_err(u8"document 环境已经在 main.tex 中，每个词条文件是一个 section，请先阅读说明。");
+				throw scan_err(u8"document 环境已经在 main.tex 中，每个文章文件是一个 section，请先阅读说明。");
 			else
 				throw scan_err(u8"暂不支持 " + env + u8" 环境！ 如果你认为 MathJax 支持该环境， 请联系管理员。");
 		}
@@ -172,7 +172,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry)
 				command_arg(entry2, str, ind5);
 			sb = label_entry_old(label);
 			if (sb != entry && sb != entry2)
-				throw scan_err("\\autoref{" + label + u8"} 引用其他词条时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
+				throw scan_err("\\autoref{" + label + u8"} 引用其他文章时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
 			continue;
 		}
 		Long ind2 = expect(str, "\\upref", ind1);

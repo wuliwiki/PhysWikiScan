@@ -30,20 +30,20 @@ inline Long ignore_entries(vecStr_IO names)
 // warn `entries` not in main.tex (including comments)
 inline void entries_titles(vecStr_O entries, vecStr_O titles)
 {
-	// 文件夹中的词条文件（忽略不用编译的）
+	// 文件夹中的文章文件（忽略不用编译的）
 	entries.clear(); titles.clear();
 	file_list_ext(entries, gv::path_in + "contents/", Str("tex"), false);
 	ignore_entries(entries);
 	if (entries.empty())
-		throw internal_err(u8"未找到任何词条");
+		throw internal_err(u8"未找到任何文章");
 	sort_case_insens(entries);
 
-	{ // 检查同名词条文件（不区分大小写）
+	{ // 检查同名文章文件（不区分大小写）
 		vecStr entries_low;
 		to_lower(entries_low, entries);
 		Long ind = find_repeat(entries_low);
 		if (ind >= 0)
-			throw internal_err(u8"发现同名词条文件（不区分大小写）：" + entries[ind]);
+			throw internal_err(u8"发现同名文章文件（不区分大小写）：" + entries[ind]);
 	}
 
 	Long ind0 = 0;
@@ -69,14 +69,14 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 		command_arg(title, str, ind0);
 		replace(title, "\\ ", " ");
 		if (title.empty())
-			throw scan_err(u8"main.tex 中词条标题不能为空");
+			throw scan_err(u8"main.tex 中文章标题不能为空");
 		command_arg(entry, str, ind0, 1);
 
 		Long ind = search(entry, entries);
 		if (ind < 0)
-			throw scan_err(u8"main.tex 中词条文件 " + entry + u8" 未找到");
+			throw scan_err(u8"main.tex 中文章文件 " + entry + u8" 未找到");
 		if (in_toc[ind])
-			throw scan_err(u8"目录中出现重复词条：" + entry);
+			throw scan_err(u8"目录中出现重复文章：" + entry);
 		in_toc[ind] = true;
 		titles[ind] = title;
 		++ind0;
@@ -113,7 +113,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 	for (Long i = 0; i < size(entries); ++i) {
 		if (!in_toc[i] && !in_toc_comment[i]) {
 			if (!warned) {
-				cout << u8"\n\n警告: 以下词条没有被 main.tex 提及（注释中也没有），但仍会被编译" << endl;
+				cout << u8"\n\n警告: 以下文章没有被 main.tex 提及（注释中也没有），但仍会被编译" << endl;
 				warned = true;
 			}
 			read(str, gv::path_in + "contents/" + entries[i] + ".tex");
@@ -129,7 +129,7 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 	for (Long i = 0; i < size(entries); ++i) {
 		if (in_toc_comment[i]) {
 			if (!warned) {
-				cout << u8"\n\n警告: 以下词条在 main.tex 中被注释，但仍会被编译" << endl;
+				cout << u8"\n\n警告: 以下文章在 main.tex 中被注释，但仍会被编译" << endl;
 				warned = true;
 			}
 			read(str, gv::path_in + "contents/" + entries[i] + ".tex");
@@ -233,9 +233,9 @@ inline void table_of_contents(
 			command_arg(entry, str, ind1, 1);
 			replace(title, "\\ ", " ");
 			if (title.empty())
-				throw scan_err(u8"main.tex 中词条中文名不能为空");
+				throw scan_err(u8"main.tex 中文章中文名不能为空");
 			if (search(entry, entries) >= 0)
-				throw scan_err(u8"main.tex 中词条重复： " + entry);
+				throw scan_err(u8"main.tex 中文章重复： " + entry);
 			entries.push_back(entry);
 			if (last_command == 'c')
 				chap_entry_first.push_back(entry);
@@ -245,14 +245,14 @@ inline void table_of_contents(
 			// get db info
 			stmt_select.bind(1, entry);
 			if (!stmt_select.executeStep()) {
-				db_log(u8"数据库中找不到 main.tex 中词条（将试图修复）： " + entry);
+				db_log(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
 				vecStr titles_tmp;
 				entries_titles(entries, titles_tmp);
 				db_check_add_entry_simulate_editor(entries, db_rw);
 				stmt_select.reset();
 				stmt_select.bind(1, entry);
 				if (!stmt_select.executeStep())
-					throw scan_err(u8"数据库中找不到 main.tex 中词条（文件不存在）： " + entry);
+					throw scan_err(u8"数据库中找不到 main.tex 中文章（文件不存在）： " + entry);
 			}
 			db_title = stmt_select.getColumn(0).getString();
 			is_draft.push_back((int)stmt_select.getColumn(1));
@@ -261,7 +261,7 @@ inline void table_of_contents(
 
 			// TODO: enable this when editor can update db title
 			// if (db_title != title)
-			//    throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中词条标题 “" + db_title + u8"” 不符！");
+			//    throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中文章标题 “" + db_title + u8"” 不符！");
 
 			// insert entry into html table of contents
 			link_class = type.back();

@@ -61,49 +61,49 @@ inline Long issuesEnv(Str_IO str)
 	ind0 = find_command(str, "issueDraft");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li>本词条处于草稿阶段。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li>本文章处于草稿阶段。</li>");
 		++N;
 	}
 	// issueTODO
 	ind0 = find_command(str, "issueTODO");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li>本词条存在未完成的内容。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li>本文章存在未完成的内容。</li>");
 		++N;
 	}
 	// issueMissDepend
 	ind0 = find_command(str, "issueMissDepend");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li>本词条缺少预备知识， 初学者可能会遇到困难。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li>本文章缺少预备知识， 初学者可能会遇到困难。</li>");
 		++N;
 	}
 	// issueAbstract
 	ind0 = find_command(str, "issueAbstract");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li>本词条需要更多讲解， 便于帮助理解。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li>本文章需要更多讲解， 便于帮助理解。</li>");
 		++N;
 	}
 	// issueNeedCite
 	ind0 = find_command(str, "issueNeedCite");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li>本词条需要更多参考文献。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li>本文章需要更多参考文献。</li>");
 		++N;
 	}
 	// issueAiRaw
 	ind0 = find_command(str, "issueAiRaw");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li> 本词条含人工智能辅助创作，待审核。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li> 本文章含人工智能辅助创作，待审核。</li>");
 		++N;
 	}
 	// issueAi
 	ind0 = find_command(str, "issueAi");
 	if (ind0 > 0) {
 		ind1 = skip_command(str, ind0);
-		str.replace(ind0, ind1 - ind0, u8"<li> 本词条含人工智能辅助创作，已审核。</li>");
+		str.replace(ind0, ind1 - ind0, u8"<li> 本文章含人工智能辅助创作，已审核。</li>");
 		++N;
 	}
 	// issueOther

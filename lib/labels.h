@@ -221,7 +221,7 @@ inline Long autoref(
 		R"(SELECT "refs" FROM "entries" WHERE "id"=')" + entry + "';");
 
 	if (!stmt_select0.executeStep())
-		throw scan_err(u8"词条不存在： " + entry);
+		throw scan_err(u8"文章不存在： " + entry);
 	parse(del_refs, stmt_select0.getColumn(0));
 
 	while (1) {
@@ -527,7 +527,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 			break;
 		command_arg(entry1, str, ind0, 0, true, true);
 		if (entry1 == entry)
-			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本词条");
+			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本文章");
 		trim(entry1);
 		sb = gv::path_in; sb << "contents/" << entry1 << ".tex";
 		if (!file_exist(sb))
@@ -667,7 +667,7 @@ inline void db_update_labels(
 			db_labels_used[ind] = true;
 			bool changed = false;
 			if (entry != db_label_entries[ind]) {
-				clear(sb) << "label " << label << u8" 的词条发生改变（暂时不允许，请使用新的标签）："
+				clear(sb) << "label " << label << u8" 的文章发生改变（暂时不允许，请使用新的标签）："
 									 << db_label_entries[ind] << " -> " << entry << SLS_WHERE;
 				throw scan_err(sb);
 				changed = true;
@@ -693,8 +693,8 @@ inline void db_update_labels(
 		}
 	}
 
-	// 检查被删除的标签（如果只被本词条引用， 就留给 \autoref() 报错）
-	// 这是因为入本词条的 autoref 还没有扫描不确定没有也被删除
+	// 检查被删除的标签（如果只被本文章引用， 就留给 \autoref() 报错）
+	// 这是因为入本文章的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
 	for (Long i = 0; i < size(db_labels_used); ++i) {
@@ -710,7 +710,7 @@ inline void db_update_labels(
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");
-				clear(sb) << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些词条引用： "
+				clear(sb) << u8"检测到 label 被删除： " << db_label << u8"\n但是被这些文章引用： "
 					<< ref_by_str << SLS_WHERE;
 				throw scan_err(sb);
 			}

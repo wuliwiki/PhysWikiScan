@@ -82,7 +82,7 @@ inline Long fix_foreign_key_figures(
 				continue;
 			}
 
-			clear(sb) << u8"figures.image->images.hash 外键不存在（已标记删除）（将彻底删除）：" << fig_id << '.' << image_hash << " 词条 " << entry;
+			clear(sb) << u8"figures.image->images.hash 外键不存在（已标记删除）（将彻底删除）：" << fig_id << '.' << image_hash << " 文章 " << entry;
 			scan_warn(sb);
 			stmt_delete.bind(1, rowid);
 			stmt_delete.exec(); stmt_delete.reset();
@@ -107,7 +107,7 @@ inline Long fix_foreign_key_figures(
 			stmt_select.reset();
 
 			clear(sb) << u8"figures.entry->entries.id 外键不存在（将改为 ''，请人工判断是否应该删除）："
-				<< fig_id << '.' << image_hash << " 词条 " << entry;
+				<< fig_id << '.' << image_hash << " 文章 " << entry;
 			scan_warn(sb);
 			stmt_update.bind(1, rowid);
 			stmt_update.exec(); stmt_update.reset();

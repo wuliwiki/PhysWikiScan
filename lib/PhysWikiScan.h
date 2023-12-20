@@ -349,7 +349,7 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		last_entry = &last;
 		stmt_select.bind(1, last);
 		if (!stmt_select.executeStep())
-			throw internal_err(u8"词条未找到： " + last + SLS_WHERE);
+			throw internal_err(u8"文章未找到： " + last + SLS_WHERE);
 		last_title = stmt_select.getColumn(0).getString();
 		stmt_select.reset();
 	}
@@ -365,7 +365,7 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		next_entry = &next;
 		stmt_select.bind(1, next);
 		if (!stmt_select.executeStep())
-			throw internal_err(u8"词条未找到： " + next + SLS_WHERE);
+			throw internal_err(u8"文章未找到： " + next + SLS_WHERE);
 		next_title = stmt_select.getColumn(0).getString();
 		stmt_select.reset();
 	}
@@ -454,7 +454,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		R"(FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
-		throw internal_err(u8"数据库中找不到词条（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
+		throw internal_err(u8"数据库中找不到文章（应该由 editor 在创建时添加或 scan 暂时模拟添加）： " + entry);
 	db_title = stmt_select.getColumn(0).getString();
 	chapter = stmt_select.getColumn(1).getString();
 	last_entry = stmt_select.getColumn(2).getString();
@@ -497,7 +497,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 
 	if (title != db_title) {
 		if (in_main > 0)
-			throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题（如果还不行请尝试重新编译 main.tex， 并确保其中的标题和词条文件第一行注释相同）");
+			throw scan_err(u8"检测到标题改变（" + db_title + u8" ⇒ " + title + u8"）， 请使用重命名按钮修改标题（如果还不行请尝试重新编译 main.tex， 并确保其中的标题和文章文件第一行注释相同）");
 	}
 
 	// insert HTML title
@@ -649,7 +649,7 @@ inline void PhysWikiOnlineN_round1(
 		auto &entry = entries[i];
 		try {
 			if (i == N0)
-				cout << u8"\n\n\n 以下词条引用标签序号发生改变也需要更新：\n" << endl;
+				cout << u8"\n\n\n 以下文章引用标签序号发生改变也需要更新：\n" << endl;
 
 			cout << std::setw(5) << std::left << i
 				 << std::setw(10) << std::left << entry; cout.flush();
@@ -839,7 +839,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &d
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
-			sb << SLS_RED_BOLD "一些词条编译失败： " SLS_NO_STYLE << '\n';
+			sb << SLS_RED_BOLD "一些文章编译失败： " SLS_NO_STYLE << '\n';
 			for (auto &e: entry_err) {
 				sb << SLS_RED_BOLD << e.first << SLS_NO_STYLE << '\n' << e.second << '\n';
 			}
@@ -865,7 +865,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		// check entries.ref_by
 		stmt_select.bind(1,entry);
 		if (!stmt_select.executeStep())
-			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的词条： " + entry);
+			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的文章： " + entry);
 		const Str &ref_by_str = stmt_select.getColumn(0);
 		bool db_deleted = (int)stmt_select.getColumn(1);
 		const Str &db_title = stmt_select.getColumn(2);
@@ -882,19 +882,19 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 			else {
 				if (no_throw)
 					continue;
-				throw internal_err(u8"arg_delete(): 要删除的词条已经被标记删除：" + entry);
+				throw internal_err(u8"arg_delete(): 要删除的文章已经被标记删除：" + entry);
 			}
 		}
 		else { // !db_deleted
 			if (!file_exist(sb)) {
-				scan_warn(u8"要删除的词条未被标记删除，但词条文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
+				scan_warn(u8"要删除的文章未被标记删除，但文章文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
 				clear(sb1) << "% " << db_title << "\n\n";
 				write(sb1, sb);
 			}
 		}
 		parse(ref_by, ref_by_str);
 		if (!ref_by.empty()) {
-			err_msg << u8"无法删除词条，因为被其他词条引用：" << ref_by_str << "\n\n";
+			err_msg << u8"无法删除文章，因为被其他文章引用：" << ref_by_str << "\n\n";
 			continue;
 		}
 
@@ -943,17 +943,17 @@ inline void auto_delete_entries(SQLite::Database &db_rw)
 		const Str &entry = stmt_select.getColumn(0);
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (!file_exist(sb)) {
-			scan_warn(u8"发现 entries.deleted=0 但是词条文件不存在（尝试用 --delete 删除）：" + entry);
+			scan_warn(u8"发现 entries.deleted=0 但是文章文件不存在（尝试用 --delete 删除）：" + entry);
 			try {
 				SQLite::Transaction transaction(db_rw);
 				arg_delete({entry}, db_rw);
 				transaction.commit();
 			}
 			catch (const std::exception &e) {
-				err_msg << u8"发现 entries.deleted=0 但是词条文件不存在， 尝试删除失败（" << e.what() << u8"）：" << entry << '\n';
+				err_msg << u8"发现 entries.deleted=0 但是文章文件不存在， 尝试删除失败（" << e.what() << u8"）：" << entry << '\n';
 			}
 			catch (...) {
-				err_msg << u8"发现 entries.deleted=0 但是词条文件不存在， 尝试删除失败：" << entry << '\n';
+				err_msg << u8"发现 entries.deleted=0 但是文章文件不存在， 尝试删除失败：" << entry << '\n';
 			}
 		}
 	}
@@ -981,7 +981,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 		// delete entries.figures and all associated images
 		stmt_select0.bind(1, entry);
 		if (!stmt_select0.executeStep()) {
-			db_log(u8"arg_delete(): 数据库中找不到要删除的词条（将忽略）： " + entry);
+			db_log(u8"arg_delete(): 数据库中找不到要删除的文章（将忽略）： " + entry);
 			stmt_select0.reset();
 			continue;
 		}
@@ -1082,7 +1082,7 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	}
 
 	if (!entry_err.empty()) {
-		cout << SLS_RED_BOLD << entry_err.size() << u8"个词条编译失败： " SLS_NO_STYLE << endl;
+		cout << SLS_RED_BOLD << entry_err.size() << u8"个文章编译失败： " SLS_NO_STYLE << endl;
 		for (auto &e : entry_err) {
 			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
 			cout << e.second << endl;

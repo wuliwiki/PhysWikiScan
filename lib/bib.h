@@ -24,7 +24,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		parse(info.ref_by, ref_by_str);
 		if (search(id, bib_labels) < 0) {
 			if (!info.ref_by.empty()) {
-				clear(sb) << u8"检测到删除的文献： " << id << u8"， 但被以下词条引用： " << ref_by_str;
+				clear(sb) << u8"检测到删除的文献： " << id << u8"， 但被以下文章引用： " << ref_by_str;
 				throw scan_err(sb);
 			}
 			clear(sb) << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
