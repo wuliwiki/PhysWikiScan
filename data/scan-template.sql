@@ -5,15 +5,15 @@
 -- 目录中的 \entry{标题}{xxx} 中 xxx 为 "id"
 CREATE TABLE "entries" (
 	"id"        TEXT NOT NULL UNIQUE,
-	"caption"   TEXT NOT NULL DEFAULT '', -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
-	"authors"   TEXT NOT NULL DEFAULT '', -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
-	"part"      TEXT NOT NULL DEFAULT '', -- 部分， 空代表不在目录中
-	"chapter"   TEXT NOT NULL DEFAULT '', -- 章， 空代表不在目录中
-	"last"      TEXT NOT NULL DEFAULT '', -- 目录中的上一个文章， 空代表这是第一个或不在目录中
-	"next"      TEXT NOT NULL DEFAULT '', -- 目录中的下一个文章， 空代表这是最后一个或不在目录中
-	"license"   TEXT NOT NULL DEFAULT 'Usr', -- 协议
-	"type"      TEXT NOT NULL DEFAULT '',
-	"keys"      TEXT NOT NULL DEFAULT '',    -- "关键词1|...|关键词N"
+	"caption"   TEXT NOT NULL DEFAULT '',       -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
+	"authors"   TEXT NOT NULL DEFAULT '',       -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
+	"part"      TEXT NOT NULL DEFAULT '',       -- 部分， 空代表不在目录中
+	"chapter"   TEXT NOT NULL DEFAULT '',       -- 章， 空代表不在目录中
+	"last"      TEXT NOT NULL DEFAULT '',       -- 目录中的上一个文章， 空代表这是第一个或不在目录中
+	"next"      TEXT NOT NULL DEFAULT '',       -- 目录中的下一个文章， 空代表这是最后一个或不在目录中
+	"license"   TEXT NOT NULL DEFAULT 'Usr',    -- 协议
+	"type"      TEXT NOT NULL DEFAULT '',       -- 类型
+	"keys"      TEXT NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
 	-- "entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
 	-- 每个文章若有 n 个 \pentry， 则在树状图中表示为 n 个节点（编号从 1 开始），每个节点的内容是对应的 \pentry 到下一个 \pentry 之间的内容
 	-- 每个节点默认依赖前一个节点（不需要在 \pentry 中列出来也不需要写进数据库）
@@ -86,6 +86,7 @@ CREATE TABLE "locked" (
 );
 
 -- 文章打开列表
+-- 用于恢复用户之前打开的文章
 CREATE TABLE "opened" (
 	"author"   INTEGER NOT NULL UNIQUE, -- authors.id
 	"entries"  TEXT    NOT NULL,        -- "entry1 entry2"
@@ -180,7 +181,7 @@ CREATE INDEX idx_images_figure ON "images"("figure");
 -- 文件
 CREATE TABLE "files" (
 	"hash"             TEXT    NOT NULL UNIQUE,     -- 文件 SHA1 的前 16 位
-	"name"             TEXT    NOT NULL UNIQUE,     -- 文件名（含拓展名）
+	"name"             TEXT    NOT NULL,            -- 文件名（含拓展名）
 	"description"      TEXT    NOT NULL DEFAULT '', -- 备注（类似 commit 信息）
 	"last"             TEXT    NOT NULL DEFAULT '', -- 上一个版本
 	"author"           INTEGER NOT NULL DEFAULT -1, -- 当前版本修改者
@@ -197,8 +198,8 @@ CREATE INDEX idx_files_last ON "files"("last");
 
 -- 图片附件
 CREATE TABLE "figure_files" (
-	"figure"           TEXT    NOT NULL UNIQUE,     -- figures.id
-	"file"             TEXT    NOT NULL UNIQUE,     -- files.hash
+	"figure"           TEXT    NOT NULL,     -- figures.id
+	"file"             TEXT    NOT NULL,     -- files.hash
 	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -208,8 +209,8 @@ CREATE INDEX idx_figure_files_file ON "figure_files"("file");
 
 -- 文章附件
 CREATE TABLE "entry_files" (
-	"entry"            TEXT    NOT NULL UNIQUE,     -- entries.id
-	"file"             TEXT    NOT NULL UNIQUE,     -- files.hash
+	"entry"            TEXT    NOT NULL,     -- entries.id
+	"file"             TEXT    NOT NULL,     -- files.hash
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -220,8 +221,8 @@ CREATE INDEX idx_entry_files_file ON "entry_files"("file");
 -- 带标签的代码环境
 CREATE TABLE "code" (
 	"id"          TEXT     NOT NULL UNIQUE, -- \label{code_xxx} 中 xxx
-    "entry"       TEXT     NOT NULL UNIQUE, -- 所在文章
-	"caption"     TEXT     NOT NULL UNIQUE, -- 文件名
+	"entry"       TEXT     NOT NULL,        -- 所在文章
+	"caption"     TEXT     NOT NULL,        -- 文件名（含拓展名）
 	"language"    TEXT     NOT NULL,        -- [none|matlab|...] 高亮语言
 	"order"       INTEGER  NOT NULL,        -- 显示编号
 	"license"     TEXT     NOT NULL,        -- 协议
@@ -286,7 +287,7 @@ CREATE TABLE "review" (
 	"author"   INTEGER NOT NULL,                   -- 作者
 	"action"   TEXT    NOT NULL DEFAULT '',        -- [Pub] 发布 [Udo] 撤回 [Fix] 继续完善
 	"comment"  TEXT    NOT NULL DEFAULT '',        -- 意见（也可以直接修改正文或在正文中评论）
-	"last"     TEXT    NOT NULL UNIQUE DEFAULT '', -- 该文章上次审稿的 hash， '' 代表首个
+	"last"     TEXT    NOT NULL DEFAULT '',        -- 该文章上次审稿的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("hash")   REFERENCES "history"("hash"),
 	FOREIGN KEY("last")   REFERENCES "review"("hash"),
@@ -296,21 +297,6 @@ CREATE TABLE "review" (
 );
 
 INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '', 0, '', 0); -- 防止 FOREIGN KEY 报错
-
--- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
-CREATE TABLE "contribution" (
-	"id"        INTEGER NOT NULL UNIQUE,     -- 编号
-	"time"      TEXT    NOT NULL DEFAULT '', -- 何时做出的贡献
-	"time_adj"  TEXT    NOT NULL DEFAULT '', -- 何时做出的调整
-	"entry"     TEXT    NOT NULL,            -- 文章
-	"author"    INTEGER NOT NULL,            -- 作者
-	"reason"    TEXT    NOT NULL DEFAULT '', -- [fig|code|thnk] 原因
-	"work"      INTEGER NOT NULL,            -- 工作量（分钟，可以为负）
-	"approved"  INTEGER NOT NULL,            -- [0|1] 是否生效（需要审核）
-	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	FOREIGN KEY("author") REFERENCES "authors"("id")
-);
 
 -- 所有作者
 CREATE TABLE "authors" (
@@ -331,9 +317,10 @@ INSERT INTO "authors" ("id", "name") VALUES (-1, ''); -- 防止 FOREIGN KEY 报�
 
 -- 权限
 CREATE TABLE "rights" (
-	"id"       TEXT    NOT NULL,
-	"name"     TEXT    NOT NULL,            -- 中文名
+	"id"       TEXT    NOT NULL UNIQUE,
+	"name"     TEXT    NOT NULL UNIQUE,    -- 中文名
 	"comment"  TEXT    NOT NULL DEFAULT '' -- 具体说明（可选）
+	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
 CREATE INDEX idx_authors_uuid ON "authors"("uuid");
@@ -346,6 +333,7 @@ CREATE INDEX idx_authors_aka ON "authors"("aka");
 -- rule: 作者 + 文章 -> 缩放
 -- rule: 文章 -> 缩放
 CREATE TABLE "salary" (
+	"id"      INTEGER NOT NULL UNIQUE,           -- 编号
 	"author"  INTEGER NOT NULL DEFAULT -1,       -- 作者（-1 代表所有）
 	"entry"   TEXT    NOT NULL DEFAULT '',       -- 文章（空代表所有）
 	"license" TEXT    NOT NULL DEFAULT '',       -- 协议（空代表所有）
@@ -355,6 +343,7 @@ CREATE TABLE "salary" (
 	"scale"   REAL    NOT NULL DEFAULT  1,       -- 缩放
 	"comment" TEXT    NOT NULL DEFAULT '',       -- 备注
 	"comment_admin" TEXT    NOT NULL DEFAULT '', -- 备注（仅管理员可见）
+	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
@@ -367,13 +356,19 @@ CREATE INDEX idx_salary_begin ON "salary"("begin");
 CREATE INDEX idx_salary_end ON "salary"("end");
 
 -- 补贴手动调整
+-- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
 CREATE TABLE "salary_change" (
-	"author"  INTEGER NOT NULL,                  -- 作者（空代表所有）
-	"entry"   TEXT    NOT NULL DEFAULT '',       -- 文章
-	"time"    TEXT    NOT NULL DEFAULT '',       -- 时间
-	"value"   REAL    NOT NULL,                  -- 金额（非零实数）
-	"comment" TEXT    NOT NULL DEFAULT '',       -- 备注
-	"comment_admin" TEXT    NOT NULL DEFAULT ''  -- 备注（仅管理员可见）
+	"id"        INTEGER NOT NULL UNIQUE,           -- 编号
+	"author"    INTEGER NOT NULL,                  -- 作者（空代表所有）
+	"entry"     TEXT    NOT NULL DEFAULT '',       -- 文章
+	"time"      TEXT    NOT NULL DEFAULT '',       -- 何时做出的调整
+	"value"     REAL    NOT NULL,                  -- 金额（非零实数）
+	"comment"   TEXT    NOT NULL DEFAULT '',       -- 备注
+	"approved"  INTEGER NOT NULL,                  -- [0|1] 是否生效（需要审核）
+	"comment2"  TEXT    NOT NULL DEFAULT ''        -- 备注（仅管理员可见）
+	PRIMARY KEY("id" AUTOINCREMENT),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
 CREATE INDEX idx_salary_change_author ON "salary_change"("author");
