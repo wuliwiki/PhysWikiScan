@@ -527,7 +527,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 			break;
 		command_arg(entry1, str, ind0, 0, true, true);
 		if (entry1 == entry)
-			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本文章");
+			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本文");
 		trim(entry1);
 		sb = gv::path_in; sb << "contents/" << entry1 << ".tex";
 		if (!file_exist(sb))
@@ -693,8 +693,8 @@ inline void db_update_labels(
 		}
 	}
 
-	// 检查被删除的标签（如果只被本文章引用， 就留给 \autoref() 报错）
-	// 这是因为入本文章的 autoref 还没有扫描不确定没有也被删除
+	// 检查被删除的标签（如果只被本文引用， 就留给 \autoref() 报错）
+	// 这是因为入本文的 autoref 还没有扫描不确定没有也被删除
 	Str ref_by_str;
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "id"=?;)");
 	for (Long i = 0; i < size(db_labels_used); ++i) {

@@ -29,7 +29,7 @@ CREATE TABLE "entries" (
 	"refs"         TEXT    NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
 	"uprefs"       TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的其他文章（所有的 upref）
-	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章列为 "uprefs"， 包括 pentry 中的（为空才能删除本文章）
+	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章列为 "uprefs"， 包括 pentry 中的（为空才能删除本文）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),
@@ -266,7 +266,7 @@ CREATE TABLE "history" (
 	"entry"    TEXT    NOT NULL,            -- 文章
 	"add"      INTEGER NOT NULL DEFAULT -1, -- 新增字符数（-1: 未知）
 	"del"      INTEGER NOT NULL DEFAULT -1, -- 减少字符数（-1: 未知）
-	"last"     TEXT    NOT NULL DEFAULT '', -- 本文章上次备份的 hash， '' 代表首个
+	"last"     TEXT    NOT NULL DEFAULT '', -- 本文上次备份的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("last")   REFERENCES "history"("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
