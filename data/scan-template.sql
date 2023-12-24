@@ -91,6 +91,13 @@ CREATE TABLE "licenses" (
 
 INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIGN KEY 报错
 
+-- 创作协议适用范围
+CREATE TABLE "license_apply" (
+	"license"  TEXT NOT NULL,      -- licenses.id
+	"apply"    INTEGER NOT NULL,   -- 适用于：[e] 文章 [i] 图片 [c] 代码 [f] 文件
+	"order"    INTEGER NOT NULL    -- 显示优先级（UI 中从小到大排列）
+);
+
 -- 文章类型
 CREATE TABLE "types" (
 	"id"        TEXT NOT NULL UNIQUE,
@@ -304,20 +311,33 @@ CREATE INDEX idx_entry_files_file ON "entry_files"("file");
 
 -- 带标签的代码环境
 CREATE TABLE "code" (
-	"id"          TEXT     NOT NULL UNIQUE, -- \label{code_xxx} 中 xxx
-	"entry"       TEXT     NOT NULL,        -- 所在文章
-	"caption"     TEXT     NOT NULL,        -- 文件名（含拓展名）
-	"language"    TEXT     NOT NULL,        -- [none|matlab|...] 高亮语言
-	"order"       INTEGER  NOT NULL,        -- 显示编号
-	"license"     TEXT     NOT NULL,        -- 协议
-	"source"      TEXT     NOT NULL,        -- 来源（如果非原创）
-	"ref_by"      TEXT     NOT NULL,        -- "entry1 entry2" 引用的文章
+	"id"          TEXT     NOT NULL UNIQUE,      -- \label{code_xxx} 中 xxx
+	"entry"       TEXT     NOT NULL,             -- 所在文章
+	"caption"     TEXT     NOT NULL DEFAULT '',  -- 文件名（含拓展名）
+	"language"    TEXT     NOT NULL DEFAULT '',  -- [matlab|...] 高亮语言，空代表 none
+	"order"       INTEGER  NOT NULL,             -- 显示编号
+	"license"     TEXT     NOT NULL,             -- 协议
+	"source"      TEXT     NOT NULL,             -- 来源（如果非原创）
 	PRIMARY KEY("id"),
-	FOREIGN KEY("entry")   REFERENCES "entries"("id"),
-	FOREIGN KEY("license") REFERENCES "licenses"("id")
+	FOREIGN KEY("entry")    REFERENCES "entries"("id"),
+	FOREIGN KEY("language") REFERENCES "languages"("id"),
+	FOREIGN KEY("license")  REFERENCES "licenses"("id")
 );
 
--- 文章中的其他标签（除图片代码）
+CREATE INDEX idx_code_entry ON "entry_files"("entry");
+CREATE INDEX idx_code_caption ON "entry_files"("entry");
+CREATE INDEX idx_code_lang ON "entry_files"("entry");
+
+-- 编程语言
+CREATE TABLE "languages" (
+	"id"    TEXT NOT NULL UNIQUE,  -- code.language
+	"name"  TEXT NOT NULL UNIQUE,  -- 名字
+	PRIMARY KEY("id")
+);
+
+INSERT INTO "languages" ("id", "name") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
+
+-- 文章中的其他标签（除图片、代码）
 CREATE TABLE "labels" (
 	"id"       TEXT    NOT NULL UNIQUE,     -- \label{yyy_xxxx} 中 yyy_xxxx 是 id， yyy 是 "type"
 	"type"     TEXT    NOT NULL,            -- [eq|sub|tab|def|lem|the|cor|ex|exe] 标签类型
@@ -345,13 +365,14 @@ INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 
 
 -- 编辑历史（一个记录 5 分钟）
 CREATE TABLE "history" (
-	"hash"     TEXT    NOT NULL UNIQUE,     -- SHA1 的前 16 位
-	"time"     TEXT    NOT NULL,            -- 备份时间， 格式 YYYYMMDDHHMM（下同）
-	"author"   INTEGER NOT NULL,            -- 作者
-	"entry"    TEXT    NOT NULL,            -- 文章
-	"add"      INTEGER NOT NULL DEFAULT -1, -- 新增字符数（-1: 未知）
-	"del"      INTEGER NOT NULL DEFAULT -1, -- 减少字符数（-1: 未知）
-	"last"     TEXT    NOT NULL DEFAULT '', -- 本文上次备份的 hash， '' 代表首个
+	"hash"     TEXT    NOT NULL UNIQUE,      -- SHA1 的前 16 位
+	"time"     TEXT    NOT NULL,             -- 备份时间， 格式 YYYYMMDDHHMM（下同）
+	"author"   INTEGER NOT NULL,             -- 作者
+	"entry"    TEXT    NOT NULL,             -- 文章
+	"license"  TEXT    NOT NULL DEFAULT '',  -- entries.license
+	"add"      INTEGER NOT NULL DEFAULT -1,  -- 新增字符数（-1: 未知）
+	"del"      INTEGER NOT NULL DEFAULT -1,  -- 减少字符数（-1: 未知）
+	"last"     TEXT    NOT NULL DEFAULT '',  -- 本文上次备份的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("last")   REFERENCES "history"("hash"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
@@ -360,6 +381,7 @@ CREATE TABLE "history" (
 );
 
 INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '', 0, ''); -- 防止 FOREIGN KEY 报错
+CREATE INDEX idx_history_time ON "history"("time");
 CREATE INDEX idx_history_author ON "history"("author");
 CREATE INDEX idx_history_last ON "history"("last");
 
@@ -372,16 +394,17 @@ CREATE TABLE "review" (
 	"author"   INTEGER NOT NULL,                   -- 作者
 	"action"   TEXT    NOT NULL DEFAULT '',        -- [Pub] 发布 [Udo] 撤回 [Fix] 继续完善
 	"comment"  TEXT    NOT NULL DEFAULT '',        -- 意见（也可以直接修改正文或在正文中评论）
-	"last"     TEXT    NOT NULL DEFAULT '',        -- 该文章上次审稿的 hash， '' 代表首个
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("hash")   REFERENCES "history"("hash"),
-	FOREIGN KEY("last")   REFERENCES "review"("hash"),
 	FOREIGN KEY("refID")  REFERENCES "authors"("id"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
 
 INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', '', 0, '', 0); -- 防止 FOREIGN KEY 报错
+CREATE INDEX idx_review_time ON "review"("time");
+CREATE INDEX idx_review_refID ON "review"("refID");
+CREATE INDEX idx_review_entry ON "review"("entry");
 
 -- 所有作者
 CREATE TABLE "authors" (
