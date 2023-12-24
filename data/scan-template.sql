@@ -14,22 +14,20 @@ CREATE TABLE "entries" (
 	"license"   TEXT NOT NULL DEFAULT 'Usr',    -- 协议
 	"type"      TEXT NOT NULL DEFAULT '',       -- 类型
 	"keys"      TEXT NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
-	-- "entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
+	-- 【待迁移到 pentries 表】"entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
 	-- 每个文章若有 n 个 \pentry， 则在树状图中表示为 n 个节点（编号从 1 开始），每个节点的内容是对应的 \pentry 到下一个 \pentry 之间的内容
 	-- 每个节点默认依赖前一个节点（不需要在 \pentry 中列出来也不需要写进数据库）
 	-- 在每个 entry 后面用 ":编号" 表示只需要哪个子节点（\upref[编号]{}）， 不指定编号则默认最后一个节点（即整篇）
 	-- 然后用 * 标记发现循环时优先被程序忽略的节点（\upreff 命令）， 再用 ~ 标记是否被知识树忽略（多余或循环的预备知识）
 	"pentry"       TEXT    NOT NULL DEFAULT '',
 	"draft"        INTEGER NOT NULL DEFAULT 2,  -- [0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
-	"issues"       TEXT    NOT NULL DEFAULT '', -- "XXX XXX XXX" 其中 XXX 是 \issueXXX 中的， 不包括 \issueDraft
-	"issueOther"   TEXT    NOT NULL DEFAULT '', -- \issueOther{} 中的文字
 	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
-	"refs"         TEXT    NOT NULL DEFAULT '', -- "label1 label2" 用 \autoref 引用的 labels
-	"bibs"         TEXT    NOT NULL DEFAULT '', -- "bib1 bib2" 用 \cite 引用的文献
-	"uprefs"       TEXT    NOT NULL DEFAULT '', -- "entry1 entry2" 引用的其他文章（所有的 upref）
-	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章列为 "uprefs"， 包括 pentry 中的（为空才能删除本文）
+	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_autorefs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
+	"bibs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】"bib1 bib2" 用 \cite 引用的文献
+	"uprefs"       TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_uprefs 表】"entry1 entry2" 引用的其他文章（所有的 upref）
+	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_uprefs 表】【生成】"entry1 entry2" 被哪些文章列为 "uprefs"， 包括 pentry 中的（为空才能删除本文）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),
@@ -43,13 +41,51 @@ CREATE TABLE "entries" (
 
 INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1); -- 防止 FOREIGN KEY 报错
 
+-- 文章中的 \upref{}
+-- TODO: 用于替代 entries.uprefs 和 entries.ref_by
+CREATE TABLE "entry_uprefs" (
+	"entry"      TEXT NOT NULL,     -- entries.id
+	"upref"      TEXT NOT NULL,     -- entries.id
+	UNIQUE("entry", "upref"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("upref")  REFERENCES "entries"("id")
+);
+
+CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
+CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
+
+-- 文章中的 \cite{}
+-- TODO: 用于替代 entries.bibs 和 bibliography.ref_by
+CREATE TABLE "entry_bibs" (
+	"entry"    TEXT NOT NULL,     -- entries.id
+	"bib"      TEXT NOT NULL,     -- bibliography.id
+	UNIQUE("entry", "bib"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
+);
+
+CREATE INDEX idx_entry_bibs_entry ON "entry_uprefs"("entry");
+CREATE INDEX idx_entry_bibs_bib  ON "entry_bibs"("bib");
+
+-- 文章中的所有 \autoref{} （不仅仅是 labels 表中的）
+-- TODO: 用于替代 entries.refs 和 labels.ref_by 和 figures.ref_by
+CREATE TABLE "entry_refs" (
+	"entry"    TEXT NOT NULL,     -- entries.id
+	"label"    TEXT NOT NULL,     -- labels.id
+	UNIQUE("entry", "label"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id")
+);
+
+CREATE INDEX idx_entry_refs_entry ON "entry_uprefs"("entry");
+CREATE INDEX idx_entry_refs_label ON "entry_uprefs"("label");
+
 -- 创作协议
 CREATE TABLE "licenses" (
-	"id"        TEXT NOT NULL UNIQUE, -- 协议 id，只允许字母和数字，字母开头，空代表未知
-	"caption"   TEXT NOT NULL UNIQUE , -- 协议官方名称
-	"url"       TEXT NOT NULL DEFAULT '', -- 协议官方 url
-	"intro"     TEXT NOT NULL DEFAULT '', -- 协议简介和说明
-	"text"      TEXT NOT NULL DEFAULT '', -- 协议全文
+	"id"        TEXT NOT NULL UNIQUE,      -- 协议 id，只允许字母和数字，字母开头，空代表未知
+	"caption"   TEXT NOT NULL UNIQUE ,     -- 协议官方名称
+	"url"       TEXT NOT NULL DEFAULT '',  -- 协议官方 url
+	"intro"     TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
+	"text"      TEXT NOT NULL DEFAULT '',  -- 协议全文
 	PRIMARY KEY("id")
 );
 
@@ -58,12 +94,56 @@ INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIG
 -- 文章类型
 CREATE TABLE "types" (
 	"id"        TEXT NOT NULL UNIQUE,
-	"caption"   TEXT NOT NULL UNIQUE, -- 中文名
-	"intro"     TEXT NOT NULL DEFAULT '', -- 协议简介和说明
+	"caption"   TEXT NOT NULL UNIQUE,      -- 中文名
+	"intro"     TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
 	PRIMARY KEY("id")
 );
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
+
+-- 知识树节点（\pentry{}）
+-- 每个词条自动添加一个词条节点， 使 nodes.id 和 entries.id 相同
+CREATE TABLE "nodes" (
+	"id"        TEXT NOT NULL UNIQUE,    -- \label{}
+	"entry"     TEXT NOT NULL,           -- entries.id
+	"order"     INTEGER NOT NULL UNIQUE, -- 在文章中出现的顺序（编号从 1 开始）
+	PRIMARY KEY("id")
+);
+
+CREATE INDEX idx_nodes_entry ON "nodes"("entry");
+
+-- 知识树的边（\pentry{} 中的 \upref{}）
+CREATE TABLE "edges" (
+	"to"       TEXT NOT NULL,         -- nodes.id
+	"from"     TEXT NOT NULL UNIQUE,  -- nodes.id （可以是自动添加的词条节点）
+	"weak"     INTEGER NOT NULL,      -- [0|1] 原来的 * 标记，优先被 hide
+	"hide"     INTEGER NOT NULL,      -- 原来的 ~ 标记， 不在知识树中显示（多余的预备知识）
+	PRIMARY KEY("to", "from"),
+	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
+	FOREIGN KEY("from")  REFERENCES "nodes"("id")
+);
+
+CREATE INDEX idx_edges_to ON "edges"("to");
+CREATE INDEX idx_edges_from ON "edges"("from");
+
+-- 文章标记
+-- （issues 环境属于该表）
+CREATE TABLE "marks" (
+	"entry"      TEXT    NOT NULL UNIQUE, -- entries.id
+	"type"       TEXT    NOT NULL,        -- 暂时不包括 \issueDraft
+	"comment"    TEXT    NOT NULL,        -- issueOthers{} 或其他支持评论的 issue 类型
+	PRIMARY KEY("entry"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("type")   REFERENCES "mark_types"("id")
+);
+
+CREATE INDEX idx_marks_to ON "marks"("type");
+
+CREATE TABLE "mark_types" (
+	"id"      TEXT    NOT NULL UNIQUE, -- entries.id （暂时不包括 \issueDraft）
+	"name"    TEXT    NOT NULL,        -- 中文名
+	PRIMARY KEY("id")
+);
 
 -- 文章占用列表
 CREATE TABLE "occupied" (
@@ -142,7 +222,7 @@ CREATE TABLE "figures" (
 	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure=id 中的一个
 	"last"        TEXT    NOT NULL DEFAULT '',  -- "figures.id" 上一个版本（若从百科其他图修改而来）。 可以生成一个版本树。
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
-	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【生成】"entry1 entry2" 引用本图的文章（以 entries.refs 为准）
+	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 引用本图的文章（以 entries.refs 为准）
 	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： 所有图片文件（"images.figure"）, "authors", "last", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的图片文件中。
 	"deleted"     INTEGER NOT NULL DEFAULT 0,   -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	"remark"      TEXT    NOT NULL DEFAULT '',  -- 备注信息
@@ -180,13 +260,13 @@ CREATE INDEX idx_images_figure ON "images"("figure");
 
 -- 文件
 CREATE TABLE "files" (
-	"hash"             TEXT    NOT NULL UNIQUE,     -- 文件 SHA1 的前 16 位
-	"name"             TEXT    NOT NULL,            -- 文件名（含拓展名）
-	"description"      TEXT    NOT NULL DEFAULT '', -- 备注（类似 commit 信息）
-	"last"             TEXT    NOT NULL DEFAULT '', -- 上一个版本
-	"author"           INTEGER NOT NULL DEFAULT -1, -- 当前版本修改者
-	"license"          TEXT    NOT NULL DEFAULT '', -- 当前版本协议
-	"time"             TEXT    NOT NULL DEFAULT '', -- 上传时间
+	"hash"             TEXT    NOT NULL UNIQUE,      -- 文件 SHA1 的前 16 位
+	"name"             TEXT    NOT NULL,             -- 文件名（含拓展名）
+	"description"      TEXT    NOT NULL DEFAULT '',  -- 备注（类似 commit 信息）
+	"last"             TEXT    NOT NULL DEFAULT '',  -- 上一个版本
+	"author"           INTEGER NOT NULL DEFAULT -1,  -- 当前版本修改者
+	"license"          TEXT    NOT NULL DEFAULT '',  -- 当前版本协议
+	"time"             TEXT    NOT NULL DEFAULT '',  -- 上传时间
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("author")  REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id"),
@@ -194,12 +274,15 @@ CREATE TABLE "files" (
 );
 
 INSERT INTO "files" ("hash", "name") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
+CREATE INDEX idx_files_name ON "files"("name");
 CREATE INDEX idx_files_last ON "files"("last");
+CREATE INDEX idx_files_time ON "files"("time");
 
 -- 图片附件
 CREATE TABLE "figure_files" (
 	"figure"           TEXT    NOT NULL,     -- figures.id
 	"file"             TEXT    NOT NULL,     -- files.hash
+	UNIQUE("figure", "file"),
 	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -211,6 +294,7 @@ CREATE INDEX idx_figure_files_file ON "figure_files"("file");
 CREATE TABLE "entry_files" (
 	"entry"            TEXT    NOT NULL,     -- entries.id
 	"file"             TEXT    NOT NULL,     -- files.hash
+	UNIQUE("entry", "file"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -233,10 +317,10 @@ CREATE TABLE "code" (
 	FOREIGN KEY("license") REFERENCES "licenses"("id")
 );
 
--- 文章中的其他标签（除公式图片代码）
+-- 文章中的其他标签（除图片代码）
 CREATE TABLE "labels" (
 	"id"       TEXT    NOT NULL UNIQUE,     -- \label{yyy_xxxx} 中 yyy_xxxx 是 id， yyy 是 "type"
-	"type"     TEXT    NOT NULL,            -- [sub|tab|def|lem|the|cor|ex|exe] 标签类型
+	"type"     TEXT    NOT NULL,            -- [eq|sub|tab|def|lem|the|cor|ex|exe] 标签类型
 	"entry"    TEXT    NOT NULL,            -- 所在文章（以 entries.labels 为准）
 	"order"    INTEGER NOT NULL,            -- 显示编号
 	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章引用（以 entries.refs 为准）
@@ -245,6 +329,7 @@ CREATE TABLE "labels" (
 	UNIQUE("type", "entry", "order")
 );
 
+CREATE INDEX idx_labels_type ON "labels"("type");
 CREATE INDEX idx_labels_entry ON "labels"("entry");
 
 -- 参考文献
@@ -252,7 +337,7 @@ CREATE TABLE "bibliography" (
 	"id"        TEXT    NOT NULL UNIQUE,     -- \cite{xxx} 中的 xxx
 	"order"     INTEGER NOT NULL UNIQUE,     -- 显示编号
 	"details"   TEXT    NOT NULL,            -- 详细信息（TODO: 待拆分）
-	"ref_by"    TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章引用（以 entries.cite 为准）
+	"ref_by"    TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】【生成】"entry1 entry2" 被哪些文章引用（以 entries.bibs 为准）
 	PRIMARY KEY("id")
 );
 
@@ -318,9 +403,9 @@ INSERT INTO "authors" ("id", "name") VALUES (-1, ''); -- 防止 FOREIGN KEY 报�
 -- 权限
 CREATE TABLE "rights" (
 	"id"       TEXT    NOT NULL UNIQUE,
-	"name"     TEXT    NOT NULL UNIQUE,    -- 中文名
-	"comment"  TEXT    NOT NULL DEFAULT '' -- 具体说明（可选）
-	PRIMARY KEY("id" AUTOINCREMENT)
+	"name"     TEXT    NOT NULL UNIQUE,     -- 中文名
+	"comment"  TEXT    NOT NULL DEFAULT '', -- 具体说明（可选）
+	PRIMARY KEY("id")
 );
 
 CREATE INDEX idx_authors_uuid ON "authors"("uuid");
@@ -365,7 +450,7 @@ CREATE TABLE "salary_change" (
 	"value"     REAL    NOT NULL,                  -- 金额（非零实数）
 	"comment"   TEXT    NOT NULL DEFAULT '',       -- 备注
 	"approved"  INTEGER NOT NULL,                  -- [0|1] 是否生效（需要审核）
-	"comment2"  TEXT    NOT NULL DEFAULT ''        -- 备注（仅管理员可见）
+	"comment2"  TEXT    NOT NULL DEFAULT '',       -- 备注（仅管理员可见）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
