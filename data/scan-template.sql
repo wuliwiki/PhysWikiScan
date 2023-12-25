@@ -136,7 +136,7 @@ CREATE INDEX idx_edges_from ON "edges"("from");
 -- 文章标记
 -- （issues 环境属于该表）
 CREATE TABLE "marks" (
-	"entry"      TEXT    NOT NULL UNIQUE, -- entries.id
+	"entry"      TEXT    NOT NULL,        -- entries.id
 	"type"       TEXT    NOT NULL,        -- 暂时不包括 \issueDraft
 	"comment"    TEXT    NOT NULL,        -- issueOthers{} 或其他支持评论的 issue 类型
 	PRIMARY KEY("entry"),
@@ -151,6 +151,33 @@ CREATE TABLE "mark_types" (
 	"name"    TEXT    NOT NULL,        -- 中文名
 	PRIMARY KEY("id")
 );
+
+-- 文章转载（到其他平台）
+CREATE TABLE "repost" (
+	"entry"    TEXT    NOT NULL,   -- entries.id
+	"url"      TEXT    NOT NULL,   -- 网址
+	"updated"  TEXT    NOT NULL,   -- 最后更新时间
+	FOREIGN KEY("entry") REFERENCES "entries"("id")
+);
+
+CREATE INDEX idx_repost_entry ON "repost"("entry");
+CREATE INDEX idx_repost_updated ON "repost"("updated");
+
+-- 评分
+CREATE TABLE "score" (
+	"entry"   TEXT     NOT NULL,   -- entries.id
+	"score"   REAL     NOT NULL,   -- 评分（0-10)
+	"author"  INTEGER  NOT NULL,   -- 评分者
+	"version" TEXT     NOT NULL,   -- 词条版本
+	"time"    TEXT     NOT NULL,   -- 评分时间
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("author") REFERENCES "authors"("id"),
+	FOREIGN KEY("version") REFERENCES "history"("id")
+);
+
+CREATE INDEX idx_score_entry ON "score"("entry");
+CREATE INDEX idx_score_version ON "score"("version");
+CREATE INDEX idx_score_time ON "score"("time");
 
 -- 文章占用列表
 CREATE TABLE "occupied" (
