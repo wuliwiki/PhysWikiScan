@@ -170,6 +170,7 @@ CREATE TABLE "score" (
 	"author"  INTEGER  NOT NULL,   -- 评分者
 	"version" TEXT     NOT NULL,   -- 词条版本
 	"time"    TEXT     NOT NULL,   -- 评分时间
+	"comment" TEXT     NOT NULL,   -- 评分理由等
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("version") REFERENCES "history"("id")
