@@ -9,13 +9,13 @@ CREATE TABLE "entries" (
 	"authors"   TEXT NOT NULL DEFAULT '',       -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
 	"part"      TEXT NOT NULL DEFAULT '',       -- 部分， 空代表不在目录中
 	"chapter"   TEXT NOT NULL DEFAULT '',       -- 章， 空代表不在目录中
-	"last"      TEXT NOT NULL DEFAULT '',       -- 目录中的上一个文章， 空代表这是第一个或不在目录中
-	"next"      TEXT NOT NULL DEFAULT '',       -- 目录中的下一个文章， 空代表这是最后一个或不在目录中
+	"last"      TEXT NOT NULL DEFAULT '',       -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
+	"next"      TEXT NOT NULL DEFAULT '',       -- 目录中的下一篇文章， 空代表这是最后一个或不在目录中
 	"license"   TEXT NOT NULL DEFAULT 'Usr',    -- 协议
 	"type"      TEXT NOT NULL DEFAULT '',       -- 类型
 	"keys"      TEXT NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
-	-- 【待迁移到 pentries 表】"entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
-	-- 每个文章若有 n 个 \pentry， 则在树状图中表示为 n 个节点（编号从 1 开始），每个节点的内容是对应的 \pentry 到下一个 \pentry 之间的内容
+	-- 【待迁移到 nodes/edges 表】"entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
+	-- 每篇文章若有 n 个 \pentry， 则在树状图中表示为 n 个节点（编号从 1 开始），每个节点的内容是对应的 \pentry 到下一个 \pentry 之间的内容
 	-- 每个节点默认依赖前一个节点（不需要在 \pentry 中列出来也不需要写进数据库）
 	-- 在每个 entry 后面用 ":编号" 表示只需要哪个子节点（\upref[编号]{}）， 不指定编号则默认最后一个节点（即整篇）
 	-- 然后用 * 标记发现循环时优先被程序忽略的节点（\upreff 命令）， 再用 ~ 标记是否被知识树忽略（多余或循环的预备知识）
@@ -109,20 +109,23 @@ CREATE TABLE "types" (
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
 
 -- 知识树节点（\pentry{}）
--- 每个词条自动添加一个词条节点， 使 nodes.id 和 entries.id 相同
+-- 每篇文章自动添加一个文章节点， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
 CREATE TABLE "nodes" (
-	"id"        TEXT NOT NULL UNIQUE,    -- \label{}
-	"entry"     TEXT NOT NULL,           -- entries.id
-	"order"     INTEGER NOT NULL UNIQUE, -- 在文章中出现的顺序（编号从 1 开始）
-	PRIMARY KEY("id")
+	"id"        INTEGER NOT NULL UNIQUE,
+	"label"     TEXT NOT NULL UNIQUE,      -- \label{}
+	"entry"     TEXT NOT NULL,             -- entries.id
+	"order"     INTEGER NOT NULL UNIQUE,   -- 在文章中出现的顺序（编号从 1 开始）
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	PRIMARY KEY("id" AUTOINCREMENT),
 );
 
+CREATE INDEX idx_nodes_label ON "nodes"("label");
 CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 
 -- 知识树的边（\pentry{} 中的 \upref{}）
 CREATE TABLE "edges" (
-	"to"       TEXT NOT NULL,         -- nodes.id
-	"from"     TEXT NOT NULL UNIQUE,  -- nodes.id （可以是自动添加的词条节点）
+	"to"       INTEGER NOT NULL,      -- nodes.id
+	"from"     INTEGER NOT NULL,      -- nodes.id （可以是自动添加的文章节点）
 	"weak"     INTEGER NOT NULL,      -- [0|1] 原来的 * 标记，优先被 hide
 	"hide"     INTEGER NOT NULL,      -- 原来的 ~ 标记， 不在知识树中显示（多余的预备知识）
 	PRIMARY KEY("to", "from"),
@@ -135,18 +138,18 @@ CREATE INDEX idx_edges_from ON "edges"("from");
 
 -- 文章标记
 -- （issues 环境属于该表）
-CREATE TABLE "marks" (
-	"entry"      TEXT    NOT NULL,        -- entries.id
-	"type"       TEXT    NOT NULL,        -- 暂时不包括 \issueDraft
-	"comment"    TEXT    NOT NULL,        -- issueOthers{} 或其他支持评论的 issue 类型
+CREATE TABLE "tags" (
+	"entry"      TEXT    NOT NULL,     -- entries.id
+	"type"       TEXT    NOT NULL,     -- 暂时不包括 \issueDraft
+	"comment"    TEXT    NOT NULL,     -- issueOthers{} 或其他支持评论的 issue 类型
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	FOREIGN KEY("type")   REFERENCES "mark_types"("id")
+	FOREIGN KEY("type")   REFERENCES "tag_types"("id")
 );
 
-CREATE INDEX idx_marks_to ON "marks"("type");
+CREATE INDEX idx_tags_type ON "tags"("type");
 
-CREATE TABLE "mark_types" (
+CREATE TABLE "tag_types" (
 	"id"      TEXT    NOT NULL UNIQUE, -- entries.id （暂时不包括 \issueDraft）
 	"name"    TEXT    NOT NULL,        -- 中文名
 	PRIMARY KEY("id")
@@ -168,7 +171,7 @@ CREATE TABLE "score" (
 	"entry"   TEXT     NOT NULL,   -- entries.id
 	"score"   REAL     NOT NULL,   -- 评分（0-10)
 	"author"  INTEGER  NOT NULL,   -- 评分者
-	"version" TEXT     NOT NULL,   -- 词条版本
+	"version" TEXT     NOT NULL,   -- 文章版本
 	"time"    TEXT     NOT NULL,   -- 评分时间
 	"comment" TEXT     NOT NULL,   -- 评分理由等
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
@@ -233,8 +236,8 @@ CREATE TABLE "chapters" (
 	"order"         INTEGER NOT NULL UNIQUE, -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
 	"caption"       TEXT    NOT NULL,        -- 标题
 	"part"          TEXT    NOT NULL,        -- 所在部分（不能为 0）
-	"entry_first"   TEXT    NOT NULL,        -- 第一个文章
-	"entry_last"    TEXT    NOT NULL,        -- 最后一个文章
+	"entry_first"   TEXT    NOT NULL,        -- 第一篇文章
+	"entry_last"    TEXT    NOT NULL,        -- 最后一篇文章
 	PRIMARY KEY("id"),
 	FOREIGN KEY("part")        REFERENCES "parts"("id"),
 	FOREIGN KEY("entry_first") REFERENCES "entries"("id"),
@@ -260,7 +263,7 @@ CREATE TABLE "figures" (
 	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 引用本图的文章（以 entries.refs 为准）
 	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： 所有图片文件（"images.figure"）, "authors", "last", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的图片文件中。
 	"deleted"     INTEGER NOT NULL DEFAULT 0,   -- [0] entry 源码中定义了该环境 [1] 定义后被删除
-	"remark"      TEXT    NOT NULL DEFAULT '',  -- 备注信息
+	"comment"     TEXT    NOT NULL DEFAULT '',  -- 备注信息
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("aka")   REFERENCES "figures"("id"),
