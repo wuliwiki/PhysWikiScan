@@ -40,7 +40,7 @@ CREATE TABLE "entries" (
 INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1); -- 防止 FOREIGN KEY 报错
 
 -- 文章中的 \upref{}
--- TODO: 用于替代 entries.uprefs 和 entries.ref_by
+-- 包括 \pentry{} 中的
 CREATE TABLE "entry_uprefs" (
 	"entry"      TEXT NOT NULL,     -- entries.id
 	"upref"      TEXT NOT NULL,     -- entries.id
@@ -110,11 +110,11 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防
 -- 每篇文章自动添加一个文章节点， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
 CREATE TABLE "nodes" (
 	"id"        INTEGER NOT NULL UNIQUE,
-	"label"     TEXT NOT NULL UNIQUE,      -- \label{}
-	"entry"     TEXT NOT NULL,             -- entries.id
-	"order"     INTEGER NOT NULL UNIQUE,   -- 在文章中出现的顺序（编号从 1 开始）
+	"label"     TEXT    NOT NULL UNIQUE DEFAULT '',   -- \label{}
+	"entry"     TEXT    NOT NULL,                     -- entries.id
+	"order"     INTEGER NOT NULL,                     -- 在文章中出现的顺序（从 1 开始）
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT),
+	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
 CREATE INDEX idx_nodes_label ON "nodes"("label");
@@ -123,9 +123,9 @@ CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 -- 知识树的边（\pentry{} 中的 \upref{}）
 CREATE TABLE "edges" (
 	"to"       INTEGER NOT NULL,      -- nodes.id
-	"from"     INTEGER NOT NULL,      -- nodes.id （可以是自动添加的文章节点）
-	"weak"     INTEGER NOT NULL,      -- [0|1] 原来的 * 标记，优先被 hide
-	"hide"     INTEGER NOT NULL,      -- 原来的 ~ 标记， 不在知识树中显示（多余的预备知识）
+	"from"     INTEGER NOT NULL,      -- nodes.id （若与 entries.id 相同则表示最后一个节点，即依赖整篇文章）
+	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先被 hide（\upreff{}）（原 * 标记）
+	"hide"     INTEGER NOT NULL,      -- 多余的预备知识， 不在知识树中显示（原 ~ 标记）
 	PRIMARY KEY("to", "from"),
 	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
 	FOREIGN KEY("from")  REFERENCES "nodes"("id")
