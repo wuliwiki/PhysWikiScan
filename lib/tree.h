@@ -27,7 +27,7 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 				++ind1;
 			entry = str.substr(ind0, ind1 - ind0);
 			for (auto &ee: pentry) // check repeat
-				for (auto &e : ee)
+				for (auto &e : ee.second)
 					if (entry == e.entry)
 						throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str + SLS_WHERE);
 			ind0 = ind1;
@@ -56,9 +56,9 @@ inline void parse_pentry(Pentry_O pentry, Str_I str)
 					throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str + SLS_WHERE);
 				break;
 			}
-			pentry1.emplace_back(entry, i_node, star, tilde);
+			pentry1.second.emplace_back(entry, i_node, star, tilde);
 		}
-		pentry1.emplace_back(entry, i_node, star, tilde);
+		pentry1.second.emplace_back(entry, i_node, star, tilde);
 	}
 }
 
@@ -68,9 +68,9 @@ inline void join_pentry(Str_O str, Pentry_I v_pentries)
 	str.clear();
 	if (v_pentries.empty()) return;
 	for (auto &pentries : v_pentries) {
-		if (pentries.empty())
+		if (pentries.second.empty())
 			throw scan_err("\\pentry{} empty!" SLS_WHERE);
-		for (auto &p : pentries) {
+		for (auto &p : pentries.second) {
 			str += p.entry;
 			if (p.i_node > 0)
 				str += ":" + num2str(p.i_node);
@@ -166,9 +166,9 @@ inline void db_get_tree1(
 					q.push_back(nod);
 			}
 		}
-		if (pentry[i_node-1].empty())
+		if (pentry[i_node-1].second.empty())
 			throw internal_err("empty \\pentry{} should have been ignored. " SLS_WHERE);
-		for (auto &en : pentry[i_node-1]) {
+		for (auto &en : pentry[i_node-1].second) {
 			if (!entry_info.count(en.entry))
 				db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
 			if (en.i_node == 0) { // 0 means the last node
@@ -201,7 +201,7 @@ inline void db_get_tree1(
 								   + nod.entry + ":" + to_string(nod.i_node));
 			tree[i].push_back(from);
 		}
-		for (auto &en : pentry[i_node-1]) {
+		for (auto &en : pentry[i_node-1].second) {
 			Node nod(en.entry, en.i_node);
 			Long from = search(nod, nodes);
 			if (from < 0)
@@ -252,7 +252,7 @@ inline void db_get_tree1(
 				Long i_red = alt_path.back(); // node[i_red] is redundant
 				auto &node_red = nodes[i_red];
 				bool found = false;
-				for (auto &e: pentry1) {
+				for (auto &e: pentry1.second) {
 					if (e.entry == node_red.entry && e.i_node == node_red.i_node) {
 						e.tilde = found = true;
 						break;
@@ -279,8 +279,8 @@ inline void db_get_tree1(
 	for (Long i = 0; i < size(pentry0_info); ++i) {
 		auto &pentry1_info = pentry0_info[i];
 		auto &pentry1 = pentry0[i];
-		for (Long j = 0; j < size(pentry1_info); ++j)
-			pentry1[j].tilde = pentry1_info[j].tilde;
+		for (Long j = 0; j < size(pentry1_info.second); ++j)
+			pentry1.second[j].tilde = pentry1_info.second[j].tilde;
 	}
 }
 
@@ -327,7 +327,7 @@ inline void db_get_tree(
 		for (Long i_node = 1; i_node <= size(pentry); ++i_node) {
 			auto &pentry1 = pentry[i_node-1];
 			nodes.emplace_back(entry, i_node);
-			for (auto &ee : pentry1) {
+			for (auto &ee : pentry1.second) {
 				// convert node `0` to the actual node
 				if (ee.i_node == 0) {
 					ee.i_node = size(get<3>(entry_info[ee.entry]));
@@ -352,7 +352,7 @@ inline void db_get_tree(
 				if (to < 0) throw internal_err(SLS_WHERE);
 				tree[from].push_back(to);
 			}
-			for (auto &ee: pentry1) {
+			for (auto &ee: pentry1.second) {
 				// convert node `0` to the actual node
 				if (!ee.tilde) {
 					Long to = search(Node(ee.entry, ee.i_node), nodes);
@@ -363,4 +363,10 @@ inline void db_get_tree(
 			}
 		}
 	}
+}
+
+// if changed, update pentry to db "nodes" and "edges". And if a used label is deleted, give an error!
+inline void db_update_pentry(Pentry_I pentry, SQLite::Database &db_rw)
+{
+	SLS_ERR("TODO!!!");
 }

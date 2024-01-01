@@ -13,7 +13,8 @@ struct PentryRef {
 
 // all \pentry info of an entry
 // pentry[i] is a single \pentry{} command
-typedef vector<vector<PentryRef>> Pentry;
+//                 label        \upref
+typedef vector<pair<Str, vector<PentryRef>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;
 
@@ -114,16 +115,18 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 {
 	Bool star;
 	Long ind0 = -1, ikey, order;
-	Str temp, depEntry;
+	Str temp, depEntry, label;
 	pentry_raw.clear();
 	while (1) {
 		ind0 = find_command(str, "pentry", ind0+1);
 		if (ind0 < 0)
 			break;
-		if (pentry_raw.empty() || !pentry_raw.back().empty())
+		if (pentry_raw.empty() || !pentry_raw.back().second.empty())
 			pentry_raw.emplace_back();
 		auto &pentry1 = pentry_raw.back();
-		command_arg(temp, str, ind0, 0, 't');
+		if (command_has_opt(str, ind0)) // get optional arg (label)
+			command_arg(pentry1.first, str, ind0, 0);
+		command_arg(temp, str, ind0, 0, true, true);
 		Long ind1 = 0, ind2 = 0;
 		Bool first_upref = true;
 		while (1) {
@@ -145,15 +148,15 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 				order = 0;
 			if (!exist("entries", "id", depEntry, db_read))
 				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + depEntry + ".tex");
-			for (auto &e : pentry1)
+			for (auto &e : pentry1.second)
 				if (depEntry == e.entry)
 					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + depEntry + ".tex");
-			pentry1.emplace_back(depEntry, order, star, false); // tilde always false
+			pentry1.second.emplace_back(depEntry, order, star, false); // tilde always false
 			ind2 = skip_command(temp, ind1, 1);
 			first_upref = false;
 		}
 	}
-	if (!pentry_raw.empty() && pentry_raw.back().empty())
+	if (!pentry_raw.empty() && pentry_raw.back().second.empty())
 		pentry_raw.pop_back();
 }
 

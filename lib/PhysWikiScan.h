@@ -176,7 +176,7 @@ inline Long paragraph_tag(Str_IO str)
 	}
 }
 
-// replace \pentry comman with html round panel
+// replace \pentry command with html round panel
 // skip pentry without \\upref*
 inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 {
@@ -184,7 +184,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 	Str pentry_arg, entry;
 	Str span_beg = R"(<span style="color:gray;">)", span_end = "</span>";
 	Long i = -1; // index to pentry
-	while (1) { // loop through \pentry command (not pentry var)
+	while (1) {  // loop through \pentry command (not pentry var)
 		++i;
 		ind = find_command(str, "pentry", ind);
 		if (ind < 0) {
@@ -193,7 +193,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			break;
 		}
 		auto &pentry1 = pentry[i];
-		Long Nupref = pentry.empty() ? 0 : size(pentry1);
+		Long Nupref = pentry.empty() ? 0 : size(pentry1.second);
 		Long ind1 = skip_command(str, ind, 1);
 		command_arg(pentry_arg, str, ind);
 		Long ind2 = 0, j = -1;
@@ -210,7 +210,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			}
 			if (j >= Nupref)
 				throw internal_err(SLS_WHERE);
-			if (pentry1[j].tilde) {
+			if (pentry1.second[j].tilde) {
 				pentry_arg.insert(ind3, span_end);
 				pentry_arg.insert(ind2, span_beg);
 				ind3 += size(span_beg) + size(span_end);
@@ -426,7 +426,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, set<Char32> &illegal_chars,
-	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_rw)
+	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
@@ -447,10 +447,10 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// read title from first comment
 	get_title(title, str);
 	isdraft = is_draft(str);
-	Str db_title, authors, db_keys_str, db_license, db_type, db_pentry_str, chapter, last_entry, next_entry;
+	Str db_title, authors, db_keys_str, db_license, db_type, chapter, last_entry, next_entry;
 	Long db_draft;
-	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "caption", "chapter", "last", "next", "keys", "pentry", "isdraft", "license", "type" )"
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "caption", "chapter", "last", "next", "keys", "isdraft", "license", "type" )"
 		R"(FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
@@ -460,10 +460,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	last_entry = stmt_select.getColumn(2).getString();
 	next_entry = stmt_select.getColumn(3).getString();
 	db_keys_str = stmt_select.getColumn(4).getString();
-	db_pentry_str = stmt_select.getColumn(5).getString();
-	db_draft = (int)stmt_select.getColumn(6);
-	db_license = stmt_select.getColumn(7).getString();
-	db_type = stmt_select.getColumn(8).getString();
+	db_draft = (int)stmt_select.getColumn(5);
+	db_license = stmt_select.getColumn(6).getString();
+	db_type = stmt_select.getColumn(7).getString();
 	stmt_select.reset();
 
 	bool in_main = !chapter.empty(); // entry in main.tex
@@ -504,9 +503,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	if (replace(html, "PhysWikiHTMLtitle", db_title) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 	// get license
-	get_entry_license(license, str, db_rw);
+	get_entry_license(license, str, db_read);
 	// get entry type
-	get_entry_type(type, str, db_rw);
+	get_entry_type(type, str, db_read);
 	// check globally forbidden char
 	global_forbid_char(illegal_chars, str);
 	// save and replace verbatim code with an index
@@ -554,9 +553,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	theorem_like_env(str);
 	// process figure environments
 	figure_env(img_to_delete, fig_ext_hash, str, fig_captions,
-		entry, fig_ids, db_rw);
+		entry, fig_ids, db_read);
 	// get dependent entries from \pentry{}
-	get_pentry(pentry, str, db_rw);
+	get_pentry(pentry, str, db_read);
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
@@ -564,9 +563,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// check dependency tree and auto mark redundant pentry with ~
 	vector<DGnode> tree; vector<Node> nodes;
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
-	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_rw);
-	// update entries.pentry if changed
-	db_pentry_str = get_text("entries", "id", entry, "pentry", db_rw);
+	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_read);
 	// process \pentry{}
 	pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
 	// replace user defined commands
@@ -578,9 +575,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Command2Tag("textsl", "<i>", "</i>", str);
 	pay2div(str); // deal with "\pay" "\paid" pseudo command
 	// replace \upref{} with link icon
-	upref(uprefs_change, str, entry, db_rw);
+	upref(uprefs_change, str, entry, db_read);
 	href(str); // hyperlinks
-	cite(bibs_change, str, entry, db_rw); // citation
+	cite(bibs_change, str, entry, db_read); // citation
 	
 	// footnote
 	footnote(str, entry, gv::url);
@@ -608,9 +605,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 			throw internal_err(u8"\"PhysWikiNnode\" 在 entry_template.html 中数量不对");
 	}
 
-	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_rw);
+	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
 
-	if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_rw)) != 1)
+	if (replace(html, "PhysWikiAuthorList", db_get_author_list(entry, db_read)) != 1)
 		throw internal_err(u8"\"PhysWikiAuthorList\" 在 entry_template.html 中数量不对");
 
 	// update db "entries" table
@@ -641,7 +638,7 @@ inline void PhysWikiOnlineN_round1(
 	unordered_map<Str, unordered_map<Str, Str>> fig_ext_hash; // figures.id -> (ext -> hash)
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
-	Str pentry_str, db_pentry_str, html;
+	Str html;
 	unordered_map<Str, unordered_map<Str, Bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
 	unordered_map<Str, unordered_map<Str, Bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 
@@ -694,15 +691,8 @@ inline void PhysWikiOnlineN_round1(
 				update_entries.clear();
 				titles.resize(entries.size());
 			}
-
-			join_pentry(pentry_str, pentry);
-			if (pentry_str != db_pentry_str) {
-				SQLite::Statement stmt_update(db_rw,
-					R"(UPDATE "entries" SET "pentry"=? WHERE "id"=?;)");
-				stmt_update.bind(1, pentry_str);
-				stmt_update.bind(2, entry);
-				stmt_update.exec(); stmt_update.reset();
-			}
+			// update db table nodes/edges
+			db_update_pentry(pentry, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
