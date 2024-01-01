@@ -505,18 +505,16 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 }
 
 // process upref
-// path must end with '\\'
 inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0]del
 	 Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
 	uprefs_change.clear();
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "upref" FROM "entry_uprefs" WHERE "entry"=?;)");
 	stmt_select.bind(1, entry);
-	if (!stmt_select.executeStep())
-		throw internal_err(SLS_WHERE);
 	vecStr db_uprefs;
-	parse(db_uprefs, stmt_select.getColumn(0));
+	while (stmt_select.executeStep())
+		db_uprefs.push_back(stmt_select.getColumn(0));
 	vecBool db_uprefs_visited(db_uprefs.size(), false);
 
 	Long ind0 = 0, right, N = 0;
@@ -528,7 +526,6 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		command_arg(entry1, str, ind0, 0, true, true);
 		if (entry1 == entry)
 			throw scan_err(u8"不允许 \\upref{" + entry1 + u8"} 本文");
-		trim(entry1);
 		sb = gv::path_in; sb << "contents/" << entry1 << ".tex";
 		if (!file_exist(sb))
 			throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
@@ -539,10 +536,13 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		str.replace(ind0, right - ind0, sb);
 		++N;
 
-		// db
+		// --- db ---
 		Long ind = search(entry1, db_uprefs);
 		if (ind < 0) {
 			if (!uprefs_change.count(entry1)) {
+				bool deleted = get_int("entries", "id", entry1, "deleted", db_read);
+				if (deleted)
+					throw scan_err(u8"不允许 \\upref{被删除的文章}：" + entry1 + SLS_WHERE);
 				db_log(u8"检测到新增的 upref（将添加）：" + entry1);
 				uprefs_change[entry1] = true;
 			}
@@ -552,6 +552,9 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 	}
 	for (Long i = 0; i < size(db_uprefs); ++i) {
 		if (!db_uprefs_visited[i]) {
+			bool deleted = get_int("entries", "id", entry1, "deleted", db_read);
+			if (deleted)
+				db_log(u8"检测到删除命令 \\upref{被删除的文章}（删除文章时应该已经确保了没有被 upref 才对）（将视为没有被删除）：" + entry1);
 			db_log(u8"检测到删除的 upref（将删除）：" + db_uprefs[i]);
 			uprefs_change[db_uprefs[i]] = false;
 		}

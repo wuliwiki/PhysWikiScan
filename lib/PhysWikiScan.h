@@ -713,8 +713,8 @@ inline void PhysWikiOnlineN_round1(
 	try {
 		// update entries.bibs & bibliography.ref_by
 		db_update_entry_bibs(entry_bibs_change, db_rw);
-		// update entries.uprefs & entries.ref_by
-		db_update_uprefs(entry_uprefs_change, db_rw);
+		// update entry_uprefs
+		db_update_entry_uprefs(entry_uprefs_change, db_rw);
 	}
 	catch (const std::exception &e) {
 		entry_err["entry_unknown"] = e.what();
@@ -857,7 +857,9 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 	vecStr ref_by, vtmp(1);
 	Str stmp, err_msg;
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "ref_by", "deleted", "caption", "keys", "type", "license", "draft" FROM "entries" WHERE "id"=?;)");
+		R"(SELECT "deleted", "caption", "keys", "type", "license", "draft" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "entry" FROM "entry_uprefs" WHERE "upref"=?;)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=? WHERE "id"=?;)");
 
@@ -866,13 +868,12 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		stmt_select.bind(1,entry);
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的文章： " + entry);
-		const Str &ref_by_str = stmt_select.getColumn(0);
-		bool db_deleted = (int)stmt_select.getColumn(1);
-		const Str &db_title = stmt_select.getColumn(2);
-		const Str &db_keys_str = stmt_select.getColumn(3);
-		const Str &db_type_str = stmt_select.getColumn(4);
-		const Str &db_license_str = stmt_select.getColumn(5);
-		bool db_draft = (int)stmt_select.getColumn(6);
+		bool db_deleted = (int)stmt_select.getColumn(0);
+		const Str &db_title = stmt_select.getColumn(1);
+		const Str &db_keys_str = stmt_select.getColumn(2);
+		const Str &db_type_str = stmt_select.getColumn(3);
+		const Str &db_license_str = stmt_select.getColumn(4);
+		bool db_draft = (int)stmt_select.getColumn(5);
 		stmt_select.reset();
 
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
@@ -892,9 +893,13 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 				write(sb1, sb);
 			}
 		}
-		parse(ref_by, ref_by_str);
+		ref_by.clear();
+		stmt_select2.bind(entry);
+		while (stmt_select2.executeStep())
+			ref_by.push_back(stmt_select2.getColumn(0));
 		if (!ref_by.empty()) {
-			err_msg << u8"无法删除文章，因为被其他文章引用：" << ref_by_str << "\n\n";
+			join(sb, ref_by);
+			err_msg << u8"无法删除文章，因为被其他文章引用：" << sb << "\n\n";
 			continue;
 		}
 

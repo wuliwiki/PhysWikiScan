@@ -245,7 +245,7 @@ inline Long command_Narg(Str_I str, Long_I ind)
 }
 
 // get the i-th command argument in {}
-// when "trim" is 't', trim white spaces on both sides of "arg"
+// when "trim" is true, trim white spaces on both sides of "arg"
 // return the index after '}' of the argument if successful
 // return -1 if requested argument does not exist
 // use `arg_no_brace` to get args without `{}`, e.g. `b` in `\frac{a} b` (single char/command), will return one index after arg

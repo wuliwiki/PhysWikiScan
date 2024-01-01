@@ -26,8 +26,6 @@ CREATE TABLE "entries" (
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_autorefs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】"bib1 bib2" 用 \cite 引用的文献
-	"uprefs"       TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_uprefs 表】"entry1 entry2" 引用的其他文章（所有的 upref）
-	"ref_by"       TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_uprefs 表】【生成】"entry1 entry2" 被哪些文章列为 "uprefs"， 包括 pentry 中的（为空才能删除本文）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),

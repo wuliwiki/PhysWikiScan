@@ -341,66 +341,41 @@ inline void db_update_entry_bibs(const unordered_map<Str, unordered_map<Str, Boo
 	cout << "done!" << endl;
 }
 
-// update entries.uprefs, entries.ref_by
-inline void db_update_uprefs(
+// update entry_uprefs
+inline void db_update_entry_uprefs(
+		//                 entry -> (upref -> [1]add/[0]del)
 		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change,
 		SQLite::Database &db_rw)
 {
-	cout << "updating entries.uprefs ..." << endl;
+	cout << "updating entry_uprefs ..." << endl;
 	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "uprefs" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "entries" SET "uprefs"=? WHERE "id"=?;)");
+		R"(SELECT "upref" FROM "entry_uprefs" WHERE "entry"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT INTO "entry_uprefs" ("entry", "upref") VALUES (?, ?);)");
+	SQLite::Statement stmt_delete(db_rw,
+		R"(DELETE FROM "entry_uprefs" WHERE "entry"=? AND "upref"=?;)");
 	Str str;
-	set<Str> uprefs, ref_by;
+	set<Str> /*uprefs,*/ ref_by;
 	for (auto &e : entry_uprefs_change) {
 		auto &entry = e.first;
 		auto &uprefs_change = e.second;
-		stmt_select.bind(1, entry);
-		if (!stmt_select.executeStep())
-			throw internal_err(SLS_WHERE);
-		parse(uprefs, stmt_select.getColumn(0));
-		stmt_select.reset();
+		
 		for (auto &ee : uprefs_change) {
 			auto &entry_refed = ee.first;
 			auto &is_add = ee.second;
-			bool deleted = get_int("entries", "id", entry_refed, "deleted", db_rw);
-			if (deleted) {
-				if (is_add)
-					throw scan_err(u8"不允许 \\upref{被删除的文章}：" + entry_refed + SLS_WHERE);
-				else
-					db_log(u8"检测到删除命令 \\upref{被删除的文章}（删除文章时应该已经确保了没有被 upref 才对）（将视为没有被删除）：" + entry_refed);
+			// apply change
+			if (is_add) {
+				stmt_insert.bind(1, entry);
+				stmt_insert.bind(2, entry_refed);
+				stmt_insert.exec(); stmt_insert.reset();
+			}
+			else {
+				stmt_delete.bind(1, entry);
+				stmt_delete.bind(2, entry_refed);
+				stmt_delete.exec(); stmt_delete.reset();
 			}
 		}
-		change_set(uprefs, uprefs_change);
-		join(str, uprefs);
-		stmt_update.bind(1, str);
-		stmt_update.bind(2, entry);
-		stmt_update.exec(); stmt_update.reset();
 	}
-
-	cout << "updating entries.ref_by ..." << endl;
-	unordered_map<Str, unordered_map<Str, Bool>> entry_ref_bys_change;
-	for (auto &e : entry_uprefs_change)
-		for (auto &ref : e.second)
-			entry_ref_bys_change[ref.first][e.first] = ref.second;
-
-	SQLite::Statement stmt_select2(db_rw,
-		R"(SELECT "ref_by" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_update2(db_rw,
-		R"(UPDATE "entries" SET "ref_by"=? WHERE "id"=?;)");
-	for (auto &e : entry_ref_bys_change) {
-		stmt_select2.bind(1, e.first);
-		if (!stmt_select2.executeStep()) throw internal_err(SLS_WHERE);
-		parse(ref_by, stmt_select2.getColumn(0));
-		stmt_select2.reset();
-		change_set(ref_by, e.second);
-		join(str, ref_by);
-		stmt_update2.bind(1, str);
-		stmt_update2.bind(2, e.first);
-		stmt_update2.exec(); stmt_update2.reset();
-	}
-
 }
 
 // update entries.refs, labels.ref_by, figures.ref_by
