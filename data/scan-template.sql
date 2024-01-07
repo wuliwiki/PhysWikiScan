@@ -441,10 +441,9 @@ CREATE TABLE "authors" (
 	"uuid"       TEXT    NOT NULL DEFAULT '', -- "8-4-4-4-12" 网站用户系统的 ID
 	"name"       TEXT    NOT NULL,            -- 昵称
 	"applied"    INTEGER NOT NULL DEFAULT 0,  -- [0|1] 已申请
-	"hide"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 不出现在文章作者列表
+	"hide"       INTEGER NOT NULL DEFAULT 0,  -- 【待迁移到 authors_rights 表】[0|1] 不出现在文章作者列表
 	"aka"        INTEGER NOT NULL DEFAULT -1, -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
 	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）
-	"rights"     TEXT    NOT NULL DEFAULT '', -- 权限（见 rights 表，用空格隔开）
 	"referee"    TEXT    NOT NULL DEFAULT '', -- "part:parts.id chap:chapters.id sub:phys" 哪些部分/学科的审稿人
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")
@@ -452,7 +451,7 @@ CREATE TABLE "authors" (
 
 INSERT INTO "authors" ("id", "name") VALUES (-1, ''); -- 防止 FOREIGN KEY 报错
 
--- 权限
+-- 权限或限制种类
 CREATE TABLE "rights" (
 	"id"       TEXT    NOT NULL UNIQUE,
 	"name"     TEXT    NOT NULL UNIQUE,     -- 中文名
@@ -465,6 +464,18 @@ CREATE INDEX idx_authors_name ON "authors"("name");
 CREATE INDEX idx_authors_applied ON "authors"("applied");
 CREATE INDEX idx_authors_aka ON "authors"("aka");
 
+-- 作者权限或限制
+CREATE TABLE "author_rights" (
+	"author"   INTEGER NOT NULL UNIQUE,  -- authors.id
+	"right"    TEXT    NOT NULL UNIQUE,  --rights.id
+	PRIMARY KEY("author", "right"),
+	FOREIGN KEY("author") REFERENCES "authors"("id"),
+	FOREIGN KEY("right") REFERENCES "rights"("id")
+);
+
+CREATE INDEX idx_author_rights_author ON "author_rights"("author");
+CREATE INDEX idx_author_rights_right ON "author_rights"("right");
+
 -- 工资规则
 -- rule: 作者 + 协议 -> 时薪
 -- rule: 作者 + 文章 -> 缩放
@@ -475,7 +486,7 @@ CREATE TABLE "salary" (
 	"entry"   TEXT    NOT NULL DEFAULT '',       -- 文章（空代表所有）
 	"license" TEXT    NOT NULL DEFAULT '',       -- 协议（空代表所有）
 	"begin"   TEXT    NOT NULL DEFAULT '',       -- 生效时间（空代表所有）
-	"end"     TEXT    NOT NULL DEFAULT '',       -- 截至时间（空代表所有）
+	"end"     TEXT    NOT NULL DEFAULT '',       -- 截止时间（空代表所有）
 	"value"   REAL    NOT NULL DEFAULT -1,       -- 时薪（元）（-1 代表 NULL）
 	"scale"   REAL    NOT NULL DEFAULT  1,       -- 缩放
 	"comment" TEXT    NOT NULL DEFAULT '',       -- 备注
