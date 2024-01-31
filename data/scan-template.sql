@@ -24,7 +24,7 @@ CREATE TABLE "entries" (
 	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
-	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_autorefs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
+	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
 	"bibs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】"bib1 bib2" 用 \cite 引用的文献
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
@@ -372,7 +372,7 @@ CREATE TABLE "labels" (
 	"type"     TEXT    NOT NULL,            -- [eq|sub|tab|def|lem|the|cor|ex|exe] 标签类型
 	"entry"    TEXT    NOT NULL,            -- 所在文章（以 entries.labels 为准）
 	"order"    INTEGER NOT NULL,            -- 显示编号
-	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【生成】"entry1 entry2" 被哪些文章引用（以 entries.refs 为准）
+	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 被哪些文章引用（以 entries.refs 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	UNIQUE("type", "entry", "order")

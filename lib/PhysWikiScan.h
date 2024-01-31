@@ -561,10 +561,12 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	addTODO(str);
 
 	// check dependency tree and auto mark redundant pentry with ~
-	vector<DGnode> tree; vector<Node> nodes;
-	unordered_map<Str, pair<Str, Pentry>> entry_info;
-	db_get_tree1(tree, nodes, entry_info, entry, title, pentry, db_read);
-	// process \pentry{}
+	{
+		vector<DGnode> tree; vector<Node> nodes;
+		unordered_map<Str, pair<Str, Pentry>> entry_info;
+		db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
+	}
+	// convert \pentry{} to html
 	pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
 	// replace user defined commands
 	newcommand(str, rules);
@@ -691,7 +693,7 @@ inline void PhysWikiOnlineN_round1(
 				update_entries.clear();
 				titles.resize(entries.size());
 			}
-			// update db table nodes/edges
+			// update db table nodes/edges for 1 entry
 			db_update_pentry(pentry, db_rw);
 		}
 		catch (const std::exception &e) {
@@ -714,6 +716,7 @@ inline void PhysWikiOnlineN_round1(
 		file_remove(e);
 }
 
+// convert \autoref{} in *.tmp to html, write *.html
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
 		vecStr_I entries, vecStr_I titles, SQLite::Database &db_rw, bool write_html = true)

@@ -3,17 +3,19 @@
 
 // a single \upref{} or \upreff{} inside a \pentry{}
 struct PentryRef {
-	Str entry;
-	Long i_node; // "entry:i_node" starting from 1, 0 if there is none
+	Str entry; // \upref{entry}
+	Long i_node; // "entry:i_node" starting from 1, 0 if there is none // TODO: use label instead
+    Str label; // optiional: which node in `entry`, empty means the last node
 	Bool star; // \upreff{}, i.e. marked * (prefer to be ignored)
 	Bool tilde; // omitted in the tree, i.e. marked ~
 	PentryRef(Str_I entry, Long_I i_node, Bool_I star, Bool_I tilde):
 		entry(entry), i_node(i_node), star(star), tilde(tilde) {};
 };
 
-// all \pentry info of an entry
+// all \pentry{} info of an entry
 // pentry[i] is a single \pentry{} command
-//                 label        \upref
+// each \pentry{} can optionally followed by a \label{}
+//                 \label        \upref
 typedef vector<pair<Str, vector<PentryRef>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;

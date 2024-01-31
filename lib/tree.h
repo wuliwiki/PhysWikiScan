@@ -115,23 +115,22 @@ typedef Node &Node_O, &Node_IO;
 inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.i_node == b.i_node; }
 inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node < b.i_node : a.entry < b.entry; }
 
-// get dependency tree from database, for (the last node of) 1 entry0 (last node as root)
+// get dependency tree from database, for all nodes of `entry0`
 // edge direction is the inverse of learning direction
-// each node of the tree is a part of an entry0 (if there are multiple pentries)
 // also check for cycle, and check for any of it's pentries are redundant
-// `entry0:(i+1)` will be in nodes[i]
 // nodes[i] corresponds to tree[i]
+// `entry0:(i+1)` will be nodes[i]
 inline void db_get_tree1(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
 		unordered_map<Str, pair<Str, Pentry>> &entry_info, // [out] entry -> (title, Pentry)
+        Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].tilde` will be updated
 		Str_I entry0, Str_I title0, // use the last node as tree root
-		Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].tilde` will be updated
 		SQLite::Database &db_read)
 {
 	tree.clear(); nodes.clear(); entry_info.clear();
 	SQLite::Statement stmt_select(db_read,
-								  R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
+		R"(SELECT "caption", "pentry" FROM "entries" WHERE "id" = ?;)");
 
 	Long Nnode0 = size(pentry0);
 	if (Nnode0 == 0) { // no \pentry
