@@ -6,7 +6,7 @@ struct PentryRef {
 	Str node_id; // \req{node_label}
 	bool star; // \reqq{}, i.e. marked * (prefer to be ignored)
 	bool tilde; // omitted in the tree, i.e. marked ~
-	PentryRef(Str node_id, Bool_I star, Bool_I tilde):
+	PentryRef(Str node_id, bool star, bool tilde):
 		node_id(std::move(node_id)), star(star), tilde(tilde) {};
 };
 
