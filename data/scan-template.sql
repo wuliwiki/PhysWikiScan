@@ -121,17 +121,17 @@ CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 
 -- 知识树的边（\pentry{} 中的 \upref{}）
 CREATE TABLE "edges" (
-	"to"       INTEGER NOT NULL,      -- nodes.id
 	"from"     INTEGER NOT NULL,      -- nodes.id （若与 entries.id 相同则表示最后一个节点，即依赖整篇文章）
+	"to"       INTEGER NOT NULL,      -- nodes.id
 	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先被 hide（\upreff{}）（原 * 标记）
 	"hide"     INTEGER NOT NULL,      -- 多余的预备知识， 不在知识树中显示（原 ~ 标记）
-	PRIMARY KEY("to", "from"),
+	PRIMARY KEY("from", "to"),
 	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
 	FOREIGN KEY("from")  REFERENCES "nodes"("id")
 );
 
-CREATE INDEX idx_edges_to ON "edges"("to");
 CREATE INDEX idx_edges_from ON "edges"("from");
+CREATE INDEX idx_edges_to ON "edges"("to");
 
 -- 文章标记
 -- （issues 环境属于该表）

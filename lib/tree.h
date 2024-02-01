@@ -1,126 +1,71 @@
 #pragma once
 #include "sqlite_db.h"
 
-
-// parse the string from "entries.pentry"
-// 0 means the last node or the whole entry
-inline void parse_pentry(Pentry_O pentry, Str_I str)
+// get `Pentry` for one entry from database
+inline void db_get_pentry(Pentry_O pentry, Str_I entry, SQLite::Database &db_read)
 {
-	Long ind0 = 0;
-	Str entry; // "entry" in "entry:i_node"
-	Long i_node; // "i_node" in "entry:i_node", 0 for nothing
-	Bool star; // has "*" in "entry:i_node*"
-	Bool tilde; // hash "~" at the end
-	pentry.clear();
-	if (str.empty())
-		return;
-	while (ind0 >= 0 && ind0 < size(str)) {
-		pentry.emplace_back();
-		auto &pentry1 = pentry.back();
-		while (1) { // get a node each loop
-			i_node = 0; star = tilde = false;
-			// get entry
-			if (!is_letter(str[ind0]))
-				throw internal_err(u8"数据库中 entries.pentry 格式不对 (非字母): " + str + SLS_WHERE);
-			Long ind1 = ind0 + 1;
-			while (ind1 < size(str) && is_alphanum(str[ind1]))
-				++ind1;
-			entry = str.substr(ind0, ind1 - ind0);
-			for (auto &ee: pentry) // check repeat
-				for (auto &e : ee.second)
-					if (entry == e.entry)
-						throw internal_err(u8"数据库中 entries.pentry1 存在重复的节点: " + str + SLS_WHERE);
-			ind0 = ind1;
-			if (ind0 == size(str)) break;
-			// get number
-			if (str[ind0] == ':')
-				ind0 = str2int(i_node, str, ind0 + 1);
-			if (ind0 == size(str)) break;
-			// get star
-			if (str[ind0] == '*') {
-				star = true; ++ind0;
-				if (ind0 == size(str)) break;
-			}
-			// check "~"
-			if (str[ind0] == '~') {
-				tilde = true; ++ind0;
-				if (ind0 == size(str)) break;
-			}
-			// check "|"
-			ind0 = str.find_first_not_of(' ', ind0);
-			if (ind0 < 0)
-				throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str + SLS_WHERE);
-			if (str[ind0] == '|') {
-				ind0 = str.find_first_not_of(' ', ind0 + 1);
-				if (ind0 < 0)
-					throw internal_err(u8"数据库中 entries.pentry1 格式不对 (多余的空格): " + str + SLS_WHERE);
-				break;
-			}
-			pentry1.second.emplace_back(entry, i_node, star, tilde);
-		}
-		pentry1.second.emplace_back(entry, i_node, star, tilde);
-	}
-}
-
-// join pentry back to a string
-inline void join_pentry(Str_O str, Pentry_I v_pentries)
-{
-	str.clear();
-	if (v_pentries.empty()) return;
-	for (auto &pentries : v_pentries) {
-		if (pentries.second.empty())
-			throw scan_err("\\pentry{} empty!" SLS_WHERE);
-		for (auto &p : pentries.second) {
-			str += p.entry;
-			if (p.i_node > 0)
-				str += ":" + num2str(p.i_node);
-			if (p.star)
-				str += "*";
-			if (p.tilde)
-				str += "~";
-			str += " ";
-		}
-		str += "| ";
-	}
-	str.resize(str.size()-3); // remove " | "
+    SQLite::Statement stmt_select_nodes(db_read,
+        R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
+    SQLite::Statement stmt_select_edges(db_read,
+        R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
+    stmt_select_nodes.bind(1, entry);
+    while (stmt_select_nodes.executeStep()) {
+        const Str &node_id = stmt_select_nodes.getColumn(0);
+        vector<PentryRef> pentryN;
+        stmt_select_edges.bind(1, node_id); // edges.to
+        while (stmt_select_edges.executeStep()) {
+            const Str &from = stmt_select_edges.getColumn(0); // edges.from
+            bool weak = stmt_select_edges.getColumn(1).getInt(); // edges.weak
+            bool hide = stmt_select_edges.getColumn(2).getInt(); // edges.hide
+            pentryN.emplace_back(from, weak, hide);
+        }
+        stmt_select_edges.reset();
+        pentry.emplace_back(node_id, std::move(pentryN));
+    }
+    stmt_select_nodes.reset();
 }
 
 // get title and Pentry obj for one entry
 // stmt_select should be defined as follows
-// `stmt_select` defined as:
-// SQLite::Statement stmt_select(db_read,
-//		R"(SELECT "caption", "pentry" FROM "entries" WHERE "id"=?;)");
 inline void db_get_entry_info(
 		pair<Str, Pentry> &info, // title, pentry
-		Str_I entry, SQLite::Statement &stmt_select)
+		Str_I entry, SQLite::Database &db_read)
 {
+    // get entry.caption
+    SQLite::Statement stmt_select_caption(db_read,
+		R"(SELECT "caption", FROM "entries" WHERE "id"=?;)");
 	auto &pentry = get<1>(info);
-	stmt_select.bind(1, entry);
-	if (!stmt_select.executeStep())
+	stmt_select_caption.bind(1, entry);
+	if (!stmt_select_caption.executeStep())
 		throw internal_err("entry not found: " + entry + " " SLS_WHERE);
-	get<0>(info) = stmt_select.getColumn(0).getString(); // title
-	parse_pentry(pentry, stmt_select.getColumn(1));
-	stmt_select.reset();
+	get<0>(info) = stmt_select_caption.getColumn(0).getString(); // title
+	stmt_select_caption.reset();
+    // get `Pentry`
+    db_get_pentry(info.second, entry, db_read);
 }
 
 // a node of the knowledge tree
 struct Node {
-	Str entry;
-	Long i_node;
-	Node(Str entry, Long_I i_node): entry(std::move(entry)), i_node(i_node) {};
+	Str id;
+    Str entry;
+    Long order;
+    Node(Str entry, Long_I order):
+        entry(std::move(entry)), order(order) {};
+	Node(Str id, Str entry, Long_I order):
+        id(std::move(id)), entry(std::move(entry)), order(order) {};
 };
 
 typedef const Node &Node_I;
 typedef Node &Node_O, &Node_IO;
 
-inline Bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.i_node == b.i_node; }
-inline Bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.i_node < b.i_node : a.entry < b.entry; }
+inline bool operator==(Node_I a, Node_I b) { return a.entry == b.entry && a.id == b.id; }
+inline bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.order < b.order : a.entry < b.entry; }
 
 // get dependency tree from database, for all nodes of `entry0`
 // edge direction is the inverse of learning direction
 // also check for cycle, and check for any of it's pentries are redundant
 // nodes[i] corresponds to tree[i]
-// `entry0:(i+1)` will be nodes[i]
+// `entry0:(i+1)` will be (first few) nodes[i]
 inline void db_get_tree1(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
@@ -130,21 +75,27 @@ inline void db_get_tree1(
 		SQLite::Database &db_read)
 {
 	tree.clear(); nodes.clear(); entry_info.clear();
-	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "caption", "pentry" FROM "entries" WHERE "id"=?;)");
+
+    SQLite::Statement stmt_select_caption(db_read,
+        R"(SELECT "caption", FROM "entries" WHERE "id"=?;)");
+    SQLite::Statement stmt_select_nodes(db_read,
+        R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
+    SQLite::Statement stmt_select_edges(db_read,
+        R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
 
 	Long Nnode0 = size(pentry0);
-	if (Nnode0 == 0) { // no \pentry
-		nodes.emplace_back(entry0, 1);
+	if (Nnode0 == 0) { // no \pentry{}
+		nodes.emplace_back(entry0, entry0, 1);
 		tree.emplace_back();
 		return;
 	}
 	deque<Node> q; // nodes to search
 
 	// set the first Nnode0 of nodes to all nodes of `entry0`
-	for (Long i_node = 1; i_node <= Nnode0; ++i_node) {
-		nodes.emplace_back(entry0, i_node);
-		q.emplace_back(entry0, i_node);
+	for (Long order = 1; order <= Nnode0; ++order) {
+        auto &node_id = pentry0[order-1].first;
+		nodes.emplace_back(node_id, entry0, order);
+		q.emplace_back(node_id, entry0, order);
 	}
 	entry_info[entry0].first = title0;
 	entry_info[entry0].second = pentry0;
@@ -152,7 +103,7 @@ inline void db_get_tree1(
 	// broad first search (BFS) to get all nodes involved
 	while (!q.empty()) {
 		Str entry = std::move(q.front().entry);
-		Long i_node = q.front().i_node;
+		Long i_node = q.front().order;
 		q.pop_front();
 		auto &pentry = entry_info[entry].second;
 		if (pentry.empty()) continue;
@@ -169,8 +120,8 @@ inline void db_get_tree1(
 		if (pentry[i_node-1].second.empty())
 			throw internal_err("empty \\pentry{} should have been ignored. " SLS_WHERE);
 		for (auto &en : pentry[i_node-1].second) {
-			if (!entry_info.count(en.entry))
-				db_get_entry_info(entry_info[en.entry], en.entry, stmt_select);
+			if (!entry_info.count(en.node_id))
+				db_get_entry_info(entry_info[en.node_id], en.node_id, stmt_select);
 			if (en.i_node == 0) { // 0 means the last node
 				en.i_node = size(entry_info[en.entry].second);
 				if (en.i_node == 0) en.i_node = 1;

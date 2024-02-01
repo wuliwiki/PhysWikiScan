@@ -13,7 +13,7 @@ struct PentryRef {
 // all \pentry{} info of an entry
 // pentry[i] is a single \pentry{} command
 // each \pentry{} can optionally followed by a \label{}
-//                 \label        \upref
+//                node_id        \upref
 typedef vector<pair<Str, vector<PentryRef>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
 typedef const Pentry &Pentry_I;
@@ -146,12 +146,12 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			}
 			else
 				order = 0;
-			if (!exist("entries", "id", depEntry, db_read))
-				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + depEntry + ".tex");
+			if (!exist("entries", "id", node_id, db_read))
+				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + node_id + ".tex");
 			for (auto &e : pentry1.second)
-				if (depEntry == e.node_id)
-					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + depEntry + ".tex");
-			pentry1.second.emplace_back(depEntry, order, star, false); // tilde always false
+				if (node_id == e.node_id)
+					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + node_id + ".tex");
+			pentry1.second.emplace_back(node_id, star, false); // tilde always false
 			ind2 = skip_command(temp, ind1, 1);
 			first_upref = false;
 		}
