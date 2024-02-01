@@ -1,15 +1,13 @@
 #pragma once
 #include "../SLISC/file/file.h"
 
-// a single \upref{} or \upreff{} inside a \pentry{}
+// a single \req{node_id} or \reqq{node_id} inside a \pentry{}
 struct PentryRef {
-	Str entry; // \upref{entry}
-	Long i_node; // "entry:i_node" starting from 1, 0 if there is none // TODO: use label instead
-    Str label; // optiional: which node in `entry`, empty means the last node
-	Bool star; // \upreff{}, i.e. marked * (prefer to be ignored)
-	Bool tilde; // omitted in the tree, i.e. marked ~
-	PentryRef(Str_I entry, Long_I i_node, Bool_I star, Bool_I tilde):
-		entry(entry), i_node(i_node), star(star), tilde(tilde) {};
+	Str node_id; // \req{node_label}
+	bool star; // \reqq{}, i.e. marked * (prefer to be ignored)
+	bool tilde; // omitted in the tree, i.e. marked ~
+	PentryRef(Str node_id, Bool_I star, Bool_I tilde):
+		node_id(std::move(node_id)), star(star), tilde(tilde) {};
 };
 
 // all \pentry{} info of an entry
@@ -117,7 +115,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 {
 	Bool star;
 	Long ind0 = -1, ikey, order;
-	Str temp, depEntry, label;
+	Str temp, node_id, label;
 	pentry_raw.clear();
 	while (1) {
 		ind0 = find_command(str, "pentry", ind0+1);
@@ -132,14 +130,14 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		Long ind1 = 0, ind2 = 0;
 		Bool first_upref = true;
 		while (1) {
-			ind1 = find(ikey, temp, {"\\upref", "\\upreff"}, ind2);
+			ind1 = find(ikey, temp, {"\\req", "\\reqq"}, ind2);
 			star = (ikey == 1);
 			if (ind1 < 0)
 				break;
 			if (!first_upref)
 				if (expect(temp, u8"，", ind2) < 0)
 					throw scan_err(u8R"(\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \pentry{文章1\upref{文件名1}， 文章2\upref{文件名2}}。)");
-			command_arg(depEntry, temp, ind1);
+			command_arg(node_id, temp, ind1);
 			if (command_has_opt(temp, ind1)) {
 				try { order = str2Llong(command_opt(temp, ind1)); }
 				catch (...) { throw scan_err(u8R"(\upref[]{} 或 \upreff[]{} 方括号中只能是正整数，用于引用某文章的第 n 个节点。)"); }
@@ -151,7 +149,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			if (!exist("entries", "id", depEntry, db_read))
 				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + depEntry + ".tex");
 			for (auto &e : pentry1.second)
-				if (depEntry == e.entry)
+				if (depEntry == e.node_id)
 					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + depEntry + ".tex");
 			pentry1.second.emplace_back(depEntry, order, star, false); // tilde always false
 			ind2 = skip_command(temp, ind1, 1);

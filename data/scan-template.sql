@@ -109,12 +109,11 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防
 -- 知识树节点（\pentry{}）
 -- 每篇文章自动添加一个文章节点， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
 CREATE TABLE "nodes" (
-	"id"        INTEGER NOT NULL UNIQUE,
-	"label"     TEXT    NOT NULL UNIQUE DEFAULT '',   -- \label{}
-	"entry"     TEXT    NOT NULL,                     -- entries.id
-	"order"     INTEGER NOT NULL,                     -- 在文章中出现的顺序（从 1 开始）
-	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	PRIMARY KEY("id" AUTOINCREMENT)
+	"id"        TEXT    NOT NULL UNIQUE,    -- \pentry{}{id}
+	"entry"     TEXT    NOT NULL,           -- entries.id
+	"order"     INTEGER NOT NULL,           -- 在文章中出现的顺序（从 1 开始）
+	PRIMARY KEY("id"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id")
 );
 
 CREATE INDEX idx_nodes_label ON "nodes"("label");

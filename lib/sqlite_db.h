@@ -379,6 +379,7 @@ inline void db_update_entry_uprefs(
 }
 
 // update entries.refs, labels.ref_by, figures.ref_by
+// TODO: all these fields should be migrated to to "entry_refs" tables
 inline void db_update_refs(const unordered_map<Str, unordered_set<Str>> &entry_add_refs,
 	unordered_map<Str, unordered_set<Str>> &entry_del_refs,
 	SQLite::Database &db_rw)
