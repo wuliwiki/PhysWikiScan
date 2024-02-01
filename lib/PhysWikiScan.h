@@ -694,7 +694,7 @@ inline void PhysWikiOnlineN_round1(
 				titles.resize(entries.size());
 			}
 			// update db table nodes/edges for 1 entry
-			db_update_pentry(pentry, db_rw);
+			db_update_pentry(pentry, entry, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
@@ -776,15 +776,15 @@ inline Long dep_json(SQLite::Database &db_read)
 	// write nodes (entry + node#)
 	str += "  \"nodes\": [\n";
 	for (auto &node : nodes) {
-		if (node.i_node == 0)
+		if (node.order <= 0)
 			throw internal_err(SLS_WHERE);
 		auto &info = entry_info[node.entry];
 		auto &title = get<0>(info), &part = get<1>(info), &chap = get<2>(info);
 		auto &pentry = get<3>(info);
 		node_title = title;
 		if (size(pentry) > 1)
-			node_title << ':' << node.i_node;
-		str << R"(    {"id": ")" << node.entry << ':' << node.i_node << '"'
+			node_title << ':' << node.order;
+		str << R"(    {"id": ")" << node.entry << ':' << node.order << '"'
 			<< R"(, "part": )" << search(part, part_ids)
 			<< R"(, "chap": )" << search(chap, chap_ids)
 			<< R"(, "title": ")" << node_title << '"'
@@ -801,8 +801,8 @@ inline Long dep_json(SQLite::Database &db_read)
 		for (auto &j : tree[i]) {
 			auto &node_i = nodes[i], &node_j = nodes[j];
 			int strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
-			str << R"(    {"source": ")" << node_j.entry << ':' << node_j.i_node << "\", ";
-			str << R"("target": ")" << node_i.entry << ':' << node_i.i_node << "\", ";
+			str << R"(    {"source": ")" << node_j.entry << ':' << node_j.order << "\", ";
+			str << R"("target": ")" << node_i.entry << ':' << node_i.order << "\", ";
 			str << "\"value\": " << strength << "},\n";
 			++Nedge;
 		}
@@ -887,9 +887,10 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 			}
 		}
 		ref_by.clear();
-		stmt_select2.bind(entry);
+		stmt_select2.bind(1, entry);
 		while (stmt_select2.executeStep())
 			ref_by.push_back(stmt_select2.getColumn(0));
+        stmt_select2.reset();
 		if (!ref_by.empty()) {
 			join(sb, ref_by);
 			err_msg << u8"无法删除文章，因为被其他文章引用：" << sb << "\n\n";

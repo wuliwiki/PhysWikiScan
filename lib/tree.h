@@ -277,7 +277,6 @@ inline void db_get_tree(
     // construct tree
 	tree.resize(nodes.size());
 	for (auto &e : entry_info) {
-		auto &entry = e.first;
 		auto &pentry = get<3>(e.second);
 		if (pentry.empty()) continue;
 		for (Long order = 1; order <= size(pentry); ++order) {
@@ -323,7 +322,7 @@ inline void db_update_pentry(Pentry_I pentry, Str_I entry, SQLite::Database &db_
 		const Str &node_id = stmt_select.getColumn(0);
 		nodes_deleted.insert(node_id);
 		stmt_select2.bind(1, node_id);
-		edges_deleted.insert(make_pair(node_id, stmt_select2.getColumn(0)));
+		edges_deleted.insert(make_pair(node_id, stmt_select2.getColumn(0).getString()));
 	}
 	stmt_select.reset();
 
@@ -333,13 +332,13 @@ inline void db_update_pentry(Pentry_I pentry, Str_I entry, SQLite::Database &db_
 		// update or insert into db "nodes" table
 		assert(!label.empty());
 		nodes_deleted.erase(label);
-		stmt_update.bind(1, i+1);
+		stmt_update.bind(1, (int)i+1);
 		stmt_update.bind(2, label);
 		stmt_update.exec();
 		if (db_rw.getTotalChanges() == 0) {
 			stmt_insert.bind(1, label);
 			stmt_insert.bind(2, entry);
-			stmt_insert.bind(3, i+1);
+			stmt_insert.bind(3, (int)i+1);
 			stmt_insert.exec(); stmt_insert.reset();
 		}
 		stmt_update.reset();

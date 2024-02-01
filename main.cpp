@@ -1,4 +1,8 @@
-﻿#ifdef _MSC_VER
+#define VERSION_MAJOR 0
+#define VERSION_MINOR 9
+#define VERSION_PATCH 0
+
+#ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
 #endif
 #include "lib/PhysWikiScan.h"
@@ -433,6 +437,10 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--check-url-from" && args.size() == 2) {
 			vecStr entries;
 			check_url(entries, args[1]);
+		}
+        else if (args[0] == "--version" && args.size() == 1) {
+			cout << VERSION_MAJOR << '.' << VERSION_MINOR << '.' << VERSION_PATCH << endl;
+			return 0;
 		}
 		else {
 			throw scan_err(u8"scan 内部错误： 命令不合法");

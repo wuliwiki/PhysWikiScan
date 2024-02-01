@@ -14,6 +14,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 
 **日常命令**
 * 如果不输入任何参数， 程序运行后会提示从命令行输入参数。
+* `PhysWikiScan --version` 显示版本号
 * `PhysWikiScan .` 把全部 `contents/*.tex` 文件转换为 `online/*.html`， 并使用 `main.tex` 生成完整目录 `index.html`。 `main.tex` 中不存在的文章也会被转换（将警告）。
 * `PhysWikiScan --titles`: 扫描所有 tex 文件， 扫描 `main.tex`， 更新数据库。
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`， 更新数据库。
