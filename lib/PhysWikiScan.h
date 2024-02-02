@@ -559,15 +559,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
-
-	// check dependency tree and auto mark redundant pentry with ~
-	{
-		vector<DGnode> tree; vector<Node> nodes;
-		unordered_map<Str, pair<Str, Pentry>> entry_info;
-		db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
-	}
-	// convert \pentry{} to html
-	pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
 	// replace user defined commands
 	newcommand(str, rules);
 	subsections(str);
@@ -623,20 +614,22 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 inline void PhysWikiOnlineN_round1(
 		map<Str, Str> &entry_err, // entry -> err msg
 		set<Char32> &illegal_chars,
-		vecStr_O titles, vecStr_IO entries, bool clear,
+		vecStr_O titles, vecStr_IO entries,
+        vector<Pentry> &pentries,
+        bool clear,
 		SQLite::Database &db_rw
 ) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
-	titles.clear(); titles.resize(entries.size()); entry_err.clear();
+	titles.clear(); entry_err.clear(); pentries.clear();
+    titles.resize(entries.size()); pentries.resize(entries.size());
 
 	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
-	Bool update_db, isdraft;
+	bool update_db, isdraft;
 	Str key_str, license, type;
 	unordered_set<Str> update_entries;
 	vecLong label_orders;
 	vecStr keywords, fig_ids, labels, fig_captions;
-	Pentry pentry;
 	unordered_map<Str, unordered_map<Str, Str>> fig_ext_hash; // figures.id -> (ext -> hash)
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
@@ -657,7 +650,7 @@ inline void PhysWikiOnlineN_round1(
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
 				license, type, labels, label_orders, entry_uprefs_change[entry],
-				entry_bibs_change[entry], pentry, illegal_chars, entry, clear, rules,
+				entry_bibs_change[entry], pentries[i], illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
@@ -693,8 +686,8 @@ inline void PhysWikiOnlineN_round1(
 				update_entries.clear();
 				titles.resize(entries.size());
 			}
-			// update db table nodes/edges for 1 entry
-			db_update_pentry(pentry, entry, db_rw);
+			// update db table nodes for 1 entry (might also delete "edges" if nodes are deleted)
+            db_update_nodes(pentries[i], entry, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
@@ -719,7 +712,8 @@ inline void PhysWikiOnlineN_round1(
 // convert \autoref{} in *.tmp to html, write *.html
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
-		vecStr_I entries, vecStr_I titles, SQLite::Database &db_rw, bool write_html = true)
+		vecStr_I entries, vecStr_I titles, vector<Pentry> &pentries,
+        SQLite::Database &db_rw, bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
@@ -732,6 +726,17 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 			 << titles[i] << endl; cout.flush();
 		fname = gv::path_out + entry + ".html";
 		read(html, fname + ".tmp"); // read html file
+        // process \pentry{} and tree
+        {
+            // update db "edges"
+            db_update_edges(pentries[i], entry, db_rw);
+            // check dependency tree and auto mark redundant pentry with ~
+            vector<DGnode> tree; vector<Node> nodes;
+            unordered_map<Str, pair<Str, Pentry>> entry_info;
+            db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
+            // convert \pentry{} to html
+            pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
+        }
 		// process \autoref and \upref
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);
 		if (write_html)

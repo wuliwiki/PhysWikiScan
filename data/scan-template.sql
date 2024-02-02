@@ -106,8 +106,8 @@ CREATE TABLE "types" (
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
 
--- 知识树节点（\pentry{}）
--- 每篇文章自动添加一个文章节点， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
+-- 知识树节点 \pentry{...\req{}，...\reqq{}}{id}
+-- 每篇文章自动添加一个文章节点（order=0）， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
 CREATE TABLE "nodes" (
 	"id"        TEXT    NOT NULL UNIQUE,    -- \pentry{}{id}
 	"entry"     TEXT    NOT NULL,           -- entries.id
@@ -116,7 +116,7 @@ CREATE TABLE "nodes" (
 	FOREIGN KEY("entry")  REFERENCES "entries"("id")
 );
 
-CREATE INDEX idx_nodes_label ON "nodes"("label");
+CREATE INDEX idx_nodes_id ON "nodes"("id");
 CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 
 -- 知识树的边（\pentry{} 中的 \upref{}）
