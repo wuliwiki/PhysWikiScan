@@ -114,7 +114,7 @@ inline Bool is_draft(Str_I str)
 inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
 	Bool star;
-	Long ind0 = -1, ikey, order;
+	Long ind0 = -1, ikey;
 	Str temp, node_id, label;
 	pentry_raw.clear();
 	while (1) {
@@ -124,13 +124,12 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		if (pentry_raw.empty() || !pentry_raw.back().second.empty())
 			pentry_raw.emplace_back();
 		auto &pentry1 = pentry_raw.back();
-		if (command_has_opt(str, ind0)) // get optional arg (label)
-			command_arg(pentry1.first, str, ind0, 0);
-		command_arg(temp, str, ind0, 0, true, true);
+		command_arg(temp, str, ind0, 0);
+		command_arg(pentry1.first, str, ind0, 1); // get optional arg (label)
 		Long ind1 = 0, ind2 = 0;
 		Bool first_upref = true;
 		while (1) {
-			ind1 = find(ikey, temp, {"\\req", "\\reqq"}, ind2);
+			ind1 = find(ikey, temp, {"\\upref", "\\upreff"}, ind2);
 			star = (ikey == 1);
 			if (ind1 < 0)
 				break;
@@ -138,14 +137,6 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 				if (expect(temp, u8"，", ind2) < 0)
 					throw scan_err(u8R"(\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \pentry{文章1\upref{文件名1}， 文章2\upref{文件名2}}。)");
 			command_arg(node_id, temp, ind1);
-			if (command_has_opt(temp, ind1)) {
-				try { order = str2Llong(command_opt(temp, ind1)); }
-				catch (...) { throw scan_err(u8R"(\upref[]{} 或 \upreff[]{} 方括号中只能是正整数，用于引用某文章的第 n 个节点。)"); }
-				if (order <= 0)
-					throw scan_err(u8R"(\upref[]{} 或 \upreff[]{} 方括号中只能是正整数，用于引用某文章的第 n 个节点。)");
-			}
-			else
-				order = 0;
 			if (!exist("entries", "id", node_id, db_read))
 				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + node_id + ".tex");
 			for (auto &e : pentry1.second)

@@ -268,19 +268,19 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
 // check escape characters in normal text i.e. `& # _ ^`
 inline Long check_normal_text_escape(Str_IO str)
 {
-//    vecStr keys = {"&", "#", "_", "^"};
-//    Intvs intvNorm;
-//    FindNormalText(intvNorm, str);
-//    Long ind0 = -1, ikey, N = 0;
-//    while (1) {
-//        ind0 = find(ikey, str, keys, ind0 + 1);
-//        if (ind0 < 0)
-//            break;
-//        if (is_in(ind0, intvNorm))
-//            if (ind0 > 0 && str[ind0-1] != '\\')
-//                throw scan_err(u8"正文中出现非法字符： " + str.substr(ind0, 20));
-//    }
-//    return N;
+//	vecStr keys = {"&", "#", "_", "^"};
+//	Intvs intvNorm;
+//	FindNormalText(intvNorm, str);
+//	Long ind0 = -1, ikey, N = 0;
+//	while (1) {
+//		ind0 = find(ikey, str, keys, ind0 + 1);
+//		if (ind0 < 0)
+//			break;
+//		if (is_in(ind0, intvNorm))
+//			if (ind0 > 0 && str[ind0-1] != '\\')
+//				throw scan_err(u8"正文中出现非法字符： " + str.substr(ind0, 20));
+//	}
+//	return N;
 	return 0;
 }
 

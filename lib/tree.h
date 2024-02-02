@@ -4,36 +4,36 @@
 // get `Pentry` for one entry from database
 inline void db_get_pentry(Pentry_O pentry, Str_I entry, SQLite::Database &db_read)
 {
-    SQLite::Statement stmt_select_nodes(db_read,
-        R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
-    SQLite::Statement stmt_select_edges(db_read,
-        R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
-    stmt_select_nodes.bind(1, entry);
-    while (stmt_select_nodes.executeStep()) {
-        const Str &node_id = stmt_select_nodes.getColumn(0);
-        vector<PentryRef> pentryN;
-        stmt_select_edges.bind(1, node_id); // edges.to
-        while (stmt_select_edges.executeStep()) {
-            const Str &from = stmt_select_edges.getColumn(0); // edges.from
-            bool weak = stmt_select_edges.getColumn(1).getInt(); // edges.weak
-            bool hide = stmt_select_edges.getColumn(2).getInt(); // edges.hide
-            pentryN.emplace_back(from, weak, hide);
-        }
-        stmt_select_edges.reset();
-        pentry.emplace_back(node_id, std::move(pentryN));
-    }
-    stmt_select_nodes.reset();
+	SQLite::Statement stmt_select_nodes(db_read,
+		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select_edges(db_read,
+		R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
+	stmt_select_nodes.bind(1, entry);
+	while (stmt_select_nodes.executeStep()) {
+		const Str &node_id = stmt_select_nodes.getColumn(0);
+		vector<PentryRef> pentryN;
+		stmt_select_edges.bind(1, node_id); // edges.to
+		while (stmt_select_edges.executeStep()) {
+			const Str &from = stmt_select_edges.getColumn(0); // edges.from
+			bool weak = stmt_select_edges.getColumn(1).getInt(); // edges.weak
+			bool hide = stmt_select_edges.getColumn(2).getInt(); // edges.hide
+			pentryN.emplace_back(from, weak, hide);
+		}
+		stmt_select_edges.reset();
+		pentry.emplace_back(node_id, std::move(pentryN));
+	}
+	stmt_select_nodes.reset();
 }
 
 // a node of the knowledge tree
 struct Node {
 	Str id;
-    Str entry;
-    Long order;
-    Node(Str entry, Long_I order):
-        entry(std::move(entry)), order(order) {};
+	Str entry;
+	Long order;
+	Node(Str entry, Long_I order):
+		entry(std::move(entry)), order(order) {};
 	Node(Str id, Str entry, Long_I order):
-        id(std::move(id)), entry(std::move(entry)), order(order) {};
+		id(std::move(id)), entry(std::move(entry)), order(order) {};
 };
 
 typedef const Node &Node_I;
@@ -56,32 +56,32 @@ inline void db_get_tree1(
 		SQLite::Database &db_read)
 {
 	tree.clear(); nodes.clear(); entry_info.clear();
-    unordered_map<Str, Long> node_id2ind; // node_id -> index to `nodes`
+	unordered_map<Str, Long> node_id2ind; // node_id -> index to `nodes`
 
-    SQLite::Statement stmt_select_caption(db_read,
-        R"(SELECT "caption", FROM "entries" WHERE "id"=?;)");
-    SQLite::Statement stmt_select_node(db_read,
-        R"(SELECT "entry", "order" FROM "nodes" WHERE "id"=?;)");
-    SQLite::Statement stmt_select_nodes(db_read,
-        R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
-    SQLite::Statement stmt_select_nodes2(db_read,
-        R"(SELECT "id" FROM "nodes" WHERE "entry"=? AND "order"=?;)");
-    SQLite::Statement stmt_select_edges(db_read,
-        R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
+	SQLite::Statement stmt_select_caption(db_read,
+		R"(SELECT "caption", FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select_node(db_read,
+		R"(SELECT "entry", "order" FROM "nodes" WHERE "id"=?;)");
+	SQLite::Statement stmt_select_nodes(db_read,
+		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select_nodes2(db_read,
+		R"(SELECT "id" FROM "nodes" WHERE "entry"=? AND "order"=?;)");
+	SQLite::Statement stmt_select_edges(db_read,
+		R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
 
-    // get captiion for one entry from db
-    auto db_get_entry_caption = [&](Str_O caption, Str_I entry) {
-        stmt_select_caption.bind(1, entry);
-        if (!stmt_select_caption.executeStep())
-            throw internal_err("entry not found: " + entry + " " SLS_WHERE);
-        caption = stmt_select_caption.getColumn(0).getString(); // entry.caption
-        stmt_select_caption.reset();
-    };
+	// get captiion for one entry from db
+	auto db_get_entry_caption = [&](Str_O caption, Str_I entry) {
+		stmt_select_caption.bind(1, entry);
+		if (!stmt_select_caption.executeStep())
+			throw internal_err("entry not found: " + entry + " " SLS_WHERE);
+		caption = stmt_select_caption.getColumn(0).getString(); // entry.caption
+		stmt_select_caption.reset();
+	};
 
 	Long Nnode0 = size(pentry0);
 	if (Nnode0 == 0) { // no \pentry{}
 		nodes.emplace_back(entry0, entry0, 1);
-        node_id2ind[entry0] = nodes.size()-1;
+		node_id2ind[entry0] = nodes.size()-1;
 		tree.emplace_back();
 		return;
 	}
@@ -89,27 +89,27 @@ inline void db_get_tree1(
 
 	// set the first Nnode0 of nodes to all nodes of `entry0`
 	for (Long order = 1; order <= Nnode0; ++order) {
-        auto &node_id = pentry0[order-1].first;
+		auto &node_id = pentry0[order-1].first;
 		nodes.emplace_back(node_id, entry0, order);
-        node_id2ind[node_id] = nodes.size()-1;
+		node_id2ind[node_id] = nodes.size()-1;
 		q.emplace_back(nodes.size()-1);
 	}
 	entry_info[entry0].first = caption0;
 	entry_info[entry0].second = pentry0;
 
-    // get a "node" record from db, add to `nodes`, `node_id2ind` and `q`
-    auto db_get_node = [&](Str_I node_id) {
-        stmt_select_node.bind(1, node_id);
-        if (!stmt_select_node.executeStep())
-            throw scan_err(u8"数据库找不到 node_id: " + node_id);
-        const Str &entry_from = stmt_select_node.getColumn(0);
-        Long order_from = stmt_select_node.getColumn(1).getInt();
-        stmt_select_node.reset();
-        nodes.emplace_back(node_id, entry_from, order_from);
-        node_id2ind[node_id] = nodes.size()-1;
-        if (find(q.begin(), q.end(), nodes.size()-1) == q.end())
-            q.push_back(nodes.size()-1);
-    };
+	// get a "node" record from db, add to `nodes`, `node_id2ind` and `q`
+	auto db_get_node = [&](Str_I node_id) {
+		stmt_select_node.bind(1, node_id);
+		if (!stmt_select_node.executeStep())
+			throw scan_err(u8"数据库找不到 node_id: " + node_id);
+		const Str &entry_from = stmt_select_node.getColumn(0);
+		Long order_from = stmt_select_node.getColumn(1).getInt();
+		stmt_select_node.reset();
+		nodes.emplace_back(node_id, entry_from, order_from);
+		node_id2ind[node_id] = nodes.size()-1;
+		if (find(q.begin(), q.end(), nodes.size()-1) == q.end())
+			q.push_back(nodes.size()-1);
+	};
 
 	// broad first search (BFS) to get all nodes involved
 	while (!q.empty()) {
@@ -121,21 +121,21 @@ inline void db_get_tree1(
 		if (order > size(pentry))
 			throw internal_err(Str(__func__) + SLS_WHERE);
 		if (order > 1) { // implicitly depends on the previous node
-            const Str &node_id_last = pentry[order-2].first;
-            if (!node_id2ind.count(node_id_last)) // last node not in `nodes`
-                db_get_node(node_id_last);
+			const Str &node_id_last = pentry[order-2].first;
+			if (!node_id2ind.count(node_id_last)) // last node not in `nodes`
+				db_get_node(node_id_last);
 		}
 		if (pentry[order-1].second.empty())
 			throw internal_err("empty \\pentry{} should have been ignored. " SLS_WHERE);
 		for (auto &en : pentry[order-1].second) {
-            if (node_id2ind.count(en.node_id) == 0)
-                db_get_node(en.node_id);
-            const Node &node_from = nodes[node_id2ind[en.node_id]];
+			if (node_id2ind.count(en.node_id) == 0)
+				db_get_node(en.node_id);
+			const Node &node_from = nodes[node_id2ind[en.node_id]];
 			if (!entry_info.count(node_from.entry)) {
-                auto &info = entry_info[node_from.entry];
-                db_get_entry_caption(info.first, node_from.entry);
-                db_get_pentry(info.second, entry, db_read);
-            }
+				auto &info = entry_info[node_from.entry];
+				db_get_entry_caption(info.first, node_from.entry);
+				db_get_pentry(info.second, entry, db_read);
+			}
 		}
 	}
 
@@ -148,9 +148,9 @@ inline void db_get_tree1(
 
 		if (pentry.empty()) continue;
 		if (order > 1) { // implicitly depends on the last node
-            const Str &node_id_last = pentry[order-2].first;
-            if (!node_id2ind.count(node_id_last)) // last node not in `nodes`
-                throw internal_err(u8"上一个节点未找到（应该不会发生才对）： " + node_id_last);
+			const Str &node_id_last = pentry[order-2].first;
+			if (!node_id2ind.count(node_id_last)) // last node not in `nodes`
+				throw internal_err(u8"上一个节点未找到（应该不会发生才对）： " + node_id_last);
 			tree[i].push_back(node_id2ind[node_id_last]);
 		}
 		for (auto &req : pentry[order-1].second) {
@@ -247,7 +247,7 @@ inline void db_get_tree(
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "id", "caption", "part", "chapter" FROM "entries" WHERE "deleted" = 0;)");
 
-    unordered_map<Str, Long> node_id2ind; // node_id -> index of `nodes`
+	unordered_map<Str, Long> node_id2ind; // node_id -> index of `nodes`
 
 	// get info
 	while (stmt_select.executeStep()) {
@@ -256,42 +256,42 @@ inline void db_get_tree(
 		get<0>(info) = stmt_select.getColumn(1).getString();  // caption
 		get<1>(info) = stmt_select.getColumn(2).getString();  // part
 		get<2>(info) = stmt_select.getColumn(3).getString();  // chapter
-        db_get_pentry(get<3>(info), entry, db_read); // pentry
+		db_get_pentry(get<3>(info), entry, db_read); // pentry
 	}
 
 	// construct all nodes
 	for (auto &e : entry_info) {
-        auto &entry = e.first;
+		auto &entry = e.first;
 		auto &info = e.second;
 		auto &pentry = get<3>(info);
-        Long order = 1;
+		Long order = 1;
 		for (; order <= size(pentry); ++order) {
 			auto &pentry1 = pentry[order-1];
 			nodes.emplace_back(pentry1.first, entry, order);
-            node_id2ind[pentry1.first] = nodes.size()-1;
+			node_id2ind[pentry1.first] = nodes.size()-1;
 		}
 		nodes.emplace_back(entry, entry, order);
-        node_id2ind[entry] = nodes.size()-1;
+		node_id2ind[entry] = nodes.size()-1;
 	}
 
-    // construct tree
+	// construct tree
 	tree.resize(nodes.size());
 	for (auto &e : entry_info) {
 		auto &pentry = get<3>(e.second);
 		if (pentry.empty()) continue;
 		for (Long order = 1; order <= size(pentry); ++order) {
 			auto &pentry1 = pentry[order-1];
-            if (node_id2ind.count(pentry1.first) == 0) throw internal_err(SLS_WHERE);
+			if (node_id2ind.count(pentry1.first) == 0) throw internal_err(SLS_WHERE);
 			Long from = node_id2ind[pentry1.first];
 			if (order > 1) { // require last node
-                auto &last_node_id = pentry[order-2].first;
-                if (node_id2ind.count(last_node_id) == 0) throw internal_err(SLS_WHERE);
+				auto &last_node_id = pentry[order-2].first;
+				if (node_id2ind.count(last_node_id) == 0) throw internal_err(SLS_WHERE);
 				Long to = node_id2ind[last_node_id];
 				tree[from].push_back(to);
 			}
 			for (auto &req: pentry1.second) {
 				if (!req.tilde) {
-                    if (node_id2ind.count(req.node_id) == 0) throw internal_err(SLS_WHERE);
+					if (node_id2ind.count(req.node_id) == 0) throw internal_err(SLS_WHERE);
 					Long to = node_id2ind[req.node_id];
 					tree[from].push_back(to);
 				}

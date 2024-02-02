@@ -438,7 +438,7 @@ int main(int argc, const char *argv[]) {
 			vecStr entries;
 			check_url(entries, args[1]);
 		}
-        else if (args[0] == "--version" && args.size() == 1) {
+		else if (args[0] == "--version" && args.size() == 1) {
 			cout << VERSION_MAJOR << '.' << VERSION_MINOR << '.' << VERSION_PATCH << endl;
 			return 0;
 		}
