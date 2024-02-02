@@ -728,14 +728,14 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		read(html, fname + ".tmp"); // read html file
         // process \pentry{} and tree
         {
-            // update db "edges"
-            db_update_edges(pentries[i], entry, db_rw);
             // check dependency tree and auto mark redundant pentry with ~
             vector<DGnode> tree; vector<Node> nodes;
             unordered_map<Str, pair<Str, Pentry>> entry_info;
-            db_get_tree1(tree, nodes, entry_info, pentry, entry, title, db_read);
+            db_get_tree1(tree, nodes, entry_info, pentries[i], entry, db_rw);
             // convert \pentry{} to html
-            pentry_cmd(str, pentry); // use after db_get_tree1() and before upref()
+            pentry_cmd(html, pentries[i]); // use after db_get_tree1()
+			// update db "edges"
+            db_update_edges(pentries[i], entry, db_rw);
         }
 		// process \autoref and \upref
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);
@@ -821,19 +821,21 @@ inline Long dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries, Bool_I clear, SQLite::Database &db_rw)
+inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_rw)
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, clear, db_rw);
+	vector<Pentry> pentries;
+
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, clear, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw, !clear);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, db_rw, !clear);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
@@ -1062,19 +1064,20 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	vecStr titles_tmp;
 	entries_titles(entries, titles_tmp);
 	db_check_add_entry_simulate_editor(entries, db_rw);
+	vector<Pentry> pentries;
 
 	arg_bib(db_rw);
 	arg_toc(db_rw);
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, false, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, false, db_rw);
 
 	// generate dep.json
 	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 		dep_json(db_rw);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, db_rw);
 
 	// TODO: warn unused figures, based on "ref_by"
 

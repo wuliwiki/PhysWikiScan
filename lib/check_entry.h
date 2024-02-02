@@ -92,7 +92,7 @@ inline void get_entry_type(Str_O type, Str_I str, SQLite::Database &db_read)
 }
 
 // check if an entry is labeled "\issueDraft"
-inline Bool is_draft(Str_I str)
+inline bool is_draft(Str_I str)
 {
 	Intvs intv;
 	find_env(intv, str, "issues");
@@ -113,7 +113,7 @@ inline Bool is_draft(Str_I str)
 // will ignore \pentry{} with no \upref{} or \upreff{}
 inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
-	Bool star;
+	bool star;
 	Long ind0 = -1, ikey;
 	Str temp, node_id, label;
 	pentry_raw.clear();
@@ -125,9 +125,9 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			pentry_raw.emplace_back();
 		auto &pentry1 = pentry_raw.back();
 		command_arg(temp, str, ind0, 0);
-		command_arg(pentry1.first, str, ind0, 1); // get optional arg (label)
+		command_arg(pentry1.first, str, ind0, 1); // get node_id
 		Long ind1 = 0, ind2 = 0;
-		Bool first_upref = true;
+		bool first_upref = true;
 		while (1) {
 			ind1 = find(ikey, temp, {"\\upref", "\\upreff"}, ind2);
 			star = (ikey == 1);

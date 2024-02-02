@@ -52,7 +52,7 @@ inline void db_get_tree1(
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
 		unordered_map<Str, pair<Str, Pentry>> &entry_info, // [out] entry -> (caption, Pentry)
 		Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].tilde` will be updated
-		Str_I entry0, Str_I caption0, // use the last node as tree root
+		Str_I entry0, // use the last node as tree root
 		SQLite::Database &db_read)
 {
 	tree.clear(); nodes.clear(); entry_info.clear();
@@ -94,7 +94,7 @@ inline void db_get_tree1(
 		node_id2ind[node_id] = nodes.size()-1;
 		q.emplace_back(nodes.size()-1);
 	}
-	entry_info[entry0].first = caption0;
+	db_get_entry_caption(entry_info[entry0].first, entry0);
 	entry_info[entry0].second = pentry0;
 
 	// get a "node" record from db, add to `nodes`, `node_id2ind` and `q`
@@ -129,8 +129,8 @@ inline void db_get_tree1(
 			throw internal_err("empty \\pentry{} should have been ignored. " SLS_WHERE);
 		for (auto &en : pentry[order-1].second) {
 			if (node_id2ind.count(en.node_id) == 0) {
-                db_get_node(en.node_id);
-            }
+				db_get_node(en.node_id);
+			}
 			const Node &node_from = nodes[node_id2ind[en.node_id]];
 			if (!entry_info.count(node_from.entry)) {
 				auto &info = entry_info[node_from.entry];
@@ -306,25 +306,25 @@ inline void db_get_tree(
 // only pentry[i].first is used
 inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
-    SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
-    SQLite::Statement stmt_select2(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
-    SQLite::Statement stmt_select3(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
-    SQLite::Statement stmt_update(db_rw,
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
+	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "nodes" SET "entry"=?, "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "nodes" ("id", "entry", "order") VALUES (?, ?, ?);)");
-    SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
-    SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
-    unordered_set<Str> nodes_deleted; // old nodes of `entry`
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
+	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
+	unordered_set<Str> nodes_deleted; // old nodes of `entry`
 
-    // get db nodes of `entry` to see which are deleted
-    // id_node == entry is not included
+	// get db nodes of `entry` to see which are deleted
+	// id_node == entry is not included
 	stmt_select.bind(1, entry);
 	while (stmt_select.executeStep()) {
 		const Str &node_id = stmt_select.getColumn(0);
-        if (node_id != entry)
-		    nodes_deleted.insert(node_id);
-    }
+		if (node_id != entry)
+			nodes_deleted.insert(node_id);
+	}
 	stmt_select.reset();
 
 	for (Long i = 0; i < size(pentry); ++i) {
@@ -332,7 +332,7 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		// update or insert into db "nodes" table
 		assert(!node_id.empty());
 		nodes_deleted.erase(node_id);
-        stmt_update.bind(1, entry);
+		stmt_update.bind(1, entry);
 		stmt_update.bind(2, (int)i+1);
 		stmt_update.bind(3, node_id);
 		stmt_update.exec();
@@ -346,21 +346,21 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	}
 	// deleted nodes
 	for (auto &node_id : nodes_deleted) {
-        // check if node_id is required by other nodes
-        stmt_select2.bind(1, node_id); // edges.to
-        clear(sb);
-        if (stmt_select2.executeStep()) {
-            clear(sb) << u8"检测到被删除的节点： " << node_id << "， 但它被以下节点引用：";
-            do {
-                sb << ' ' << stmt_select2.getColumn(0).getString();
-            } while (stmt_select2.executeStep());
-            throw scan_err(sb);
-        }
-        stmt_select2.reset();
-        // delete the edges from node_id
-        stmt_delete.bind(1, node_id);
-        stmt_delete.exec(); stmt_delete.reset();
-        // delete node_id
+		// check if node_id is required by other nodes
+		stmt_select2.bind(1, node_id); // edges.to
+		clear(sb);
+		if (stmt_select2.executeStep()) {
+			clear(sb) << u8"检测到被删除的节点： " << node_id << "， 但它被以下节点引用：";
+			do {
+				sb << ' ' << stmt_select2.getColumn(0).getString();
+			} while (stmt_select2.executeStep());
+			throw scan_err(sb);
+		}
+		stmt_select2.reset();
+		// delete the edges from node_id
+		stmt_delete.bind(1, node_id);
+		stmt_delete.exec(); stmt_delete.reset();
+		// delete node_id
 		stmt_delete2.bind(1, node_id);
 		stmt_delete2.exec(); stmt_delete2.reset();
 	}
@@ -369,64 +369,51 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 // update db "edges" for 1 enetry
 inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
-    TODO...
-    SQLite::Statement stmt_update(db_rw,
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
+	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "edges" SET "weak"=?, "hide"=? WHERE "from"=? AND "to"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "edges" ("from", "to", "weak", "hide") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
 	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
-	stmt_select.bind(1, entry);
-	while (stmt_select.executeStep()) {
-		const Str &node_id = stmt_select.getColumn(0);
-		nodes_deleted.insert(node_id);
-		stmt_select2.bind(1, node_id);
-		edges_deleted.insert(make_pair(node_id, stmt_select2.getColumn(0).getString()));
+
+	// get db edges starting from `entry` nodes
+	for (auto &pentry1 : pentry) {
+		const Str &from = pentry1.first;
+		stmt_select.bind(1, from);
+		while (stmt_select.executeStep()) {
+			const Str &to = stmt_select.getColumn(0);
+			edges_deleted.insert(make_pair(from, to));
+		}
+		stmt_select.reset();
 	}
-	stmt_select.reset();
 
 	for (Long i = 0; i < size(pentry); ++i) {
-		auto &label = pentry[i].first;
+		auto &node_id = pentry[i].first;
 		auto &pentry1 = pentry[i].second;
-		// update or insert into db "nodes" table
-		assert(!label.empty());
-		nodes_deleted.erase(label);
-		stmt_update.bind(1, (int)i+1);
-		stmt_update.bind(2, label);
-		stmt_update.exec();
-		if (db_rw.getTotalChanges() == 0) {
-			stmt_insert.bind(1, label);
-			stmt_insert.bind(2, entry);
-			stmt_insert.bind(3, (int)i+1);
-			stmt_insert.exec(); stmt_insert.reset();
-		}
-		stmt_update.reset();
-		// delete from "edges" table
-		stmt_delete.bind(1, label);
-		stmt_delete.exec(); stmt_delete.reset();
-		// insert into db "edges" table
+		// update or insert into db "edges" table
 		for (const PentryRef &ref : pentry1) {
-			edges_deleted.erase(make_pair(label, ref.node_id));
-			stmt_insert2.bind(1, ref.node_id); // edges.to
-			stmt_insert2.bind(2, label); // edges.from
-			stmt_insert2.bind(3, ref.star); // edges.weak
-			stmt_insert2.bind(4, ref.tilde); // edges.hide
-			stmt_insert2.reset();
+			auto edge = make_pair(node_id, ref.node_id);
+			stmt_update.bind(1, ref.star); // edges.weak
+			stmt_update.bind(2, ref.tilde); // edges.hide
+			stmt_update.bind(3, node_id); // edges.from
+			stmt_update.bind(4, ref.node_id); // edges.to
+			stmt_update.exec();
+			if (db_rw.getTotalChanges() == 0) {
+				stmt_insert.bind(1, node_id);
+				stmt_insert.bind(2, ref.node_id);
+				stmt_insert.bind(3, ref.star);
+				stmt_insert.bind(4, ref.tilde);
+				stmt_insert.exec(); stmt_insert.reset();
+			}
+			stmt_update.reset();
 		}
 	}
-
 	// deleted edges and nodes
 	for (auto &edge : edges_deleted) {
 		stmt_delete.bind(1, edge.first);
 		stmt_delete.bind(2, edge.second);
 		stmt_delete.exec(); stmt_delete.reset();
-	}
-	// deleted nodes
-	for (auto &node_id : nodes_deleted) {
-		stmt_delete2.bind(1, node_id);
-		stmt_delete2.exec(); stmt_delete.reset();
 	}
 }
