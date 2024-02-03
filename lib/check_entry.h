@@ -126,6 +126,9 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		auto &pentry1 = pentry_raw.back();
 		command_arg(temp, str, ind0, 0);
 		command_arg(pentry1.first, str, ind0, 1); // get node_id
+		if (pentry1.first.substr(0, 4) != "nod_")
+			throw scan_err(u8"\\pentry{...}{nod_xxx} 格式错误，第二个参数不可省略");
+		pentry1.first = pentry1.first.substr(4);
 		Long ind1 = 0, ind2 = 0;
 		bool first_upref = true;
 		while (1) {
@@ -137,8 +140,8 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 				if (expect(temp, u8"，", ind2) < 0)
 					throw scan_err(u8R"(\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \pentry{文章1\upref{文件名1}， 文章2\upref{文件名2}}。)");
 			command_arg(node_id, temp, ind1);
-			if (!exist("entries", "id", node_id, db_read))
-				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + node_id + ".tex");
+//			if (!exist("entries", "id", node_id, db_read))
+//				throw scan_err(u8R"(\pentry{} 中 \upref 引用的文章未找到: )" + node_id + ".tex");
 			for (auto &e : pentry1.second)
 				if (node_id == e.node_id)
 					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + node_id + ".tex");

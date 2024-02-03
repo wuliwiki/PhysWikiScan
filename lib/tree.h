@@ -11,6 +11,7 @@ inline void db_get_pentry(Pentry_O pentry, Str_I entry, SQLite::Database &db_rea
 	stmt_select_nodes.bind(1, entry);
 	while (stmt_select_nodes.executeStep()) {
 		const Str &node_id = stmt_select_nodes.getColumn(0);
+		if (node_id == entry) continue; // not a \pentry{}{node_id}
 		vector<PentryRef> pentryN;
 		stmt_select_edges.bind(1, node_id); // edges.to
 		while (stmt_select_edges.executeStep()) {
@@ -47,6 +48,7 @@ inline bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.order 
 // also check for cycle, and check for any of it's pentries are redundant
 // nodes[i] corresponds to tree[i]
 // `entry0:(i+1)` will be (first few) nodes[i]
+// `nodes` will not include `node_id == entry` unless that's the only node
 inline void db_get_tree1(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
@@ -81,7 +83,7 @@ inline void db_get_tree1(
 	Long Nnode0 = size(pentry0);
 	if (Nnode0 == 0) { // no \pentry{}, add default node
 		nodes.emplace_back(entry0, entry0, 1);
-		node_id2ind[entry0] = nodes.size()-1;
+		node_id2ind[entry0] = size(nodes)-1;
 		tree.emplace_back();
 		return;
 	}
@@ -91,13 +93,13 @@ inline void db_get_tree1(
 	for (Long order = 1; order <= Nnode0; ++order) {
 		auto &node_id = pentry0[order-1].first;
 		nodes.emplace_back(node_id, entry0, order);
-		node_id2ind[node_id] = nodes.size()-1;
+		node_id2ind[node_id] = size(nodes)-1;
 		q.emplace_back(nodes.size()-1);
 	}
 	db_get_entry_caption(entry_info[entry0].first, entry0);
 	entry_info[entry0].second = pentry0;
 
-	// get a "node" record from db, add to `nodes`, `node_id2ind` and `q`
+	// get a "node" record from db, return a `Node`
 	auto db_get_node = [&](Str_I node_id) {
 		stmt_select_node.bind(1, node_id);
 		if (!stmt_select_node.executeStep())
@@ -105,10 +107,7 @@ inline void db_get_tree1(
 		const Str &entry_from = stmt_select_node.getColumn(0);
 		Long order_from = stmt_select_node.getColumn(1).getInt();
 		stmt_select_node.reset();
-		nodes.emplace_back(node_id, entry_from, order_from);
-		node_id2ind[node_id] = nodes.size()-1;
-		if (find(q.begin(), q.end(), nodes.size()-1) == q.end())
-			q.push_back(nodes.size()-1);
+		return Node(node_id, entry_from, order_from);
 	};
 
 	// broad first search (BFS) to get all nodes involved
@@ -122,20 +121,32 @@ inline void db_get_tree1(
 			throw internal_err(Str(__func__) + SLS_WHERE);
 		if (order > 1) { // implicitly depends on the previous node
 			const Str &node_id_last = pentry[order-2].first;
-			if (!node_id2ind.count(node_id_last)) // last node not in `nodes`
-				db_get_node(node_id_last);
+			if (!node_id2ind.count(node_id_last)) { // last node not in `nodes`
+				Node nod = db_get_node(node_id_last);
+				nodes.push_back(nod);
+				node_id2ind[node_id_last] = size(nodes)-1;
+				q.push_back(size(nodes)-1);
+			}
 		}
 		if (pentry[order-1].second.empty())
 			throw internal_err("empty \\pentry{} should have been ignored. " SLS_WHERE);
-		for (auto &en : pentry[order-1].second) {
-			if (node_id2ind.count(en.node_id) == 0) {
-				db_get_node(en.node_id);
-			}
-			const Node &node_from = nodes[node_id2ind[en.node_id]];
-			if (!entry_info.count(node_from.entry)) {
-				auto &info = entry_info[node_from.entry];
-				db_get_entry_caption(info.first, node_from.entry);
-				db_get_pentry(info.second, entry, db_read);
+		for (auto &req : pentry[order-1].second) {
+			if (node_id2ind.count(req.node_id) == 0) {
+				Node node_from = db_get_node(req.node_id);
+				if (!entry_info.count(node_from.entry)) {
+					auto &info = entry_info[node_from.entry];
+					db_get_entry_caption(info.first, node_from.entry);
+					db_get_pentry(info.second, node_from.entry, db_read);
+					if (info.second.empty()) {
+						nodes.emplace_back(node_from.entry, node_from.entry, 1);
+						node_id2ind[node_from.entry] = size(nodes)-1;
+					}
+				}
+				if (node_from.id != node_from.entry) {
+					nodes.push_back(node_from);
+					node_id2ind[node_from.id] = size(nodes) - 1;
+					q.push_back(size(nodes) - 1);
+				}
 			}
 		}
 	}
@@ -155,9 +166,15 @@ inline void db_get_tree1(
 			tree[i].push_back(node_id2ind[node_id_last]);
 		}
 		for (auto &req : pentry[order-1].second) {
-			if (node_id2ind.count(req.node_id))
-				throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
-			tree[i].push_back(node_id2ind[req.node_id]);
+			Str *p_node_id = &req.node_id;
+			if (!node_id2ind.count(req.node_id)) {
+				if (!entry_info.count(req.node_id))
+					throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
+				// get last node_id of reqired entry
+				assert(!entry_info[req.node_id].second.empty());
+				p_node_id = &entry_info[req.node_id].second.back().first;
+			}
+			tree[i].push_back(node_id2ind[*p_node_id]);
 		}
 	}
 
@@ -308,11 +325,8 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
-	SQLite::Statement stmt_select3(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "nodes" SET "entry"=?, "order"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "nodes" ("id", "entry", "order") VALUES (?, ?, ?);)");
+	SQLite::Statement stmt_insert_replace(db_rw,
+		R"(INSERT OR REPLACE INTO "nodes" ("id", "entry", "order") VALUES (?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
 	unordered_set<Str> nodes_deleted; // old nodes of `entry`
@@ -327,22 +341,22 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	}
 	stmt_select.reset();
 
+	// update or insert into db "nodes" table
+	// for node_id == entry
+	stmt_insert_replace.bind(1, entry);
+	stmt_insert_replace.bind(2, entry);
+	stmt_insert_replace.bind(3, (int)pentry.size()+1);
+	stmt_insert_replace.exec(); stmt_insert_replace.reset();
+	// \pentry{} nodes
 	for (Long i = 0; i < size(pentry); ++i) {
 		auto &node_id = pentry[i].first;
 		// update or insert into db "nodes" table
 		assert(!node_id.empty());
 		nodes_deleted.erase(node_id);
-		stmt_update.bind(1, entry);
-		stmt_update.bind(2, (int)i+1);
-		stmt_update.bind(3, node_id);
-		stmt_update.exec();
-		if (db_rw.getTotalChanges() == 0) {
-			stmt_insert.bind(1, node_id);
-			stmt_insert.bind(2, entry);
-			stmt_insert.bind(3, (int)i+1);
-			stmt_insert.exec(); stmt_insert.reset();
-		}
-		stmt_update.reset();
+		stmt_insert_replace.bind(1, node_id);
+		stmt_insert_replace.bind(2, entry);
+		stmt_insert_replace.bind(3, (int)i+1);
+		stmt_insert_replace.exec(); stmt_insert_replace.reset();
 	}
 	// deleted nodes
 	for (auto &node_id : nodes_deleted) {
@@ -370,10 +384,8 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "edges" SET "weak"=?, "hide"=? WHERE "from"=? AND "to"=?;)");
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "edges" ("from", "to", "weak", "hide") VALUES (?, ?, ?, ?);)");
+	SQLite::Statement stmt_insert_replace(db_rw,
+		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak", "hide") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
 	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
@@ -395,19 +407,11 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		// update or insert into db "edges" table
 		for (const PentryRef &ref : pentry1) {
 			auto edge = make_pair(node_id, ref.node_id);
-			stmt_update.bind(1, ref.star); // edges.weak
-			stmt_update.bind(2, ref.tilde); // edges.hide
-			stmt_update.bind(3, node_id); // edges.from
-			stmt_update.bind(4, ref.node_id); // edges.to
-			stmt_update.exec();
-			if (db_rw.getTotalChanges() == 0) {
-				stmt_insert.bind(1, node_id);
-				stmt_insert.bind(2, ref.node_id);
-				stmt_insert.bind(3, ref.star);
-				stmt_insert.bind(4, ref.tilde);
-				stmt_insert.exec(); stmt_insert.reset();
-			}
-			stmt_update.reset();
+			stmt_insert_replace.bind(1, ref.node_id); // edges.from
+			stmt_insert_replace.bind(2, node_id); // edges.to
+			stmt_insert_replace.bind(3, ref.star); // edges.weak
+			stmt_insert_replace.bind(4, ref.tilde); // edges.hide
+			stmt_insert_replace.exec(); stmt_insert_replace.reset();
 		}
 	}
 	// deleted edges and nodes

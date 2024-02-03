@@ -148,7 +148,10 @@ inline Long paragraph_tag(Str_IO str)
 				ind0 = skip_env(str, ind0);
 		}
 		else {
-			ind0 = skip_command(str, ind0, 1);
+			if (str.substr(ind0,7) == "\\pentry")
+				ind0 = skip_command(str, ind0, 2);
+			else
+				ind0 = skip_command(str, ind0, 1);
 			if (ind0 < size(str)) {
 				Long ind1 = expect(str, "\\label", ind0);
 				if (ind1 > 0)
