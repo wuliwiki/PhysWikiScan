@@ -53,7 +53,7 @@ inline void db_get_tree1(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
 		unordered_map<Str, pair<Str, Pentry>> &entry_info, // [out] entry -> (caption, Pentry)
-		Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].tilde` will be updated
+		Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].hide` will be updated
 		Str_I entry0, // use the last node as tree root
 		SQLite::Database &db_read)
 {
@@ -221,7 +221,7 @@ inline void db_get_tree1(
 				bool found = false;
 				for (auto &req: pentry1.second) {
 					if (req.node_id == node_red.id) {
-						req.tilde = found = true;
+						req.hide = found = true;
 						break;
 					}
 				}
@@ -242,12 +242,12 @@ inline void db_get_tree1(
 		}
 	}
 
-	// copy tilde to pentry0
+	// copy `hide` to pentry0
 	for (Long i = 0; i < size(pentry0_info); ++i) {
 		auto &pentry1_info = pentry0_info[i];
 		auto &pentry1 = pentry0[i];
 		for (Long j = 0; j < size(pentry1_info.second); ++j)
-			pentry1.second[j].tilde = pentry1_info.second[j].tilde;
+			pentry1.second[j].hide = pentry1_info.second[j].hide;
 	}
 }
 
@@ -308,7 +308,7 @@ inline void db_get_tree(
 				tree[from].push_back(to);
 			}
 			for (auto &req: pentry1.second) {
-				if (!req.tilde) {
+				if (!req.hide) {
 					if (node_id2ind.count(req.node_id) == 0) throw internal_err(SLS_WHERE);
 					Long to = node_id2ind[req.node_id];
 					tree[from].push_back(to);
@@ -383,19 +383,19 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 // update db "edges" for 1 enetry
 inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
 	SQLite::Statement stmt_insert_replace(db_rw,
 		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak", "hide") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
 	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
 
-	// get db edges starting from `entry` nodes
+	// get db edges to `entry` nodes
 	for (auto &pentry1 : pentry) {
-		const Str &from = pentry1.first;
-		stmt_select.bind(1, from);
+		const Str &to = pentry1.first;
+		stmt_select.bind(1, to);
 		while (stmt_select.executeStep()) {
-			const Str &to = stmt_select.getColumn(0);
+			const Str &from = stmt_select.getColumn(0);
 			edges_deleted.insert(make_pair(from, to));
 		}
 		stmt_select.reset();
@@ -404,14 +404,18 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	for (Long i = 0; i < size(pentry); ++i) {
 		auto &node_id = pentry[i].first;
 		auto &pentry1 = pentry[i].second;
+		if (!exist("nodes", "id", node_id, db_rw))
+			throw scan_err(u8"edges.to 外键不存在： " + node_id);
 		// update or insert into db "edges" table
 		for (const PentryRef &ref : pentry1) {
-			auto edge = make_pair(node_id, ref.node_id);
+			if (!exist("nodes", "id", ref.node_id, db_rw))
+				throw scan_err(u8"edges.from 外键不存在： " + ref.node_id);
 			stmt_insert_replace.bind(1, ref.node_id); // edges.from
 			stmt_insert_replace.bind(2, node_id); // edges.to
-			stmt_insert_replace.bind(3, ref.star); // edges.weak
-			stmt_insert_replace.bind(4, ref.tilde); // edges.hide
+			stmt_insert_replace.bind(3, ref.weak); // edges.weak
+			stmt_insert_replace.bind(4, ref.hide); // edges.hide
 			stmt_insert_replace.exec(); stmt_insert_replace.reset();
+			edges_deleted.erase(make_pair(ref.node_id, node_id));
 		}
 	}
 	// deleted edges and nodes
@@ -419,5 +423,29 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		stmt_delete.bind(1, edge.first);
 		stmt_delete.bind(2, edge.second);
 		stmt_delete.exec(); stmt_delete.reset();
+	}
+}
+
+// batch update edges
+inline void db_update_edges(const vector<Pentry> &pentries, vecStr_I entries, SQLite::Database &db_rw)
+{
+	cout << "updating edges ..." << endl;
+	for (Long i = 0; i < size(entries); ++i)
+		db_update_edges(pentries[i], entries[i], db_rw);
+}
+
+// only updates db edges.hide
+inline void db_update_edges_hide(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
+{
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "edges" SET "hide"=? WHERE "from"=? AND "to"=?;)");
+	for (Long i = 0; i < size(pentry); ++i) {
+		auto &node_id = pentry[i].first;
+		auto &pentry1 = pentry[i].second;
+		for (const PentryRef &ref : pentry1) {
+			stmt_update.bind(1, ref.hide); // edges.hide
+			stmt_update.bind(2, ref.node_id); // edges.from
+			stmt_update.bind(3, node_id); // edges.to
+			stmt_update.exec(); stmt_update.reset();
+		}
 	}
 }

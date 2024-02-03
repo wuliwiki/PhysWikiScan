@@ -107,7 +107,7 @@ CREATE TABLE "types" (
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
 
 -- 知识树节点 \pentry{...\req{}，...\reqq{}}{id}
--- 每篇文章自动添加一个文章节点（order 最大）， 使 nodes.id 和 entries.id 相同，表示最后一个节点（即整篇文章）
+-- 每篇文章自动添加一个文章节点（nodes.id = nodes.entry，order 最大），用于把正片文章（即最后一个节点）作为预备知识
 CREATE TABLE "nodes" (
 	"id"        TEXT    NOT NULL UNIQUE,    -- \pentry{}{id}
 	"entry"     TEXT    NOT NULL,           -- entries.id
@@ -122,10 +122,10 @@ CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 -- 知识树的边（\pentry{} 中的 \req{}）
 -- 不包含对本文上一个节点的默认连接
 CREATE TABLE "edges" (
-	"from"     INTEGER NOT NULL,      -- nodes.id （若与 entries.id 相同则表示最后一个节点，即依赖整篇文章）
-	"to"       INTEGER NOT NULL,      -- nodes.id
-	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先被 hide（\upreff{}）（原 * 标记）
-	"hide"     INTEGER NOT NULL,      -- 多余的预备知识， 不在知识树中显示（原 ~ 标记）
+	"from"     TEXT    NOT NULL,      -- nodes.id （若等于 entries.id 则表示依赖整篇文章，即最后一个节点）
+	"to"       TEXT    NOT NULL,      -- nodes.id
+	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先隐藏（原 * 标记）（\upreff{}）
+	"hide"     INTEGER NOT NULL,      -- [0|1|-1] 多余的预备知识（原 ~ 标记）， 不在知识树中显示， -1 代表未知
 	PRIMARY KEY("from", "to"),
 	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
 	FOREIGN KEY("from")  REFERENCES "nodes"("id")

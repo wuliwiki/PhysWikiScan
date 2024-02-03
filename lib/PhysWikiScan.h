@@ -213,7 +213,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			}
 			if (j >= Nupref)
 				throw internal_err(SLS_WHERE);
-			if (pentry1.second[j].tilde) {
+			if (pentry1.second[j].hide) {
 				pentry_arg.insert(ind3, span_end);
 				pentry_arg.insert(ind2, span_beg);
 				ind3 += size(span_beg) + size(span_end);
@@ -542,6 +542,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	rep_eq_lt_gt(str);
 	// escape characters
 	NormalTextEscape(str);
+	// get dependent entries from \pentry{}
+	get_pentry(pentry, str, db_read);
 	// add paragraph tags
 	paragraph_tag(str);
 	// add html id for links
@@ -557,8 +559,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// process figure environments
 	figure_env(img_to_delete, fig_ext_hash, str, fig_captions,
 		entry, fig_ids, db_read);
-	// get dependent entries from \pentry{}
-	get_pentry(pentry, str, db_read);
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
@@ -703,6 +703,8 @@ inline void PhysWikiOnlineN_round1(
 		db_update_entry_bibs(entry_bibs_change, db_rw);
 		// update entry_uprefs
 		db_update_entry_uprefs(entry_uprefs_change, db_rw);
+		// update edges
+		db_update_edges(pentries, entries, db_rw);
 	}
 	catch (const std::exception &e) {
 		entry_err["entry_unknown"] = e.what();
@@ -730,15 +732,15 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		fname = gv::path_out + entry + ".html";
 		read(html, fname + ".tmp"); // read html file
         // process \pentry{} and tree
-        {
+        if (0) {
             // check dependency tree and auto mark redundant pentry with ~
             vector<DGnode> tree; vector<Node> nodes;
             unordered_map<Str, pair<Str, Pentry>> entry_info;
             db_get_tree1(tree, nodes, entry_info, pentries[i], entry, db_rw);
             // convert \pentry{} to html
             pentry_cmd(html, pentries[i]); // use after db_get_tree1()
-			// update db "edges"
-            db_update_edges(pentries[i], entry, db_rw);
+			// update db `edges.hide` only
+            db_update_edges_hide(pentries[i], entry, db_rw);
         }
 		// process \autoref and \upref
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);

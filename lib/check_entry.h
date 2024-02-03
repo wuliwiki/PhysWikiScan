@@ -4,10 +4,10 @@
 // a single \req{node_id} or \reqq{node_id} inside a \pentry{}
 struct PentryRef {
 	Str node_id; // \req{node_label}
-	bool star; // \reqq{}, i.e. marked * (prefer to be ignored)
-	bool tilde; // omitted in the tree, i.e. marked ~
-	PentryRef(Str node_id, bool star, bool tilde):
-		node_id(std::move(node_id)), star(star), tilde(tilde) {};
+	bool weak; // \reqq{} (prefer to be ignored), previously marked *
+	Char hide; // omitted in the tree, previously marked ~
+	PentryRef(Str node_id, bool weak, Char hide = -1):
+		node_id(std::move(node_id)), weak(weak), hide(hide) {};
 };
 
 // all \pentry{} info of an entry
@@ -113,7 +113,7 @@ inline bool is_draft(Str_I str)
 // will ignore \pentry{} with no \upref{} or \upreff{}
 inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
-	bool star;
+	bool weak;
 	Long ind0 = -1, ikey;
 	Str temp, node_id, label;
 	pentry_raw.clear();
@@ -133,7 +133,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		bool first_upref = true;
 		while (1) {
 			ind1 = find(ikey, temp, {"\\upref", "\\upreff"}, ind2);
-			star = (ikey == 1);
+			weak = (ikey == 1);
 			if (ind1 < 0)
 				break;
 			if (!first_upref)
@@ -145,7 +145,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			for (auto &e : pentry1.second)
 				if (node_id == e.node_id)
 					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + node_id + ".tex");
-			pentry1.second.emplace_back(node_id, star, false); // tilde always false
+			pentry1.second.emplace_back(node_id, weak, -1); // `edges.hide` unknown
 			ind2 = skip_command(temp, ind1, 1);
 			first_upref = false;
 		}
