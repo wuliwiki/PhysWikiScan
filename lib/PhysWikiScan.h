@@ -179,6 +179,35 @@ inline Long paragraph_tag(Str_IO str)
 	}
 }
 
+// batch modification of all `.tex` files as needed
+inline void arg_batch_mod()
+{
+	vecStr entries;
+	Str root = gv::path_in + "contents/";
+	file_list_ext(entries, root, "tex");
+	Str str, pentry_arg;
+	for (auto &entry : entries) {
+		read(str, root + entry);
+		Long ind0 = 0;
+		while (1) {
+			Long ind = find_command(str, "pentry", ind0);
+			if (ind < 0)
+				break;
+			command_arg(pentry_arg, str, ind, 0, false);
+			Long len = size(pentry_arg);
+			ind = skip_command(str, ind);
+			Long ind1 = expect(str, "{", ind);
+			if (ind1 < 0) {
+				ind0++; continue;
+			}
+			replace(pentry_arg, "\\upref{", "\\nref{nod_");
+			str.replace(ind1, len, pentry_arg);
+			ind0++;
+		}
+		write(str, root + entry);
+	}
+}
+
 // replace \pentry command with html round panel
 // skip pentry without \\upref*
 inline void pentry_cmd(Str_IO str, Pentry_I pentry)
@@ -723,6 +752,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
 	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
+	unordered_map<Str, pair<Str, Pentry>> entry_info;
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
 		if (entry_err.count(entry)) continue;
@@ -732,11 +762,10 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		fname = gv::path_out + entry + ".html";
 		read(html, fname + ".tmp"); // read html file
         // process \pentry{} and tree
-        if (0) {
+        {
             // check dependency tree and auto mark redundant pentry with ~
-            vector<DGnode> tree; vector<Node> nodes;
-            unordered_map<Str, pair<Str, Pentry>> entry_info;
-            db_get_tree1(tree, nodes, entry_info, pentries[i], entry, db_rw);
+            vector<DGnode> tree; vector<Node> nodes; unordered_map<Str, Long> node_id2ind;
+            db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
             // convert \pentry{} to html
             pentry_cmd(html, pentries[i]); // use after db_get_tree1()
 			// update db `edges.hide` only
@@ -765,7 +794,8 @@ inline Long dep_json(SQLite::Database &db_read)
 	vector<Node> nodes;
 	// entry -> (title,part,chapter,Pentry)
 	unordered_map<Str, tuple<Str, Str, Str, Pentry>> entry_info;
-	db_get_tree(tree, nodes, entry_info, db_read);
+	unordered_map<Str, Long> node_id2ind;
+	db_get_tree(tree, nodes, node_id2ind, entry_info, db_read);
 
 	Str str, node_title;
 

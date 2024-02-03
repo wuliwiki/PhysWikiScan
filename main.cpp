@@ -442,6 +442,9 @@ int main(int argc, const char *argv[]) {
 			cout << VERSION_MAJOR << '.' << VERSION_MINOR << '.' << VERSION_PATCH << endl;
 			return 0;
 		}
+		else if (args[0] == "--batch-mod" && args.size() == 1) {
+			arg_batch_mod();
+		}
 		else {
 			throw scan_err(u8"scan 内部错误： 命令不合法");
 		}

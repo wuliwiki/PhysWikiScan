@@ -45,21 +45,20 @@ inline bool operator<(Node_I a, Node_I b) { return a.entry == b.entry ? a.order 
 
 // get dependency tree from database, for all nodes of `entry0`
 // edge direction is the inverse of learning direction
-// also check for cycle, and check for any of it's pentries are redundant
+// also check for cycle, and check if any of `pentry0` refs is redundant
 // nodes[i] corresponds to tree[i]
 // `entry0:(i+1)` will be (first few) nodes[i]
-// `nodes` will not include `node_id == entry` unless that's the only node
+// `nodes` will include `node_id == entry` nodes
+// `tree` will resolve links to `node_id == entry` nodes if possible
 inline void db_get_tree1(
-		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
-		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order), where order > 0
-		unordered_map<Str, pair<Str, Pentry>> &entry_info, // [out] entry -> (caption, Pentry)
+		vector<DGnode> &tree, // [in/out] dep tree, each node will include last node of the same entry (if any)
+		vector<Node> &nodes, // [in/out] nodes[i] is tree[i], with (entry, order), where order > 0
+		unordered_map<Str, Long> &node_id2ind, // node_id -> `nodes` index
+		unordered_map<Str, pair<Str, Pentry>> &entry_info, // [in/out] entry -> (caption, Pentry)
 		Pentry_IO pentry0, // pentry lists for entry0. `pentry0[i][j].hide` will be updated
 		Str_I entry0, // use the last node as tree root
 		SQLite::Database &db_read)
 {
-	tree.clear(); nodes.clear(); entry_info.clear();
-	unordered_map<Str, Long> node_id2ind; // node_id -> index to `nodes`
-
 	SQLite::Statement stmt_select_caption(db_read,
 		R"(SELECT "caption" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select_node(db_read,
@@ -80,6 +79,18 @@ inline void db_get_tree1(
 		stmt_select_caption.reset();
 	};
 
+	// get a "node" record from db, return a `Node`
+	auto db_get_node = [&](Str_I node_id) {
+		stmt_select_node.bind(1, node_id);
+		if (!stmt_select_node.executeStep())
+			throw scan_err(u8"数据库找不到 node_id: " + node_id);
+		const Str &entry_from = stmt_select_node.getColumn(0);
+		Long order_from = stmt_select_node.getColumn(1).getInt();
+		stmt_select_node.reset();
+		return Node(node_id, entry_from, order_from);
+	};
+
+	tree.clear();
 	Long Nnode0 = size(pentry0);
 	if (Nnode0 == 0) { // no \pentry{}, add default node
 		nodes.emplace_back(entry0, entry0, 1);
@@ -99,17 +110,6 @@ inline void db_get_tree1(
 	db_get_entry_caption(entry_info[entry0].first, entry0);
 	entry_info[entry0].second = pentry0;
 
-	// get a "node" record from db, return a `Node`
-	auto db_get_node = [&](Str_I node_id) {
-		stmt_select_node.bind(1, node_id);
-		if (!stmt_select_node.executeStep())
-			throw scan_err(u8"数据库找不到 node_id: " + node_id);
-		const Str &entry_from = stmt_select_node.getColumn(0);
-		Long order_from = stmt_select_node.getColumn(1).getInt();
-		stmt_select_node.reset();
-		return Node(node_id, entry_from, order_from);
-	};
-
 	// broad first search (BFS) to get all nodes involved
 	while (!q.empty()) {
 		const Str &entry = nodes[q.front()].entry;
@@ -117,14 +117,13 @@ inline void db_get_tree1(
 		q.pop_front();
 		const Pentry &pentry = entry_info[entry].second;
 		if (pentry.empty()) continue;
-		if (order > size(pentry))
+		if (order > size(pentry)+1 || order <= 0)
 			throw internal_err(Str(__func__) + SLS_WHERE);
 		if (order > 1) { // implicitly depends on the previous node
-			const Str &node_id_last = pentry[order-2].first;
-			if (!node_id2ind.count(node_id_last)) { // last node not in `nodes`
-				Node nod = db_get_node(node_id_last);
-				nodes.push_back(nod);
-				node_id2ind[node_id_last] = size(nodes)-1;
+			auto &pentry1_last = pentry[order-2];
+			if (!node_id2ind.count(pentry1_last.first)) { // last node not in `nodes`
+				nodes.emplace_back(pentry1_last.first, entry, order-1);
+				node_id2ind[pentry1_last.first] = size(nodes)-1;
 				q.push_back(size(nodes)-1);
 			}
 		}
@@ -137,16 +136,10 @@ inline void db_get_tree1(
 					auto &info = entry_info[node_from.entry];
 					db_get_entry_caption(info.first, node_from.entry);
 					db_get_pentry(info.second, node_from.entry, db_read);
-					if (info.second.empty()) {
-						nodes.emplace_back(node_from.entry, node_from.entry, 1);
-						node_id2ind[node_from.entry] = size(nodes)-1;
-					}
 				}
-				if (node_from.id != node_from.entry) {
-					nodes.push_back(node_from);
-					node_id2ind[node_from.id] = size(nodes) - 1;
-					q.push_back(size(nodes) - 1);
-				}
+				nodes.push_back(node_from);
+				node_id2ind[node_from.id] = size(nodes) - 1;
+				q.push_back(size(nodes) - 1);
 			}
 		}
 	}
@@ -155,9 +148,9 @@ inline void db_get_tree1(
 	tree.resize(nodes.size());
 	for (Long i = 0; i < size(nodes); ++i) {
 		auto &entry = nodes[i].entry;
+		if (entry == nodes[i].id) continue;
 		Long order = nodes[i].order;
 		auto &pentry = entry_info[entry].second;
-
 		if (pentry.empty()) continue;
 		if (order > 1) { // implicitly depends on the last node
 			const Str &node_id_last = pentry[order-2].first;
@@ -166,15 +159,22 @@ inline void db_get_tree1(
 			tree[i].push_back(node_id2ind[node_id_last]);
 		}
 		for (auto &req : pentry[order-1].second) {
-			Str *p_node_id = &req.node_id;
-			if (!node_id2ind.count(req.node_id)) {
-				if (!entry_info.count(req.node_id))
-					throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
-				// get last node_id of reqired entry
-				assert(!entry_info[req.node_id].second.empty());
-				p_node_id = &entry_info[req.node_id].second.back().first;
+			if (!node_id2ind.count(req.node_id))
+				throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
+			auto &req_nod = nodes[node_id2ind[req.node_id]];
+
+			Long from;
+			if (req_nod.id == req_nod.entry) {
+				// referencing the whole entry, resolve to the last actual node if possible
+				const Pentry &req_pentry = entry_info[req_nod.entry].second;
+				if (req_pentry.empty())
+					from = node_id2ind[req.node_id];
+				else
+					from = node_id2ind[req_pentry.back().first];
 			}
-			tree[i].push_back(node_id2ind[*p_node_id]);
+			else
+				from = node_id2ind[req.node_id];
+			tree[i].push_back(from);
 		}
 	}
 
@@ -191,8 +191,8 @@ inline void db_get_tree1(
 		throw scan_err(msg);
 	}
 
-	// check redundancy
-	if (0) { // debug: print edges
+	// --- check redundancy ---
+	if (1) { // debug: print edges
 		for (Long i = 0; i < size(tree); ++i) {
 			auto &entry_i = nodes[i].entry;
 			cout << i << "." << entry_i << " " << entry_info[entry_i].first << endl;
@@ -227,14 +227,17 @@ inline void db_get_tree1(
 				}
 				if (!found)
 					throw internal_err(SLS_WHERE);
+				// remove from `tree`
+				erase(tree[node_id2ind[root.id]], node_id2ind[node_red.id]);
+				// print result
 				auto &caption_red = get<0>(entry_info[node_red.entry]);
-				ss << u8"\n已标记 " << root.entry << ':' << root.order << " (" << root_caption << u8") 中多余的预备知识： "
-				   << node_red.entry << ':' << node_red.order << " (" << caption_red << ')' << endl;
+				ss << u8"\n已标记 " << root.entry << ':' << root.id << " (" << root_caption << u8") 中多余的预备知识： "
+				   << node_red.entry << ':' << node_red.id << " (" << caption_red << ')' << endl;
 				ss << u8"   已存在路径： " << endl;
 				for (Long i = 0; i < size(alt_path); ++i) {
 					auto &nod = nodes[alt_path[i]];
 					auto &caption = get<0>(entry_info[nod.entry]);
-					ss << nod.entry << ':' << nod.order << " (" << caption
+					ss << nod.entry << ':' << nod.id << " (" << caption
 					   << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
 				}
 			}
@@ -252,20 +255,18 @@ inline void db_get_tree1(
 }
 
 // get entire dependency tree (2 ver) from database
-// edge direction is the inverse of learning direction
-// tree: one node for each entry
+// reference db_get_tree1()
 inline void db_get_tree(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order). will be sorted by `entry` then `order`
+		unordered_map<Str, Long> &node_id2ind, // [out] node_id -> `nodes` index
 		// vector<DGnode> &tree2, // [out] same with `tree`, but each tree node is one entry
-		unordered_map<Str, tuple<Str, Str, Str, Pentry>> &entry_info, // [out] entry -> (caption,part,chapter,Pentry)
+		unordered_map<Str, tuple<Str, Str, Str, Pentry>> &entry_info, // [in/out] entry -> (caption,part,chapter,Pentry)
 		SQLite::Database &db_read)
 {
-	tree.clear();
+	tree.clear(); nodes.clear(); node_id2ind.clear();
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "id", "caption", "part", "chapter" FROM "entries" WHERE "deleted" = 0;)");
-
-	unordered_map<Str, Long> node_id2ind; // node_id -> index of `nodes`
 
 	// get info
 	while (stmt_select.executeStep()) {
@@ -300,18 +301,29 @@ inline void db_get_tree(
 		for (Long order = 1; order <= size(pentry); ++order) {
 			auto &pentry1 = pentry[order-1];
 			if (node_id2ind.count(pentry1.first) == 0) throw internal_err(SLS_WHERE);
-			Long from = node_id2ind[pentry1.first];
+			Long to = node_id2ind[pentry1.first];
 			if (order > 1) { // require last node
 				auto &last_node_id = pentry[order-2].first;
 				if (node_id2ind.count(last_node_id) == 0) throw internal_err(SLS_WHERE);
-				Long to = node_id2ind[last_node_id];
-				tree[from].push_back(to);
+				Long from = node_id2ind[last_node_id];
+				tree[to].push_back(from);
 			}
 			for (auto &req: pentry1.second) {
 				if (!req.hide) {
 					if (node_id2ind.count(req.node_id) == 0) throw internal_err(SLS_WHERE);
-					Long to = node_id2ind[req.node_id];
-					tree[from].push_back(to);
+					auto &req_nod = nodes[node_id2ind[req.node_id]];
+					Long from;
+					if (req_nod.id == req_nod.entry) {
+						// referencing the whole entry, resolve to the last actual node if possible
+						const Pentry &req_pentry = get<3>(entry_info[req_nod.entry]);
+						if (req_pentry.empty())
+							from = node_id2ind[req.node_id];
+						else
+							from = node_id2ind[req_pentry.back().first];
+					}
+					else
+						from = node_id2ind[req.node_id];
+					tree[to].push_back(from);
 				}
 			}
 		}
