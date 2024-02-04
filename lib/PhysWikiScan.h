@@ -807,10 +807,9 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
+// nodes with `node_id == entry` will only be kept if it's the only node in entry
 inline void dep_json(SQLite::Database &db_read)
 {
-	SLS_WARN("dep_json() has bug! skipped.");
-	return;
 	vecStr chap_ids, chap_names, chap_parts, part_ids, part_names;
 	vector<DGnode> tree;
 	db_get_parts(part_ids, part_names, db_read);
@@ -823,6 +822,17 @@ inline void dep_json(SQLite::Database &db_read)
 	db_get_tree(tree, nodes, node_id2ind, entry_info, db_read);
 
 	Str str, node_title;
+
+	// resolve a node with `node.id == node.entry` to the last actual node
+	auto resolve_node_id = [&](Str_I node_id) {
+		auto &nod = nodes[node_id2ind[node_id]];
+		if (nod.id == nod.entry) {
+			auto &pentry = get<3>(entry_info[nod.entry]);
+			if (!pentry.empty())
+				return Node(pentry.back().first, nod.entry, pentry.size());
+		}
+		return nod;
+	};
 
 	// write part names
 	str += "{\n  \"parts\": [\n";
@@ -843,13 +853,15 @@ inline void dep_json(SQLite::Database &db_read)
 	for (auto &node : nodes) {
 		if (node.order <= 0)
 			throw internal_err(SLS_WHERE);
+		if (resolve_node_id(node.id).id != node.id)
+			continue;
 		auto &info = entry_info[node.entry];
 		auto &title = get<0>(info), &part = get<1>(info), &chap = get<2>(info);
 		auto &pentry = get<3>(info);
 		node_title = title;
 		if (size(pentry) > 1)
 			node_title << ':' << node.order;
-		str << R"(    {"id": ")" << node.entry << ':' << node.order << '"'
+		str << R"(    {"id": ")" << node.id << '"'
 			<< R"(, "part": )" << search(part, part_ids)
 			<< R"(, "chap": )" << search(chap, chap_ids)
 			<< R"(, "title": ")" << node_title << '"'
@@ -866,15 +878,14 @@ inline void dep_json(SQLite::Database &db_read)
 		for (auto &j : tree[i]) {
 			auto &node_i = nodes[i], &node_j = nodes[j];
 			int strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
-			str << R"(    {"source": ")" << node_j.entry << ':' << node_j.order << "\", ";
-			str << R"("target": ")" << node_i.entry << ':' << node_i.order << "\", ";
+			str << R"(    {"source": ")" << node_j.id << "\", ";
+			str << R"("target": ")" << node_i.id << "\", ";
 			str << "\"value\": " << strength << "},\n";
 			++Nedge;
 		}
 	}
-	if (Nedge > 0) {
+	if (Nedge > 0)
 		str.pop_back(); str.pop_back();
-	}
 	str += "\n  ]\n}\n";
 	write(str, gv::path_out + "../tree/data/dep.json");
 }

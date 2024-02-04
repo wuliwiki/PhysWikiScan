@@ -2,12 +2,13 @@
 #include "sqlite_db.h"
 
 // get `Pentry` for one entry from database
+// the order of `\req{}` within the same \pentry{} will be sorted (db doesn't store order)
 inline void db_get_pentry(Pentry_O pentry, Str_I entry, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select_nodes(db_read,
 		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select_edges(db_read,
-		R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=?;)");
+		R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=? ORDER BY "from";)");
 	stmt_select_nodes.bind(1, entry);
 	while (stmt_select_nodes.executeStep()) {
 		const Str &node_id = stmt_select_nodes.getColumn(0);
@@ -270,6 +271,9 @@ inline void db_get_tree1(
 
 // get entire dependency tree (2 ver) from database
 // reference db_get_tree1()
+// `nodes` order is stable: `entries` is sorted case insensitive, then for each entry, push to `nodes` in order
+// node `node_id == entry_id` is the last node to each entry, and will only be linked if it's the only node of the entry
+// order of edges are stable, each node will first link to the last node of the same entry, then link to other nodes sorted by their node_id
 inline void db_get_tree(
 		vector<DGnode> &tree, // [out] dep tree, each node will include last node of the same entry (if any)
 		vector<Node> &nodes, // [out] nodes[i] is tree[i], with (entry, order). will be sorted by `entry` then `order`
@@ -281,6 +285,7 @@ inline void db_get_tree(
 	tree.clear(); nodes.clear(); node_id2ind.clear();
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "id", "caption", "part", "chapter" FROM "entries" WHERE "deleted" = 0;)");
+	vecStr entries_ordered;
 
 	// resolve a node with `node.id == node.entry` to the last actual node
 	auto resolve_node_id = [&](Str_I node_id) {
@@ -296,6 +301,7 @@ inline void db_get_tree(
 	// get info
 	while (stmt_select.executeStep()) {
 		const Str &entry = stmt_select.getColumn(0);
+		entries_ordered.push_back(entry);
 		auto &info = entry_info[entry];
 		get<0>(info) = stmt_select.getColumn(1).getString();  // caption
 		get<1>(info) = stmt_select.getColumn(2).getString();  // part
@@ -303,10 +309,11 @@ inline void db_get_tree(
 		db_get_pentry(get<3>(info), entry, db_read); // pentry
 	}
 
+	sort_case_insens(entries_ordered);
+
 	// construct all nodes
-	for (auto &e : entry_info) {
-		auto &entry = e.first;
-		auto &info = e.second;
+	for (auto &entry : entries_ordered) {
+		auto &info = entry_info[entry];
 		auto &pentry = get<3>(info);
 		Long order = 1;
 		for (; order <= size(pentry); ++order) {
