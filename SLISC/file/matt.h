@@ -71,18 +71,18 @@ inline void matt_write_scalar(Llong_I s, ofstream &m_out)
 inline void matt_write_scalar(Doub_I s, ofstream &m_out)
 {
 	if (isinf(s))
-		throw Str("infinity is not supported in matt file!");
+		throw sls_err("infinity is not supported in matt file!");
 	if (isnan(s))
-		throw Str("NaN is not supported in matt file!");
+		throw sls_err("NaN is not supported in matt file!");
 	m_out << to_num(s) << Matt::dlm;
 }
 
 inline void matt_write_scalar(Comp_I s, ofstream &m_out)
 {
 	if (isinf(real(s)) || isinf(imag(s)))
-		throw Str("infinity is not supported in matt file!");
+		throw sls_err("infinity is not supported in matt file!");
 	if (isnan(real(s)) || isnan(imag(s)))
-		throw Str("NaN is not supported in matt file!");
+		throw sls_err("NaN is not supported in matt file!");
 	if (imag(s) == 0)
 		m_out << real(s) << Matt::dlm;
 	else if (imag(s) < 0)
@@ -329,8 +329,10 @@ inline Matt::~Matt()
 {
 	if (isopen())
 		close();
-	else if (m_in.is_open() && m_out.is_open())
-		SLS_ERR("unknown!");
+	else if (m_in.is_open() && m_out.is_open()) {
+		// cannot throw inside destructor
+		printf("unknown!" SLS_WHERE "\n"); exit(1);
+	}
 }
 
 // save() functions
@@ -1551,7 +1553,7 @@ inline void load(Char_O s, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (1 < matt.m_type[i])
@@ -1575,7 +1577,7 @@ inline void load(Int_O s, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (2 < matt.m_type[i])
@@ -1599,7 +1601,7 @@ inline void load(Llong_O s, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (3 < matt.m_type[i])
@@ -1623,7 +1625,7 @@ inline void load(Doub_O s, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -1647,7 +1649,7 @@ inline void load(Comp_O s, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])
@@ -1670,7 +1672,7 @@ inline void load(VecChar_O v, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	Long i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (1 < matt.m_type[i])
@@ -1696,7 +1698,7 @@ inline void load(VecInt_O v, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	Long i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (2 < matt.m_type[i])
@@ -1722,7 +1724,7 @@ inline void load(VecLlong_O v, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	Long i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (3 < matt.m_type[i])
@@ -1748,7 +1750,7 @@ inline void load(VecDoub_O v, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	Long i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -1774,7 +1776,7 @@ inline void load(VecComp_O v, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	Long i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])
@@ -1801,7 +1803,7 @@ inline void load(MatInt_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (2 < matt.m_type[i])
@@ -1829,7 +1831,7 @@ inline void load(MatLlong_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (3 < matt.m_type[i])
@@ -1857,7 +1859,7 @@ inline void load(MatDoub_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -1885,7 +1887,7 @@ inline void load(MatComp_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])
@@ -1913,7 +1915,7 @@ inline void load(CmatInt_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (2 < matt.m_type[i])
@@ -1941,7 +1943,7 @@ inline void load(CmatLlong_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (3 < matt.m_type[i])
@@ -1969,7 +1971,7 @@ inline void load(CmatDoub_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -1997,7 +1999,7 @@ inline void load(CmatComp_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])
@@ -2025,7 +2027,7 @@ inline void load(Cmat3Int_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (2 < matt.m_type[i])
@@ -2055,7 +2057,7 @@ inline void load(Cmat3Llong_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (3 < matt.m_type[i])
@@ -2085,7 +2087,7 @@ inline void load(Cmat3Doub_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -2115,7 +2117,7 @@ inline void load(Cmat3Comp_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])
@@ -2145,7 +2147,7 @@ inline void load(Cmat4Doub_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (21 < matt.m_type[i])
@@ -2176,7 +2178,7 @@ inline void load(Cmat4Comp_O a, Str_I varname, Matt_IO matt)
 	ifstream &fin = matt.m_in;
 	i = matt.search(varname);
 	if (i < 0)
-		throw Str("variable not found!");
+		throw sls_err("variable not found!");
 	fin.seekg(matt.data_pos(i));
 
 	if (41 < matt.m_type[i])

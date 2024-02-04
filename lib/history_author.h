@@ -494,7 +494,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 						if (t - t1 < 1800) {
 							if ((t - t1) % 300) {
 								t1 += ((t - t1) / 300 + 1) * 300;
-								time_t2yyyymmddhhmm(time_hash_time2.second.second, t1);
+								time_hash_time2.second.second = time_t2str(t1, "%Y%m%d%H%M");
 							}
 						}
 						else // end of 30min session
@@ -510,7 +510,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 					}
 					else if (t - t1 > 300) {
 						t1 += 300;
-						time_t2yyyymmddhhmm(*time2_last, t1);
+						*time2_last = time_t2str(t1, "%Y%m%d%H%M");
 						t2 = 0;
 						goto here; // I know, but this is actually cleaner
 					}
@@ -522,7 +522,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 				time2_last = &time_hash_time2.second.second;
 			}
 			if (t2 > 0)
-				time_t2yyyymmddhhmm(*time2_last, t1+300);
+				*time2_last = time_t2str(t1+300, "%Y%m%d%H%M");
 		}
 	}
 
@@ -624,7 +624,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	if (hash_last.empty()) {
 		db_log(u8"emtries.last_backup 为空， 当前为第一次备份。");
 
-		time_t2yyyymmddhhmm(time_new_str, std::time(nullptr));
+		time_new_str = time_str("%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
 		stmt_insert.bind(3, author_id);
@@ -724,8 +724,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		str_add_del(char_add, char_del, str2, str);
 
 		// update db
-		time_t2yyyymmddhhmm(time_new_str, time_new);
-
+		time_new_str = time_t2str(time_new, "%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
 		stmt_insert.bind(3, author_id);
