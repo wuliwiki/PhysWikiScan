@@ -90,6 +90,17 @@ inline void db_get_tree1(
 		return Node(node_id, entry_from, order_from);
 	};
 
+	// resolve a node with `node.id == node.entry` to the last actual node
+	auto resolve_node_id = [&](Str_I node_id) {
+		auto &nod = nodes[node_id2ind[node_id]];
+		if (nod.id == nod.entry) {
+			auto &pentry = entry_info[nod.entry].second;
+			if (!pentry.empty())
+				return Node(pentry.back().first, nod.entry, pentry.size());
+		}
+		return nod;
+	};
+
 	tree.clear();
 	Long Nnode0 = size(pentry0);
 	if (Nnode0 == 0) { // no \pentry{}, add default node
@@ -139,7 +150,14 @@ inline void db_get_tree1(
 				}
 				nodes.push_back(node_from);
 				node_id2ind[node_from.id] = size(nodes) - 1;
-				q.push_back(size(nodes) - 1);
+
+				// when `node_id == entry` and `pentry` non-empty, also add the last node
+				const auto &res_node = resolve_node_id(node_from.id);
+				if (res_node.id != node_from.id) {
+					nodes.push_back(res_node);
+					node_id2ind[res_node.id] = size(nodes) - 1;
+					q.push_back(size(nodes) - 1);
+				}
 			}
 		}
 	}
@@ -161,24 +179,11 @@ inline void db_get_tree1(
 		for (auto &req : pentry[order-1].second) {
 			if (!node_id2ind.count(req.node_id))
 				throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
-			auto &req_nod = nodes[node_id2ind[req.node_id]];
-
-			Long from;
-			if (req_nod.id == req_nod.entry) {
-				// referencing the whole entry, resolve to the last actual node if possible
-				const Pentry &req_pentry = entry_info[req_nod.entry].second;
-				if (req_pentry.empty())
-					from = node_id2ind[req.node_id];
-				else
-					from = node_id2ind[req_pentry.back().first];
-			}
-			else
-				from = node_id2ind[req.node_id];
-			tree[i].push_back(from);
+			tree[i].push_back(node_id2ind[resolve_node_id(req.node_id).id]);
 		}
 	}
 
-	// check cyclic
+	// --- check cyclic ---
 	vecLong cycle;
 	if (!dag_check(cycle, tree)) {
 		cycle.push_back(cycle[0]);
@@ -192,7 +197,7 @@ inline void db_get_tree1(
 	}
 
 	// --- check redundancy ---
-	if (1) { // debug: print edges
+	if (0) { // debug: print edges
 		for (Long i = 0; i < size(tree); ++i) {
 			auto &entry_i = nodes[i].entry;
 			cout << i << "." << entry_i << " " << entry_info[entry_i].first << endl;
@@ -220,15 +225,21 @@ inline void db_get_tree1(
 				auto &node_red = nodes[i_red];
 				bool found = false;
 				for (auto &req: pentry1.second) {
-					if (req.node_id == node_red.id) {
+					if (resolve_node_id(req.node_id).id == node_red.id) {
 						req.hide = found = true;
 						break;
 					}
 				}
 				if (!found)
 					throw internal_err(SLS_WHERE);
-				// remove from `tree`
-				erase(tree[node_id2ind[root.id]], node_id2ind[node_red.id]);
+				// remove redundant link from `tree`
+				auto &tree1 = tree[order-1];
+				for (auto it = tree1.begin(); it != tree1.end(); ++it) {
+					if (*it == i_red) {
+						tree1.erase(it); break;
+					}
+				}
+				assert(it != tree1.end());
 				// print result
 				auto &caption_red = get<0>(entry_info[node_red.entry]);
 				ss << u8"\n已标记 " << root.entry << ':' << root.id << " (" << root_caption << u8") 中多余的预备知识： "
@@ -249,8 +260,11 @@ inline void db_get_tree1(
 	for (Long i = 0; i < size(pentry0_info); ++i) {
 		auto &pentry1_info = pentry0_info[i];
 		auto &pentry1 = pentry0[i];
-		for (Long j = 0; j < size(pentry1_info.second); ++j)
-			pentry1.second[j].hide = pentry1_info.second[j].hide;
+		for (Long j = 0; j < size(pentry1_info.second); ++j) {
+			auto &hide = pentry1_info.second[j].hide;
+			if (hide < 0) hide = 0;
+			pentry1.second[j].hide = hide;
+		}
 	}
 }
 
@@ -267,6 +281,17 @@ inline void db_get_tree(
 	tree.clear(); nodes.clear(); node_id2ind.clear();
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "id", "caption", "part", "chapter" FROM "entries" WHERE "deleted" = 0;)");
+
+	// resolve a node with `node.id == node.entry` to the last actual node
+	auto resolve_node_id = [&](Str_I node_id) {
+		auto &nod = nodes[node_id2ind[node_id]];
+		if (nod.id == nod.entry) {
+			auto &pentry = get<3>(entry_info[nod.entry]);
+			if (!pentry.empty())
+				return Node(pentry.back().first, nod.entry, pentry.size());
+		}
+		return nod;
+	};
 
 	// get info
 	while (stmt_select.executeStep()) {
@@ -312,18 +337,7 @@ inline void db_get_tree(
 				if (!req.hide) {
 					if (node_id2ind.count(req.node_id) == 0) throw internal_err(SLS_WHERE);
 					auto &req_nod = nodes[node_id2ind[req.node_id]];
-					Long from;
-					if (req_nod.id == req_nod.entry) {
-						// referencing the whole entry, resolve to the last actual node if possible
-						const Pentry &req_pentry = get<3>(entry_info[req_nod.entry]);
-						if (req_pentry.empty())
-							from = node_id2ind[req.node_id];
-						else
-							from = node_id2ind[req_pentry.back().first];
-					}
-					else
-						from = node_id2ind[req.node_id];
-					tree[to].push_back(from);
+					tree[to].push_back(node_id2ind[resolve_node_id(req_nod.id).id]);
 				}
 			}
 		}

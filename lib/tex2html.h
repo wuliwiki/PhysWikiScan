@@ -247,7 +247,7 @@ inline Long NormalTextEscape(Str_IO str)
 // process table
 // return number of tables processed
 // must be used after env_labels()
-inline Long table(Str_IO str)
+inline Long table(Str_IO str, bool is_eng)
 {
 	Long N{}, ind0{}, ind1{}, Nline;
 	Intvs intv;
@@ -307,7 +307,7 @@ inline Long table(Str_IO str)
 	    str.erase(ind0, ind1 - ind0 + 1);
 	    ind0 = find(str, str_beg, intv.L(i)) - 1;
 	    str.replace(intv.L(i), ind0 - intv.L(i) + 1,
-	        "<div align = \"center\"> " + Str(gv::is_eng?"Tab. ":u8"表") + num2str(i + 1) + u8"：" +
+	        "<div align = \"center\"> " + Str(is_eng?"Tab. ":u8"表") + num2str(i + 1) + u8"：" +
 	        captions[i] + "</div>");
 	}
 	return N;

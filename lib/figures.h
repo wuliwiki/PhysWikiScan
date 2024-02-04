@@ -10,6 +10,7 @@ inline void figure_env(
 		vecStr_O fig_captions, // [out] figures.caption
 		Str_I entry,
 		vecStr_I fig_ids, // parsed from env_labels(), with the correct order
+		bool is_eng, // english mode
 		SQLite::Database &db_read)
 {
 	Intvs intvFig;
@@ -168,10 +169,10 @@ inline void figure_env(
 			caption.insert(0, u8"：");
 		clear(sb) << R"(<div class = "w3-content" style = "max-width:)" << widthPt << "em;\">\n"
 			"<a href=\"" << href << R"(" target = "_blank"><img src = ")" << href
-			<< "\" alt = \"" << (gv::is_eng? "Fig" : u8"图")
+			<< "\" alt = \"" << (is_eng? "Fig" : u8"图")
 			<< "\" style = \"width:100%;\"></a>\n</div>\n"
 			<< "<div align = \"center\"> "
-			<< (gv::is_eng ? "Fig. " : u8"图 ") << i_fig + 1
+			<< (is_eng ? "Fig. " : u8"图 ") << i_fig + 1
 			<< caption << "</div>";
 		str.replace(intvFig.L(i_fig), intvFig.R(i_fig) - intvFig.L(i_fig) + 1, sb);
 	}

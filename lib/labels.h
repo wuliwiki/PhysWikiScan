@@ -204,7 +204,8 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 inline Long autoref(
 	unordered_set<Str> &add_refs, // labels to add to entry.refs
 	unordered_set<Str> &del_refs, // labels to delete from entry.refs
-	Str_IO str, Str_I entry, SQLite::Database &db_read
+	Str_IO str, Str_I entry, bool is_eng,
+	SQLite::Database &db_read
 ) {
 	Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
 	Bool inEq;
@@ -246,7 +247,7 @@ inline Long autoref(
 		Long ind30 = find(str, '_', ind2 + 1);
 		entry1 = str.substr(ind2 + 1, ind30 - ind2 - 1);
 		type = str.substr(ind1, ind2 - ind1);
-		if (!gv::is_eng) {
+		if (!is_eng) {
 			if (type == "eq") kind = u8"式";
 			else if (type == "fig") kind = u8"图";
 			else if (type == "def") kind = u8"定义";

@@ -2,7 +2,7 @@
 
 // these environments are already not in a paragraph
 // return number of environments processed
-inline Long theorem_like_env(Str_IO str)
+inline Long theorem_like_env(Str_IO str, bool is_eng)
 {
 	Long N, N_tot = 0, ind0;
 	Intvs intvIn, intvOut;
@@ -10,7 +10,7 @@ inline Long theorem_like_env(Str_IO str)
 	vecStr envNames = {"definition", "lemma", "theorem",
 		"corollary", "example", "exercise"};
 	vecStr envCnNames;
-	if (!gv::is_eng)
+	if (!is_eng)
 		envCnNames = {u8"定义", u8"引理", u8"定理",
 			u8"推论", u8"例", u8"习题"};
 	else

@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 9
-#define VERSION_PATCH 0
+#define VERSION_PATCH 1
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -219,8 +219,6 @@ int main(int argc, const char *argv[]) {
 			gv::is_wiki = true;
 		else
 			gv::is_wiki = false;
-		if (gv::path_in.substr(gv::path_in.size() - 4) == "/en/")
-			gv::is_eng = true;
 
 		// === parse arguments ===
 		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);

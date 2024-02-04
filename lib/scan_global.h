@@ -13,9 +13,8 @@ namespace gv {
 	Str path_out; // e.g. ../littleshi.cn/online/
 	Str path_data; // e.g. ../littleshi.cn/data/
 	Str url; // e.g. https://wuli.wiki/online/
-	Bool is_wiki; // editing wiki or note
-	Bool is_eng = false; // use english for auto-generated text (Eq. Fig. etc.)
-	Bool is_entire = false; // running one tex or the entire wiki
+	bool is_wiki; // editing wiki or note
+	bool is_entire = false; // running one tex or the entire wiki
 }
 
 Str sb, sb1; // string buffer (danger if passed into function that use them!)

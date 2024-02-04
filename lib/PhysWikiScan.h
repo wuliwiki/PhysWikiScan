@@ -210,10 +210,11 @@ inline void arg_batch_mod()
 
 // replace \pentry command with html round panel
 // skip pentry without \\upref*
-inline void pentry_cmd(Str_IO str, Pentry_I pentry)
+inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Database &db_read)
 {
+	SQLite::Statement stmt_select(db_read, R"(SELECT "entry", "order" FROM "nodes" WHERE "id"=?;)");
 	Long ind = 0;
-	Str pentry_arg, entry;
+	Str pentry_arg, entry, node_id, icon_html;
 	Str span_beg = R"(<span style="color:gray;">)", span_end = "</span>";
 	Long i = -1; // index to pentry
 	while (1) {  // loop through \pentry command (not pentry var)
@@ -249,6 +250,22 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			}
 			Long len1 = size(pentry_arg);
 			ind2 = skip_command(pentry_arg, ind3, 1);
+			command_arg(node_id, pentry_arg, ind3);
+			stmt_select.bind(1, node_id.substr(4));
+			if (!stmt_select.executeStep())
+				throw scan_err(u8"pentry_cmd(), node_id 不存在：" + node_id);
+			const Str &node_entry = stmt_select.getColumn(0);
+			Long order = stmt_select.getColumn(1).getInt();
+			stmt_select.reset();
+			clear(icon_html) << R"(<span class = "icon"><a href = ")"
+				<< gv::url << node_entry << ".html";
+			// debug: commented to debug
+//			if (node_id != node_entry)
+//				icon_html << '#' << node_id;
+			icon_html << R"(" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
+			pentry_arg.replace(ind3, ind2-ind3, icon_html);
+			Long added_chars = size(icon_html) - (ind2-ind3);
+			ind2 += added_chars; len1 += added_chars;
 			if (ind2 == len1) {
 				if (j != Nref-1)
 					throw internal_err(SLS_WHERE);
@@ -266,7 +283,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			++it; ind2 = it;
 		}
 		sb = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
-		sb << (gv::is_eng ? "Prerequisite" : u8"预备知识")
+		sb << (is_eng ? "Prerequisite" : u8"预备知识")
 			<< "</b>　" << pentry_arg << "</div>";
 		str.replace(ind, ind1-ind, sb);
 		ind += size(sb);
@@ -453,9 +470,10 @@ inline void arg_history(Str_I path, SQLite::Database &db_rw)
 // output title from first line comment
 // use `clear=true` to only keep the title line and key-word line of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
-	Str_O title, vecStr_O fig_ids, vecStr_O fig_captions,
+	Str_O title, Char &is_eng, vecStr_O fig_ids, vecStr_O fig_captions,
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
+	vecStr &str_verb, // [out] temp storage of verbatim strings
 	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
 	Pentry_O pentry, set<Char32> &illegal_chars,
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
@@ -507,9 +525,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// check language: "\n%%eng\n" at the end of file means english, otherwise chinese
 	if ((size(str) > 7 && str.substr(size(str) - 7) == "\n%%eng\n") ||
 			gv::path_in.substr(gv::path_in.size()-4) == "/en/")
-		gv::is_eng = true;
+		is_eng = 1;
 	else
-		gv::is_eng = false;
+		is_eng = 0;
 
 	// add keyword meta to html
 	get_keywords(keywords, str);
@@ -541,12 +559,11 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// check globally forbidden char
 	global_forbid_char(illegal_chars, str);
 	// save and replace verbatim code with an index
-	vecStr str_verb;
 	verbatim(str_verb, str);
 	// wikipedia_link(str);
 	rm_comments(str); // remove comments
 	limit_env_cmd(str);
-	if (!gv::is_eng)
+	if (!is_eng)
 		autoref_space(str, true); // set true to error instead of warning
 	autoref_tilde_upref(str, entry);
 	if (str.empty()) str = " ";
@@ -582,12 +599,12 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// itemize and enumerate
 	itemize(str); enumerate(str);
 	// process table environments
-	table(str);
+	table(str, is_eng);
 	// process example and exercise environments
-	theorem_like_env(str);
+	theorem_like_env(str, is_eng);
 	// process figure environments
 	figure_env(img_to_delete, fig_ext_hash, str, fig_captions,
-		entry, fig_ids, db_read);
+		entry, fig_ids, is_eng, db_read);
 	// issues environment
 	issuesEnv(str);
 	addTODO(str);
@@ -610,10 +627,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	replace(str, "\\dfracH", "");
 	// remove spaces around chinese punctuations
 	rm_chinese_punc_space(str);
-	// verbatim recover (in inverse order of `verbatim()`)
-	lstlisting(str, str_verb);
-	lstinline(str, str_verb);
-	verb(str, str_verb);
 
 	Command2Tag("x", "<code>", "</code>", str);
 	// insert body Title
@@ -648,13 +661,16 @@ inline void PhysWikiOnlineN_round1(
 		set<Char32> &illegal_chars,
 		vecStr_O titles, vecStr_IO entries,
         vector<Pentry> &pentries,
+		vector<vecStr> &str_verbs, // temp storage for verbatim strings
         bool clear,
+		vector<Char> &is_eng,
 		SQLite::Database &db_rw
 ) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
 	titles.clear(); entry_err.clear(); pentries.clear();
     titles.resize(entries.size()); pentries.resize(entries.size());
+	str_verbs.clear(); str_verbs.resize(entries.size());
 
 	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
 	bool update_db, isdraft;
@@ -679,9 +695,9 @@ inline void PhysWikiOnlineN_round1(
 				 << std::setw(10) << std::left << entry; cout.flush();
 
 			// =================================================================
-			PhysWikiOnline1(html, update_db, img_to_delete, titles[i],
+			PhysWikiOnline1(html, update_db, img_to_delete, titles[i], is_eng[i],
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
-				license, type, labels, label_orders, entry_uprefs_change[entry],
+				license, type, labels, label_orders, str_verbs[i], entry_uprefs_change[entry],
 				entry_bibs_change[entry], pentries[i], illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
@@ -747,6 +763,8 @@ inline void PhysWikiOnlineN_round1(
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
 		vecStr_I entries, vecStr_I titles, vector<Pentry> &pentries,
+		vector<vecStr> &str_verbs, // temporary verbatim storage
+		vector<Char> &is_eng, // use english
         SQLite::Database &db_rw, bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
@@ -767,12 +785,17 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
             vector<DGnode> tree; vector<Node> nodes; unordered_map<Str, Long> node_id2ind;
             db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
             // convert \pentry{} to html
-            pentry_cmd(html, pentries[i]); // use after db_get_tree1()
+            pentry_cmd(html, pentries[i], is_eng[i], db_rw); // use after db_get_tree1()
 			// update db `edges.hide` only
             db_update_edges_hide(pentries[i], entry, db_rw);
         }
 		// process \autoref and \upref
-		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, db_rw);
+		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, is_eng[i], db_rw);
+		// verbatim recover (in inverse order of `verbatim()`)
+		lstlisting(html, str_verbs[i]);
+		lstinline(html, str_verbs[i]);
+		verb(html, str_verbs[i]);
+		// write html file
 		if (write_html)
 			write(html, fname); // save html file
 		file_remove(fname + ".tmp");
@@ -860,17 +883,19 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
+	vector<Char> is_eng(entries.size(), -1);
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
 	vector<Pentry> pentries;
+	vector<vecStr> str_verbs;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, clear, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, str_verbs, clear, is_eng, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, db_rw, !clear);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, str_verbs, is_eng, db_rw, !clear);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
@@ -1100,19 +1125,21 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	entries_titles(entries, titles_tmp);
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vector<Pentry> pentries;
+	vector<Char> is_eng(entries.size(), -1);
 
 	arg_bib(db_rw);
 	arg_toc(db_rw);
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
+	vector<vecStr> verb_strs;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, false, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, verb_strs, false, is_eng, db_rw);
 
 	// generate dep.json
 	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 		dep_json(db_rw);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, db_rw);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, verb_strs, is_eng, db_rw);
 
 	// TODO: warn unused figures, based on "ref_by"
 
