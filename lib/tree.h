@@ -336,7 +336,7 @@ inline void db_get_tree(
 inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_insert_replace(db_rw,
 		R"(INSERT OR REPLACE INTO "nodes" ("id", "entry", "order") VALUES (?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
@@ -373,12 +373,12 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	// deleted nodes
 	for (auto &node_id : nodes_deleted) {
 		// check if node_id is required by other nodes
-		stmt_select2.bind(1, node_id); // edges.to
+		stmt_select2.bind(1, node_id); // edges.from
 		clear(sb);
 		if (stmt_select2.executeStep()) {
 			clear(sb) << u8"检测到被删除的节点： " << node_id << "， 但它被以下节点引用：";
 			do {
-				sb << ' ' << stmt_select2.getColumn(0).getString();
+				sb << ' ' << stmt_select2.getColumn(0).getString(); // edges.to
 			} while (stmt_select2.executeStep());
 			throw scan_err(sb);
 		}

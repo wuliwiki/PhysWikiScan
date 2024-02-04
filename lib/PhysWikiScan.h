@@ -225,22 +225,22 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			break;
 		}
 		auto &pentry1 = pentry[i];
-		Long Nupref = pentry.empty() ? 0 : size(pentry1.second);
-		Long ind1 = skip_command(str, ind, 1);
+		Long Nref = pentry.empty() ? 0 : size(pentry1.second);
+		Long ind1 = skip_command(str, ind, 2);
 		command_arg(pentry_arg, str, ind);
 		Long ind2 = 0, j = -1;
 		while (1) { // loop through \upref command
 			++j;
-			Long ind3 = find(pentry_arg, "\\upref", ind2);
+			Long ind3 = find(pentry_arg, "\\nref", ind2);
 			if (ind3 < 0) {
 				if (j == 0) { // \pentry without \upref*
 					--i; break;
 				}
-				if (j != Nupref)
+				if (j != Nref)
 					throw internal_err(SLS_WHERE);
 				break;
 			}
-			if (j >= Nupref)
+			if (j >= Nref)
 				throw internal_err(SLS_WHERE);
 			if (pentry1.second[j].hide) {
 				pentry_arg.insert(ind3, span_end);
@@ -250,14 +250,14 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry)
 			Long len1 = size(pentry_arg);
 			ind2 = skip_command(pentry_arg, ind3, 1);
 			if (ind2 == len1) {
-				if (j != Nupref-1)
+				if (j != Nref-1)
 					throw internal_err(SLS_WHERE);
 				break;
 			}
 			u8_iter it(pentry_arg, ind2);
 			while (*it == " ") ++it;
 			if (ind2 == len1) {
-				if (j != Nupref-1)
+				if (j != Nref-1)
 					throw internal_err(SLS_WHERE);
 				break;
 			}
