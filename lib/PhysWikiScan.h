@@ -884,8 +884,9 @@ inline void dep_json(SQLite::Database &db_read)
 			++Nedge;
 		}
 	}
-	if (Nedge > 0)
+	if (Nedge > 0) {
 		str.pop_back(); str.pop_back();
+	}
 	str += "\n  ]\n}\n";
 	write(str, gv::path_out + "../tree/data/dep.json");
 }
