@@ -807,8 +807,10 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 
 // generate json file containing dependency tree
 // empty elements of 'titles' will be ignored
-inline Long dep_json(SQLite::Database &db_read)
+inline void dep_json(SQLite::Database &db_read)
 {
+	SLS_WARN("dep_json() has bug! skipped.");
+	return;
 	vecStr chap_ids, chap_names, chap_parts, part_ids, part_names;
 	vector<DGnode> tree;
 	db_get_parts(part_ids, part_names, db_read);
@@ -875,7 +877,6 @@ inline Long dep_json(SQLite::Database &db_read)
 	}
 	str += "\n  ]\n}\n";
 	write(str, gv::path_out + "../tree/data/dep.json");
-	return 0;
 }
 
 // like PhysWikiOnline, but convert only specified files
