@@ -230,7 +230,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 		Long ind1 = skip_command(str, ind, 2);
 		command_arg(pentry_arg, str, ind);
 		Long ind2 = 0, j = -1;
-		while (1) { // loop through \upref command
+		while (1) { // loop through \nref command
 			++j;
 			Long ind3 = find(pentry_arg, "\\nref", ind2);
 			if (ind3 < 0) {
@@ -259,7 +259,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 			stmt_select.reset();
 			clear(icon_html) << R"(<span class = "icon"><a href = ")"
 				<< gv::url << node_entry << ".html";
-			if (node_id != node_entry)
+			if (node_id.substr(4) != node_entry)
 				icon_html << '#' << node_id;
 			icon_html << R"(" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
 			pentry_arg.replace(ind3, ind2-ind3, icon_html);
@@ -281,10 +281,12 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 				throw scan_err(u8"预备知识之间必须用中文逗号隔开，不要有空格");
 			++it; ind2 = it;
 		}
-		clear(sb) << R"(<div id=")" << node_id
+		clear(sb) << R"(<div id=")" << pentry1.first
 			<< R"(" class = "w3-panel w3-round-large w3-light-blue"><b>)"
-			<< (is_eng ? "Prerequisite " : u8"预备知识 ") << i+1 << "</b>　"
-			<< pentry_arg << "</div>";
+			<< (is_eng ? "Prerequisite " : u8"预备知识");
+		if (pentry.size() > 1)
+		       sb << ' ' << i+1;
+	        sb << "</b>　" << pentry_arg << "</div>";
 		str.replace(ind, ind1-ind, sb);
 		ind += size(sb);
 	}
