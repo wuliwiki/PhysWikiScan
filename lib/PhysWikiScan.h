@@ -281,7 +281,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 				throw scan_err(u8"预备知识之间必须用中文逗号隔开，不要有空格");
 			++it; ind2 = it;
 		}
-		clear(sb) << R"(<div id=")" << pentry1.first
+		clear(sb) << R"(<div id = "nod_)" << pentry1.first
 			<< R"(" class = "w3-panel w3-round-large w3-light-blue"><b>)"
 			<< (is_eng ? "Prerequisite " : u8"预备知识");
 		if (pentry.size() > 1)

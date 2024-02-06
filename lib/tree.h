@@ -119,6 +119,8 @@ inline void db_get_tree1(
 		node_id2ind[node_id] = size(nodes)-1;
 		q.emplace_back(nodes.size()-1);
 	}
+	nodes.emplace_back(entry0, entry0, Nnode0+1);
+	node_id2ind[entry0] = size(nodes)-1;
 	db_get_entry_caption(entry_info[entry0].first, entry0);
 	entry_info[entry0].second = pentry0;
 
@@ -151,13 +153,16 @@ inline void db_get_tree1(
 				}
 				nodes.push_back(node_from);
 				node_id2ind[node_from.id] = size(nodes) - 1;
-
-				// when `node_id == entry` and `pentry` non-empty, also add the last node
-				const auto &res_node = resolve_node_id(node_from.id);
-				if (res_node.id != node_from.id) {
-					nodes.push_back(res_node);
-					node_id2ind[res_node.id] = size(nodes) - 1;
+				if (node_from.id != node_from.entry)
 					q.push_back(size(nodes) - 1);
+				else { // is an entry node ...
+					const auto &res_node = resolve_node_id(node_from.id);
+					if (res_node.id != node_from.id && !node_id2ind.count(res_node.id)) {
+						// ... sand resolves to the last normal node
+						nodes.push_back(res_node);
+						node_id2ind[res_node.id] = size(nodes) - 1;
+						q.push_back(size(nodes) - 1);
+					}
 				}
 			}
 		}
@@ -178,9 +183,10 @@ inline void db_get_tree1(
 			tree[i].push_back(node_id2ind[node_id_last]);
 		}
 		for (auto &req : pentry[order-1].second) {
-			if (!node_id2ind.count(req.node_id))
-				throw internal_err(u8"节点未找到（应该不会发生才对）： " + req.node_id);
-			tree[i].push_back(node_id2ind[resolve_node_id(req.node_id).id]);
+			const Str &resolved_id = resolve_node_id(req.node_id).id;
+			if (!node_id2ind.count(resolved_id))
+				throw internal_err(u8"节点未找到（应该不会发生才对）： " + resolved_id);
+			tree[i].push_back(node_id2ind[resolved_id]);
 		}
 	}
 
