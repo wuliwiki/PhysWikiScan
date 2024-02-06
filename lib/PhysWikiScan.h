@@ -259,9 +259,8 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 			stmt_select.reset();
 			clear(icon_html) << R"(<span class = "icon"><a href = ")"
 				<< gv::url << node_entry << ".html";
-			// debug: commented to debug
-//			if (node_id != node_entry)
-//				icon_html << '#' << node_id;
+			if (node_id != node_entry)
+				icon_html << '#' << node_id;
 			icon_html << R"(" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
 			pentry_arg.replace(ind3, ind2-ind3, icon_html);
 			Long added_chars = size(icon_html) - (ind2-ind3);
@@ -282,9 +281,10 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 				throw scan_err(u8"预备知识之间必须用中文逗号隔开，不要有空格");
 			++it; ind2 = it;
 		}
-		sb = R"(<div class = "w3-panel w3-round-large w3-light-blue"><b>)";
-		sb << (is_eng ? "Prerequisite" : u8"预备知识")
-			<< "</b>　" << pentry_arg << "</div>";
+		clear(sb) << R"(<div id=")" << node_id
+			<< R"(" class = "w3-panel w3-round-large w3-light-blue"><b>)"
+			<< (is_eng ? "Prerequisite " : u8"预备知识 ") << i+1 << "</b>　"
+			<< pentry_arg << "</div>";
 		str.replace(ind, ind1-ind, sb);
 		ind += size(sb);
 	}
