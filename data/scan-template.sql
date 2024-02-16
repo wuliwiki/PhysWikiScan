@@ -125,7 +125,7 @@ CREATE TABLE "edges" (
 	"from"     TEXT    NOT NULL,      -- nodes.id （若等于 entries.id 则表示依赖整篇文章，即最后一个节点）
 	"to"       TEXT    NOT NULL,      -- nodes.id
 	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先隐藏（原 * 标记）（\upreff{}）
-	"hide"     INTEGER NOT NULL,      -- [0|1|-1] 多余的预备知识（原 ~ 标记）， 不在知识树中显示， -1 代表未知
+	"hide"     INTEGER NOT NULL DEFAULT -1,      -- [0|1|-1] 多余的预备知识（原 ~ 标记）， 不在知识树中显示， -1 代表未知
 	PRIMARY KEY("from", "to"),
 	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
 	FOREIGN KEY("from")  REFERENCES "nodes"("id")

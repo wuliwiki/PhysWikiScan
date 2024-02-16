@@ -1150,11 +1150,11 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 
 	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, verb_strs, false, is_eng, db_rw);
 
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, verb_strs, is_eng, db_rw);
+
 	// generate dep.json
 	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 		dep_json(db_rw);
-
-	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, verb_strs, is_eng, db_rw);
 
 	// TODO: warn unused figures, based on "ref_by"
 

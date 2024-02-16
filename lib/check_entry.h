@@ -111,6 +111,7 @@ inline bool is_draft(Str_I str)
 
 // get dependent entries (id) from \pentry{}
 // will ignore \pentry{} with no \upref{} or \upreff{}
+// all PentryRef::hide will set to -1
 inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
 {
 	bool weak;
@@ -132,7 +133,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		Long ind1 = 0, ind2 = 0;
 		bool first_upref = true;
 		while (1) {
-			ind1 = find(ikey, temp, {"\\nref", "\\nref"}, ind2);
+			ind1 = find(ikey, temp, {"\\nref", "\\wnref"}, ind2);
 			weak = (ikey == 1);
 			if (ind1 < 0)
 				break;

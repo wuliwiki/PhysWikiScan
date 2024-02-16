@@ -424,7 +424,7 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
 	SQLite::Statement stmt_insert_replace(db_rw,
-		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak", "hide") VALUES (?, ?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak") VALUES (?, ?, ?);)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
 	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
@@ -452,7 +452,6 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 			stmt_insert_replace.bind(1, ref.node_id); // edges.from
 			stmt_insert_replace.bind(2, node_id); // edges.to
 			stmt_insert_replace.bind(3, ref.weak); // edges.weak
-			stmt_insert_replace.bind(4, ref.hide); // edges.hide
 			stmt_insert_replace.exec(); stmt_insert_replace.reset();
 			edges_deleted.erase(make_pair(ref.node_id, node_id));
 		}
@@ -466,6 +465,7 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 }
 
 // batch update edges
+// this is used after round1, will not update "edges.hide", use db_update_edges_hide()
 inline void db_update_edges(const vector<Pentry> &pentries, vecStr_I entries, SQLite::Database &db_rw)
 {
 	cout << "updating edges ..." << endl;
