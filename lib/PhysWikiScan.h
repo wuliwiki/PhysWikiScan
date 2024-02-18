@@ -372,7 +372,7 @@ inline Long pay2div(Str_IO str)
 		if (ind0 < 0)
 			return N;
 		++N;
-		str.replace(ind0, 4, R"(<div id="pay" style="display:inline">)");
+		str.replace(ind0, 4, R"(<div class="pay" style="display:inline">)");
 		ind0 = find_command(str, "paid", ind0);
 		if (ind0 < 0)
 			throw scan_err(u8R"(\pay 命令没有匹配的 \paid 命令)");
