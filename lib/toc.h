@@ -178,6 +178,7 @@ inline void auto_add_toc_labels_prt_cpt()
 
 // create table of content from main.tex
 // path must end with '/'
+// `entries` are the \entry{}{} commands in main.tex, in order of appearance
 // titles[i] is the chinese title of entries[i].tex from first line of comment
 // `entry_part[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `entry_chap[i]` is similar to `entry_part[i]`, for chapters
