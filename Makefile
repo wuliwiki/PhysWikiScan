@@ -82,7 +82,7 @@ $(info  )$(info  )$(info  )$(info  )
 # ---------------------------------------------------------
 
 # all flags
-flags = $(compiler_flag) $(debug_flag) $(release_flag) $(mkl_flag) $(boost_flag) $(arb_flag) $(sqlitecpp_flag) -fopenmp
+flags = $(compiler_flag) $(debug_flag) $(release_flag) $(mkl_flag) $(boost_flag) $(arb_flag) $(sqlitecpp_flag)
 # -pedantic # show more warnings
 
 # all libs

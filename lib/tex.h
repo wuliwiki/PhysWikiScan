@@ -162,6 +162,8 @@ inline Str cmd_name(Str_I str, Long ind)
 	for (Long i = ind+1; i < size(str); ++i)
 		if (!is_letter(str[i]))
 			return str.substr(ind, i-ind);
+	throw scan_err("cmd_name(), name not found");
+	return "";
 }
 
 // check if an index is in a command \name{...}
