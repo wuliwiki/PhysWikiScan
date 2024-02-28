@@ -124,7 +124,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 		stmt_select.reset();
 		Long ind1 = skip_command(str, ind0, 1);
 		str.replace(ind0, ind1 - ind0, " <a href=\"" + gv::url + "bibliography.html#"
-			+ num2str(ibib+1) + "\" target=\"_blank\">[" + num2str(ibib+1) + "]</a> ");
+			+ num2str(ibib) + "\" target=\"_blank\">[" + num2str(ibib) + "]</a> ");
 	}
 
 	// deleted \cite{}

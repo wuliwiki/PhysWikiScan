@@ -24,7 +24,7 @@ else()
     # Release
     add_compile_options(-D NDEBUG)
     add_compile_options(-O3)
-    add_compile_options(-Wall -Wno-reorder -Wno-misleading-indentation -fopenmp -fmax-errors=2)
+    add_compile_options(-Wall -Wno-reorder -Wno-misleading-indentation -fmax-errors=2)
 endif()
 
 add_executable(PhysWikiScan main.cpp)
