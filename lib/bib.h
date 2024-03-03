@@ -90,18 +90,21 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 inline Long cite(unordered_map<Str, Bool> &bibs_change,
 	Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
-	// get "entries.bibs" for entry to detect deletion
-	vecStr db_bibs; vecBool db_bibs_cited; // entries.bibs -> cited
-	SQLite::Statement stmt_select0(db_read,
-		R"(SELECT "bibs" FROM "entries" WHERE "id"=?;)");
-	stmt_select0.bind(1, entry);
-	if (!stmt_select0.executeStep())
-		throw internal_err(SLS_WHERE);
-	parse(db_bibs, stmt_select0.getColumn(0));
-	db_bibs_cited.resize(db_bibs.size(), false);
-
+	vecStr db_bibs;
+	vecBool db_bibs_cited; // db_bibs -> cited
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "order", "details" FROM "bibliography" WHERE "id"=?;)");
+	SQLite::Statement stmt_select0(db_read,
+		R"(SELECT "bib" FROM "entry_bibs" WHERE "entry"=?;)");
+
+	// get "entry_bibs" for `entry` to detect change
+	stmt_select0.bind(1, entry);
+	db_bibs.clear();
+	while (stmt_select0.executeStep())
+		db_bibs.push_back(stmt_select0.getColumn(0).getString());
+
+	db_bibs_cited.resize(db_bibs.size(), false);
+
 	Long ind0 = 0, N = 0;
 	Str bib_id;
 	while (1) {
@@ -165,4 +168,46 @@ inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 	replace(html, "PhysWikiBibList", bib_list);
 	write(html, gv::path_out + "bibliography.html");
 	return N;
+}
+
+// update "entry_bibs" table
+inline void db_update_entry_bibs(
+		//                 entry ->           (bib -> [1]add/[0]del)
+		const unordered_map<Str, unordered_map<Str,    bool>> &entry_bibs_change,
+		SQLite::Database &db_rw)
+{
+	cout << "add & delete table entry_bibs ..." << endl;
+	Str bibs_str;
+	set<Str> bibs;
+	SQLite::Statement stmt_select_entry_bibs(db_rw,
+		R"(SELECT "bib" FROM "entry_bibs" WHERE "entry"=?)");
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT INTO "entry_bibs" ("entry", "bib") VALUES (?, ?);)");
+	SQLite::Statement stmt_delete(db_rw,
+		R"(DELETE FROM "entry_bibs" WHERE "entry"=? AND "bib"=?;)");
+
+	for (auto &e : entry_bibs_change) {
+		auto &entry = e.first;
+		auto &bibs_changed = e.second;
+		stmt_select_entry_bibs.bind(1, entry);
+		bibs.clear();
+		while (stmt_select_entry_bibs.executeStep())
+			bibs.insert(stmt_select_entry_bibs.getColumn(0).getString());
+		stmt_select_entry_bibs.reset();
+
+		for (auto &bib : bibs_changed) {
+			if (bib.second) { // insert
+				stmt_insert.bind(1, entry);
+				stmt_insert.bind(2, bib.first);
+				stmt_insert.exec(); stmt_insert.reset();
+			}
+			else { // delete
+				bibs.erase(bib.first);
+				stmt_delete.bind(1, entry);
+				stmt_delete.bind(2, bib.first);
+				stmt_delete.exec(); stmt_delete.reset();
+			}
+		}
+	}
+	cout << "done!" << endl;
 }

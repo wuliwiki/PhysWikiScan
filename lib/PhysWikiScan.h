@@ -476,7 +476,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	vecStr &str_verb, // [out] temp storage of verbatim strings
-	unordered_map<Str, Bool> &uprefs_change, unordered_map<Str, Bool> &bibs_change,
+	unordered_map<Str, bool> &uprefs_change, // entry -> [1]add/[0]delete
+	unordered_map<Str, bool> &bibs_change, // entry -> [1]add/[0]delete
 	Pentry_O pentry, set<Char32> &illegal_chars,
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -684,8 +685,8 @@ inline void PhysWikiOnlineN_round1(
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
 	Str html;
-	unordered_map<Str, unordered_map<Str, Bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
-	unordered_map<Str, unordered_map<Str, Bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
+	unordered_map<Str, unordered_map<Str, bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
+	unordered_map<Str, unordered_map<Str, bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
