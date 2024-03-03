@@ -14,12 +14,6 @@ CREATE TABLE "entries" (
 	"license"   TEXT NOT NULL DEFAULT 'Usr',    -- 协议
 	"type"      TEXT NOT NULL DEFAULT '',       -- 类型
 	"keys"      TEXT NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
-	-- 【待迁移到 nodes/edges 表】"entry1 entry2:2* | entry3~" 预备知识列表， 列出每个 \pentry 的文章id， 用 "|" 隔开多个 \pentry（空格允许多个， "|" 两边的空格允许没有）
-	-- 每篇文章若有 n 个 \pentry， 则在树状图中表示为 n 个节点（编号从 1 开始），每个节点的内容是对应的 \pentry 到下一个 \pentry 之间的内容
-	-- 每个节点默认依赖前一个节点（不需要在 \pentry 中列出来也不需要写进数据库）
-	-- 在每个 entry 后面用 ":编号" 表示只需要哪个子节点（\upref[编号]{}）， 不指定编号则默认最后一个节点（即整篇）
-	-- 然后用 * 标记发现循环时优先被程序忽略的节点（\upreff 命令）， 再用 ~ 标记是否被知识树忽略（多余或循环的预备知识）
-	"pentry"       TEXT    NOT NULL DEFAULT '',
 	"draft"        INTEGER NOT NULL DEFAULT 2,  -- [0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
 	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
@@ -62,7 +56,7 @@ CREATE TABLE "entry_bibs" (
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
-CREATE INDEX idx_entry_bibs_entry ON "entry_uprefs"("entry");
+CREATE INDEX idx_entry_bibs_entry ON "entry_bibs"("entry");
 CREATE INDEX idx_entry_bibs_bib  ON "entry_bibs"("bib");
 
 -- 文章中的所有 \autoref{} （不仅仅是 labels 表中的）
@@ -74,8 +68,8 @@ CREATE TABLE "entry_refs" (
 	FOREIGN KEY("entry")  REFERENCES "entries"("id")
 );
 
-CREATE INDEX idx_entry_refs_entry ON "entry_uprefs"("entry");
-CREATE INDEX idx_entry_refs_label ON "entry_uprefs"("label");
+CREATE INDEX idx_entry_refs_entry ON "entry_refs"("entry");
+CREATE INDEX idx_entry_refs_label ON "entry_refs"("label");
 
 -- 创作协议
 CREATE TABLE "licenses" (
@@ -107,7 +101,7 @@ CREATE TABLE "types" (
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
 
 -- 知识树节点 \pentry{...\req{}，...\reqq{}}{id}
--- 每篇文章自动添加一个文章节点（nodes.id = nodes.entry，order 最大），用于把正片文章（即最后一个节点）作为预备知识
+-- 每篇文章自动添加一个文章节点（nodes.id = nodes.entry，order 最大），用于把整篇文章（即最后一个节点）作为预备知识
 CREATE TABLE "nodes" (
 	"id"        TEXT    NOT NULL UNIQUE,    -- \pentry{}{id}
 	"entry"     TEXT    NOT NULL,           -- entries.id
@@ -120,7 +114,8 @@ CREATE INDEX idx_nodes_id ON "nodes"("id");
 CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 
 -- 知识树的边（\pentry{} 中的 \req{}）
--- 不包含对本文上一个节点的默认连接
+-- 每个节点对本文上一个节点的默认连接不需要记录
+-- 不允许 \req{} 引用同一文章的其他节点
 CREATE TABLE "edges" (
 	"from"     TEXT    NOT NULL,      -- nodes.id （若等于 entries.id 则表示依赖整篇文章，即最后一个节点）
 	"to"       TEXT    NOT NULL,      -- nodes.id
