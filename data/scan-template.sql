@@ -19,7 +19,6 @@ CREATE TABLE "entries" (
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
 	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
-	"bibs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】"bib1 bib2" 用 \cite 引用的文献
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),
@@ -381,7 +380,6 @@ CREATE TABLE "bibliography" (
 	"id"        TEXT    NOT NULL UNIQUE,     -- \cite{xxx} 中的 xxx
 	"order"     INTEGER NOT NULL UNIQUE,     -- 显示编号
 	"details"   TEXT    NOT NULL,            -- 详细信息（TODO: 待拆分）
-	"ref_by"    TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_bibs 表】【生成】"entry1 entry2" 被哪些文章引用（以 entries.bibs 为准）
 	PRIMARY KEY("id")
 );
 
