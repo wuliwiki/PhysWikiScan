@@ -459,8 +459,8 @@ CREATE INDEX idx_authors_aka ON "authors"("aka");
 
 -- 作者权限或限制
 CREATE TABLE "author_rights" (
-	"author"   INTEGER NOT NULL UNIQUE,  -- authors.id
-	"right"    TEXT    NOT NULL UNIQUE,  --rights.id
+	"author"   INTEGER NOT NULL,    -- authors.id
+	"right"    TEXT    NOT NULL,    --rights.id
 	PRIMARY KEY("author", "right"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("right") REFERENCES "rights"("id")
