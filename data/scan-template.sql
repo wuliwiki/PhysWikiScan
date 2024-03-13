@@ -1,6 +1,10 @@
 -- 小时百科在线编辑器数据库
 -- 为方便编程， 所有字段都必须 NOT NULL
 
+----------------------------------------------------------------------------------------------------------
+-- 百科文章
+----------------------------------------------------------------------------------------------------------
+
 -- 所有文章
 -- 目录中的 \entry{标题}{xxx} 中 xxx 为 "id"
 CREATE TABLE "entries" (
@@ -375,16 +379,6 @@ CREATE TABLE "labels" (
 CREATE INDEX idx_labels_type ON "labels"("type");
 CREATE INDEX idx_labels_entry ON "labels"("entry");
 
--- 参考文献
-CREATE TABLE "bibliography" (
-	"id"        TEXT    NOT NULL UNIQUE,     -- \cite{xxx} 中的 xxx
-	"order"     INTEGER NOT NULL UNIQUE,     -- 显示编号
-	"details"   TEXT    NOT NULL,            -- 详细信息（TODO: 待拆分）
-	PRIMARY KEY("id")
-);
-
-INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
-
 -- 编辑历史（一个记录 5 分钟）
 CREATE TABLE "history" (
 	"hash"     TEXT    NOT NULL UNIQUE,      -- SHA1 的前 16 位
@@ -427,6 +421,10 @@ INSERT INTO "review" ("hash", "time", "refID", "entry", "author") VALUES ('', ''
 CREATE INDEX idx_review_time ON "review"("time");
 CREATE INDEX idx_review_refID ON "review"("refID");
 CREATE INDEX idx_review_entry ON "review"("entry");
+
+----------------------------------------------------------------------------------------------------------
+-- 百科作者
+----------------------------------------------------------------------------------------------------------
 
 -- 所有作者
 CREATE TABLE "authors" (
@@ -515,3 +513,75 @@ CREATE TABLE "salary_change" (
 CREATE INDEX idx_salary_change_author ON "salary_change"("author");
 CREATE INDEX idx_salary_change_entry ON "salary_change"("entry");
 CREATE INDEX idx_salary_change_time ON "salary_change"("time");
+
+
+----------------------------------------------------------------------------------------------------------
+-- 参考文献
+----------------------------------------------------------------------------------------------------------
+
+-- 参考文献
+CREATE TABLE "bibliography" (
+	"id"        TEXT NOT NULL UNIQUE,   -- \cite{xxx} 中的 xxx
+	"details"   TEXT NOT NULL,          -- 详细信息（临时，将被以下内容替换）
+	"title"     TEXT NOT NULL,          -- 标题
+	"type"      TEXT NOT NULL,          -- 类型
+	"date"      TEXT,                   -- 发表/出版日期
+	PRIMARY KEY("id"),
+	FOREIGN KEY("type") REFERENCES "bib_type"("id"),
+);
+
+INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
+
+-- 参考文献类型
+CREATE TABLE "bib_type" (
+	"id" TEXT NOT NULL UNIQUE,
+	PRIMARY KEY("id")
+);
+
+-- 参考文献 DOI
+CREATE TABLE "bib_doi" (
+	"bib" TEXT NOT NULL UNIQUE,
+	"doi" TEXT NUT NULL UNIQUE,
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
+);
+
+CREATE INDEX bib_doi_doi ON "bib_doi_doi"("doi");
+
+-- 参考文献杂志列表
+CREATE TABLE "journals" (
+	"id"      TEXT NOT NULL UNIQUE,
+	"title"   TEXT NOT NULL,
+	PRIMARY KEY("id"),
+);
+
+-- 每篇文献的杂志
+CREATE TABLE "bib_journal" (
+	"bib"     TEXT NOT NULL UNIQUE,
+	"journal" TEXT NOT NULL,
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
+	FOREIGN KEY("journal") REFERENCES "journals"("id")
+);
+
+-- 文献引用关系
+CREATE TABLE "bib_journal" (
+	"bib"  TEXT NOT NULL,
+	"cite" TEXT NOT NULL,
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
+	FOREIGN KEY("cite") REFERENCES "bibliography"("id")
+);
+
+-- 参考文献作者
+CREATE TABLE "bib_all_authors" (
+	"id"         TEXT NOT NULL UNIQUE,
+	"first_name" TEXT,                  -- 名
+	"last_name"  TEXT                   -- 姓
+);
+
+-- 每个文献的作者
+CREATE TABLE "bib_authors" (
+	"bib"     TEXT NOT NULL,
+	"author"  TEXT NOT NULL,
+	"order"   INT NOT NULL,   -- 第几作者
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
+	FOREIGN KEY("author") REFERENCES "bib_all_authors"("id"),
+);
