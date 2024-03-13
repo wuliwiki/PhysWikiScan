@@ -351,6 +351,15 @@ inline void new_label_name(Str_O label, Str_I envName, Str_I entry, Str_I str)
 	}
 }
 
+// fill interval with some char
+inline void whipe_intv(Str_IO str, Intvs_I intv, char c = ' ') {
+	for (Long i = 0; i < intv.size(); ++i) {
+		Long left = intv.L(i), right = intv.R(i);
+		for (Long j = left; j <= right; ++j)
+			str[j] = c;
+	}
+}
+
 // check if a label exist, if not, add it
 // order is not the label number, but the displayed number
 // if exist, return 1, output label
@@ -395,12 +404,26 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 	Str full_name = gv::path_in + "/contents/" + entry + ".tex";
 	if (!file_exist(full_name))
 		throw scan_err(u8"文件不存在： " + entry + ".tex");
-	Str str;
+	Str str, str_clean; // `str_clean` is `str` replacing verbatim and comments with spaces
 	read(str, full_name);
+	str_clean = str;
 
-	// find comments
-	Intvs intvComm;
-	find_comments(intvComm, str, "%");
+	Intvs intv_ignore, intv;
+
+	find_verb(intv_ignore, str_clean, 'o');
+	whipe_intv(str_clean, intv_ignore);
+
+	find_lstinline(intv, str_clean, 'o');
+	whipe_intv(str_clean, intv);
+	combine(intv_ignore, intv);
+	
+	find_env(intv, str_clean, "lstlisting", 'o');
+	whipe_intv(str_clean, intv);
+	combine(intv_ignore, intv);
+
+	find_comments(intv, str_clean, "%", 'i');
+	whipe_intv(str_clean, intv);
+	combine(intv_ignore, intv);
 
 	vecStr types = { "eq", "fig", "def", "lem",
 		"the", "cor", "ex", "exe", "tab", "sub" };
@@ -411,7 +434,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 	if (idNum < 0)
 		throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub 之一");
 	
-	// count environment display number starting at ind4
+	// count environment display number
 	Intvs intvEnv;
 	if (type == "eq") { // add equation labels
 		// count equations
@@ -421,10 +444,9 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		Str env0;
 		while (1) {
 			ind0 = find_command(str, "begin", ind0);
-			if (ind0 < 0) {
+			if (ind0 < 0)
 				throw scan_err(u8"被引用公式不存在");
-			}
-			if (is_in(ind0, intvComm)) {
+			if (is_in(ind0, intv_ignore)) {
 				++ind0; continue;
 			}
 			command_arg(env0, str, ind0);
@@ -471,6 +493,9 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 			ind0 = find_command(str, "subsection", ind0+1);
 			if (ind0 < 0)
 				throw scan_err(u8"被引用对象不存在");
+			if (is_in(ind0, intv_ignore)) {
+				--i; continue;
+			}
 		}
 		ind0 = skip_command(str, ind0, 1);
 		new_label_name(label, type, entry, str);
@@ -480,7 +505,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		}
 	}
 	else { // add environment labels
-		Long Nid = find_env(intvEnv, str, envNames[idNum], 'i');
+		Long Nid = find_env(intvEnv, str_clean, envNames[idNum], 'i');
 		if (order > Nid)
 			throw scan_err(u8"被引用对象不存在");
 

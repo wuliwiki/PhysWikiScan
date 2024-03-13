@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 10
-#define VERSION_PATCH 0
+#define VERSION_PATCH 1
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -247,7 +247,7 @@ int main(int argc, const char *argv[]) {
 			Str fname = gv::path_data + "autoref.txt";
 			file_remove(fname);
 			SQLite::Transaction transaction(db_rw);
-			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]),db_rw);
+			Long ret = check_add_label(label, args[1], args[2], str2Llong(args[3]), db_rw);
 			transaction.commit();
 			vecStr output;
 			if (ret == 0) { // added
