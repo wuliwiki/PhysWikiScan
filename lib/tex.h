@@ -1242,4 +1242,32 @@ inline Long Env2Tag(Str_I nameEnv, Str_I strLeft, Str_I strRight, Str_IO str)
 	return N;
 }
 
+// fill interval with some char
+inline void str_whipe_intv(Str_IO str, Intvs_I intv, char c = ' ') {
+	for (Long i = 0; i < intv.size(); ++i) {
+		Long left = intv.L(i), right = intv.R(i);
+		for (Long j = left; j <= right; ++j)
+			str[j] = c;
+	}
+}
+
+// replace verbatim and comments with spaces of the same length
+// this is useful if we want to directly modify the original tex file
+inline void clean_entry_str(Str_O str_clean, Str_I str) {
+	Intvs intv;
+	str_clean = str;
+
+	find_verb(intv, str_clean, 'o');
+	str_whipe_intv(str_clean, intv);
+
+	find_lstinline(intv, str_clean, 'o');
+	str_whipe_intv(str_clean, intv);
+	
+	find_env(intv, str_clean, "lstlisting", 'o');
+	str_whipe_intv(str_clean, intv);
+
+	find_comments(intv, str_clean, "%", 'i');
+	str_whipe_intv(str_clean, intv);
+}
+
 } // namespace slisc
