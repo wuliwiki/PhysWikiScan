@@ -1,3 +1,5 @@
+-- Zotero 数据库的结构参考
+
 PRAGMA foreign_keys=OFF;
 BEGIN TRANSACTION;
 

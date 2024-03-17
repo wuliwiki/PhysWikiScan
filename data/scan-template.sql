@@ -9,20 +9,20 @@
 -- 目录中的 \entry{标题}{xxx} 中 xxx 为 "id"
 CREATE TABLE "entries" (
 	"id"           TEXT    NOT NULL UNIQUE,
-	"caption"      TEXT    NOT NULL DEFAULT '',       -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
-	"authors"      TEXT    NOT NULL DEFAULT '',       -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
-	"part"         TEXT    NOT NULL DEFAULT '',       -- 部分， 空代表不在目录中
-	"chapter"      TEXT    NOT NULL DEFAULT '',       -- 章， 空代表不在目录中
-	"last"         TEXT    NOT NULL DEFAULT '',       -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
-	"next"         TEXT    NOT NULL DEFAULT '',       -- 目录中的下一篇文章， 空代表这是最后一个或不在目录中
-	"license"      TEXT    NOT NULL DEFAULT 'Usr',    -- 协议
-	"type"         TEXT    NOT NULL DEFAULT '',       -- 类型
-	"keys"         TEXT    NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
-	"draft"        INTEGER NOT NULL DEFAULT 2,  -- [0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
-	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
-	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
-	"last_backup"  TEXT    NOT NULL DEFAULT '', -- 最后备份，空代表没有 (history.hash)
-	"refs"         TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
+	"caption"      TEXT    NOT NULL DEFAULT '',      -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
+	"authors"      TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 entry_authors 表】【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
+	"part"         TEXT    NOT NULL DEFAULT '',      -- 部分， 空代表不在目录中
+	"chapter"      TEXT    NOT NULL DEFAULT '',      -- 章， 空代表不在目录中
+	"last"         TEXT    NOT NULL DEFAULT '',      -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
+	"next"         TEXT    NOT NULL DEFAULT '',      -- 目录中的下一篇文章， 空代表这是最后一个或不在目录中
+	"license"      TEXT    NOT NULL DEFAULT 'Usr',   -- 协议
+	"type"         TEXT    NOT NULL DEFAULT '',      -- 类型
+	"keys"         TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 seo_keys 表】"关键词1|...|关键词N"
+	"draft"        INTEGER NOT NULL DEFAULT 2,       -- 【待迁移到 entry_tags 表】[0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
+	"deleted"      INTEGER NOT NULL DEFAULT 0,       -- 【待迁移到 entry_tags 表】[0|1] 是否已删除
+	"last_pub"     TEXT    NOT NULL DEFAULT '',      -- 最后过审，空代表没有 (review.hash)
+	"last_backup"  TEXT    NOT NULL DEFAULT '',      -- 最后备份，空代表没有 (history.hash)
+	"refs"         TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 entry_refs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),
@@ -48,6 +48,19 @@ CREATE TABLE "entry_uprefs" (
 
 CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
+
+-- 文章作者列表
+-- TODO: 用于替代 entries.authors
+CREATE TABLE "entry_authors" (
+	"entry"    TEXT    NOT NULL,
+	"author"   INTEGER NOT NULL,
+	UNIQUE ("entry", "author"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("author") REFERENCES "authors"("id")
+);
+
+CREATE INDEX idx_entry_authors_entry ON "entry_authors"("entry");
+CREATE INDEX idx_entry_authors_author ON "entry_authors"("author");
 
 -- 文章中的 \cite{}
 CREATE TABLE "entry_bibs" (
@@ -101,6 +114,35 @@ CREATE TABLE "types" (
 );
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
+
+-- 所有文章标签（包括 issues 环境中的）
+CREATE TABLE "tags" (
+	"id"       TEXT NOT NULL UNIQUE,      -- id
+	"name"     TEXT NOT NULL UNIQUE,      -- 全名
+	"comment"  TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
+	PRIMARY KEY("id")
+);
+
+-- 文章标签
+-- keys 是传统的关键词，多是术语。 tags 可以是各种方面的 grouping
+CREATE TABLE "entry_tags" (
+	"entry"   TEXT NOT NULL,
+	"tag"     TEXT NOT NULL,
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("entry")  REFERENCES "tags"("id")
+);
+
+-- SEO 关键词（用于 html header 中的搜索引擎优化）
+-- TODO: 用于代替 entries.keys
+CREATE TABLE "seo_keys" (
+	"entry"  TEXT NOT NULL,
+	"key"    TEXT NOT NULL,
+	"order"  INTEGER NOT NULL,
+	UNIQUE ("entry", "key"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id")
+);
+
+CREATE INDEX idx_seo_keys_key ON "seo_keys"("key");
 
 -- 知识树节点 \pentry{...\req{}，...\reqq{}}{id}
 -- 每篇文章自动添加一个文章节点（nodes.id = nodes.entry，order 最大），用于把整篇文章（即最后一个节点）作为预备知识
@@ -161,7 +203,7 @@ CREATE TABLE "repost" (
 CREATE INDEX idx_repost_entry ON "repost"("entry");
 CREATE INDEX idx_repost_updated ON "repost"("updated");
 
--- 评分
+-- 文章评分
 CREATE TABLE "score" (
 	"entry"   TEXT     NOT NULL,   -- entries.id
 	"score"   REAL     NOT NULL,   -- 评分（0-10)
@@ -293,13 +335,13 @@ CREATE INDEX idx_images_figure ON "images"("figure");
 
 -- 文件
 CREATE TABLE "files" (
-	"hash"             TEXT    NOT NULL UNIQUE,      -- 文件 SHA1 的前 16 位
-	"name"             TEXT    NOT NULL,             -- 文件名（含拓展名）
-	"description"      TEXT    NOT NULL DEFAULT '',  -- 备注（类似 commit 信息）
-	"last"             TEXT    NOT NULL DEFAULT '',  -- 上一个版本
-	"author"           INTEGER NOT NULL DEFAULT -1,  -- 当前版本修改者
-	"license"          TEXT    NOT NULL DEFAULT '',  -- 当前版本协议
-	"time"             TEXT    NOT NULL DEFAULT '',  -- 上传时间
+	"hash"          TEXT    NOT NULL UNIQUE,      -- 文件 SHA1 的前 16 位
+	"name"          TEXT    NOT NULL,             -- 文件名（含拓展名）
+	"description"   TEXT    NOT NULL DEFAULT '',  -- 备注（类似 commit 信息）
+	"last"          TEXT    NOT NULL DEFAULT '',  -- 上一个版本
+	"author"        INTEGER NOT NULL DEFAULT -1,  -- 当前版本修改者
+	"license"       TEXT    NOT NULL DEFAULT '',  -- 当前版本协议
+	"time"          TEXT    NOT NULL DEFAULT '',  -- 上传时间
 	PRIMARY KEY("hash"),
 	FOREIGN KEY("author")  REFERENCES "authors"("id"),
 	FOREIGN KEY("license") REFERENCES "licenses"("id"),
@@ -313,8 +355,8 @@ CREATE INDEX idx_files_time ON "files"("time");
 
 -- 图片附件
 CREATE TABLE "figure_files" (
-	"figure"           TEXT    NOT NULL,     -- figures.id
-	"file"             TEXT    NOT NULL,     -- files.hash
+	"figure"    TEXT    NOT NULL,     -- figures.id
+	"file"      TEXT    NOT NULL,     -- files.hash
 	UNIQUE("figure", "file"),
 	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
@@ -399,6 +441,22 @@ INSERT INTO "history" ("hash", "time", "author", "entry") VALUES ('', '', 0, '')
 CREATE INDEX idx_history_time ON "history"("time");
 CREATE INDEX idx_history_author ON "history"("author");
 CREATE INDEX idx_history_last ON "history"("last");
+
+-- 贡献调整
+-- 用于作者排名或者补贴的一次性修改
+CREATE TABLE "contrib_adjust" (
+	"entry"               TEXT    NOT NULL,
+	"author"              INTEGER NOT NULL,
+	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
+	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- 是否修改补贴
+	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- 是否修改作者列表排名
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("author")  REFERENCES "authors"("id")
+);
+
+CREATE INDEX idx_contrib_adjust_entry ON "contrib_adjust"("entry");
+CREATE INDEX idx_contrib_adjust_author ON "contrib_adjust"("author");
+CREATE INDEX idx_contrib_adjust_minutes ON "contrib_adjust"("minutes");
 
 -- 审稿记录
 CREATE TABLE "review" (
@@ -544,7 +602,7 @@ CREATE TABLE "bib_doi" (
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
-CREATE INDEX bib_doi_doi ON "bib_doi_doi"("doi");
+CREATE INDEX idx_bib_doi_doi ON "bib_doi_doi"("doi");
 
 -- 文献 url （如果有 url 是 doi 的，就不需要）
 CREATE TABLE "bib_url" (
@@ -553,7 +611,7 @@ CREATE TABLE "bib_url" (
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
-CREATE INDEX bib_url_url ON "bib_url"("url");
+CREATE INDEX idx_bib_url_url ON "bib_url"("url");
 
 -- 文献所有杂志
 CREATE TABLE "journals" (
@@ -562,7 +620,7 @@ CREATE TABLE "journals" (
 	PRIMARY KEY("id"),
 );
 
-CREATE INDEX journals_title ON "journals"("title");
+CREATE INDEX idx_journals_title ON "journals"("title");
 
 -- 文献杂志
 CREATE TABLE "bib_journal" (
@@ -574,7 +632,7 @@ CREATE TABLE "bib_journal" (
 	FOREIGN KEY("journal") REFERENCES "journals"("id")
 );
 
-CREATE INDEX bib_journal_journal ON "bib_journal"("journal");
+CREATE INDEX idx_bib_journal_journal ON "bib_journal"("journal");
 
 -- 文献所有标签
 CREATE TABLE "bib_all_tags" (
@@ -592,7 +650,7 @@ CREATE TABLE "bib_tags" (
 	FOREIGN KEY("tag") REFERENCES "bib_all_tags"("id")
 );
 
-CREATE INDEX bib_tags_tag ON "bib_tags"("tag");
+CREATE INDEX idx_bib_tags_tag ON "bib_tags"("tag");
 
 -- 文献引用关系
 CREATE TABLE "bib_cite" (
@@ -602,7 +660,7 @@ CREATE TABLE "bib_cite" (
 	FOREIGN KEY("cite") REFERENCES "bibliography"("id")
 );
 
-CREATE INDEX bib_cite_cite ON "bib_cite"("cite");
+CREATE INDEX idx_bib_cite_cite ON "bib_cite"("cite");
 
 -- 所有文献作者
 CREATE TABLE "bib_all_authors" (
@@ -612,8 +670,8 @@ CREATE TABLE "bib_all_authors" (
 	PRIMARY KEY("id")
 );
 
-CREATE INDEX bib_all_authors_first_name ON "bib_all_authors"("first_name");
-CREATE INDEX bib_all_authors_last_name ON "bib_all_authors"("last_name");
+CREATE INDEX idx_bib_all_authors_first_name ON "bib_all_authors"("first_name");
+CREATE INDEX idx_bib_all_authors_last_name ON "bib_all_authors"("last_name");
 
 -- 文献作者
 CREATE TABLE "bib_authors" (
@@ -624,4 +682,4 @@ CREATE TABLE "bib_authors" (
 	FOREIGN KEY("author") REFERENCES "bib_all_authors"("id"),
 );
 
-CREATE INDEX bib_authors_author ON "bib_authors"("author");
+CREATE INDEX idx_bib_authors_author ON "bib_authors"("author");
