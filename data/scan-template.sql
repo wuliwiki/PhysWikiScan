@@ -8,16 +8,16 @@
 -- 所有文章
 -- 目录中的 \entry{标题}{xxx} 中 xxx 为 "id"
 CREATE TABLE "entries" (
-	"id"        TEXT NOT NULL UNIQUE,
-	"caption"   TEXT NOT NULL DEFAULT '',       -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
-	"authors"   TEXT NOT NULL DEFAULT '',       -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
-	"part"      TEXT NOT NULL DEFAULT '',       -- 部分， 空代表不在目录中
-	"chapter"   TEXT NOT NULL DEFAULT '',       -- 章， 空代表不在目录中
-	"last"      TEXT NOT NULL DEFAULT '',       -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
-	"next"      TEXT NOT NULL DEFAULT '',       -- 目录中的下一篇文章， 空代表这是最后一个或不在目录中
-	"license"   TEXT NOT NULL DEFAULT 'Usr',    -- 协议
-	"type"      TEXT NOT NULL DEFAULT '',       -- 类型
-	"keys"      TEXT NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
+	"id"           TEXT    NOT NULL UNIQUE,
+	"caption"      TEXT    NOT NULL DEFAULT '',       -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
+	"authors"      TEXT    NOT NULL DEFAULT '',       -- 【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
+	"part"         TEXT    NOT NULL DEFAULT '',       -- 部分， 空代表不在目录中
+	"chapter"      TEXT    NOT NULL DEFAULT '',       -- 章， 空代表不在目录中
+	"last"         TEXT    NOT NULL DEFAULT '',       -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
+	"next"         TEXT    NOT NULL DEFAULT '',       -- 目录中的下一篇文章， 空代表这是最后一个或不在目录中
+	"license"      TEXT    NOT NULL DEFAULT 'Usr',    -- 协议
+	"type"         TEXT    NOT NULL DEFAULT '',       -- 类型
+	"keys"         TEXT    NOT NULL DEFAULT '',       -- "关键词1|...|关键词N"
 	"draft"        INTEGER NOT NULL DEFAULT 2,  -- [0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
 	"deleted"      INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '', -- 最后发布，空代表没有 (review.hash)
@@ -88,7 +88,7 @@ INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIG
 
 -- 创作协议适用范围
 CREATE TABLE "license_apply" (
-	"license"  TEXT NOT NULL,      -- licenses.id
+	"license"  TEXT    NOT NULL,      -- licenses.id
 	"apply"    INTEGER NOT NULL,   -- 适用于：[e] 文章 [i] 图片 [c] 代码 [f] 文件
 	"order"    INTEGER NOT NULL    -- 显示优先级（UI 中从小到大排列）
 );
@@ -135,9 +135,9 @@ CREATE INDEX idx_edges_to ON "edges"("to");
 -- 文章标记
 -- （issues 环境属于该表）
 CREATE TABLE "tags" (
-	"entry"      TEXT    NOT NULL,     -- entries.id
-	"type"       TEXT    NOT NULL,     -- 暂时不包括 \issueDraft
-	"comment"    TEXT    NOT NULL,     -- issueOthers{} 或其他支持评论的 issue 类型
+	"entry"      TEXT  NOT NULL,     -- entries.id
+	"type"       TEXT  NOT NULL,     -- 暂时不包括 \issueDraft
+	"comment"    TEXT  NOT NULL,     -- issueOthers{} 或其他支持评论的 issue 类型
 	PRIMARY KEY("entry"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("type")   REFERENCES "tag_types"("id")
@@ -472,15 +472,15 @@ CREATE INDEX idx_author_rights_right ON "author_rights"("right");
 -- rule: 作者 + 文章 -> 缩放
 -- rule: 文章 -> 缩放
 CREATE TABLE "salary" (
-	"id"      INTEGER NOT NULL UNIQUE,           -- 编号
-	"author"  INTEGER NOT NULL DEFAULT -1,       -- 作者（-1 代表所有）
-	"entry"   TEXT    NOT NULL DEFAULT '',       -- 文章（空代表所有）
-	"license" TEXT    NOT NULL DEFAULT '',       -- 协议（空代表所有）
-	"begin"   TEXT    NOT NULL DEFAULT '',       -- 生效时间（空代表所有）
-	"end"     TEXT    NOT NULL DEFAULT '',       -- 截止时间（空代表所有）
-	"value"   REAL    NOT NULL DEFAULT -1,       -- 时薪（元）（-1 代表 NULL）
-	"scale"   REAL    NOT NULL DEFAULT  1,       -- 缩放
-	"comment" TEXT    NOT NULL DEFAULT '',       -- 备注
+	"id"            INTEGER NOT NULL UNIQUE,           -- 编号
+	"author"        INTEGER NOT NULL DEFAULT -1,       -- 作者（-1 代表所有）
+	"entry"         TEXT    NOT NULL DEFAULT '',       -- 文章（空代表所有）
+	"license"       TEXT    NOT NULL DEFAULT '',       -- 协议（空代表所有）
+	"begin"         TEXT    NOT NULL DEFAULT '',       -- 生效时间（空代表所有）
+	"end"           TEXT    NOT NULL DEFAULT '',       -- 截止时间（空代表所有）
+	"value"         REAL    NOT NULL DEFAULT -1,       -- 时薪（元）（-1 代表 NULL）
+	"scale"         REAL    NOT NULL DEFAULT  1,       -- 缩放
+	"comment"       TEXT    NOT NULL DEFAULT '',       -- 备注
 	"comment_admin" TEXT    NOT NULL DEFAULT '', -- 备注（仅管理员可见）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
@@ -521,20 +521,20 @@ CREATE INDEX idx_salary_change_time ON "salary_change"("time");
 
 -- 文献
 CREATE TABLE "bibliography" (
-	"id"        TEXT NOT NULL UNIQUE,   -- \cite{xxx} 中的 xxx
-	"details"   TEXT NOT NULL,          -- 详细信息（临时，将被以下内容替换）
-	"title"     TEXT NOT NULL,          -- 标题
-	"type"      TEXT NOT NULL,          -- 类型
-	"date"      TEXT,                   -- 发表/出版日期
+	"id"        TEXT NOT NULL UNIQUE,      -- \cite{xxx} 中的 xxx
+	"details"   TEXT NOT NULL,             -- 详细信息（临时，将被以下内容替换）
+	"title"     TEXT NOT NULL,             -- 标题
+	"type"      TEXT NOT NULL,             -- 类型
+	"date"      TEXT NOT NULL DEFAULT '',  -- 发表/出版日期
 	PRIMARY KEY("id"),
-	FOREIGN KEY("type") REFERENCES "bib_type"("id"),
+	FOREIGN KEY("type") REFERENCES "bib_type"("id")
 );
 
 INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
 
 -- 文献类型
 CREATE TABLE "bib_type" (
-	"id" TEXT NOT NULL UNIQUE,
+	"id"       TEXT NOT NULL UNIQUE,
 	PRIMARY KEY("id")
 );
 
@@ -556,7 +556,7 @@ CREATE TABLE "bib_url" (
 
 CREATE INDEX bib_url_url ON "bib_url"("url");
 
--- 参考文献杂志列表
+-- 文献所有杂志
 CREATE TABLE "journals" (
 	"id"      TEXT NOT NULL UNIQUE,
 	"title"   TEXT NOT NULL,
@@ -567,10 +567,10 @@ CREATE INDEX journals_title ON "journals"("title");
 
 -- 文献杂志
 CREATE TABLE "bib_journal" (
-	"bib"     TEXT NOT NULL UNIQUE,
-	"journal" TEXT NOT NULL,
-	"volume"  INTEGER DEFAULT -1,
-	"issue"   INTEGER DEFAULT -1,
+	"bib"     TEXT    NOT NULL UNIQUE,
+	"journal" TEXT    NOT NULL,
+	"volume"  INTEGER NOT NULL DEFAULT -1,
+	"issue"   INTEGER NOT NULL DEFAULT -1,
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("journal") REFERENCES "journals"("id")
 );
@@ -608,8 +608,9 @@ CREATE INDEX bib_cite_cite ON "bib_cite"("cite");
 -- 所有文献作者
 CREATE TABLE "bib_all_authors" (
 	"id"         TEXT NOT NULL UNIQUE,
-	"first_name" TEXT,                  -- 名
-	"last_name"  TEXT                   -- 姓
+	"first_name" TEXT NOT NULL DEFAULT '',  -- 名
+	"last_name"  TEXT NOT NULL DEFAULT '',  -- 姓
+	PRIMARY KEY("id")
 );
 
 CREATE INDEX bib_all_authors_first_name ON "bib_all_authors"("first_name");
@@ -617,9 +618,9 @@ CREATE INDEX bib_all_authors_last_name ON "bib_all_authors"("last_name");
 
 -- 文献作者
 CREATE TABLE "bib_authors" (
-	"bib"     TEXT NOT NULL,
-	"author"  TEXT NOT NULL,
-	"order"   INT NOT NULL,   -- 第几作者
+	"bib"     TEXT     NOT NULL,
+	"author"  TEXT     NOT NULL,
+	"order"   INTEGER  NOT NULL,   -- 第几作者
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("author") REFERENCES "bib_all_authors"("id"),
 );
