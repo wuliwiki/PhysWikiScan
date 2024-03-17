@@ -100,10 +100,16 @@ INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIG
 
 -- 创作协议适用范围
 CREATE TABLE "license_apply" (
-	"license"  TEXT    NOT NULL,   -- licenses.id
-	"apply"    INTEGER NOT NULL,   -- 适用于：[e] 文章 [i] 图片 [c] 代码 [f] 文件
-	"order"    INTEGER NOT NULL    -- 显示优先级（UI 中从小到大排列）
+	"license"   TEXT    NOT NULL,              -- licenses.id
+	"apply"     TEXT    NOT NULL,              -- 适用于：[e] 文章， [i] 图片 [c] 代码 [f] 文件 [a] 全部
+	"order"     INTEGER NOT NULL,              -- 显示优先级（UI 中从小到大排列）
+	"wiki_note" TEXT    NOT NULL DEFAULT 'a',  -- 适用于：[w] 百科 [n] 笔记 [a] 百科和笔记
+	PRIMARY KEY("license", "apply"),
+	FOREIGN KEY("license")  REFERENCES "licenses"("id")
 );
+
+CREATE INDEX idx_license_apply_apply ON "license_apply"("apply");
+CREATE INDEX idx_license_apply_wiki_note ON "license_apply"("wiki_note");
 
 -- 文章类型
 CREATE TABLE "types" (
@@ -117,20 +123,26 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防
 
 -- 所有文章标签（包括 issues 环境中的）
 CREATE TABLE "tags" (
-	"id"       TEXT NOT NULL UNIQUE,      -- id
+	"id"       INTEGER NOT NULL UNIQUE,   -- id
 	"name"     TEXT NOT NULL UNIQUE,      -- 全名
+	"order"    INTEGER NOT NULL UNIQUE,   -- 菜单中的排列顺序
 	"comment"  TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
-	PRIMARY KEY("id")
+	PRIMARY KEY("id" AUTOINCREMENT)
 );
+
+CREATE INDEX idx_tags_name ON "tags"("name");
 
 -- 文章标签
 -- keys 是传统的关键词，多是术语。 tags 可以是各种方面的 grouping
 CREATE TABLE "entry_tags" (
 	"entry"   TEXT NOT NULL,
-	"tag"     TEXT NOT NULL,
+	"tag"     INTEGER NOT NULL,
+	PRIMARY KEY("entry", "tag"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	FOREIGN KEY("entry")  REFERENCES "tags"("id")
+	FOREIGN KEY("tag")  REFERENCES "tags"("id")
 );
+
+CREATE INDEX idx_entry_tags_tag ON "entry_tags"("tag");
 
 -- SEO 关键词（用于 html header 中的搜索引擎优化）
 -- TODO: 用于代替 entries.keys
