@@ -519,7 +519,7 @@ CREATE INDEX idx_salary_change_time ON "salary_change"("time");
 -- 参考文献
 ----------------------------------------------------------------------------------------------------------
 
--- 参考文献
+-- 文献
 CREATE TABLE "bibliography" (
 	"id"        TEXT NOT NULL UNIQUE,   -- \cite{xxx} 中的 xxx
 	"details"   TEXT NOT NULL,          -- 详细信息（临时，将被以下内容替换）
@@ -532,20 +532,29 @@ CREATE TABLE "bibliography" (
 
 INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
 
--- 参考文献类型
+-- 文献类型
 CREATE TABLE "bib_type" (
 	"id" TEXT NOT NULL UNIQUE,
 	PRIMARY KEY("id")
 );
 
--- 参考文献 DOI
+-- 文献 DOI
 CREATE TABLE "bib_doi" (
 	"bib" TEXT NOT NULL UNIQUE,
-	"doi" TEXT NUT NULL UNIQUE,
+	"doi" TEXT NOT NULL UNIQUE,
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
 CREATE INDEX bib_doi_doi ON "bib_doi_doi"("doi");
+
+-- 文献 url （如果有 url 是 doi 的，就不需要）
+CREATE TABLE "bib_url" (
+	"bib" TEXT NOT NULL UNIQUE,
+	"url" TEXT NOT NULL UNIQUE,
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
+);
+
+CREATE INDEX bib_url_url ON "bib_url"("url");
 
 -- 参考文献杂志列表
 CREATE TABLE "journals" (
@@ -554,30 +563,59 @@ CREATE TABLE "journals" (
 	PRIMARY KEY("id"),
 );
 
--- 每篇文献的杂志
+CREATE INDEX journals_title ON "journals"("title");
+
+-- 文献杂志
 CREATE TABLE "bib_journal" (
 	"bib"     TEXT NOT NULL UNIQUE,
 	"journal" TEXT NOT NULL,
+	"volume"  INTEGER DEFAULT -1,
+	"issue"   INTEGER DEFAULT -1,
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("journal") REFERENCES "journals"("id")
 );
 
+CREATE INDEX bib_journal_journal ON "bib_journal"("journal");
+
+-- 文献所有标签
+CREATE TABLE "bib_all_tags" (
+	"id"      TEXT NOT NULL UNIQUE,
+	"name"    TEXT NOT NULL DEFAULT '',
+	"comment" TEXT NOT NULL DEFAULT '',
+	PRIMARY KEY("id")
+);
+
+-- 文献的标签
+CREATE TABLE "bib_tags" (
+	"bib"     TEXT NOT NULL UNIQUE,
+	"tag"     TEXT NOT NULL,
+	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
+	FOREIGN KEY("tag") REFERENCES "bib_all_tags"("id")
+);
+
+CREATE INDEX bib_tags_tag ON "bib_tags"("tag");
+
 -- 文献引用关系
-CREATE TABLE "bib_journal" (
+CREATE TABLE "bib_cite" (
 	"bib"  TEXT NOT NULL,
 	"cite" TEXT NOT NULL,
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("cite") REFERENCES "bibliography"("id")
 );
 
--- 参考文献作者
+CREATE INDEX bib_cite_cite ON "bib_cite"("cite");
+
+-- 所有文献作者
 CREATE TABLE "bib_all_authors" (
 	"id"         TEXT NOT NULL UNIQUE,
 	"first_name" TEXT,                  -- 名
 	"last_name"  TEXT                   -- 姓
 );
 
--- 每个文献的作者
+CREATE INDEX bib_all_authors_first_name ON "bib_all_authors"("first_name");
+CREATE INDEX bib_all_authors_last_name ON "bib_all_authors"("last_name");
+
+-- 文献作者
 CREATE TABLE "bib_authors" (
 	"bib"     TEXT NOT NULL,
 	"author"  TEXT NOT NULL,
@@ -585,3 +623,5 @@ CREATE TABLE "bib_authors" (
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("author") REFERENCES "bib_all_authors"("id"),
 );
+
+CREATE INDEX bib_authors_author ON "bib_authors"("author");
