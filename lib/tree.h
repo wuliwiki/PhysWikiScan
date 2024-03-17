@@ -362,13 +362,15 @@ inline void db_get_tree(
 // only pentry[i].first is used
 inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
-	SQLite::Statement stmt_insert_replace(db_rw,
+	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT OR REPLACE INTO "nodes" ("id", "entry", "order") VALUES (?, ?, ?);)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "nodes" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
 	unordered_set<Str> nodes_deleted; // old nodes of `entry`
+	unordered_map<Str, Long> db_node_order; // not includinig default node
 
 	// get db nodes of `entry` to see which are deleted
 	// id_node == entry is not included
@@ -377,25 +379,45 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		const Str &node_id = stmt_select.getColumn(0);
 		if (node_id != entry)
 			nodes_deleted.insert(node_id);
+		db_node_order[node_id] = (int)stmt_select.getColumn(1);
 	}
 	stmt_select.reset();
 
 	// update or insert into db "nodes" table
 	// for node_id == entry
-	stmt_insert_replace.bind(1, entry);
-	stmt_insert_replace.bind(2, entry);
-	stmt_insert_replace.bind(3, (int)pentry.size()+1);
-	stmt_insert_replace.exec(); stmt_insert_replace.reset();
+	if (!db_node_order.count(entry)) {
+		stmt_insert.bind(1, entry);
+		stmt_insert.bind(2, entry);
+		stmt_insert.bind(3, (int)pentry.size()+1);
+		stmt_insert.exec(); stmt_insert.reset();
+	}
 	// \pentry{} nodes
+	unordered_set<Str> check_repeat;
 	for (Long i = 0; i < size(pentry); ++i) {
 		auto &node_id = pentry[i].first;
+		// check repeated node_id
+		if (check_repeat.count(node_id))
+			throw scan_err(u8"重复的 \\pentry{...}{标签}: " + node_id);
+		else
+			check_repeat.insert(node_id);
 		// update or insert into db "nodes" table
 		assert(!node_id.empty());
-		nodes_deleted.erase(node_id);
-		stmt_insert_replace.bind(1, node_id);
-		stmt_insert_replace.bind(2, entry);
-		stmt_insert_replace.bind(3, (int)i+1);
-		stmt_insert_replace.exec(); stmt_insert_replace.reset();
+		int order = i+1;
+		if (!db_node_order.count(node_id)) {
+			stmt_insert.bind(1, node_id);
+			stmt_insert.bind(2, entry);
+			stmt_insert.bind(3, order);
+			stmt_insert.exec(); stmt_insert.reset();
+		}
+		else {
+			nodes_deleted.erase(node_id);
+			if (db_node_order[node_id] != order) {
+				stmt_update.bind(1, order);
+				stmt_update.bind(2, node_id);
+				stmt_update.exec();
+				stmt_update.reset();
+			}
+		}
 	}
 	// deleted nodes
 	for (auto &node_id : nodes_deleted) {
@@ -422,12 +444,15 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 // update db "edges" for 1 enetry
 inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "from" FROM "edges" WHERE "to"=?;)");
-	SQLite::Statement stmt_insert_replace(db_rw,
-		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak") VALUES (?, ?, ?);)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "from", "weak" FROM "edges" WHERE "to"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT INTO "edges" ("from", "to", "weak") VALUES (?, ?, ?);)");
+	SQLite::Statement stmt_update(db_rw,
+		R"(UPDATE "edges" SET "weak"=? WHERE "from"=? AND "to"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
 	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
+	unordered_map<pair<Str, Str>, bool, hash_pair> db_edge_weak;
 
 	// get db edges to `entry` nodes
 	for (auto &pentry1 : pentry) {
@@ -435,7 +460,9 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		stmt_select.bind(1, to);
 		while (stmt_select.executeStep()) {
 			const Str &from = stmt_select.getColumn(0);
-			edges_deleted.insert(make_pair(from, to));
+			auto from_to = make_pair(from, to);
+			edges_deleted.insert(from_to);
+			db_edge_weak[from_to] = (int)stmt_select.getColumn(1);
 		}
 		stmt_select.reset();
 	}
@@ -449,11 +476,23 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		for (const PentryRef &ref : pentry1) {
 			if (!exist("nodes", "id", ref.node_id, db_rw))
 				throw scan_err(u8"edges.from 外键不存在： " + ref.node_id);
-			stmt_insert_replace.bind(1, ref.node_id); // edges.from
-			stmt_insert_replace.bind(2, node_id); // edges.to
-			stmt_insert_replace.bind(3, ref.weak); // edges.weak
-			stmt_insert_replace.exec(); stmt_insert_replace.reset();
-			edges_deleted.erase(make_pair(ref.node_id, node_id));
+			auto from_to = make_pair(ref.node_id, node_id);
+			if (!db_edge_weak.count(from_to)) {
+				stmt_insert.bind(1, ref.node_id); // edges.from
+				stmt_insert.bind(2, node_id); // edges.to
+				stmt_insert.bind(3, ref.weak); // edges.weak
+				stmt_insert.exec(); stmt_insert.reset();
+			}
+			else {
+				edges_deleted.erase(from_to);
+				if (db_edge_weak[from_to] != ref.weak) {
+					stmt_update.bind(1, ref.weak); // edges.weak
+					stmt_update.bind(2, from_to.first); // edges.from
+					stmt_update.bind(3, from_to.second); // edges.to
+					stmt_update.exec();
+					stmt_update.reset();
+				}
+			}
 		}
 	}
 	// deleted edges and nodes
