@@ -50,7 +50,6 @@ CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 
 -- 文章中的 \cite{}
--- TODO: 用于替代 entries.bibs 和 bibliography.ref_by
 CREATE TABLE "entry_bibs" (
 	"entry"    TEXT NOT NULL,     -- entries.id
 	"bib"      TEXT NOT NULL,     -- bibliography.id
@@ -88,7 +87,7 @@ INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIG
 
 -- 创作协议适用范围
 CREATE TABLE "license_apply" (
-	"license"  TEXT    NOT NULL,      -- licenses.id
+	"license"  TEXT    NOT NULL,   -- licenses.id
 	"apply"    INTEGER NOT NULL,   -- 适用于：[e] 文章 [i] 图片 [c] 代码 [f] 文件
 	"order"    INTEGER NOT NULL    -- 显示优先级（UI 中从小到大排列）
 );
