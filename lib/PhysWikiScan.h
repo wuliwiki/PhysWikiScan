@@ -255,7 +255,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 			if (!stmt_select.executeStep())
 				throw scan_err(u8"pentry_cmd(), node_id 不存在：" + node_id);
 			const Str &node_entry = stmt_select.getColumn(0);
-			Long order = stmt_select.getColumn(1).getInt();
+			// Long order = stmt_select.getColumn(1).getInt();
 			stmt_select.reset();
 			clear(icon_html) << R"(<span class = "icon"><a href = ")"
 				<< gv::url << node_entry << ".html";
@@ -638,13 +638,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// insert HTML body
 	if (replace(html, "PhysWikiHTMLbody", str) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
-	if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 8:2))
+	if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 6:2))
 		throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
-	if (gv::is_wiki) {
-		Long i_node = max(size(pentry), 1);
-		if (replace(html, "PhysWikiNnode", num2str(i_node)) != 1)
-			throw internal_err(u8"\"PhysWikiNnode\" 在 entry_template.html 中数量不对");
-	}
 
 	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
 
@@ -762,6 +757,23 @@ inline void PhysWikiOnlineN_round1(
 		file_remove(e);
 }
 
+inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLite::Database &db_rw)
+{
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=? ORDER BY "order" DESC LIMIT 2;)");
+	stmt_select.bind(1, entry);
+	if (!stmt_select.executeStep())
+		throw scan_err(u8"文章不存在 node：" + entry);
+	int order = stmt_select.getColumn(1);
+	if (order > 1) {
+		stmt_select.executeStep();
+		last_node_id = stmt_select.getColumn(0).getString();
+	}
+	else
+		last_node_id = entry;
+	stmt_select.reset();
+}
+
 // convert \autoref{} in *.tmp to html, write *.html
 // will ignore entries in entry_err
 inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
@@ -774,6 +786,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	Str html, fname;
 	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
+
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
 		if (entry_err.count(entry)) continue;
@@ -798,6 +811,13 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		lstlisting(html, str_verbs[i]);
 		lstinline(html, str_verbs[i]);
 		verb(html, str_verbs[i]);
+		// tree button link
+		if (gv::is_wiki) {
+			static Str last_node_id;
+			get_tree_last_node(last_node_id, html, entry, db_rw);
+			if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
+				throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
+		}
 		// write html file
 		if (write_html)
 			write(html, fname); // save html file
