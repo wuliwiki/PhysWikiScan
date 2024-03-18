@@ -257,11 +257,11 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 			const Str &node_entry = stmt_select.getColumn(0);
 			// Long order = stmt_select.getColumn(1).getInt();
 			stmt_select.reset();
-			clear(icon_html) << R"(<span class = "icon"><a href = ")"
+			clear(icon_html) << R"(<sup><a href = ")"
 				<< gv::url << node_entry << ".html";
 			if (node_id.substr(4) != node_entry)
 				icon_html << '#' << node_id;
-			icon_html << R"(" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
+			icon_html << R"(" target="_blank"><span class="icon"><b>▢</b></span></a></sup>)";
 			pentry_arg.replace(ind3, ind2-ind3, icon_html);
 			Long added_chars = size(icon_html) - (ind2-ind3);
 			ind2 += added_chars; len1 += added_chars;

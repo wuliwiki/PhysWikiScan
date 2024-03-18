@@ -529,9 +529,9 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		if (!file_exist(sb))
 			throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
 		right = skip_command(str, ind0, 1);
-		sb = R"(<span class = "icon"><a href = ")";
+		sb = R"(<sup><a href=")";
 		sb << gv::url << entry1
-			<< R"(.html" target = "_blank"><i class = "fa fa-external-link"></i></a></span>)";
+			<< R"(.html" target="_blank"><span class="icon"><b>▢</b></span></a></sup>)";
 		str.replace(ind0, right - ind0, sb);
 		++N;
 
