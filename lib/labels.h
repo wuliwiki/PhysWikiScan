@@ -18,12 +18,12 @@ inline Str label_id(Str_I label)
 }
 
 // get entry from label (old format)
-inline Str label_entry(Str_I label_id, SQLite::Database &db_read)
+inline Str label_entry(Str_I label, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "labels" WHERE "id"=?;)");
-	stmt_select.bind(1, label_id);
+	stmt_select.bind(1, label);
 	if (!stmt_select.executeStep())
-		throw scan_err(u8"label id 不存在于数据库：" + label_id);
+		throw scan_err(u8"label 不存在于数据库：" + label);
 	return stmt_select.getColumn(0).getString();
 }
 

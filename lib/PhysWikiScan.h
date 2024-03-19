@@ -568,7 +568,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	limit_env_cmd(str);
 	if (!is_eng)
 		autoref_space(str, true); // set true to error instead of warning
-	autoref_tilde_upref(str, entry, db_read);
 	if (str.empty()) str = " ";
 	// ensure spaces between chinese char and alphanumeric char
 	chinese_alpha_num_space(str);
@@ -806,6 +805,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
             db_update_edges_hide(pentries[i], entry, db_rw);
         }
 		// process \autoref and \upref
+		autoref_tilde_upref(html, entry, db_rw);
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, is_eng[i], db_rw);
 		// verbatim recover (in inverse order of `verbatim()`)
 		lstlisting(html, str_verbs[i]);

@@ -170,7 +170,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry, SQLite::Database &db_re
 			ind5 = (Long)str.rfind("\\upref", ind5-1); entry2.clear();
 			if (ind5 > 0 && ExpectKeyReverse(str, "~", ind5 - 1) < 0)
 				command_arg(entry2, str, ind5);
-			sb = label_entry(label_id(label), db_read);
+			sb = label_entry(label, db_read);
 			if (sb != entry && sb != entry2)
 				throw scan_err("\\autoref{" + label + u8"} 引用其他文章时， 后面必须有 ~\\upref{}， 建议使用“外部引用”按钮； 也可以把 \\upref{} 放到前面");
 			continue;
@@ -179,7 +179,7 @@ inline Long autoref_tilde_upref(Str_IO str, Str_I entry, SQLite::Database &db_re
 		if (ind2 < 0)
 			throw scan_err(u8"\\autoref{} 后面不应该有单独的 ~");
 		command_arg(entry1, str, ind2 - 6);
-		if (label_entry(label_id(label), db_read) != entry1) {
+		if (label_entry(label, db_read) != entry1) {
 			clear(sb) << "\\autoref{" << label << "}~\\upref{" << entry1 << u8"} 不一致， 请使用“外部引用”按钮";
 			throw scan_err(sb);
 		}
