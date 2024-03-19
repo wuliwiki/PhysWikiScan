@@ -18,11 +18,13 @@ inline Str label_id(Str_I label)
 }
 
 // get entry from label (old format)
-inline Str label_entry_old(Str_I label)
+inline Str label_entry(Str_I label_id, SQLite::Database &db_read)
 {
-	Str id = label_id(label);
-	Long ind = (Long)id.rfind('_');
-	return id.substr(0, ind);
+	SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "labels" WHERE "id"=?;)");
+	stmt_select.bind(1, label_id);
+	if (!stmt_select.executeStep())
+		throw scan_err(u8"label id 不存在于数据库：" + label_id);
+	return stmt_select.getColumn(0).getString();
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label

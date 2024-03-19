@@ -568,7 +568,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	limit_env_cmd(str);
 	if (!is_eng)
 		autoref_space(str, true); // set true to error instead of warning
-	autoref_tilde_upref(str, entry);
+	autoref_tilde_upref(str, entry, db_read);
 	if (str.empty()) str = " ";
 	// ensure spaces between chinese char and alphanumeric char
 	chinese_alpha_num_space(str);
