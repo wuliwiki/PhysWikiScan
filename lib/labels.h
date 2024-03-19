@@ -107,13 +107,7 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 		// check label format and save label
 		ind0 = expect(str, "{", ind5 + 6);
 		clear(sb) << type << '_' << entry;
-		ind3 = expect(str, sb, ind0);
-		if (ind3 < 0) {
-			clear(sb) << "label " << str.substr(ind0, 20)
-				<< u8"... 格式错误， 是否为 \"" << type << '_' << entry << u8"\"？";
-			throw scan_err(sb);
-		}
-		ind3 = find(str, '}', ind3);
+		ind3 = find(str, '}', ind0);
 		
 		label = str.substr(ind0, ind3 - ind0);
 		trim(label);

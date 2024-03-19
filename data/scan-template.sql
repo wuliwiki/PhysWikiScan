@@ -550,11 +550,13 @@ CREATE TABLE "salary" (
 	"value"         REAL    NOT NULL DEFAULT -1,       -- 时薪（元）（-1 代表 NULL）
 	"scale"         REAL    NOT NULL DEFAULT  1,       -- 缩放
 	"comment"       TEXT    NOT NULL DEFAULT '',       -- 备注
-	"comment_admin" TEXT    NOT NULL DEFAULT '', -- 备注（仅管理员可见）
+	"creator"       INTEGER NOT NULL,                  -- 制定者
+	"comment_admin" TEXT    NOT NULL DEFAULT '',       -- 备注（仅管理员可见）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("license") REFERENCES "licenses"("id")
+	FOREIGN KEY("license") REFERENCES "licenses"("id"),
+	FOREIGN KEY("creator") REFERENCES "authors"("id")
 );
 
 CREATE INDEX idx_salary_author ON "salary"("author");
