@@ -75,7 +75,7 @@ endif
 
 # === compiler flags ===
 ifeq ($(opt_compiler), g++)
-    compiler_flag = -std=$(opt_std) -Wall -Wno-reorder -fmax-errors=5
+    compiler_flag = -std=$(opt_std) -Wall -Wno-reorder -fmax-errors=5 -fopenmp
 endif
 
 $(info  )$(info  )$(info  )$(info  )

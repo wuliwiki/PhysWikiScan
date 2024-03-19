@@ -106,11 +106,15 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 		
 		// check label format and save label
 		ind0 = expect(str, "{", ind5 + 6);
-		clear(sb) << type << '_' << entry;
 		ind3 = find(str, '}', ind0);
-		
 		label = str.substr(ind0, ind3 - ind0);
 		trim(label);
+		if (size(label) > 14)
+			throw scan_err(u8"label 长度超出 14 个字符：" + label);
+		for (char c : label) {
+			if (!(is_alphanum(c) || c == '_'))
+				throw scan_err(u8"label 只能使用字母，数字和下划线：" + label);
+		}
 		if (type == "fig") {
 			fig_id = label_id(label);
 			Long ind = search(fig_id, fig_ids);
