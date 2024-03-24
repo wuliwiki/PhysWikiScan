@@ -531,7 +531,7 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		right = skip_command(str, ind0, 1);
 		sb = R"(<sup><a href=")";
 		sb << gv::url << entry1
-			<< R"(.html" target="_blank"><span class="icon"><b>▢</b></span></a></sup>)";
+			<< R"(.html" target="_blank"><span class="icon"><i class="fa fa-bookmark-o"></i></span></a></sup>)";
 		str.replace(ind0, right - ind0, sb);
 		++N;
 

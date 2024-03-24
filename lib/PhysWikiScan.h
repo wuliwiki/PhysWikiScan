@@ -261,7 +261,7 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 				<< gv::url << node_entry << ".html";
 			if (node_id.substr(4) != node_entry)
 				icon_html << '#' << node_id;
-			icon_html << R"(" target="_blank"><span class="icon"><b>▢</b></span></a></sup>)";
+			icon_html << R"(" target="_blank"><span class="icon"><i class="fa fa-bookmark-o"></i></span></a></sup>)";
 			pentry_arg.replace(ind3, ind2-ind3, icon_html);
 			Long added_chars = size(icon_html) - (ind2-ind3);
 			ind2 += added_chars; len1 += added_chars;
