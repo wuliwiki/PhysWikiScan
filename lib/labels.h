@@ -9,7 +9,7 @@ inline Str label_type(Str_I label)
 	return label.substr(0, ind1);
 }
 
-// get label id
+// get label id (the  part after `_`)
 inline Str label_id(Str_I label)
 {
 	assert(label[0] != ' '); assert(label.back() != ' ');
@@ -20,11 +20,20 @@ inline Str label_id(Str_I label)
 // get entry from label (old format)
 inline Str label_entry(Str_I label, SQLite::Database &db_read)
 {
-	SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "labels" WHERE "id"=?;)");
-	stmt_select.bind(1, label);
-	if (!stmt_select.executeStep())
-		throw scan_err(u8"label 不存在于数据库：" + label);
-	return stmt_select.getColumn(0).getString();
+	if (label_type(label) != "fig") {
+		SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "labels" WHERE "id"=?;)");
+		stmt_select.bind(1, label);
+		if (!stmt_select.executeStep())
+			throw scan_err(u8"label 不存在于数据库：" + label);
+		return stmt_select.getColumn(0).getString();
+	}
+	else {
+		SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "figures" WHERE "id"=?;)");
+		stmt_select.bind(1, label_id(label));
+		if (!stmt_select.executeStep())
+			throw scan_err(u8"label 不存在于数据库（图）：" + label);
+		return stmt_select.getColumn(0).getString();
+	}
 }
 
 // add html id tag before environment if it contains a label, right before "\begin{}" and delete that label
@@ -111,8 +120,8 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 		ind3 = find(str, '}', ind0);
 		label = str.substr(ind0, ind3 - ind0);
 		trim(label);
-		if (size(label) > 14)
-			throw scan_err(u8"label 长度超出 14 个字符：" + label);
+		if (size(label) > 20)
+			throw scan_err(u8"label 长度超出 20 个字符：" + label);
 		for (char c : label) {
 			if (!(is_alphanum(c) || c == '_'))
 				throw scan_err(u8"label 只能使用字母，数字和下划线：" + label);

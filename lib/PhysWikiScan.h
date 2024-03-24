@@ -476,7 +476,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	vecStr &str_verb, // [out] temp storage of verbatim strings
-	unordered_map<Str, bool> &uprefs_change, // entry -> [1]add/[0]delete
 	unordered_map<Str, bool> &bibs_change, // entry -> [1]add/[0]delete
 	Pentry_O pentry, set<Char32> &illegal_chars,
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
@@ -618,8 +617,6 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Command2Tag("bb", "<b>", "</b>", str); Command2Tag("textbf", "<b>", "</b>", str);
 	Command2Tag("textsl", "<i>", "</i>", str);
 	pay2div(str); // deal with "\pay" "\paid" pseudo command
-	// replace \upref{} with link icon
-	upref(uprefs_change, str, entry, db_read);
 	href(str); // hyperlinks
 	cite(bibs_change, str, entry, db_read); // citation
 	
@@ -680,7 +677,6 @@ inline void PhysWikiOnlineN_round1(
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
 	Str html;
 	unordered_map<Str, unordered_map<Str, bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
-	unordered_map<Str, unordered_map<Str, bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -694,7 +690,7 @@ inline void PhysWikiOnlineN_round1(
 			// =================================================================
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i], is_eng[i],
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
-				license, type, labels, label_orders, str_verbs[i], entry_uprefs_change[entry],
+				license, type, labels, label_orders, str_verbs[i],
 				entry_bibs_change[entry], pentries[i], illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
@@ -743,8 +739,6 @@ inline void PhysWikiOnlineN_round1(
 	try {
 		// update entries.bibs & bibliography.ref_by
 		db_update_entry_bibs(entry_bibs_change, db_rw);
-		// update entry_uprefs
-		db_update_entry_uprefs(entry_uprefs_change, db_rw);
 		// update edges
 		db_update_edges(pentries, entries, db_rw);
 	}
@@ -785,6 +779,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	Str html, fname;
 	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
+	unordered_map<Str, unordered_map<Str, bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -806,6 +801,8 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
         }
 		// process \autoref and \upref
 		autoref_tilde_upref(html, entry, db_rw);
+		// replace \upref{} with link icon
+		upref(entry_uprefs_change[entry], html, entry, db_rw);
 		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, is_eng[i], db_rw);
 		// verbatim recover (in inverse order of `verbatim()`)
 		lstlisting(html, str_verbs[i]);
@@ -826,6 +823,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	cout << endl; cout.flush();
 
 	db_update_refs(entry_add_refs, entry_del_refs, db_rw);
+	db_update_entry_uprefs(entry_uprefs_change, db_rw);
 }
 
 // generate json file containing dependency tree

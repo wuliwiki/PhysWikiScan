@@ -143,8 +143,9 @@ inline Long autoref_space(Str_I str, Bool_I error)
 	}
 }
 
+// use before `upref()`
 // 1. make sure there is a ~ between autoref and upref
-// 2. make sure autoref and upref is for the same entry
+// 2. make sure autoref and upref are for the same entry
 // 3. make sure label in autoref has underscore
 // 4. make sure autoref for other entry always has upref before or after
 inline Long autoref_tilde_upref(Str_IO str, Str_I entry, SQLite::Database &db_read)
