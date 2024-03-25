@@ -216,9 +216,9 @@ inline Long autoref(
 	Str_IO str, Str_I entry, bool is_eng,
 	SQLite::Database &db_read
 ) {
-	Long ind0{}, ind1{}, ind2{}, ind3{}, N{}, ienv{};
+	Long ind0{}, ind3{}, N{}, ienv{};
 	Bool inEq;
-	Str entry1, label0, fig_id, type, kind, newtab, file;
+	Str entry1, label, fig_id, type, kind, newtab, file;
 	vecStr envNames{"equation", "align", "gather"};
 	Str db_ref_by_str, ref_by_str;
 	set<Str> ref_by;
@@ -243,19 +243,9 @@ inline Long autoref(
 		if (ind0 < 0)
 			break;
 		inEq = index_in_env(ienv, ind0, envNames, str);
-		ind1 = expect(str, "{", ind0 + 8);
-		if (ind1 < 0)
-			throw scan_err(u8"\\autoref 变量不能为空");
-		ind1 = NextNoSpace(entry1, str, ind1);
-		ind2 = find(str, '_', ind1);
-		if (ind2 < 0)
-			throw scan_err(u8"\\autoref 格式错误");
-		ind3 = find_num(str, ind2);
-		if (ind3 < 0)
-			throw scan_err(u8"autoref 格式错误");
-		Long ind30 = find(str, '_', ind2 + 1);
-		entry1 = str.substr(ind2 + 1, ind30 - ind2 - 1);
-		type = str.substr(ind1, ind2 - ind1);
+		command_arg(label, str, ind0);
+		entry1 = label_entry(label, db_read);
+		type = label_type(label);
 		if (!is_eng) {
 			if (type == "eq") kind = u8"式";
 			else if (type == "fig") kind = u8"图";
@@ -294,15 +284,14 @@ inline Long autoref(
 			else
 				throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
 		}
-		ind3 = find(str, '}', ind3);
-		label0 = str.substr(ind1, ind3 - ind1); trim(label0);
+		ind3 = find(str, '}', ind0);
 		Long db_label_order;
 		if (type == "fig") {
-			fig_id = label_id(label0);
+			fig_id = label_id(label);
 			del_refs.erase("fig_" + fig_id);
 			stmt_select_fig.bind(1, fig_id);
 			if (!stmt_select_fig.executeStep())
-				throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
+				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
 			db_label_order = int(stmt_select_fig.getColumn(0));
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select_fig.getColumn(1));
@@ -312,17 +301,17 @@ inline Long autoref(
 				add_refs.insert("fig_" + fig_id);
 		}
 		else {
-			del_refs.erase(label0);
-			stmt_select.bind(1, label0);
+			del_refs.erase(label);
+			stmt_select.bind(1, label);
 			if (!stmt_select.executeStep())
-				throw scan_err(u8"\\autoref{} 中标签未找到： " + label0);
+				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
 			db_label_order = int(stmt_select.getColumn(0));
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select.getColumn(1));
 			stmt_select.reset();
 
 			if (!ref_by.count(entry))
-				add_refs.insert(label0);
+				add_refs.insert(label);
 		}
 
 		file = gv::url + entry1 + ".html";
@@ -332,7 +321,7 @@ inline Long autoref(
 			str.insert(ind3 + 1, " </a>");
 		str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
 		if (!inEq) {
-			clear(sb) << "<a href = \"" << file << '#' << label0 << "\" " << newtab << '>';
+			clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>';
 			str.insert(ind3 + 1, sb);
 		}
 		str.erase(ind0, ind3 - ind0 + 1);
