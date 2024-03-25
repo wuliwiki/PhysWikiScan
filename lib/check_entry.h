@@ -133,7 +133,9 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		Long ind1 = 0, ind2 = 0;
 		bool first_upref = true;
 		while (1) {
-			ind1 = find(ikey, temp, {"\\nref", "\\wnref"}, ind2);
+			ind1 = find(ikey, temp, {"\\nref", "\\wnref", "\\upref"}, ind2);
+			if (ikey == 2)
+				throw scan_err(u8"预备知识中不允许使用 \\upref{xxx}， 你可能想用 \\nref{nod_xxx}");
 			weak = (ikey == 1);
 			if (ind1 < 0)
 				break;
