@@ -369,11 +369,10 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "nodes" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
-	unordered_set<Str> nodes_deleted; // old nodes of `entry`
-	unordered_map<Str, Long> db_node_order; // not includinig default node
+	unordered_set<Str> nodes_deleted; // old nodes of `entry`, id_node == entry is not included
+	unordered_map<Str, Long> db_node_order; // includinig default node
 
 	// get db nodes of `entry` to see which are deleted
-	// id_node == entry is not included
 	stmt_select.bind(1, entry);
 	while (stmt_select.executeStep()) {
 		const Str &node_id = stmt_select.getColumn(0);
@@ -390,6 +389,11 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		stmt_insert.bind(2, entry);
 		stmt_insert.bind(3, (int)pentry.size()+1);
 		stmt_insert.exec(); stmt_insert.reset();
+	}
+	else if (db_node_order[entry] != pentry.size()+1) {
+		stmt_update.bind(1, (int)pentry.size()+1);
+		stmt_update.bind(2, entry);
+		stmt_update.exec(); stmt_update.reset();
 	}
 	// \pentry{} nodes
 	unordered_set<Str> check_repeat;

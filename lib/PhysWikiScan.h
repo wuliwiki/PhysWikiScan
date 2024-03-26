@@ -750,16 +750,17 @@ inline void PhysWikiOnlineN_round1(
 		file_remove(e);
 }
 
-inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLite::Database &db_rw)
+inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLite::Database &db_read)
 {
-	SQLite::Statement stmt_select(db_rw,
+	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=? ORDER BY "order" DESC LIMIT 2;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw scan_err(u8"文章不存在 node：" + entry);
 	int order = stmt_select.getColumn(1);
 	if (order > 1) {
-		stmt_select.executeStep();
+		if (!stmt_select.executeStep())
+			throw scan_err(SLS_WHERE);
 		last_node_id = stmt_select.getColumn(0).getString();
 	}
 	else
