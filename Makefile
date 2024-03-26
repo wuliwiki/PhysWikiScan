@@ -25,9 +25,9 @@ $(info ) $(info ) $(info ) $(info ) $(info ) $(info )
 # === Debug / Release ===
 ifeq ($(opt_debug), true)
     $(info Build: Debug)
-    debug_flag = -g
+    debug_flag = -g3
     ifeq ($(opt_compiler), g++)
-        debug_flag = -g -ftrapv $(asan_flag)
+        debug_flag = -g3 -ftrapv $(asan_flag)
     endif
 else
     $(info Build: Release)
