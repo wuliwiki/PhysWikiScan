@@ -390,7 +390,7 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		stmt_insert.bind(3, (int)pentry.size()+1);
 		stmt_insert.exec(); stmt_insert.reset();
 	}
-	else if (db_node_order[entry] != pentry.size()+1) {
+	else if (db_node_order[entry] != size(pentry)+1) {
 		stmt_update.bind(1, (int)pentry.size()+1);
 		stmt_update.bind(2, entry);
 		stmt_update.exec(); stmt_update.reset();
@@ -455,8 +455,8 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		R"(UPDATE "edges" SET "weak"=? WHERE "from"=? AND "to"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");
 
-	unordered_set<pair<Str, Str>, hash_pair> edges_deleted; // old edges from `entry`, (from -> to)
-	unordered_map<pair<Str, Str>, bool, hash_pair> db_edge_weak;
+	unordered_set<pair<Str, Str>> edges_deleted; // old edges from `entry`, (from -> to)
+	unordered_map<pair<Str, Str>, bool> db_edge_weak;
 
 	// get db edges to `entry` nodes
 	for (auto &pentry1 : pentry) {
