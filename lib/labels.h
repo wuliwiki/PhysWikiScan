@@ -292,7 +292,7 @@ inline Long autoref(
 			stmt_select_fig.bind(1, fig_id);
 			if (!stmt_select_fig.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
-			db_label_order = int(stmt_select_fig.getColumn(0));
+			db_label_order = stmt_select_fig.getColumn(0).getInt64();
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select_fig.getColumn(1));
 			stmt_select_fig.reset();
@@ -305,7 +305,7 @@ inline Long autoref(
 			stmt_select.bind(1, label);
 			if (!stmt_select.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
-			db_label_order = int(stmt_select.getColumn(0));
+			db_label_order = stmt_select.getColumn(0).getInt64();
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
 			parse(ref_by, stmt_select.getColumn(1));
 			stmt_select.reset();
@@ -719,7 +719,7 @@ inline void db_update_labels(
 
 	// set label orders back to positive
 	for (auto &e : label_order_neg) {
-		stmt_update0.bind(1, int(e.second)); // order
+		stmt_update0.bind(1, int64_t(e.second)); // order
 		stmt_update0.bind(2, e.first); // label
 		stmt_update0.exec(); stmt_update0.reset();
 	}

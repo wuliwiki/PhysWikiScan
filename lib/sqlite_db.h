@@ -111,10 +111,17 @@ inline void db_update_parts_chapters(
 	cout << "inserting parts to db_rw..." << endl;
 	// SQLite::Statement stmt_insert_part(db_rw,
 	// 	R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
-	unordered_map<tuple<Str>, tuple<Long,Str,Str,Str>> part_tab;
-	for (Long i = 0; i < size(part_name); ++i)
-		part_tab[part_ids[i]] = make_tuple(i, part_name[i], chap_first[i], chap_last[i]);
-	update_sqlite_table("parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1);
+	unordered_map<tuple<Str>, tuple<Int,Str,Str,Str>> part_tab;
+//	auto tup = make_tuple(3,1.5,Str("abc"));
+	// cout << std::hash<decltype(tup)>{}(tup) << endl;
+//	size_t hash = 0;
+//	hash = hash_combine(hash, std::hash<Int>{}(3));
+//	hash = hash_combine(hash, std::hash<Doub>{}(1.5));
+//	hash = hash_combine(hash, std::hash<Str>{}(Str("abc")));
+//	SLS_ASSERT(std::hash<decltype(tup)>{}(tup) == hash);
+	for (Int i = 0; i < size(part_name); ++i)
+		part_tab[make_tuple(part_ids[i])] = make_tuple(i, part_name[i], chap_first[i], chap_last[i]);
+	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
 	cout << "\n\n\n" << endl;
 
 	// insert chapters
@@ -125,7 +132,7 @@ inline void db_update_parts_chapters(
 	for (Long i = 0; i < size(chap_name); ++i) {
 		// cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
 		stmt_insert_chap.bind(1, chap_ids[i]);
-		stmt_insert_chap.bind(2, int(i));
+		stmt_insert_chap.bind(2, int64_t(i));
 		stmt_insert_chap.bind(3, chap_name[i]);
 		stmt_insert_chap.bind(4, part_ids[chap_part[i]]);
 		stmt_insert_chap.bind(5, entry_first[i]);

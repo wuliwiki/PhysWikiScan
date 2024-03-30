@@ -51,7 +51,7 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 		// 十分钟以上才算作者
 		if (time <= 10) continue;
 		// 检查是否隐藏作者
-		stmt_select.bind(1, int(id));
+		stmt_select.bind(1, int64_t(id));
 		stmt_select.executeStep();
 		bool hidden = (int)stmt_select.getColumn(0);
 		Long aka = (int)stmt_select.getColumn(1);
@@ -214,7 +214,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				clear(sb) << u8"备份文件中的作者不在数据库中（将添加）： " << author << " ID: " << author_id_max;
 				db_log(sb);
 				new_authors[author] = author_id_max;
-				stmt_insert_auth.bind(1, int(author_id_max));
+				stmt_insert_auth.bind(1, int64_t(author_id_max));
 				stmt_insert_auth.bind(2, author);
 				stmt_insert_auth.exec();
 				stmt_insert_auth.reset();
