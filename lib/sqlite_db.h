@@ -2,6 +2,7 @@
 #include <regex>
 #include "../SLISC/str/str.h"
 #include "../SLISC/file/file.h"
+#include "../SLISC/file/sqlitecpp_ext.h"
 #include "../SLISC/util/time.h"
 #include "../SLISC/util/sha1sum.h"
 
@@ -104,21 +105,16 @@ inline void db_update_parts_chapters(
 	cout.flush();
 	cout << "clear parts and chatpers tables" << endl;
 	// TODO: don't delete table, only update and delete records
-	table_clear("parts", db_rw); table_clear("chapters", db_rw);
+	table_clear("chapters", db_rw);
 
 	// insert parts
 	cout << "inserting parts to db_rw..." << endl;
-	SQLite::Statement stmt_insert_part(db_rw,
-		R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
-	for (Long i = 0; i < size(part_name); ++i) {
-		// cout << "part " << i << ". " << part_ids[i] << ": " << part_name[i] << " chapters: " << chap_first[i] << " -> " << chap_last[i] << endl;
-		stmt_insert_part.bind(1, part_ids[i]);
-		stmt_insert_part.bind(2, int(i));
-		stmt_insert_part.bind(3, part_name[i]);
-		stmt_insert_part.bind(4, chap_first[i]);
-		stmt_insert_part.bind(5, chap_last[i]);
-		stmt_insert_part.exec(); stmt_insert_part.reset();
-	}
+	// SQLite::Statement stmt_insert_part(db_rw,
+	// 	R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
+	unordered_map<tuple<Str>, tuple<Long,Str,Str,Str>> part_tab;
+	for (Long i = 0; i < size(part_name); ++i)
+		part_tab[part_ids[i]] = make_tuple(i, part_name[i], chap_first[i], chap_last[i]);
+	update_sqlite_table("parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1);
 	cout << "\n\n\n" << endl;
 
 	// insert chapters
