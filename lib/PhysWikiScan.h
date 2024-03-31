@@ -778,9 +778,9 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
-	unordered_map<Str, unordered_set<Str>> entry_add_refs, entry_del_refs; // entry -> refs to add/delete
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
 	unordered_map<Str, unordered_map<Str, bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
+	vecStr autoref_labels;
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -804,7 +804,9 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		autoref_tilde_upref(html, entry, db_rw);
 		// replace \upref{} with link icon
 		upref(entry_uprefs_change[entry], html, entry, db_rw);
-		autoref(entry_add_refs[entry], entry_del_refs[entry], html, entry, is_eng[i], db_rw);
+		autoref(autoref_labels, html, entry, is_eng[i], db_rw);
+		db_update_autorefs(entry, autoref_labels, db_rw);
+
 		// verbatim recover (in inverse order of `verbatim()`)
 		lstlisting(html, str_verbs[i]);
 		lstinline(html, str_verbs[i]);
@@ -822,8 +824,6 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		file_remove(fname + ".tmp");
 	}
 	cout << endl; cout.flush();
-
-	db_update_refs(entry_add_refs, entry_del_refs, db_rw);
 	db_update_entry_uprefs(entry_uprefs_change, db_rw);
 }
 

@@ -256,7 +256,9 @@ inline void db_update_figures(
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by", "image", "deleted", "aka", "caption" FROM "figures" WHERE "id"=?;)");
+		R"(SELECT "order", "image", "deleted", "aka", "caption" FROM "figures" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "entry" FROM "entry_refs" WHERE "label"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
@@ -285,13 +287,18 @@ inline void db_update_figures(
 				continue;
 			}
 			db_fig_orders.push_back((int)stmt_select1.getColumn(0));
-			db_fig_ref_bys.emplace_back();
-			parse(db_fig_ref_bys.back(), stmt_select1.getColumn(1));
-			db_fig_image.push_back(stmt_select1.getColumn(2));
-			db_figs_deleted.push_back((int)stmt_select1.getColumn(3));
-			db_fig_aka[fig_id] = stmt_select1.getColumn(4).getString();
-			db_figs_caption.push_back(stmt_select1.getColumn(5));
+			db_fig_image.push_back(stmt_select1.getColumn(1));
+			db_figs_deleted.push_back((int)stmt_select1.getColumn(2));
+			db_fig_aka[fig_id] = stmt_select1.getColumn(3).getString();
+			db_figs_caption.push_back(stmt_select1.getColumn(4));
 			stmt_select1.reset();
+
+			stmt_select2.bind(1, "fig_" + fig_id);
+			db_fig_ref_bys.emplace_back();
+			auto &back = db_fig_ref_bys.back();
+			while (stmt_select2.executeStep())
+				back.push_back(stmt_select2.getColumn(0).getString());
+			stmt_select2.reset();
 		}
 	}
 	figs_used.resize(db_figs_deleted.size(), false);
@@ -410,7 +417,6 @@ inline void db_update_figures(
 			}
 		}
 	}
-	// cout << "done!" << endl;
 }
 
 // delete from "images" table, and the image file

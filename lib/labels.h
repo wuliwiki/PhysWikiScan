@@ -208,31 +208,21 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // return number of autoref replaced, or -1 if failed
-// new_label_ref_by: in database, these labels should append `entry` to "ref_by"
-// new_fig_ref_by: in database, these figures should append `entry` to "ref_by"
 inline Long autoref(
-	unordered_set<Str> &add_refs, // labels to add to entry.refs
-	unordered_set<Str> &del_refs, // labels to delete from entry.refs
+	vecStr_O autoref_labels, // all labels in \autoref{}
 	Str_IO str, Str_I entry, bool is_eng,
 	SQLite::Database &db_read
 ) {
 	Long ind0{}, ind3{}, N{}, ienv{};
-	Bool inEq;
+	bool inEq;
 	Str entry1, label, fig_id, type, kind, newtab, file;
 	vecStr envNames{"equation", "align", "gather"};
-	Str db_ref_by_str, ref_by_str;
-	set<Str> ref_by;
+	autoref_labels.clear();
 
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+		R"(SELECT "order" FROM "labels" WHERE "id"=?;)");
 	SQLite::Statement stmt_select_fig(db_read,
-		R"(SELECT "order", "ref_by" FROM "figures" WHERE "deleted"=0 AND "id"=?;)");
-	SQLite::Statement stmt_select0(db_read,
-		R"(SELECT "refs" FROM "entries" WHERE "id"=')" + entry + "';");
-
-	if (!stmt_select0.executeStep())
-		throw scan_err(u8"文章不存在： " + entry);
-	parse(del_refs, stmt_select0.getColumn(0));
+		R"(SELECT "order" FROM "figures" WHERE "deleted"=0 AND "id"=?;)");
 
 	while (1) {
 		newtab.clear(); file.clear();
@@ -285,33 +275,25 @@ inline Long autoref(
 				throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
 		}
 		ind3 = find(str, '}', ind0);
+
+		// get display order
 		Long db_label_order;
 		if (type == "fig") {
 			fig_id = label_id(label);
-			del_refs.erase("fig_" + fig_id);
 			stmt_select_fig.bind(1, fig_id);
 			if (!stmt_select_fig.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
 			db_label_order = stmt_select_fig.getColumn(0).getInt64();
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
-			parse(ref_by, stmt_select_fig.getColumn(1));
 			stmt_select_fig.reset();
-
-			if (!ref_by.count(entry))
-				add_refs.insert("fig_" + fig_id);
 		}
 		else {
-			del_refs.erase(label);
 			stmt_select.bind(1, label);
 			if (!stmt_select.executeStep())
 				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
 			db_label_order = stmt_select.getColumn(0).getInt64();
 			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
-			parse(ref_by, stmt_select.getColumn(1));
 			stmt_select.reset();
-
-			if (!ref_by.count(entry))
-				add_refs.insert(label);
 		}
 
 		file = gv::url + entry1 + ".html";
@@ -319,12 +301,13 @@ inline Long autoref(
 			newtab = "target = \"_blank\"";
 		if (!inEq)
 			str.insert(ind3 + 1, " </a>");
-		str.insert(ind3 + 1, kind + ' ' + num2str32(db_label_order));
+		str.insert(ind3 + 1, kind + ' ' + num2str(db_label_order));
 		if (!inEq) {
 			clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>';
 			str.insert(ind3 + 1, sb);
 		}
 		str.erase(ind0, ind3 - ind0 + 1);
+		autoref_labels.emplace_back(std::move(label));
 		++N;
 	}
 	return N;
@@ -597,7 +580,9 @@ inline void db_update_labels(
 	SQLite::Statement stmt_select0(db_rw,
 		R"(SELECT "id" FROM "labels" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
-		R"(SELECT "order", "ref_by" FROM "labels" WHERE "id"=?;)");
+		R"(SELECT "order" FROM "labels" WHERE "id"=?;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "entry" FROM "entry_refs" WHERE "label"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update0(db_rw,
@@ -631,9 +616,14 @@ inline void db_update_labels(
 			if (!stmt_select1.executeStep())
 				throw scan_err("标签不存在： " + label + SLS_WHERE);
 			db_label_orders.push_back((int)stmt_select1.getColumn(0));
-			db_label_ref_bys.emplace_back();
-			parse(db_label_ref_bys.back(), stmt_select1.getColumn(1));
 			stmt_select1.reset();
+
+			db_label_ref_bys.emplace_back();
+			auto &back = db_label_ref_bys.back();
+			stmt_select2.bind(1, label);
+			while (stmt_select2.executeStep())
+				back.push_back(stmt_select2.getColumn(0));
+			stmt_select2.reset();
 		}
 	}
 	db_labels_used.resize(db_labels.size(), false);
