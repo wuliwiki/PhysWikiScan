@@ -41,7 +41,7 @@ INSERT INTO "entries" ("id", "caption", "deleted") VALUES ('', '无', 1); -- 防
 CREATE TABLE "entry_uprefs" (
 	"entry"      TEXT NOT NULL,     -- entries.id
 	"upref"      TEXT NOT NULL,     -- entries.id
-	UNIQUE("entry", "upref"),
+	PRIMARY KEY("entry", "upref"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("upref")  REFERENCES "entries"("id")
 );
@@ -54,7 +54,7 @@ CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 CREATE TABLE "entry_authors" (
 	"entry"    TEXT    NOT NULL,
 	"author"   INTEGER NOT NULL,
-	UNIQUE ("entry", "author"),
+	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")
 );
@@ -66,7 +66,7 @@ CREATE INDEX idx_entry_authors_author ON "entry_authors"("author");
 CREATE TABLE "entry_bibs" (
 	"entry"    TEXT NOT NULL,     -- entries.id
 	"bib"      TEXT NOT NULL,     -- bibliography.id
-	UNIQUE("entry", "bib"),
+	PRIMARY KEY("entry", "bib"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
@@ -79,7 +79,7 @@ CREATE INDEX idx_entry_bibs_bib  ON "entry_bibs"("bib");
 CREATE TABLE "entry_refs" (
 	"entry"    TEXT NOT NULL,     -- entries.id
 	"label"    TEXT NOT NULL,     -- labels.id
-	UNIQUE("entry", "label"),
+	PRIMARY KEY("entry", "label"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id")
 );
 
@@ -115,7 +115,7 @@ CREATE INDEX idx_license_apply_wiki_note ON "license_apply"("wiki_note");
 CREATE TABLE "types" (
 	"id"        TEXT NOT NULL UNIQUE,
 	"caption"   TEXT NOT NULL UNIQUE,      -- 中文名
-	"intro"     TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
+	"intro"     TEXT NOT NULL DEFAULT '',  -- 说明
 	PRIMARY KEY("id")
 );
 
@@ -125,8 +125,8 @@ INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防
 CREATE TABLE "tags" (
 	"id"       INTEGER NOT NULL UNIQUE,   -- id
 	"name"     TEXT NOT NULL UNIQUE,      -- 全名
-	"order"    INTEGER NOT NULL UNIQUE,   -- 菜单中的排列顺序
-	"comment"  TEXT NOT NULL DEFAULT '',  -- 协议简介和说明
+	"order"    INTEGER NOT NULL,          -- 菜单中的排列顺序
+	"comment"  TEXT NOT NULL DEFAULT '',  -- 说明
 	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
@@ -150,7 +150,7 @@ CREATE TABLE "seo_keys" (
 	"entry"  TEXT NOT NULL,
 	"key"    TEXT NOT NULL,
 	"order"  INTEGER NOT NULL,
-	UNIQUE ("entry", "key"),
+	PRIMARY KEY("entry", "key"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id")
 );
 
@@ -173,10 +173,10 @@ CREATE INDEX idx_nodes_entry ON "nodes"("entry");
 -- 每个节点对本文上一个节点的默认连接不需要记录
 -- 不允许 \req{} 引用同一文章的其他节点
 CREATE TABLE "edges" (
-	"from"     TEXT    NOT NULL,      -- nodes.id （若等于 entries.id 则表示依赖整篇文章，即最后一个节点）
-	"to"       TEXT    NOT NULL,      -- nodes.id
-	"weak"     INTEGER NOT NULL,      -- [0|1] 循环依赖时优先隐藏（原 * 标记）（\upreff{}）
-	"hide"     INTEGER NOT NULL DEFAULT -1,      -- [0|1|-1] 多余的预备知识（原 ~ 标记）， 不在知识树中显示， -1 代表未知
+	"from"     TEXT    NOT NULL,             -- nodes.id （若等于 entries.id 则表示依赖整篇文章，即最后一个节点）
+	"to"       TEXT    NOT NULL,             -- nodes.id
+	"weak"     INTEGER NOT NULL,             -- [0|1] 循环依赖时优先隐藏（原 * 标记）（\upreff{}）
+	"hide"     INTEGER NOT NULL DEFAULT -1,  -- [0|1|-1] 多余的预备知识（原 ~ 标记）， 不在知识树中显示， -1 代表未知
 	PRIMARY KEY("from", "to"),
 	FOREIGN KEY("to")  REFERENCES "nodes"("id"),
 	FOREIGN KEY("from")  REFERENCES "nodes"("id")
@@ -266,10 +266,10 @@ CREATE TABLE "opened" (
 -- 目录中 \label{prt_xxx} 中 xxx 为 "id"
 CREATE TABLE "parts" (
 	"id"          TEXT    NOT NULL UNIQUE,     -- 命名规则和文章一样
-	"order"       INTEGER NOT NULL UNIQUE,     -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
-	"caption"     TEXT    NOT NULL UNIQUE,     -- 标题
-	"chap_first"  TEXT    NOT NULL UNIQUE,     -- 第一章
-	"chap_last"   INTEGER NOT NULL UNIQUE,     -- 最后一章
+	"order"       INTEGER NOT NULL,            -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
+	"caption"     TEXT    NOT NULL,            -- 标题
+	"chap_first"  TEXT    NOT NULL,            -- 第一章
+	"chap_last"   INTEGER NOT NULL,            -- 最后一章
 	"subject"     TEXT    NOT NULL DEFAULT '', -- [phys|math|cs] 学科
 	PRIMARY KEY("id"),
 	FOREIGN KEY("chap_first") REFERENCES "chapters"("id"),
@@ -282,9 +282,9 @@ INSERT INTO "parts" VALUES('', 0, '无', '', '', ''); -- 防止 FOREIGN KEY 报�
 -- 目录中 \label{cpt_xxx} 中 xxx 为 "id"
 CREATE TABLE "chapters" (
 	"id"            TEXT    NOT NULL UNIQUE, -- 命名规则和文章一样
-	"order"         INTEGER NOT NULL UNIQUE, -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
+	"order"         INTEGER NOT NULL,        -- 目录中出现的顺序，从 1 开始（0 代表不在目录中）
 	"caption"       TEXT    NOT NULL,        -- 标题
-	"part"          TEXT    NOT NULL,        -- 所在部分（不能为 0）
+	"part"          TEXT    NOT NULL,        -- 所在部分（不能为 ''）
 	"entry_first"   TEXT    NOT NULL,        -- 第一篇文章
 	"entry_last"    TEXT    NOT NULL,        -- 最后一篇文章
 	PRIMARY KEY("id"),
@@ -369,7 +369,7 @@ CREATE INDEX idx_files_time ON "files"("time");
 CREATE TABLE "figure_files" (
 	"figure"    TEXT    NOT NULL,     -- figures.id
 	"file"      TEXT    NOT NULL,     -- files.hash
-	UNIQUE("figure", "file"),
+	PRIMARY KEY("figure", "file"),
 	FOREIGN KEY("figure")  REFERENCES "figures"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -381,7 +381,7 @@ CREATE INDEX idx_figure_files_file ON "figure_files"("file");
 CREATE TABLE "entry_files" (
 	"entry"            TEXT    NOT NULL,     -- entries.id
 	"file"             TEXT    NOT NULL,     -- files.hash
-	UNIQUE("entry", "file"),
+	PRIMARY KEY("entry", "file"),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("file") REFERENCES "files"("hash")
 );
@@ -426,7 +426,6 @@ CREATE TABLE "labels" (
 	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 被哪些文章引用（以 entries.refs 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	UNIQUE("type", "entry", "order")
 );
 
 CREATE INDEX idx_labels_type ON "labels"("type");

@@ -55,6 +55,7 @@ inline void update_sqlite_table_query(
 // sync `data` to a db table, perform DELETE and UPDATE as needed, unchanged records won't be touched
 // only record in db satisfying `condition` will be checked
 // assume `data` satisfy `condition` (no check)
+// might violate 'UNIQUE' for non-primary-key fields
 inline void update_sqlite_table(
 	unordered_map<tuple<Str>, tuple<Int,Str,Str,Str>> &data, // (primary keys) -> (other fields)
 	Str_I table_name,
