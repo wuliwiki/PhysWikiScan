@@ -583,7 +583,10 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
 
 	// get hash, check existence
-	clear(sb) << gv::path_in << "contents/" << entry << ".tex";
+	clear(sb) << gv::path_in;
+	if (!(entry == "main" || entry == "bibliography"))
+		sb << "contents/";
+	sb << entry << ".tex";
 	read(str, sb);
 	if (str.empty())
 		db_log(u8"--backup 忽略空文件：" + entry);
@@ -629,7 +632,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_insert.bind(2, time_new_str);
 		stmt_insert.bind(3, author_id);
 		stmt_insert.bind(4, entry);
-		stmt_insert.bind(5, (int)u8count(str));
+		stmt_insert.bind(5, int64_t(u8count(str)));
 		stmt_insert.bind(6, 0);
 		stmt_insert.bind(7, "");
 		stmt_insert.exec(); stmt_insert.reset();
