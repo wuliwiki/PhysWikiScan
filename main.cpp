@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 10
-#define VERSION_PATCH 8
+#define VERSION_PATCH 9
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -355,18 +355,18 @@ int main(int argc, const char *argv[]) {
 			transaction.commit();
 		}
 		else if (args[0] == "--history-all" && args.size() <= 2) {
-			SQLite::Transaction transaction(db_rw);
+			db_rw.exec("BEGIN EXCLUSIVE");
 			arg_history("../PhysWiki-backup/", db_rw);
-			transaction.commit();
-			SQLite::Transaction transaction2(db_rw);
+			db_rw.exec("COMMIT");
+			db_rw.exec("BEGIN EXCLUSIVE");
 			db_update_history_last(db_rw);
-			transaction2.commit();
-			SQLite::Transaction transaction3(db_rw);
+			db_rw.exec("COMMIT");
+			db_rw.exec("BEGIN EXCLUSIVE");
 			if (args.size() == 2)
 				history_add_del_all(db_rw, true);
 			else
 				history_add_del_all(db_rw, false);
-			transaction3.commit();
+			db_rw.exec("COMMIT");
 		}
 		else if (args[0] == "--history-normalize" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);

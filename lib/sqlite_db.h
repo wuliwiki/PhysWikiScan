@@ -104,22 +104,12 @@ inline void db_update_parts_chapters(
 		 << chap_name.size() << " chapters) ..." << endl;
 	cout.flush();
 	cout << "clear parts and chatpers tables" << endl;
-	// TODO: don't delete table, only update and delete records
 	table_clear("chapters", db_rw);
 
 	// insert parts
 	cout << "inserting parts to db_rw..." << endl;
-	// SQLite::Statement stmt_insert_part(db_rw,
-	// 	R"(INSERT INTO "parts" ("id", "order", "caption", "chap_first", "chap_last") VALUES (?, ?, ?, ?, ?);)");
 	unordered_map<tuple<Str>, tuple<Int,Str,Str,Str>> part_tab;
-//	auto tup = make_tuple(3,1.5,Str("abc"));
-	// cout << std::hash<decltype(tup)>{}(tup) << endl;
-//	size_t hash = 0;
-//	hash = hash_combine(hash, std::hash<Int>{}(3));
-//	hash = hash_combine(hash, std::hash<Doub>{}(1.5));
-//	hash = hash_combine(hash, std::hash<Str>{}(Str("abc")));
-//	SLS_ASSERT(std::hash<decltype(tup)>{}(tup) == hash);
-	for (Int i = 0; i < size(part_name); ++i)
+	for (Long i = 0; i < size(part_name); ++i)
 		part_tab[make_tuple(part_ids[i])] = make_tuple(i, part_name[i], chap_first[i], chap_last[i]);
 	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
 	cout << "\n\n\n" << endl;
