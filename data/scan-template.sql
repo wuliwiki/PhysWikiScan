@@ -506,6 +506,11 @@ CREATE TABLE "authors" (
 
 INSERT INTO "authors" ("id", "name") VALUES (-1, ''); -- 防止 FOREIGN KEY 报错
 
+CREATE INDEX idx_authors_uuid ON "authors"("uuid");
+CREATE INDEX idx_authors_name ON "authors"("name");
+CREATE INDEX idx_authors_applied ON "authors"("applied");
+CREATE INDEX idx_authors_aka ON "authors"("aka");
+
 -- 权限或限制种类
 CREATE TABLE "rights" (
 	"id"       TEXT    NOT NULL UNIQUE,
@@ -513,11 +518,6 @@ CREATE TABLE "rights" (
 	"comment"  TEXT    NOT NULL DEFAULT '', -- 具体说明（可选）
 	PRIMARY KEY("id")
 );
-
-CREATE INDEX idx_authors_uuid ON "authors"("uuid");
-CREATE INDEX idx_authors_name ON "authors"("name");
-CREATE INDEX idx_authors_applied ON "authors"("applied");
-CREATE INDEX idx_authors_aka ON "authors"("aka");
 
 -- 作者权限或限制
 CREATE TABLE "author_rights" (
