@@ -18,7 +18,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 	while (stmt_select.executeStep()) {
 		const Str &id = stmt_select.getColumn(0);
 		auto &info = db_bib_info[id];
-		info.order = (int)stmt_select.getColumn(1);
+		info.order = stmt_select.getColumn(1).getInt64();
 		info.detail = stmt_select.getColumn(2).getString();
 		const Str &ref_by_str = stmt_select.getColumn(3);
 		parse(info.ref_by, ref_by_str);
@@ -53,13 +53,13 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 				db_log(sb);
 				changed = true;
 				id_flip_sign.insert(id);
-				stmt_update.bind(1, -(int)order); // to avoid unique constraint
+				stmt_update.bind(1, -(int64_t)order); // to avoid unique constraint
 			}
 			if (bib_detail != info.detail) {
 				clear(sb) << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
 				db_log(sb);
 				changed = true;
-				stmt_update.bind(1, (int)order); // to avoid unique constraint
+				stmt_update.bind(1, (int64_t)order); // to avoid unique constraint
 			}
 			if (changed) {
 				stmt_update.bind(2, bib_detail);
@@ -70,7 +70,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		else {
 			db_log(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
 			stmt_insert.bind(1, id);
-			stmt_insert.bind(2, -(int)order);
+			stmt_insert.bind(2, -(int64_t)order);
 			stmt_insert.bind(3, bib_detail);
 			stmt_insert.exec(); stmt_insert.reset();
 			id_flip_sign.insert(id);
@@ -123,7 +123,7 @@ inline Long cite(unordered_map<Str, Bool> &bibs_change,
 		}
 		else
 			db_bibs_cited[bib_ind] = true;
-		Long ibib = (int)stmt_select.getColumn(0);
+		Long ibib = stmt_select.getColumn(0).getInt64();
 		stmt_select.reset();
 		Long ind1 = skip_command(str, ind0, 1);
 		str.replace(ind0, ind1 - ind0, " <a href=\"" + gv::url + "bibliography.html#"

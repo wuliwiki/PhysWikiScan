@@ -378,7 +378,7 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		const Str &node_id = stmt_select.getColumn(0);
 		if (node_id != entry)
 			nodes_deleted.insert(node_id);
-		db_node_order[node_id] = (int)stmt_select.getColumn(1);
+		db_node_order[node_id] = stmt_select.getColumn(1).getInt64();
 	}
 	stmt_select.reset();
 
@@ -387,11 +387,11 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	if (!db_node_order.count(entry)) {
 		stmt_insert.bind(1, entry);
 		stmt_insert.bind(2, entry);
-		stmt_insert.bind(3, (int)pentry.size()+1);
+		stmt_insert.bind(3, (int64_t)pentry.size()+1);
 		stmt_insert.exec(); stmt_insert.reset();
 	}
 	else if (db_node_order[entry] != size(pentry)+1) {
-		stmt_update.bind(1, (int)pentry.size()+1);
+		stmt_update.bind(1, (int64_t)pentry.size()+1);
 		stmt_update.bind(2, entry);
 		stmt_update.exec(); stmt_update.reset();
 	}
@@ -466,7 +466,7 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 			const Str &from = stmt_select.getColumn(0);
 			auto from_to = make_pair(from, to);
 			edges_deleted.insert(from_to);
-			db_edge_weak[from_to] = (int)stmt_select.getColumn(1);
+			db_edge_weak[from_to] = stmt_select.getColumn(1).getInt();
 		}
 		stmt_select.reset();
 	}

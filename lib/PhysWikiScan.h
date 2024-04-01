@@ -500,7 +500,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	get_title(title, str);
 	isdraft = is_draft(str);
 	Str db_title, authors, db_keys_str, db_license, db_type, chapter, last_entry, next_entry;
-	Long db_draft;
+	bool db_isdraft;
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "caption", "chapter", "last", "next", "keys", "isdraft", "license", "type" )"
 		R"(FROM "entries" WHERE "id"=?;)");
@@ -512,7 +512,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	last_entry = stmt_select.getColumn(2).getString();
 	next_entry = stmt_select.getColumn(3).getString();
 	db_keys_str = stmt_select.getColumn(4).getString();
-	db_draft = (int)stmt_select.getColumn(5);
+	db_isdraft = stmt_select.getColumn(5).getInt();
 	db_license = stmt_select.getColumn(6).getString();
 	db_type = stmt_select.getColumn(7).getString();
 	stmt_select.reset();
@@ -645,7 +645,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// update db "entries" table
 	Str key_str; join(key_str, keywords, "|");
 	if (title != db_title || key_str != db_keys_str
-		|| isdraft != db_draft || db_license != license || db_type != type)
+		|| isdraft != db_isdraft || db_license != license || db_type != type)
 		update_db = true;
 }
 
@@ -706,7 +706,7 @@ inline void PhysWikiOnlineN_round1(
 				join(key_str, keywords, "|");
 				stmt_update.bind(1, titles[i]); // titles[i] might differ from db only when entry is not in main.tex
 				stmt_update.bind(2, key_str);
-				stmt_update.bind(3, (int)isdraft);
+				stmt_update.bind(3, (int64_t)isdraft);
 				stmt_update.bind(4, license);
 				stmt_update.bind(5, type);
 				stmt_update.bind(6, entries[i]);
@@ -963,12 +963,12 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		stmt_select.bind(1,entry);
 		if (!stmt_select.executeStep())
 			throw scan_err(u8"arg_delete(): 数据库中找不到要删除的文章： " + entry);
-		bool db_deleted = (int)stmt_select.getColumn(0);
+		bool db_deleted = stmt_select.getColumn(0).getInt();
 		const Str &db_title = stmt_select.getColumn(1);
 		const Str &db_keys_str = stmt_select.getColumn(2);
 		const Str &db_type_str = stmt_select.getColumn(3);
 		const Str &db_license_str = stmt_select.getColumn(4);
-		bool db_draft = (int)stmt_select.getColumn(5);
+		bool db_draft = stmt_select.getColumn(5).getInt();
 		stmt_select.reset();
 
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
@@ -1086,7 +1086,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 			stmt_select0.reset();
 			continue;
 		}
-		bool deleted = (int)stmt_select0.getColumn(0);
+		bool deleted = stmt_select0.getColumn(0).getInt();
 		stmt_select1.bind(1, entry);
 		while (stmt_select1.executeStep())
 			figures.push_back(stmt_select1.getColumn(0));
@@ -1108,7 +1108,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 				if (entry != stmt_select2.getColumn(2).getString())
 					throw internal_err(SLS_WHERE);
 				clear(sb) << "../PhysWiki-backup/" << stmt_select2.getColumn(0).getString() << '_'
-					<< (int)stmt_select2.getColumn(1) << '_' << entry << ".tex";
+					<< stmt_select2.getColumn(1).getInt64() << '_' << entry << ".tex";
 				stmt_select2.reset();
 				stmt_delete.bind(1, hash);
 				stmt_delete.exec(); stmt_delete.reset();

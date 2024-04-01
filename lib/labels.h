@@ -348,7 +348,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		SQLite::Statement stmt_select_fig(db_rw,
 			R"(SELECT "id" FROM "figures" WHERE "entry"=? AND "order"=?;)");
 		stmt_select_fig.bind(1, entry);
-		stmt_select_fig.bind(2, (int)order);
+		stmt_select_fig.bind(2, (int64_t)order);
 		if (stmt_select_fig.executeStep()) {
 			label = "fig_";
 			label += stmt_select_fig.getColumn(0).getString();
@@ -363,7 +363,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 			R"(SELECT "id" FROM "labels" WHERE "type"=? AND "entry"=? AND "order"=?;)");
 		stmt_select_label.bind(1, type);
 		stmt_select_label.bind(2, entry);
-		stmt_select_label.bind(3, (int) order);
+		stmt_select_label.bind(3, (int64_t) order);
 		if (stmt_select_label.executeStep()) {
 			label = stmt_select_label.getColumn(0).getString();
 			stmt_select_label.reset();
@@ -475,7 +475,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 		stmt_insert.bind(1, label);
 		stmt_insert.bind(2, type);
 		stmt_insert.bind(3, entry);
-		stmt_insert.bind(4, (int)order);
+		stmt_insert.bind(4, (int64_t)order);
 		stmt_insert.exec(); stmt_insert.reset();
 	}
 	return 0;
@@ -615,7 +615,7 @@ inline void db_update_labels(
 			stmt_select1.bind(1, label);
 			if (!stmt_select1.executeStep())
 				throw scan_err("标签不存在： " + label + SLS_WHERE);
-			db_label_orders.push_back((int)stmt_select1.getColumn(0));
+			db_label_orders.push_back(stmt_select1.getColumn(0).getInt64());
 			stmt_select1.reset();
 
 			db_label_ref_bys.emplace_back();
@@ -648,7 +648,7 @@ inline void db_update_labels(
 				stmt_insert.bind(1, label);
 				stmt_insert.bind(2, type);
 				stmt_insert.bind(3, entry);
-				stmt_insert.bind(4, -(int)order);
+				stmt_insert.bind(4, -(int64_t)order);
 				stmt_insert.exec(); stmt_insert.reset();
 				new_labels.insert(label);
 				label_order_neg.emplace_back(label, order);
@@ -675,7 +675,7 @@ inline void db_update_labels(
 			}
 			if (changed) {
 				stmt_update.bind(1, entry);
-				stmt_update.bind(2, -(int)order); // -order to avoid UNIQUE constraint
+				stmt_update.bind(2, -(int64_t)order); // -order to avoid UNIQUE constraint
 				stmt_update.bind(3, label);
 				stmt_update.exec(); stmt_update.reset();
 				label_order_neg.emplace_back(label, order);

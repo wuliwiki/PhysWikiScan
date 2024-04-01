@@ -286,9 +286,9 @@ inline void db_update_figures(
 				stmt_select1.reset();
 				continue;
 			}
-			db_fig_orders.push_back((int)stmt_select1.getColumn(0));
+			db_fig_orders.push_back(stmt_select1.getColumn(0).getInt64());
 			db_fig_image.push_back(stmt_select1.getColumn(1));
-			db_figs_deleted.push_back((int)stmt_select1.getColumn(2));
+			db_figs_deleted.push_back(stmt_select1.getColumn(2).getInt());
 			db_fig_aka[fig_id] = stmt_select1.getColumn(3).getString();
 			db_figs_caption.push_back(stmt_select1.getColumn(4));
 			stmt_select1.reset();
@@ -329,7 +329,7 @@ inline void db_update_figures(
 				scan_warn(sb);
 				stmt_insert.bind(1, fig_id);
 				stmt_insert.bind(2, entry);
-				stmt_insert.bind(3, (int)order);
+				stmt_insert.bind(3, (int64_t)order);
 				stmt_insert.bind(4, image);
 				stmt_insert.exec(); stmt_insert.reset();
 				new_figs.insert(fig_id);
@@ -380,7 +380,7 @@ inline void db_update_figures(
 			}
 			if (changed) {
 				stmt_update.bind(1, entry);
-				stmt_update.bind(2, (int)order);
+				stmt_update.bind(2, (int64_t)order);
 				stmt_update.bind(3, image);
 				stmt_update.bind(4, fig_caption);
 				stmt_update.bind(5, fig_id);
@@ -509,7 +509,7 @@ inline void db_delete_images(
 			stmt_select2.bind(1, fig);
 			if (!stmt_select2.executeStep())
 				throw internal_err(SLS_WHERE);
-			deleted = (int)stmt_select2.getColumn(1);
+			deleted = stmt_select2.getColumn(1).getInt();
 			stmt_select2.reset();
 			if (!deleted) {
 				scan_warn(u8"无法删除被 figure 环境使用的 image，请先删除（将忽略）：" + fig);
@@ -565,7 +565,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 		}
 		const Str &entry = stmt_select.getColumn(0);
 		const Str &image = stmt_select.getColumn(1);
-		bool deleted = (int)stmt_select.getColumn(2);
+		bool deleted = stmt_select.getColumn(2).getInt();
 		bool has_aka = !stmt_select.getColumn(3).getString().empty();
 		bool has_last = !stmt_select.getColumn(4).getString().empty();
 		stmt_select.reset();
