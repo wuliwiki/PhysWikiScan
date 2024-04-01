@@ -22,7 +22,6 @@ CREATE TABLE "entries" (
 	"deleted"      INTEGER NOT NULL DEFAULT 0,       -- 【待迁移到 entry_tags 表】[0|1] 是否已删除
 	"last_pub"     TEXT    NOT NULL DEFAULT '',      -- 最后过审，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '',      -- 最后备份，空代表没有 (history.hash)
-	"refs"         TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 entry_refs 表】"label1 label2" 用 \autoref 引用的 labels， 不仅仅是 labels 表中的
 	PRIMARY KEY("id"),
 	FOREIGN KEY("last")        REFERENCES "entries"("id"),
 	FOREIGN KEY("next")        REFERENCES "entries"("id"),
@@ -75,7 +74,6 @@ CREATE INDEX idx_entry_bibs_entry ON "entry_bibs"("entry");
 CREATE INDEX idx_entry_bibs_bib  ON "entry_bibs"("bib");
 
 -- 文章中的所有 \autoref{} （不仅仅是 labels 表中的）
--- TODO: 用于替代 entries.refs 和 labels.ref_by 和 figures.ref_by
 CREATE TABLE "entry_refs" (
 	"entry"    TEXT NOT NULL,     -- entries.id
 	"label"    TEXT NOT NULL,     -- labels.id
@@ -309,7 +307,6 @@ CREATE TABLE "figures" (
 	"image"       TEXT    NOT NULL DEFAULT '',  -- latex 图片环境的文件 SHA1 的前 16 位（文本图片如 svg 都先转换为 LF），可能是多个 images.figure=id 中的一个
 	"last"        TEXT    NOT NULL DEFAULT '',  -- "figures.id" 上一个版本（若从百科其他图修改而来）。 可以生成一个版本树。
 	"source"      TEXT    NOT NULL DEFAULT '',  -- 外部来源（如果非原创）
-	"ref_by"      TEXT    NOT NULL DEFAULT '',  -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 引用本图的文章（以 entries.refs 为准）
 	"aka"         TEXT    NOT NULL DEFAULT '',  -- "figures.id" 若不为空，由另一条记录（aka 必须为空，允许被标记 deleted）管理： 所有图片文件（"images.figure"）, "authors", "last", "files", "source"（本记录这些列为空）。 本记录 "image" 必须在另一条记录的图片文件中。
 	"deleted"     INTEGER NOT NULL DEFAULT 0,   -- [0] entry 源码中定义了该环境 [1] 定义后被删除
 	"comment"     TEXT    NOT NULL DEFAULT '',  -- 备注信息
@@ -423,7 +420,6 @@ CREATE TABLE "labels" (
 	"type"     TEXT    NOT NULL,            -- [eq|sub|tab|def|lem|the|cor|ex|exe] 标签类型
 	"entry"    TEXT    NOT NULL,            -- 所在文章（以 entries.labels 为准）
 	"order"    INTEGER NOT NULL,            -- 显示编号
-	"ref_by"   TEXT    NOT NULL DEFAULT '', -- 【待迁移到 entry_refs 表】【生成】"entry1 entry2" 被哪些文章引用（以 entries.refs 为准）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 );
