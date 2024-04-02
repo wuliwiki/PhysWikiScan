@@ -48,14 +48,16 @@ CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 
 -- 文章作者列表
--- 根据 "history" 和 "contrib_adjust" 生成
+-- 有备份的都要记录，显示时再根据 contrib 隐藏
 CREATE TABLE "entry_authors" (
-	"entry"    TEXT    NOT NULL,
-	"author"   INTEGER NOT NULL,
-	"order"    INTEGER NOT NULL,      -- 作者排名，从 1 开始
+	"entry"        TEXT    NOT NULL,
+	"author"       INTEGER NOT NULL,
+	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 最后备份，空代表没有 (history.hash)，例如用于查看最后编辑时间
+	"contrib"      INTEGER NOT NULL,              -- 根据 "history" 和 "contrib_adjust" 生成
 	PRIMARY KEY("entry", "author"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("author") REFERENCES "authors"("id")
+	FOREIGN KEY("entry")       REFERENCES "entries"("id"),
+	FOREIGN KEY("author")      REFERENCES "authors"("id"),
+	FOREIGN KEY("last_backup") REFERENCES "history"("hash")
 );
 
 CREATE INDEX idx_entry_authors_entry ON "entry_authors"("entry");
