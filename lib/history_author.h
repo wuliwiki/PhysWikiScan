@@ -6,23 +6,24 @@
 // consider authors.aka
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
-	SQLite::Statement stmt_select(db_read, R"(SELECT "author", "order" FROM "entry_authors" WHERE "entry"=?;)");
-	stmt_select.bind(1, entry);
-	if (!stmt_select.executeStep())
-		throw internal_err(u8"author_list(): 数据库中不存在文章： " + entry);
-
-	vecLong author_ids;
-	Str str = stmt_select.getColumn(0);
-	stmt_select.reset();
-	if (str.empty())
-		return u8"待更新";
-	for (auto c : str)
-		if ((c < '0' || c > '9') && c != ' ')
-			return u8"待更新";
-	parse(author_ids, str);
-
-	vecStr authors;
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT "author", "order" FROM "entry_authors" WHERE "entry"=? ORDER BY "order" ASC;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
+	stmt_select.bind(1, entry);
+
+	vecLong author_ids; // authors.id
+	vecStr authors; // authors.name
+
+	Long order = 0;
+	while (stmt_select.executeStep()) {
+		author_ids.push_back(stmt_select.getColumn(0).getInt64());
+		if (stmt_select.getColumn(1).getInt64() != ++order)
+			throw internal_err(u8"数据库 entry_authors 表中序号错误！");
+	}
+	stmt_select.reset();
+	if (author_ids.empty())
+		return u8"待更新";
+
 	for (auto &id : author_ids) {
 		stmt_select2.bind(1, (int64_t)id);
 		if (!stmt_select2.executeStep())
@@ -30,6 +31,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 		authors.push_back(stmt_select2.getColumn(0));
 		stmt_select2.reset();
 	}
+	Str str;
 	join(str, authors, "; ");
 	return str;
 }
