@@ -167,7 +167,7 @@ inline void update_sqlite_table(
 // assume `data` satisfy `condition` (no check)
 // might violate 'UNIQUE' for non-primary-key fields
 inline void update_sqlite_table(
-	unordered_map<tuple<Str,int64_t>, tuple<>> &data, // (primary keys) -> (other fields)
+	unordered_map<tuple<Str,int64_t>, tuple<int64_t>> &data, // (primary keys) -> (other fields)
 	Str_I table_name,
 	Str_I condition, // the SQL statement after "WHERE"
 	vecStr_I field_names, // field names of `data`, in order
@@ -179,6 +179,7 @@ inline void update_sqlite_table(
 		table_name, condition, field_names, Npk);
 	SQLite::Statement stmt_select(db_rw, q_select);
 	SQLite::Statement stmt_insert(db_rw, q_insert);
+	SQLite::Statement stmt_update(db_rw, q_update);
 	SQLite::Statement stmt_delete(db_rw, q_delete);
 
 	while (stmt_select.executeStep()) {
@@ -193,6 +194,18 @@ inline void update_sqlite_table(
 			stmt_delete.exec(); stmt_delete.reset();
 			continue;
 		}
+		// check for change
+		bool changed = false;
+		auto &vals = data.at(key);
+		if (get<0>(vals) != (int64_t)stmt_select.getColumn(2))
+			changed = true;
+		if (changed) {
+			// update db record
+			stmt_update.bind(1, get<0>(vals));
+			stmt_update.bind(2, get<0>(key));
+			stmt_update.bind(3, get<1>(key));
+			stmt_update.exec(); stmt_update.reset();
+		}
 		data.erase(key);
 	}
 	stmt_select.reset();
@@ -201,6 +214,7 @@ inline void update_sqlite_table(
 	for (auto &pair : data) {
 		stmt_insert.bind(1, get<0>(pair.first));
 		stmt_insert.bind(2, get<1>(pair.first));
+		stmt_insert.bind(3, get<0>(pair.second));
 		stmt_insert.exec(); stmt_insert.reset();
 	}
 }

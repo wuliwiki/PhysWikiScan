@@ -52,6 +52,7 @@ CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 CREATE TABLE "entry_authors" (
 	"entry"    TEXT    NOT NULL,
 	"author"   INTEGER NOT NULL,
+	"order"    INTEGER NOT NULL,      -- 作者排名，从 1 开始
 	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id")

@@ -6,7 +6,7 @@
 // consider authors.aka
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
-	SQLite::Statement stmt_select(db_read, R"(SELECT "authors" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_read, R"(SELECT "author", "order" FROM "entry_authors" WHERE "entry"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"author_list(): 数据库中不存在文章： " + entry);
@@ -75,10 +75,13 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 	flip(author_ids); // flip(minutes);
 	stmt_count.reset();
 
-	unordered_map<tuple<Str,int64_t>,tuple<>> records;
-	for (auto &author : author_ids)
-		records[make_tuple(entry,(int64_t)author)];
-	update_sqlite_table(records, "entry_authors", "\"entry\"='" + entry + '\'', {"entry", "author"}, 2, db_rw);
+	unordered_map<tuple<Str,int64_t>,tuple<int64_t>> records;
+	for (int64_t i = 0; i < size(author_ids); ++i) {
+		int64_t author = author_ids[i];
+		records[make_tuple(entry, author)] = i+1;
+	}
+	clear(sb) << "\"entry\"='" << entry << '\'';
+	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "order"}, 2, db_rw);
 }
 
 // update all authors
