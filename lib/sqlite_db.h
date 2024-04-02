@@ -108,9 +108,9 @@ inline void db_update_parts_chapters(
 
 	// insert parts
 	cout << "inserting parts to db_rw..." << endl;
-	unordered_map<tuple<Str>, tuple<Int,Str,Str,Str>> part_tab;
+	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str>> part_tab;
 	for (Long i = 0; i < size(part_name); ++i)
-		part_tab[make_tuple(part_ids[i])] = make_tuple(i, part_name[i], chap_first[i], chap_last[i]);
+		part_tab[make_tuple(part_ids[i])] = make_tuple((int64_t)i, part_name[i], chap_first[i], chap_last[i]);
 	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
 	cout << "\n\n\n" << endl;
 

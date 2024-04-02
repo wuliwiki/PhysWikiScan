@@ -36,12 +36,12 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 
 // update db entries.authors, based on backup count in "history"
 // TODO: use more advanced algorithm, counting other factors
-inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entry, SQLite::Database &db)
+inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entry, SQLite::Database &db_rw)
 {
 	author_ids.clear(); minutes.clear();
-	SQLite::Statement stmt_count(db,
+	SQLite::Statement stmt_count(db_rw,
 		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
-	SQLite::Statement stmt_select(db,
+	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "hide", "aka" FROM "authors" WHERE "id"=?;)");
 
 	stmt_count.bind(1, entry);
@@ -74,15 +74,11 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 	sort(minutes, author_ids);
 	flip(author_ids); // flip(minutes);
 	stmt_count.reset();
-	Str str;
-	join(str, author_ids);
-	SQLite::Statement stmt_update(db,
-		R"(UPDATE "entries" SET "authors"=? WHERE "id"=?;)");
-	stmt_update.bind(1, str);
-	stmt_update.bind(2, entry);
-	stmt_update.exec();
-	SLS_ASSERT(stmt_update.getChanges() > 0);
-	stmt_update.reset();
+
+	unordered_map<tuple<Str,int64_t>,tuple<>> records;
+	for (auto &author : author_ids)
+		records[make_tuple(entry,(int64_t)author)];
+	update_sqlite_table(records, "entry_authors", "\"entry\"='" + entry + '\'', {"entry", "author"}, 2, db_rw);
 }
 
 // update all authors
@@ -90,7 +86,7 @@ inline void db_update_authors(SQLite::Database &db)
 {
 	cout << "updating database for author lists...." << endl;
 	SQLite::Statement stmt_select( db,
-		R"(SELECT "id" FROM "entries";)");
+		R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
 	Str entry; vecLong author_ids, counts;
 	while (stmt_select.executeStep()) {
 		entry = stmt_select.getColumn(0).getString();

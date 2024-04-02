@@ -10,7 +10,6 @@
 CREATE TABLE "entries" (
 	"id"           TEXT    NOT NULL UNIQUE,
 	"caption"      TEXT    NOT NULL DEFAULT '',      -- 标题（以 main.tex 中为准， 若不在目录中则以首行注释为准）
-	"authors"      TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 entry_authors 表】【生成】"id1 id2 id3" 作者 ID（根据 history 和某种算法生成）
 	"part"         TEXT    NOT NULL DEFAULT '',      -- 部分， 空代表不在目录中
 	"chapter"      TEXT    NOT NULL DEFAULT '',      -- 章， 空代表不在目录中
 	"last"         TEXT    NOT NULL DEFAULT '',      -- 目录中的上一篇文章， 空代表这是第一个或不在目录中
@@ -49,7 +48,7 @@ CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 
 -- 文章作者列表
--- TODO: 用于替代 entries.authors
+-- 根据 "history" 和 "contrib_adjust" 生成
 CREATE TABLE "entry_authors" (
 	"entry"    TEXT    NOT NULL,
 	"author"   INTEGER NOT NULL,
@@ -207,6 +206,7 @@ CREATE TABLE "repost" (
 	"entry"    TEXT    NOT NULL,   -- entries.id
 	"url"      TEXT    NOT NULL,   -- 网址
 	"updated"  TEXT    NOT NULL,   -- 最后更新时间
+	PRIMARY KEY("entry", "url"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
 
@@ -216,11 +216,12 @@ CREATE INDEX idx_repost_updated ON "repost"("updated");
 -- 文章评分
 CREATE TABLE "score" (
 	"entry"   TEXT     NOT NULL,   -- entries.id
-	"score"   REAL     NOT NULL,   -- 评分（0-10)
 	"author"  INTEGER  NOT NULL,   -- 评分者
+	"score"   REAL     NOT NULL,   -- 评分（0-10)
 	"version" TEXT     NOT NULL,   -- 文章版本
 	"time"    TEXT     NOT NULL,   -- 评分时间
 	"comment" TEXT     NOT NULL,   -- 评分理由等
+	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("version") REFERENCES "history"("id")
@@ -452,11 +453,15 @@ CREATE INDEX idx_history_last ON "history"("last");
 -- 贡献调整
 -- 用于作者排名或者补贴的一次性修改
 CREATE TABLE "contrib_adjust" (
+	"id"                  INTEGER NOT NULL UNIQUE,
 	"entry"               TEXT    NOT NULL,
 	"author"              INTEGER NOT NULL,
 	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
-	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- 是否修改补贴
-	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- 是否修改作者列表排名
+	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改补贴
+	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改作者列表排名
+	"creator"             INTEGER NOT NULL,            -- 修改者
+	"time"                TEXT    NOT NULL,            -- 修改时间
+	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
 	FOREIGN KEY("author")  REFERENCES "authors"("id")
 );
@@ -608,6 +613,7 @@ CREATE TABLE "bib_type" (
 CREATE TABLE "bib_doi" (
 	"bib" TEXT NOT NULL UNIQUE,
 	"doi" TEXT NOT NULL UNIQUE,
+	PRIMARY KEY("bib"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
@@ -617,6 +623,7 @@ CREATE INDEX idx_bib_doi_doi ON "bib_doi_doi"("doi");
 CREATE TABLE "bib_url" (
 	"bib" TEXT NOT NULL UNIQUE,
 	"url" TEXT NOT NULL UNIQUE,
+	PRIMARY KEY("bib"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")
 );
 
@@ -626,17 +633,18 @@ CREATE INDEX idx_bib_url_url ON "bib_url"("url");
 CREATE TABLE "journals" (
 	"id"      TEXT NOT NULL UNIQUE,
 	"title"   TEXT NOT NULL,
-	PRIMARY KEY("id"),
+	PRIMARY KEY("id")
 );
 
 CREATE INDEX idx_journals_title ON "journals"("title");
 
--- 文献杂志
+-- 文献的杂志
 CREATE TABLE "bib_journal" (
 	"bib"     TEXT    NOT NULL UNIQUE,
 	"journal" TEXT    NOT NULL,
 	"volume"  INTEGER NOT NULL DEFAULT -1,
 	"issue"   INTEGER NOT NULL DEFAULT -1,
+	PRIMARY KEY("bib"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("journal") REFERENCES "journals"("id")
 );
@@ -665,6 +673,7 @@ CREATE INDEX idx_bib_tags_tag ON "bib_tags"("tag");
 CREATE TABLE "bib_cite" (
 	"bib"  TEXT NOT NULL,
 	"cite" TEXT NOT NULL,
+	PRIMARY KEY("bib", "cite"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("cite") REFERENCES "bibliography"("id")
 );
@@ -673,10 +682,10 @@ CREATE INDEX idx_bib_cite_cite ON "bib_cite"("cite");
 
 -- 所有文献作者
 CREATE TABLE "bib_all_authors" (
-	"id"         TEXT NOT NULL UNIQUE,
+	"id"         INTEGER NOT NULL UNIQUE,
 	"first_name" TEXT NOT NULL DEFAULT '',  -- 名
 	"last_name"  TEXT NOT NULL DEFAULT '',  -- 姓
-	PRIMARY KEY("id")
+	PRIMARY KEY("id" AUTOINCREMENT)
 );
 
 CREATE INDEX idx_bib_all_authors_first_name ON "bib_all_authors"("first_name");
@@ -685,8 +694,9 @@ CREATE INDEX idx_bib_all_authors_last_name ON "bib_all_authors"("last_name");
 -- 文献作者
 CREATE TABLE "bib_authors" (
 	"bib"     TEXT     NOT NULL,
-	"author"  TEXT     NOT NULL,
+	"author"  INTEGER  NOT NULL,
 	"order"   INTEGER  NOT NULL,   -- 第几作者
+	PRIMARY KEY("bib", "author"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id"),
 	FOREIGN KEY("author") REFERENCES "bib_all_authors"("id"),
 );
