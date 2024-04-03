@@ -6,7 +6,7 @@
 inline void db_get_pentry(Pentry_O pentry, Str_I entry, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select_nodes(db_read,
-		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
+		R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=? ORDER BY "order" ASC;)");
 	SQLite::Statement stmt_select_edges(db_read,
 		R"(SELECT "from", "weak", "hide" FROM "edges" WHERE "to"=? ORDER BY "from";)");
 	stmt_select_nodes.bind(1, entry);
@@ -275,7 +275,7 @@ inline void db_get_tree1(
 	}
 }
 
-// get entire dependency tree (2 ver) from database
+// get entire dependency tree from database
 // reference db_get_tree1()
 // `nodes` order is stable: `entries` is sorted case insensitive, then for each entry, push to `nodes` in order
 // node `node_id == entry_id` is the last node to each entry, and will only be linked if it's the only node of the entry

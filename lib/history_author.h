@@ -6,20 +6,18 @@
 // consider authors.aka
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
+	// 作者贡献 15 分钟以上才会显示
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "author", "order" FROM "entry_authors" WHERE "entry"=? ORDER BY "order" ASC;)");
+		R"(SELECT "author", "contrib" FROM "entry_authors" WHERE "entry"=? AND "contrib">=15 )"
+		R"(ORDER BY "contrib" DESC, "author" ASC;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
-	stmt_select.bind(1, entry);
 
 	vecLong author_ids; // authors.id
 	vecStr authors; // authors.name
 
-	Long order = 0;
-	while (stmt_select.executeStep()) {
+	stmt_select.bind(1, entry);
+	while (stmt_select.executeStep())
 		author_ids.push_back(stmt_select.getColumn(0).getInt64());
-		if (stmt_select.getColumn(1).getInt64() != ++order)
-			throw internal_err(u8"数据库 entry_authors 表中序号错误！");
-	}
 	stmt_select.reset();
 	if (author_ids.empty())
 		return u8"待更新";
@@ -36,8 +34,8 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	return str;
 }
 
-// update db entries.authors, based on backup count in "history"
-// TODO: use more advanced algorithm, counting other factors
+// update db table "entry_authors", based on backup count in "history" and "contrib_adjust"
+// TODO: consider "contrib_adjust" table
 inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entry, SQLite::Database &db_rw)
 {
 	author_ids.clear(); minutes.clear();
@@ -50,11 +48,10 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 	while (stmt_count.executeStep()) {
 		Long id = stmt_count.getColumn(0).getInt64();
 		Long time = 5*stmt_count.getColumn(1).getInt64();
-		// 十分钟以上才算作者
-		if (time <= 10) continue;
 		// 检查是否隐藏作者
 		stmt_select.bind(1, int64_t(id));
-		stmt_select.executeStep();
+		if (!stmt_select.executeStep())
+			throw internal_err(u8"找不到 authors.id: " + num2str(id));
 		bool hidden = stmt_select.getColumn(0).getInt();
 		Long aka = stmt_select.getColumn(1).getInt64();
 		stmt_select.reset();
@@ -73,17 +70,14 @@ inline void db_update_authors1(vecLong &author_ids, vecLong &minutes, Str_I entr
 				minutes[ind] += time;
 		}
 	}
-	sort(minutes, author_ids);
-	flip(author_ids); // flip(minutes);
 	stmt_count.reset();
 
 	unordered_map<tuple<Str,int64_t>,tuple<int64_t>> records;
 	for (int64_t i = 0; i < size(author_ids); ++i) {
-		int64_t author = author_ids[i];
-		records[make_tuple(entry, author)] = i+1;
+		records[make_tuple(entry, author_ids[i])] = minutes[i];
 	}
 	clear(sb) << "\"entry\"='" << entry << '\'';
-	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "order"}, 2, db_rw);
+	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"}, 2, db_rw);
 }
 
 // update all authors
