@@ -48,7 +48,8 @@ CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 
 -- 文章作者列表
--- 有备份的都要记录，显示时再根据 contrib 隐藏
+-- 如果有 authors.aka， 必须使用（笔记除外）
+-- 有备份的都要记录，显示时再根据 contrib, authors.hide 隐藏
 CREATE TABLE "entry_authors" (
 	"entry"        TEXT    NOT NULL,
 	"author"       INTEGER NOT NULL,
@@ -458,7 +459,7 @@ CREATE INDEX idx_history_last ON "history"("last");
 CREATE TABLE "contrib_adjust" (
 	"id"                  INTEGER NOT NULL UNIQUE,
 	"entry"               TEXT    NOT NULL,
-	"author"              INTEGER NOT NULL,
+	"author"              INTEGER NOT NULL,            -- 如有 authors.aka 必须使用
 	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
 	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改补贴
 	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改作者列表排名
@@ -506,7 +507,7 @@ CREATE TABLE "authors" (
 	"applied"    INTEGER NOT NULL DEFAULT 0,  -- [0|1] 已申请
 	"hide"       INTEGER NOT NULL DEFAULT 0,  -- 【待迁移到 authors_rights 表】[0|1] 不出现在文章作者列表
 	"aka"        INTEGER NOT NULL DEFAULT -1, -- 是否是其他 id 的小号（所有贡献和记录都算入大号）
-	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）
+	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）（如有 aka 计入 aka）
 	"referee"    TEXT    NOT NULL DEFAULT '', -- "part:parts.id chap:chapters.id sub:phys" 哪些部分/学科的审稿人
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")

@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 11
-#define VERSION_PATCH 4
+#define VERSION_PATCH 5
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -358,9 +358,11 @@ int main(int argc, const char *argv[]) {
 			db_rw.exec("BEGIN EXCLUSIVE");
 			arg_history("../PhysWiki-backup/", db_rw);
 			db_rw.exec("COMMIT");
+
 			db_rw.exec("BEGIN EXCLUSIVE");
 			db_update_history_last(db_rw);
 			db_rw.exec("COMMIT");
+
 			db_rw.exec("BEGIN EXCLUSIVE");
 			if (args.size() == 2)
 				history_add_del_all(db_rw, true);
