@@ -576,6 +576,7 @@ inline void arg_backup(Str_I entry, int author_id, SQLite::Database &db_rw)
 	Str str; // content of entry
 	Str time_new_str;
 	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
+	ensure_dir(backup_path);
 
 	// get hash, check existence
 	clear(sb) << gv::path_in;

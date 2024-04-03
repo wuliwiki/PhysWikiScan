@@ -52,8 +52,8 @@ CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 CREATE TABLE "entry_authors" (
 	"entry"        TEXT    NOT NULL,
 	"author"       INTEGER NOT NULL,
-	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 最后备份，例如用于查看最后编辑时间
 	"contrib"      INTEGER NOT NULL,              -- 根据 "history" 和 "contrib_adjust" 生成
+	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 最后备份，例如用于查看最后编辑时间
 	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry")       REFERENCES "entries"("id"),
 	FOREIGN KEY("author")      REFERENCES "authors"("id"),
