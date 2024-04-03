@@ -212,14 +212,16 @@ inline void db_update_entries_from_toc(
 			stmt_update.bind(4, entry_last);
 			stmt_update.bind(5, entry_next);
 			stmt_update.bind(6, entry);
-			stmt_update.exec(); stmt_update.reset();
+			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update.reset();
 		}
 	}
 
 	// clean entries.part/chap/last/next for entries outsize main.tex
 	for (auto &entry : entry_no_toc) {
 		stmt_update0.bind(1, entry);
-		stmt_update0.exec(); stmt_update0.reset();
+		if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update0.reset();
 	}
 
 	cout << "done." << endl;
@@ -360,7 +362,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			db_labels_unused.erase(label);
 			stmt_update_labels_entry.bind(1, entry);
 			stmt_update_labels_entry.bind(2, label);
-			stmt_update_labels_entry.exec();
+			if (stmt_update_labels_entry.exec() != 1) throw internal_err(SLS_WHERE);
 			if (!stmt_update_labels_entry.getChanges())
 				throw internal_err("数据库 labels 表格中未找到： " + label + SLS_WHERE);
 			stmt_update_labels_entry.reset();
@@ -377,7 +379,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			db_figs_unused.erase(fig_id);
 			stmt_update_figs_entry.bind(1, entry);
 			stmt_update_figs_entry.bind(2, fig_id);
-			stmt_update_figs_entry.exec();
+			if (stmt_update_figs_entry.exec() != 1) throw internal_err(SLS_WHERE);
 			if (!stmt_update_figs_entry.getChanges())
 				throw internal_err("数据库 figures 表格中未找到 entries.figures 中的： " + fig_id + SLS_WHERE);
 			stmt_update_figs_entry.reset();
@@ -428,7 +430,8 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 		join(sb, images_figures_old[img_hash]);
 		stmt_update4.bind(2, sb);
 		stmt_update4.bind(3, img_hash);
-		stmt_update4.exec(); stmt_update4.reset();
+		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update4.reset();
 	}
 
 	cout << "done!" << endl;

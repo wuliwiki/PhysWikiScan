@@ -677,7 +677,8 @@ inline void db_update_labels(
 				stmt_update.bind(1, entry);
 				stmt_update.bind(2, -(int64_t)order); // -order to avoid UNIQUE constraint
 				stmt_update.bind(3, label);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 				label_order_neg.emplace_back(label, order);
 			}
 		}
@@ -711,7 +712,8 @@ inline void db_update_labels(
 	for (auto &e : label_order_neg) {
 		stmt_update0.bind(1, int64_t(e.second)); // order
 		stmt_update0.bind(2, e.first); // label
-		stmt_update0.exec(); stmt_update0.reset();
+		if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update0.reset();
 	}
 	// cout << "done!" << endl;
 }

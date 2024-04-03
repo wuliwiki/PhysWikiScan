@@ -224,7 +224,8 @@ inline void db_update_images(
 						db_log(sb);
 						stmt_update.bind(1, fig_id);
 						stmt_update.bind(2, image_hash);
-						stmt_update.exec(); stmt_update.reset();
+						if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+						stmt_update.reset();
 					}
 				}
 				else if (db_image_figure != fig_aka) {
@@ -233,7 +234,8 @@ inline void db_update_images(
 						db_log(sb);
 						stmt_update.bind(1, fig_id);
 						stmt_update.bind(2, fig_aka);
-						stmt_update.exec(); stmt_update.reset();
+						if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+						stmt_update.reset();
 				}
 			}
 			stmt_select.reset();
@@ -384,7 +386,8 @@ inline void db_update_figures(
 				stmt_update.bind(3, image);
 				stmt_update.bind(4, fig_caption);
 				stmt_update.bind(5, fig_id);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 		}
 		// add entries.figures
@@ -409,7 +412,8 @@ inline void db_update_figures(
 					<< db_figs[i] << u8"}  被删除（图 " << db_fig_orders[i] << u8"）， 将标记未使用";
 				db_log(sb);
 				stmt_update3.bind(1, db_figs[i]);
-				stmt_update3.exec(); stmt_update3.reset();
+				if (stmt_update3.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update3.reset();
 			}
 			else {
 				join(ref_by_str, db_fig_ref_bys[i], ", ");
@@ -521,7 +525,8 @@ inline void db_delete_images(
 		// now delete db, set related "figures.image"='';
 		for (auto &fig : figures) {
 			stmt_update.bind(1, fig);
-			stmt_update.exec(); stmt_update.reset();
+			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update.reset();
 		}
 
 		// delete from images
@@ -601,7 +606,8 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 			}
 			else {
 				stmt_update.bind(1, figure);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 		}
 

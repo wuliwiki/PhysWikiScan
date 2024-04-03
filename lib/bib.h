@@ -36,9 +36,9 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 	stmt_select.reset();
 
 	SQLite::Statement stmt_update(db,
-								  R"(UPDATE "bibliography" SET "order"=?, "details"=? WHERE "id"=?;)");
+		R"(UPDATE "bibliography" SET "order"=?, "details"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db,
-								  R"(INSERT INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
+		R"(INSERT INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
 	unordered_set<Str> id_flip_sign;
 
 	for (Long i = 0; i < size(bib_labels); i++) {
@@ -64,7 +64,8 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			if (changed) {
 				stmt_update.bind(2, bib_detail);
 				stmt_update.bind(3, id);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 		}
 		else {
@@ -79,10 +80,11 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 
 	// set the orders back
 	SQLite::Statement stmt_update2(db,
-								   R"(UPDATE "bibliography" SET "order" = "order" * -1 WHERE "id"=?;)");
+		R"(UPDATE "bibliography" SET "order" = "order" * -1 WHERE "id"=?;)");
 	for (auto &id : id_flip_sign) {
 		stmt_update2.bind(1, id);
-		stmt_update2.exec(); stmt_update2.reset();
+		if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update2.reset();
 	}
 }
 

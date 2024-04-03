@@ -81,7 +81,8 @@ inline void update_sqlite_table(
 		if (!data.count(key)) {
 			// key not found, deleted
 			stmt_delete.bind(1, get<0>(key));
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) SLS_ERR(SLS_WHERE);
+			stmt_delete.reset();
 			continue;
 		}
 		// check for change
@@ -102,7 +103,8 @@ inline void update_sqlite_table(
 			stmt_update.bind(3, get<2>(vals));
 			stmt_update.bind(4, get<3>(vals));
 			stmt_update.bind(5, get<0>(key));
-			stmt_update.exec(); stmt_update.reset();
+			if (stmt_update.exec() != 1) SLS_ERR(SLS_WHERE);
+			stmt_update.reset();
 		}
 		data.erase(key);
 	}
@@ -147,7 +149,8 @@ inline void update_sqlite_table(
 			// key not found, deleted
 			stmt_delete.bind(1, get<0>(key));
 			stmt_delete.bind(2, get<1>(key));
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) SLS_ERR(SLS_WHERE);
+			stmt_delete.reset();
 			continue;
 		}
 		data.erase(key);
@@ -191,7 +194,8 @@ inline void update_sqlite_table(
 			// key not found, deleted
 			stmt_delete.bind(1, get<0>(key));
 			stmt_delete.bind(2, get<1>(key));
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) SLS_ERR(SLS_WHERE);
+			stmt_delete.reset();
 			continue;
 		}
 		// check for change
@@ -204,7 +208,8 @@ inline void update_sqlite_table(
 			stmt_update.bind(1, get<0>(vals));
 			stmt_update.bind(2, get<0>(key));
 			stmt_update.bind(3, get<1>(key));
-			stmt_update.exec(); stmt_update.reset();
+			if (stmt_update.exec() != 1) SLS_ERR(SLS_WHERE);
+			stmt_update.reset();
 		}
 		data.erase(key);
 	}

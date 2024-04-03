@@ -710,7 +710,8 @@ inline void PhysWikiOnlineN_round1(
 				stmt_update.bind(4, license);
 				stmt_update.bind(5, type);
 				stmt_update.bind(6, entries[i]);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 
 			// update db labels, figures
@@ -1021,7 +1022,8 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		stmt_update.bind(4, db_license_str);
 		stmt_update.bind(5, db_draft);
 		stmt_update.bind(6, entry);
-		stmt_update.exec(); stmt_update.reset();
+		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.reset();
 
 		// delete file
 		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
@@ -1098,7 +1100,8 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 		// delete all history records and files
 		db_get_history(history_hash, entry, db_rw);
 		stmt_update.bind(1, entry);
-		stmt_update.exec(); stmt_update.reset();
+		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.reset();
 		if (!history_hash.empty()) {
 			cout << "deleting " << history_hash.size() << " history (files and db)." << endl;
 			for (auto &hash: history_hash) {
@@ -1132,7 +1135,8 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 				stmt_select3.reset();
 				for (auto &fig_id : figs_dangling) {
 					stmt_update2.bind(1, fig_id);
-					stmt_update2.exec(); stmt_update2.reset();
+					if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
+					stmt_update2.reset();
 					arg_delete_figs_hard({Str(fig_id)}, db_rw);
 				}
 			}

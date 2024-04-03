@@ -257,7 +257,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 				db_log(sb);
 				stmt_update.bind(1, sha1);
 				stmt_update.bind(2, db_hash);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 			else {
 				clear(sb) << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
@@ -297,7 +298,8 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	for (auto &e : author_contrib) {
 		stmt_contrib.bind(1, (int64_t)e.second);
 		stmt_contrib.bind(2, (int64_t)e.first);
-		stmt_contrib.exec(); stmt_contrib.reset();
+		if (stmt_contrib.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_contrib.reset();
 	}
 
 	cout << "done." << endl;
@@ -336,7 +338,8 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 				scan_warn(sb);
 				stmt_update.bind(1, last_hash);
 				stmt_update.bind(2, hash);
-				stmt_update.exec(); stmt_update.reset();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_update.reset();
 			}
 			last_hash = hash;
 		}
@@ -353,7 +356,8 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			scan_warn(sb);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
-			stmt_update2.exec(); stmt_update2.reset();
+			if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update2.reset();
 		}
 	}
 	cout << "done." << endl;
@@ -443,7 +447,8 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 		stmt_update.bind(1, (int64_t)add_del.first);
 		stmt_update.bind(2, (int64_t)add_del.second);
 		stmt_update.bind(3, hash);
-		stmt_update.exec(); stmt_update.reset();
+		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.reset();
 	}
 	cout << "committing transaction..." << endl;
 	cout << "done." << endl;
@@ -558,7 +563,8 @@ inline void history_normalize(SQLite::Database &db_rw)
 					// db
 					stmt_update.bind(1, time2);
 					stmt_update.bind(2, hash);
-					stmt_update.exec(); stmt_update.reset();
+					if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+					stmt_update.reset();
 				}
 			}
 		}
@@ -567,6 +573,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 }
 
 // backup an entry to PhysWiki-backup
+// use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
 	Long real_author_id = (gv::is_wiki ? real_author(author_id, db_rw) : author_id);
@@ -632,7 +639,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 		stmt_update2.bind(1, hash);
 		stmt_update2.bind(2, entry);
-		stmt_update2.exec(); stmt_update2.reset();
+		if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update2.reset();
 		clear(sb) << backup_path
 			<< time_new_str << '_' << real_author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
@@ -708,7 +716,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update.bind(2, (int64_t)char_add);
 		stmt_update.bind(3, (int64_t)char_del);
 		stmt_update.bind(4, hash_last);
-		stmt_update.exec(); stmt_update.reset();
+		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.reset();
 		clear(sb) << u8"更新 history： " << hash_last << " -> " << hash << ", add = " <<
 			char_add << ", del = " << char_del;
 		db_log(sb);
@@ -726,8 +735,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update5.bind(1, hash); // last_backup
 		stmt_update5.bind(2, entry);
 		stmt_update5.bind(3, (int64_t)real_author_id);
-		if (stmt_update5.exec() != 1)
-			scan_err(SLS_WHERE);
+		if (stmt_update5.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update5.reset();
 		db_log(u8"更新 entry_authors.last_backup");
 	}
@@ -766,20 +774,23 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update3.bind(1, hash); // last_backup
 		stmt_update3.bind(2, entry);
 		stmt_update3.bind(3, (int64_t)real_author_id);
-		stmt_update3.exec(); stmt_update3.reset();
+		if (stmt_update3.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update3.reset();
 		db_log(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
 		// update "authors.contrib"
 		SQLite::Statement stmt_update4(db_rw,
-			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "author"=?;)");
+			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "id"=?;)");
 		stmt_update4.bind(1, (int64_t)real_author_id);
-		stmt_update4.exec(); stmt_update4.reset();
+		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update4.reset();
 		db_log(u8"更新 authors.contrib += 5");
 	}
 
 	stmt_update2.bind(1, hash);
 	stmt_update2.bind(2, entry);
-	stmt_update2.exec(); stmt_update2.reset();
+	if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
+	stmt_update2.reset();
 
 	clear(sb) << u8"更新 entries.last_backup： " << entry << '.' << hash;
 	db_log(sb);

@@ -393,7 +393,8 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	else if (db_node_order[entry] != size(pentry)+1) {
 		stmt_update.bind(1, (int64_t)pentry.size()+1);
 		stmt_update.bind(2, entry);
-		stmt_update.exec(); stmt_update.reset();
+		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.reset();
 	}
 	// \pentry{} nodes
 	unordered_set<Str> check_repeat;
@@ -418,7 +419,7 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 			if (db_node_order[node_id] != order) {
 				stmt_update.bind(1, order);
 				stmt_update.bind(2, node_id);
-				stmt_update.exec();
+				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 				stmt_update.reset();
 			}
 		}
@@ -493,7 +494,7 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 					stmt_update.bind(1, ref.weak); // edges.weak
 					stmt_update.bind(2, from_to.first); // edges.from
 					stmt_update.bind(3, from_to.second); // edges.to
-					stmt_update.exec();
+					if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 					stmt_update.reset();
 				}
 			}
@@ -527,7 +528,8 @@ inline void db_update_edges_hide(Pentry_I pentry, Str_I entry, SQLite::Database 
 			stmt_update.bind(1, ref.hide); // edges.hide
 			stmt_update.bind(2, ref.node_id); // edges.from
 			stmt_update.bind(3, node_id); // edges.to
-			stmt_update.exec(); stmt_update.reset();
+			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update.reset();
 		}
 	}
 }
