@@ -723,6 +723,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		if (!file_exist(sb))
 			SLS_WARN(u8"数据库中备份文件不存在：" + sb);
 		write(str, sb);
+
+		// update "entry_authors.last_backup"
+		SQLite::Statement stmt_update5(db_rw,
+			R"(UPDATE "entry_authors" SET "last_backup"=? WHERE "entry"=? AND "author"=?;)");
+		stmt_update5.bind(1, hash); // last_backup
+		stmt_update5.bind(2, entry);
+		stmt_update5.bind(3, author_id);
+		stmt_update5.exec(); stmt_update5.reset();
+		db_log(u8"更新 entry_authors.last_backup");
 	}
 	else { // !replace  (new backup)
 		// calculate char add/del
@@ -760,12 +769,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update3.bind(2, entry);
 		stmt_update3.bind(3, author_id);
 		stmt_update3.exec(); stmt_update3.reset();
+		db_log(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
 		// update "authors.contrib"
 		SQLite::Statement stmt_update4(db_rw,
 			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "author"=?;)");
 		stmt_update4.bind(1, author_id);
 		stmt_update4.exec(); stmt_update4.reset();
+		db_log(u8"更新 authors.contrib += 5");
 	}
 
 	stmt_update2.bind(1, hash);
