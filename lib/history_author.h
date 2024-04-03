@@ -389,6 +389,7 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 }
 
 // calculate all "history.add" and "history.del"
+// `redo_all = false` will only update "history.add/del=-1;" case
 inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries";)");
@@ -420,8 +421,8 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 			if (fname_old.empty()) // first backup
 				hist_add_del[hash] = make_pair(u8count(str), 0);
 			else {
-				int db_add = stmt_select2.getColumn(3);
-				int db_del = stmt_select2.getColumn(4);
+				Long db_add = stmt_select2.getColumn(3).getInt64();
+				Long db_del = stmt_select2.getColumn(4).getInt64();
 				if (!redo_all && db_add != -1 && db_del != -1)
 					continue;
 				auto &e = hist_add_del[hash];
@@ -621,7 +622,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 	// check first backup
 	if (hash_last.empty()) {
-		db_log(u8"emtries.last_backup 为空， 当前为第一次备份。");
+		db_log(u8"entries.last_backup 为空， 当前为第一次备份。");
 
 		time_new_str = time_str("%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
@@ -641,6 +642,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		if (file_exist(sb))
 			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
 		write(str, sb);
+
+		// insert into "entry_authors"
+		SQLite::Statement stmt_insert3(db_rw,
+			R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
+		stmt_insert3.bind(1, entry);
+		stmt_insert3.bind(2, author_id);
+		stmt_insert3.bind(3, hash); // last_backup
+		stmt_insert3.exec(); stmt_insert3.reset();
 		return;
 	}
 	else if (size(hash_last) != 16) {
@@ -743,6 +752,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		if (file_exist(sb))
 			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
 		write(str, sb);
+
+		// update "entry_authors"
+		SQLite::Statement stmt_update3(db_rw,
+			R"(UPDATE "entry_authors" SET "contrib"="contrib"+5, "last_backup"=? WHERE "entry"=? AND "author"=?;)");
+		stmt_update3.bind(1, hash); // last_backup
+		stmt_update3.bind(2, entry);
+		stmt_update3.bind(3, author_id);
+		stmt_update3.exec(); stmt_update3.reset();
+
+		// update "authors.contrib"
+		SQLite::Statement stmt_update4(db_rw,
+			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "author"=?;)");
+		stmt_update4.bind(1, author_id);
+		stmt_update4.exec(); stmt_update4.reset();
 	}
 
 	stmt_update2.bind(1, hash);

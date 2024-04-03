@@ -18,6 +18,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * `PhysWikiScan .` 把全部 `contents/*.tex` 文件转换为 `online/*.html`， 并使用 `main.tex` 生成完整目录 `index.html`。 `main.tex` 中不存在的文章也会被转换（将警告）。
 * `PhysWikiScan --titles`: 扫描所有 tex 文件， 扫描 `main.tex`， 更新数据库。
 * `PhysWikiScan --toc`: 生成完整目录 `index.html`， 更新数据库。
+* `PhysWikiScan --tree`: 生成 `dep.json` 文件用于知识树。
 * `PhysWikiScan --entry 文章1 文章2 ...`：转换 `contents` 中指定的文章 `文章1.tex 文章2.tex ...`。
 * `PhysWikiScan --autoref 文章 eq 8` 查找 `contents/文章.tex` 文章的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_文章_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
 * `PhysWikiScan --autoref-dry 文章 eq 8` 和上一条一模一样， 除了不会真的给文章文件添加 label。
