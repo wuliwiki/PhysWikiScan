@@ -960,6 +960,8 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=? WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
+		if (entry == "main" || entry == "bibliography")
+			throw scan_err(u8"禁止删除目录或参考文献！");
 		// check entries.ref_by
 		stmt_select.bind(1,entry);
 		if (!stmt_select.executeStep())
@@ -1077,9 +1079,11 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
-	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"='1' WHERE "id"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
+		if (entry == "main" || entry == "bibliography")
+			throw scan_err(u8"禁止删除目录或参考文献！");
 		cout << "--- deleting everything about entry: " << entry << " ---" << endl;
 		// delete entries.figures and all associated images
 		stmt_select0.bind(1, entry);

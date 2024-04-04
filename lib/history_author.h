@@ -598,6 +598,7 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select2.bind(1, hash);
 	if (stmt_select2.executeStep()) {
+		// hash already exists
 		const Str &db_time_str = stmt_select2.getColumn(0);
 		Long db_author_id = stmt_select2.getColumn(1).getInt64();
 		const Str &db_entry = stmt_select2.getColumn(2);
@@ -612,7 +613,7 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 	}
 	stmt_select2.reset();
 
-	// get last (latest) backup from `entries.last_backup`
+	// get latest backup from `entries.last_backup`
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
