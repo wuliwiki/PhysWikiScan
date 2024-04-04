@@ -697,7 +697,8 @@ inline void db_update_labels(
 				db_log(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
 				// delete from "labels"
 				stmt_delete.bind(1, db_label);
-				stmt_delete.exec(); stmt_delete.reset();
+				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_delete.reset();
 			}
 			else {
 				join(ref_by_str, db_label_ref_bys[i], ", ");

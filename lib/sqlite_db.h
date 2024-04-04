@@ -86,7 +86,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 					<< entry << " (" << title << ')';
 				db_log(sb);
 				stmt_undelete.bind(1, entry);
-				stmt_undelete.exec();
+				if (stmt_undelete.exec() != 1) throw internal_err(SLS_WHERE);
 				stmt_undelete.reset();
 			}
 		}
@@ -314,7 +314,8 @@ inline void db_update_entry_uprefs(
 			else {
 				stmt_delete.bind(1, entry);
 				stmt_delete.bind(2, entry_refed);
-				stmt_delete.exec(); stmt_delete.reset();
+				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_delete.reset();
 			}
 		}
 	}
@@ -423,7 +424,8 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 			clear(sb) << u8"图片 " << img_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
 			db_log(sb);
 			stmt_delete4.bind(1, img_hash);
-			stmt_delete4.exec(); stmt_delete4.reset();
+			if (stmt_delete4.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete4.reset();
 		}
 		join(sb, images_figures[img_hash]);
 		stmt_update4.bind(1, sb);

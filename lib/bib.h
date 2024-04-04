@@ -10,9 +10,9 @@ struct BibInfo {
 inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Database &db) {
 	// read the whole db bibliography table
 	SQLite::Statement stmt_select(db,
-								  R"(SELECT "id", "order", "details", "ref_by" FROM "bibliography" WHERE "id" != '';)");
+		R"(SELECT "id", "order", "details", "ref_by" FROM "bibliography" WHERE "id" != '';)");
 	SQLite::Statement stmt_delete(db,
-								  R"(DELETE FROM "bibliography" WHERE "id"=?;)");
+		R"(DELETE FROM "bibliography" WHERE "id"=?;)");
 	unordered_map<Str, BibInfo> db_bib_info; // id -> (order, details, ref_by)
 
 	while (stmt_select.executeStep()) {
@@ -30,7 +30,8 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			clear(sb) << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
 			db_log(sb);
 			stmt_delete.bind(1, id);
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 		}
 	}
 	stmt_select.reset();
@@ -207,7 +208,8 @@ inline void db_update_entry_bibs(
 				bibs.erase(bib.first);
 				stmt_delete.bind(1, entry);
 				stmt_delete.bind(2, bib.first);
-				stmt_delete.exec(); stmt_delete.reset();
+				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_delete.reset();
 			}
 		}
 	}

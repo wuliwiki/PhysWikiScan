@@ -1118,7 +1118,8 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 					<< stmt_select2.getColumn(1).getInt64() << '_' << entry << ".tex";
 				stmt_select2.reset();
 				stmt_delete.bind(1, hash);
-				stmt_delete.exec(); stmt_delete.reset();
+				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_delete.reset();
 				file_remove(sb);
 			}
 		}
@@ -1126,7 +1127,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 		// delete from entries
 		try {
 			stmt_delete0.bind(1, entry);
-			stmt_delete0.exec();
+			if (stmt_delete0.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_delete0.reset();
 		}
 		catch (const std::exception &e) {

@@ -462,7 +462,8 @@ inline void db_delete_images(
 		// check extension
 		if (!(ext == "png" || ext == "pdf" || ext == "svg")) {
 			stmt_delete.bind(1, image);
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 			clear(sb) << gv::path_in << "figures/" << image << ext;
 			file_remove(sb);
 			cout << "正在删除：" << image << '.' << ext << endl;
@@ -494,7 +495,8 @@ inline void db_delete_images(
 				sb << u8"也没有被 figures.image 引用（将继续删除）";
 				scan_warn(sb);
 				stmt_delete.bind(1, image);
-				stmt_delete.exec(); stmt_delete.reset();
+				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_delete.reset();
 				clear(sb) << gv::path_in << "figures/" << image << '.' << ext;
 				file_remove(sb);
 			}
@@ -531,7 +533,8 @@ inline void db_delete_images(
 
 		// delete from images
 		stmt_delete.bind(1, image);
-		stmt_delete.exec(); stmt_delete.reset();
+		if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_delete.reset();
 
 		// remove image file
 		clear(sb) << gv::path_in << "figures/" << image << '.' << ext;
@@ -595,7 +598,8 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 			sb = u8"要删除的图片 aka 不为空，图片文件将不会删除。";
 			cout << sb; scan_log(sb);
 			stmt_delete.bind(1, figure);
-			stmt_delete.executeStep(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 			return;
 		}
 		if (!deleted) {
@@ -632,6 +636,7 @@ inline void arg_delete_figs_hard(vecStr_I figures, SQLite::Database &db_rw)
 
 		// delete figures record
 		stmt_delete.bind(1, figure);
-		stmt_delete.executeStep(); stmt_delete.reset();
+		if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_delete.reset();
 	}
 }

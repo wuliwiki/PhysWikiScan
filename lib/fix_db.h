@@ -25,7 +25,8 @@ inline Long fix_foreign_key_occupied(
 			scan_warn(sb);
 
 			stmt_delete.bind(1, rowid);
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 			++N;
 		}
 	}
@@ -47,7 +48,8 @@ inline Long fix_foreign_key_occupied(
 			scan_warn(sb);
 
 			stmt_delete.bind(1, rowid);
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 			++N;
 		}
 	}
@@ -85,7 +87,8 @@ inline Long fix_foreign_key_figures(
 			clear(sb) << u8"figures.image->images.hash 外键不存在（已标记删除）（将彻底删除）：" << fig_id << '.' << image_hash << " 文章 " << entry;
 			scan_warn(sb);
 			stmt_delete.bind(1, rowid);
-			stmt_delete.exec(); stmt_delete.reset();
+			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_delete.reset();
 			++N;
 		}
 	}

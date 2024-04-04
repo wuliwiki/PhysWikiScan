@@ -553,7 +553,8 @@ inline void history_normalize(SQLite::Database &db_rw)
 					file_remove(fname);
 					// db
 					stmt_delete.bind(1, hash);
-					stmt_delete.exec(); stmt_delete.reset();
+					if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+					stmt_delete.reset();
 				}
 				else {
 					fname_new = "../PhysWiki-backup/" + time2;

@@ -439,10 +439,12 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 		stmt_select2.reset();
 		// delete the edges from node_id
 		stmt_delete.bind(1, node_id);
-		stmt_delete.exec(); stmt_delete.reset();
+		stmt_delete.exec(); // don't check
+		stmt_delete.reset();
 		// delete node_id
 		stmt_delete2.bind(1, node_id);
-		stmt_delete2.exec(); stmt_delete2.reset();
+		if (stmt_delete2.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_delete2.reset();
 	}
 }
 
@@ -504,7 +506,8 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	for (auto &edge : edges_deleted) {
 		stmt_delete.bind(1, edge.first);
 		stmt_delete.bind(2, edge.second);
-		stmt_delete.exec(); stmt_delete.reset();
+		if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_delete.reset();
 	}
 }
 
