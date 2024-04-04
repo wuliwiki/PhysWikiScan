@@ -624,6 +624,8 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
 VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_insert5(db_rw,
+		R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
 
 	// check first backup
 	if (hash_last.empty()) {
@@ -740,11 +742,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		Long changed = stmt_update5.exec();
 		if (changed != 1) {
 			if (changed != 0) throw scan_err(SLS_WHERE);
-			SQLite::Statement stmt_update5(db_rw,
-				R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
-			stmt_update5.bind(1, entry); stmt_update5.bind(2, (int64_t)real_author_id);
-			stmt_update5.bind(3, hash);
-			stmt_update5.exec(); stmt_update5.reset();
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)real_author_id);
+			stmt_insert5.bind(3, hash);
+			stmt_insert5.exec(); stmt_insert5.reset();
 		}
 		stmt_update5.reset();
 		db_log(u8"更新 entry_authors.last_backup");
@@ -784,7 +784,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update3.bind(1, hash); // last_backup
 		stmt_update3.bind(2, entry);
 		stmt_update3.bind(3, (int64_t)real_author_id);
-		if (stmt_update3.exec() != 1) throw internal_err(SLS_WHERE);
+		Long changed = stmt_update3.exec();
+		if (changed != 1) {
+			if (changed != 0) throw scan_err(SLS_WHERE);
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)real_author_id);
+			stmt_insert5.bind(3, hash);
+			stmt_insert5.exec(); stmt_insert5.reset();
+		}
 		stmt_update3.reset();
 		db_log(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
