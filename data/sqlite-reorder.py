@@ -18,7 +18,7 @@ def order_sql(filename):
                 sql += line
                 if line.strip().endswith(';'):
                     if sql.startswith('CREATE TABLE'):
-                        sql.replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
+                        sql = sql.replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
                         tables.append(Table(sql))
                     elif sql.startswith('INSERT INTO'):
                         if len(tables) > 0 and tables[-1]:
