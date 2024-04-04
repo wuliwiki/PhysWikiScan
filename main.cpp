@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 11
-#define VERSION_PATCH 7
+#define VERSION_PATCH 8
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM

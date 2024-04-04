@@ -737,7 +737,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update5.bind(1, hash); // last_backup
 		stmt_update5.bind(2, entry);
 		stmt_update5.bind(3, (int64_t)real_author_id);
-		if (stmt_update5.exec() != 1) throw internal_err(SLS_WHERE);
+		Long changed = stmt_update5.exec();
+		if (changed != 1) {
+			if (changed != 0) throw scan_err(SLS_WHERE);
+			SQLite::Statement stmt_update5(db_rw,
+				R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
+			stmt_update5.bind(1, entry); stmt_update5.bind(2, (int64_t)real_author_id);
+			stmt_update5.bind(3, hash);
+			stmt_update5.exec(); stmt_update5.reset();
+		}
 		stmt_update5.reset();
 		db_log(u8"更新 entry_authors.last_backup");
 	}
