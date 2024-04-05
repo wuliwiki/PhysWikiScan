@@ -57,7 +57,7 @@ INSERT INTO "table_version" VALUES ('bib_tags',         '20240403');
 INSERT INTO "table_version" VALUES ('bib_cite',         '20240403');
 INSERT INTO "table_version" VALUES ('bib_all_authors',  '20240403');
 INSERT INTO "table_version" VALUES ('bib_authors',      '20240403');
-
+INSERT INTO "table_version" VALUES ('right_set',        '20240404');
 
 ----------------------------------------------------------------------------------------------------------
 -- 百科文章
@@ -572,6 +572,15 @@ CREATE TABLE "rights" ( -- 20240403
 	"id"       TEXT    NOT NULL UNIQUE,
 	"name"     TEXT    NOT NULL UNIQUE,     -- 中文名
 	"comment"  TEXT    NOT NULL DEFAULT '', -- 具体说明（可选）
+	PRIMARY KEY("id")
+);
+
+-- 权限或限制的集合
+CREATE TABLE "right_set" ( -- 20240404
+	"id"      TEXT     NOT NULL UNIQUE,
+	"name"    TEXT     NOT NULL UNIQUE,      -- 中文名
+	"rights"  TEXT     NOT NULL,             -- [id1 id2...] rights.id
+	"comment" TEXT     NOT NULL DEFAULT '',  -- 说明
 	PRIMARY KEY("id")
 );
 
