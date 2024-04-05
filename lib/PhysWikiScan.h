@@ -476,7 +476,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	vecStr &str_verb, // [out] temp storage of verbatim strings
-	unordered_map<Str, bool> &bibs_change, // entry -> [1]add/[0]delete
+	unordered_map<Str, Long> bib_order, // bib -> (\cite{} order from 1)
 	Pentry_O pentry, set<Char32> &illegal_chars,
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
@@ -618,10 +618,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Command2Tag("textsl", "<i>", "</i>", str);
 	pay2div(str); // deal with "\pay" "\paid" pseudo command
 	href(str); // hyperlinks
-	cite(bibs_change, str, entry, db_read); // citation
-	
-	// footnote
-	footnote(str, entry, gv::url);
+	footnote(str, entry, gv::url); // footnote
+	cite(bib_order, str, entry, db_read); // citation
 	// delete redundent commands
 	replace(str, "\\dfracH", "");
 	// remove spaces around chinese punctuations
@@ -676,7 +674,7 @@ inline void PhysWikiOnlineN_round1(
 	Long N0 = size(entries);
 	unordered_set<Str> img_to_delete; // img files that copied and renamed to new format
 	Str html;
-	unordered_map<Str, unordered_map<Str, bool>> entry_bibs_change; // entry -> (bib -> [1]add/[0]del)
+	unordered_map<Str, unordered_map<Str,Long>> entry_bib_order; // entry -> (bib -> (\cite{} order))
 
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
@@ -691,7 +689,7 @@ inline void PhysWikiOnlineN_round1(
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i], is_eng[i],
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
 				license, type, labels, label_orders, str_verbs[i],
-				entry_bibs_change[entry], pentries[i], illegal_chars, entry, clear, rules,
+				entry_bib_order[entry], pentries[i], illegal_chars, entry, clear, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
@@ -739,7 +737,7 @@ inline void PhysWikiOnlineN_round1(
 
 	try {
 		// update entries.bibs & bibliography.ref_by
-		db_update_entry_bibs(entry_bibs_change, db_rw);
+		db_update_entry_bibs(entry_bib_order, db_rw);
 		// update edges
 		db_update_edges(pentries, entries, db_rw);
 	}

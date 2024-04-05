@@ -256,7 +256,7 @@ inline void table_of_contents(
 					throw scan_err(u8"数据库中找不到 main.tex 中文章（文件不存在）： " + entry);
 			}
 			db_title = stmt_select.getColumn(0).getString();
-			is_draft.push_back((int)stmt_select.getColumn(1));
+			is_draft.push_back(stmt_select.getColumn(1).getInt());
 			type.push_back(stmt_select.getColumn(2));
 			stmt_select.reset();
 

@@ -12,7 +12,7 @@ INSERT INTO "table_version" VALUES ('table_version',    '20240403');
 INSERT INTO "table_version" VALUES ('entries',          '20240403');
 INSERT INTO "table_version" VALUES ('entry_uprefs',     '20240403');
 INSERT INTO "table_version" VALUES ('entry_authors',    '20240403');
-INSERT INTO "table_version" VALUES ('entry_bibs',       '20240403');
+INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405');
 INSERT INTO "table_version" VALUES ('entry_refs',       '20240403');
 INSERT INTO "table_version" VALUES ('licenses',         '20240403');
 INSERT INTO "table_version" VALUES ('license_apply',    '20240403');
@@ -123,9 +123,10 @@ CREATE INDEX idx_entry_authors_entry ON "entry_authors"("entry");
 CREATE INDEX idx_entry_authors_author ON "entry_authors"("author");
 
 -- 文章中的 \cite{}
-CREATE TABLE "entry_bibs" ( -- 20240403
-	"entry"    TEXT NOT NULL,     -- entries.id
-	"bib"      TEXT NOT NULL,     -- bibliography.id
+CREATE TABLE "entry_bibs" ( -- 20240405
+	"entry"    TEXT NOT NULL,                -- entries.id
+	"bib"      TEXT NOT NULL,                -- bibliography.id
+	"order"    INTEGER NOT NULL DEFAULT 0,   -- \cite{} 在文章中出现的顺序，从 1 开始
 	PRIMARY KEY("entry", "bib"),
 	FOREIGN KEY("entry") REFERENCES "entries"("id"),
 	FOREIGN KEY("bib") REFERENCES "bibliography"("id")

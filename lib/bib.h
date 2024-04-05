@@ -89,60 +89,50 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 	}
 }
 
-// replace "\cite{}" with `[?]` cytation linke
-inline Long cite(unordered_map<Str, Bool> &bibs_change,
+// replace "\cite{}" with `[?]` citation linke
+// generate local bib list
+inline void cite(
+    unordered_map<Str,Long> &bib_order, // bibID -> order of first appearance
 	Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
-	vecStr db_bibs;
-	vecBool db_bibs_cited; // db_bibs -> cited
-	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "order", "details" FROM "bibliography" WHERE "id"=?;)");
-	SQLite::Statement stmt_select0(db_read,
-		R"(SELECT "bib" FROM "entry_bibs" WHERE "entry"=?;)");
+    bib_order.clear();
+    SQLite::Statement stmt_select(db_read,
+		R"(SELECT "details" FROM "bibliography" WHERE "id"=?;)");
 
-	// get "entry_bibs" for `entry` to detect change
-	stmt_select0.bind(1, entry);
-	db_bibs.clear();
-	while (stmt_select0.executeStep())
-		db_bibs.push_back(stmt_select0.getColumn(0).getString());
-
-	db_bibs_cited.resize(db_bibs.size(), false);
-
-	Long ind0 = 0, N = 0;
-	Str bib_id;
+	Long ind0 = 0, order = 0;
+	Str bib_id, bib_detail;
+    // replace \cite{}
 	while (1) {
 		ind0 = find_command(str, "cite", ind0);
 		if (ind0 < 0)
 			break;
-		++N;
 		command_arg(bib_id, str, ind0);
-		stmt_select.bind(1, bib_id);
-		if (!stmt_select.executeStep())
-			throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-		Long bib_ind = search(bib_id, db_bibs);
-		if (bib_ind < 0) { // new \cite{}
-			db_log(u8"发现新的文献引用（将添加）： " + bib_id);
-			bibs_change[bib_id] = true; // true means add bib_id to entries.bib
-		}
-		else
-			db_bibs_cited[bib_ind] = true;
-		Long ibib = stmt_select.getColumn(0).getInt64();
-		stmt_select.reset();
+        if (!bib_order.count(bib_id))
+            bib_order[bib_id] = (order = bib_order.size()+1);
+        else
+            order = bib_order[bib_id];
 		Long ind1 = skip_command(str, ind0, 1);
-		str.replace(ind0, ind1 - ind0, " <a href=\"" + gv::url + "bibliography.html#"
-			+ num2str(ibib) + "\" target=\"_blank\">[" + num2str(ibib) + "]</a> ");
+        clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib"
+			<< order << "\" id=\"bret" << order << "\">[" << order << "]</a> ";
+		str.replace(ind0, ind1 - ind0, sb);
 	}
-
-	// deleted \cite{}
-	for (Long i = 0; i < size(db_bibs); ++i) {
-		if (!db_bibs_cited[i]) {
-			db_log(u8"发现文献引用被删除（将移除）： " + db_bibs[i]);
-			bibs_change[db_bibs[i]] = false; // false means remove db_bibs[i] from entries.bib
-		}
-	}
-	return N;
+    // generate local bib list
+    Str detail;
+    str << "\n<hr><p>\n";
+    for (auto &e : bib_order) {
+        auto &bib_id = e.first;
+        auto &order = e.second;
+        stmt_select.bind(1, bib_id);
+        if (!stmt_select.executeStep())
+            throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
+        detail = stmt_select.getColumn(0).getString();
+        href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
+        str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
+			<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+    }
 }
 
+// convert bibliography.tex to html page
 inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 {
 	Long N = 0;
@@ -175,43 +165,18 @@ inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 
 // update "entry_bibs" table
 inline void db_update_entry_bibs(
-		//                 entry ->           (bib -> [1]add/[0]del)
-		const unordered_map<Str, unordered_map<Str,    bool>> &entry_bibs_change,
+		//                 entry ->           (bib -> \cite{} order)
+		const unordered_map<Str, unordered_map<Str,   Long>> &entry_bib_order,
 		SQLite::Database &db_rw)
 {
-	cout << "add & delete table entry_bibs ..." << endl;
-	Str bibs_str;
-	set<Str> bibs;
-	SQLite::Statement stmt_select_entry_bibs(db_rw,
-		R"(SELECT "bib" FROM "entry_bibs" WHERE "entry"=?)");
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "entry_bibs" ("entry", "bib") VALUES (?, ?);)");
-	SQLite::Statement stmt_delete(db_rw,
-		R"(DELETE FROM "entry_bibs" WHERE "entry"=? AND "bib"=?;)");
+    unordered_map<tuple<Str,Str>, tuple<int64_t>> records; // (entry,bib) -> order
+	for (auto &e : entry_bib_order) {
+        auto &entry = e.first;
+        records.clear();
+        for (auto &bib_order : e.second)
+            records[make_tuple(entry, bib_order.first)] = tuple<int64_t>(bib_order.second);
 
-	for (auto &e : entry_bibs_change) {
-		auto &entry = e.first;
-		auto &bibs_changed = e.second;
-		stmt_select_entry_bibs.bind(1, entry);
-		bibs.clear();
-		while (stmt_select_entry_bibs.executeStep())
-			bibs.insert(stmt_select_entry_bibs.getColumn(0).getString());
-		stmt_select_entry_bibs.reset();
-
-		for (auto &bib : bibs_changed) {
-			if (bib.second) { // insert
-				stmt_insert.bind(1, entry);
-				stmt_insert.bind(2, bib.first);
-				stmt_insert.exec(); stmt_insert.reset();
-			}
-			else { // delete
-				bibs.erase(bib.first);
-				stmt_delete.bind(1, entry);
-				stmt_delete.bind(2, bib.first);
-				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
-				stmt_delete.reset();
-			}
-		}
+        update_sqlite_table(records, "entry_bibs", "\"entry\"=\'" + entry + '\'',
+            {"entry", "bib", "order"}, 2, db_rw);
 	}
-	cout << "done!" << endl;
 }

@@ -97,7 +97,7 @@ inline void arg_stat(Str_I time_start, Str_I time_end, SQLite::Database &db_read
 				else if (discount_begin > time_start)
 					throw internal_err(u8"暂不支持文章报酬折扣在所选时间内具有多个值： entry=" + entry);
 				else {
-					Long discount = (int)stmt_select4.getColumn(1);
+					Long discount = stmt_select4.getColumn(1).getInt();
 					entry_info[entry].second = discount;
 					break;
 				}
@@ -107,7 +107,7 @@ inline void arg_stat(Str_I time_start, Str_I time_end, SQLite::Database &db_read
 		if (!author_info.count(author)) {
 			stmt_select2.bind(1, author);
 			stmt_select2.executeStep();
-			Long salary = (int)stmt_select2.getColumn(0);
+			Long salary = stmt_select2.getColumn(0).getInt64();
 			const Str &name = stmt_select2.getColumn(1);
 			get<0>(author_info[author]) = name;
 			get<1>(author_info[author]) = salary;

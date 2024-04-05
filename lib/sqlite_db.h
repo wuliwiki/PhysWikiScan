@@ -26,7 +26,7 @@ inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
 	vecLong orders;
 	while (stmt.executeStep()) {
 		ids.push_back(stmt.getColumn(0));
-		orders.push_back((int)stmt.getColumn(1));
+		orders.push_back(stmt.getColumn(1).getInt64());
 		captions.push_back(stmt.getColumn(2));
 		parts.push_back(stmt.getColumn(3));
 	}
@@ -43,7 +43,7 @@ inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 	vecLong orders;
 	while (stmt.executeStep()) {
 		ids.push_back(stmt.getColumn(0));
-		orders.push_back((int)stmt.getColumn(1));
+		orders.push_back(stmt.getColumn(1).getInt64());
 		captions.push_back(stmt.getColumn(2));
 	}
 	for (Long i = 0; i < size(orders); ++i)
@@ -79,7 +79,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 			stmt_insert.exec(); stmt_insert.reset();
 		}
 		else {
-			deleted = (int)stmt_select.getColumn(1);
+			deleted = stmt_select.getColumn(1).getInt();
 			if (deleted) {
 				title = stmt_select.getColumn(0).getString();
 				clear(sb) << u8"文章文件存在，但数据库却标记了已删除（将恢复）："
@@ -240,7 +240,7 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 	Long Nfound = 0;
 	while (stmt_author0.executeStep()) {
 		++Nfound;
-		authorID = (int)stmt_author0.getColumn(0);
+		authorID = stmt_author0.getColumn(0).getInt64();
 		cout << "作者： " << stmt_author0.getColumn(1).getString() << endl;
 		cout << "id: " << authorID << endl;
 	}
@@ -255,7 +255,7 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 		Nfound = 0;
 		while (stmt_author.executeStep()) {
 			++Nfound;
-			authorID = (int)stmt_author.getColumn(0);
+			authorID = stmt_author.getColumn(0).getInt64();
 			cout << "作者： " << stmt_author.getColumn(1).getString() << endl;
 			cout << "id: " << authorID << endl;
 		}
