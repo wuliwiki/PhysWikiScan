@@ -285,8 +285,8 @@ inline void pentry_cmd(Str_IO str, Pentry_I pentry, bool is_eng, SQLite::Databas
 			<< R"(" class = "w3-panel w3-round-large w3-light-blue"><b>)"
 			<< (is_eng ? "Prerequisite " : u8"预备知识");
 		if (pentry.size() > 1)
-		       sb << ' ' << i+1;
-	        sb << "</b>　" << pentry_arg << "</div>";
+			sb << ' ' << i+1;
+		sb << "</b>　" << pentry_arg << "</div>";
 		str.replace(ind, ind1-ind, sb);
 		ind += size(sb);
 	}
@@ -652,16 +652,16 @@ inline void PhysWikiOnlineN_round1(
 		map<Str, Str> &entry_err, // entry -> err msg
 		set<Char32> &illegal_chars,
 		vecStr_O titles, vecStr_IO entries,
-        vector<Pentry> &pentries,
+		vector<Pentry> &pentries,
 		vector<vecStr> &str_verbs, // temp storage for verbatim strings
-        bool clear,
+		bool clear,
 		vector<Char> &is_eng,
 		SQLite::Database &db_rw
 ) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
 	titles.clear(); entry_err.clear(); pentries.clear();
-    titles.resize(entries.size()); pentries.resize(entries.size());
+	titles.resize(entries.size()); pentries.resize(entries.size());
 	str_verbs.clear(); str_verbs.resize(entries.size());
 
 	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
@@ -727,7 +727,7 @@ inline void PhysWikiOnlineN_round1(
 				titles.resize(entries.size());
 			}
 			// update db table nodes for 1 entry (might also delete "edges" if nodes are deleted)
-            db_update_nodes(pentries[i], entry, db_rw);
+			db_update_nodes(pentries[i], entry, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
@@ -773,7 +773,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		vecStr_I entries, vecStr_I titles, vector<Pentry> &pentries,
 		vector<vecStr> &str_verbs, // temporary verbatim storage
 		vector<Char> &is_eng, // use english
-        SQLite::Database &db_rw, bool write_html = true)
+		SQLite::Database &db_rw, bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname;
@@ -789,16 +789,16 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 			 << titles[i] << endl; cout.flush();
 		fname = gv::path_out + entry + ".html";
 		read(html, fname + ".tmp"); // read html file
-        // process \pentry{} and tree
-        {
-            // check dependency tree and auto mark redundant pentry with ~
-            vector<DGnode> tree; vector<Node> nodes; unordered_map<Str, Long> node_id2ind;
-            db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
-            // convert \pentry{} to html
-            pentry_cmd(html, pentries[i], is_eng[i], db_rw); // use after db_get_tree1()
+		// process \pentry{} and tree
+		{
+			// check dependency tree and auto mark redundant pentry with ~
+			vector<DGnode> tree; vector<Node> nodes; unordered_map<Str, Long> node_id2ind;
+			db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
+			// convert \pentry{} to html
+			pentry_cmd(html, pentries[i], is_eng[i], db_rw); // use after db_get_tree1()
 			// update db `edges.hide` only
-            db_update_edges_hide(pentries[i], entry, db_rw);
-        }
+			db_update_edges_hide(pentries[i], entry, db_rw);
+		}
 		// process \autoref and \upref
 		autoref_tilde_upref(html, entry, db_rw);
 		// replace \upref{} with link icon
@@ -993,7 +993,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		stmt_select2.bind(1, entry);
 		while (stmt_select2.executeStep())
 			ref_by.push_back(stmt_select2.getColumn(0));
-        stmt_select2.reset();
+		stmt_select2.reset();
 		if (!ref_by.empty()) {
 			join(sb, ref_by);
 			err_msg << u8"无法删除文章，因为被其他文章引用：" << sb << "\n\n";

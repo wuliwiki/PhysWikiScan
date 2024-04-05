@@ -92,47 +92,49 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 // replace "\cite{}" with `[?]` citation linke
 // generate local bib list
 inline void cite(
-    unordered_map<Str,Long> &bib_order, // bibID -> order of first appearance
+	unordered_map<Str,Long> &bib_order, // bibID -> order of first appearance
 	Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
-    bib_order.clear();
-    SQLite::Statement stmt_select(db_read,
+	bib_order.clear();
+	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "details" FROM "bibliography" WHERE "id"=?;)");
 
 	Long ind0 = 0, order = 0;
-	Str bib_id, bib_detail;
-    // replace \cite{}
+	Str bib_id;
+	// replace \cite{}
 	while (1) {
 		ind0 = find_command(str, "cite", ind0);
 		if (ind0 < 0)
 			break;
 		command_arg(bib_id, str, ind0);
-        if (!bib_order.count(bib_id))
-            bib_order[bib_id] = (order = bib_order.size()+1);
-        else
-            order = bib_order[bib_id];
+		if (!bib_order.count(bib_id))
+			bib_order[bib_id] = (order = bib_order.size()+1);
+		else
+			order = bib_order[bib_id];
 		Long ind1 = skip_command(str, ind0, 1);
-        clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib"
+		clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib"
 			<< order << "\" id=\"bret" << order << "\">[" << order << "]</a> ";
 		str.replace(ind0, ind1 - ind0, sb);
 	}
-    // generate local bib list
-    if (!bib_order.empty()) {
-    	Str detail;
-	str << "\n<hr><p>\n";
-	for (auto &e : bib_order) {
-		auto &bib_id = e.first;
-		auto &order = e.second;
-		stmt_select.bind(1, bib_id);
-		if (!stmt_select.executeStep())
-			throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-		detail = stmt_select.getColumn(0).getString();
-		stmt_select.reset();
-		href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
-		str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
-			<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+	// generate local bib list
+	if (!bib_order.empty()) {
+		Str detail;
+		vector<const Str *> bibId_sorted(bib_order.size());
+		str << "\n<hr><p>\n";
+		for (auto &e : bib_order)
+			bibId_sorted[e.second-1] = &e.first;
+		for (Long i = 0; i < size(bibId_sorted); ++i) {
+			Long order = i+1;
+			stmt_select.bind(1, *bibId_sorted[i]);
+			if (!stmt_select.executeStep())
+				throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
+			detail = stmt_select.getColumn(0).getString();
+			stmt_select.reset();
+			href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
+			str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
+				<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+		}
 	}
-    }
 }
 
 // convert bibliography.tex to html page
@@ -172,14 +174,14 @@ inline void db_update_entry_bibs(
 		const unordered_map<Str, unordered_map<Str,   Long>> &entry_bib_order,
 		SQLite::Database &db_rw)
 {
-    unordered_map<tuple<Str,Str>, tuple<int64_t>> records; // (entry,bib) -> order
+	unordered_map<tuple<Str,Str>, tuple<int64_t>> records; // (entry,bib) -> order
 	for (auto &e : entry_bib_order) {
-        auto &entry = e.first;
-        records.clear();
-        for (auto &bib_order : e.second)
-            records[make_tuple(entry, bib_order.first)] = tuple<int64_t>(bib_order.second);
+		auto &entry = e.first;
+		records.clear();
+		for (auto &bib_order : e.second)
+			records[make_tuple(entry, bib_order.first)] = tuple<int64_t>(bib_order.second);
 
-        update_sqlite_table(records, "entry_bibs", "\"entry\"=\'" + entry + '\'',
-            {"entry", "bib", "order"}, 2, db_rw);
+		update_sqlite_table(records, "entry_bibs", R"("entry"=')" + entry + '\'',
+			{"entry", "bib", "order"}, 2, db_rw);
 	}
 }
