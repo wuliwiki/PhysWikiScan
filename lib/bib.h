@@ -117,18 +117,21 @@ inline void cite(
 		str.replace(ind0, ind1 - ind0, sb);
 	}
     // generate local bib list
-    Str detail;
-    str << "\n<hr><p>\n";
-    for (auto &e : bib_order) {
-        auto &bib_id = e.first;
-        auto &order = e.second;
-        stmt_select.bind(1, bib_id);
-        if (!stmt_select.executeStep())
-            throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-        detail = stmt_select.getColumn(0).getString();
-        href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
-        str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
+    if (!bib_order.empty()) {
+    	Str detail;
+	str << "\n<hr><p>\n";
+	for (auto &e : bib_order) {
+		auto &bib_id = e.first;
+		auto &order = e.second;
+		stmt_select.bind(1, bib_id);
+		if (!stmt_select.executeStep())
+			throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
+		detail = stmt_select.getColumn(0).getString();
+		stmt_select.reset();
+		href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
+		str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
 			<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+	}
     }
 }
 
