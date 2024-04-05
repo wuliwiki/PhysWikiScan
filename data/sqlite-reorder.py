@@ -3,6 +3,8 @@
 import operator
 import sys
 import os
+import re
+
 
 def order_sql(filename):
     with open(filename, 'r') as file:
@@ -18,7 +20,7 @@ def order_sql(filename):
                 sql += line
                 if line.strip().endswith(';'):
                     if sql.startswith('CREATE TABLE'):
-                        sql = sql.replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
+                        # sql = sql.replace("CREATE TABLE IF NOT EXISTS", "CREATE TABLE")
                         tables.append(Table(sql))
                     elif sql.startswith('INSERT INTO'):
                         if len(tables) > 0 and tables[-1]:
@@ -29,9 +31,10 @@ def order_sql(filename):
                     else:
                         # 结束了大段的table/insert交替语句
                         if tables:
-                            cmp_table = operator.attrgetter('create')
+                            cmp_table = operator.attrgetter('name')
                             tables.sort(key=cmp_table)  # 对table排序
                             for table in tables:
+                                # print(table.name)
                                 f.write(table.create)
                                 table.inserts.sort()  # 对insert进行排序
                                 for insert in table.inserts:
@@ -44,12 +47,19 @@ def order_sql(filename):
 
 
 class Table:
-    create = ''
-    inserts = []
-
     def __init__(self, c):
         self.create = c
         self.inserts = []
+
+        match = re.match(r'CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+([^\s\(]+)\s*', c, re.IGNORECASE)
+        if match:
+            self.name = match.group(1).replace('"', '')
+        else:
+            match = re.match(r'CREATE\s+TABLE\s+([^\s\(]+)\s*', c, re.IGNORECASE)
+            if match:
+                self.name = match.group(1).replace('"', '')
+            else:
+                self.name = c
 
 
 if __name__ == '__main__':
@@ -57,3 +67,4 @@ if __name__ == '__main__':
         order_sql((sys.argv[1]))
     else:
         print('请输入sql文件名，作为第一个参数')
+
