@@ -107,13 +107,17 @@ inline void cite(
 		if (ind0 < 0)
 			break;
 		command_arg(bib_id, str, ind0);
-		if (!bib_order.count(bib_id))
-			bib_order[bib_id] = (order = bib_order.size()+1);
+		bool is_new = false;
+		if (!bib_order.count(bib_id)) {
+			bib_order[bib_id] = (order = bib_order.size() + 1);
+			is_new = true;
+		}
 		else
 			order = bib_order[bib_id];
 		Long ind1 = skip_command(str, ind0, 1);
-		clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib"
-			<< order << "\" id=\"bret" << order << "\">[" << order << "]</a> ";
+		clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib" << order << '"';
+		if (is_new) sb << " id=\"bret" << order << '"';
+		sb << ">[" << order << "]</a> ";
 		str.replace(ind0, ind1 - ind0, sb);
 	}
 	// generate local bib list
