@@ -149,7 +149,7 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 	db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
 
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
 	vecStr entries0;
 	get_column(entries0, "entries", "id", db_rw);
@@ -158,11 +158,11 @@ inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
 
 	// insert a deleted entry (to ensure FOREIGN KEY exist)
 	SQLite::Statement stmt_insert_entry(db_rw,
-		R"(INSERT INTO "entries" ("id", "deleted") VALUES (?, 1);)");
+		R"(INSERT OR REPLACE INTO "entries" ("id", "deleted") VALUES (?, 1);)");
 
 	// insert new_authors to "authors" table
 	SQLite::Statement stmt_insert_auth(db_rw,
-		R"(INSERT INTO "authors" ("id", "name") VALUES (?, ?);)");
+		R"(INSERT OR REPLACE INTO "authors" ("id", "name") VALUES (?, ?);)");
 	SQLite::Statement stmt_select4(db_rw,
 		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw,
@@ -621,11 +621,11 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 		throw internal_err(u8"arg_backup(): 找不到要备份的文章：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
+		R"(INSERT OR REPLACE INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
 VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_insert5(db_rw,
-		R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
+		R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
 
 	// check first backup
 	if (hash_last.empty()) {
@@ -653,7 +653,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 		// insert into "entry_authors"
 		SQLite::Statement stmt_insert3(db_rw,
-			R"(INSERT INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
+			R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
 		stmt_insert3.bind(1, entry);
 		stmt_insert3.bind(2, (int64_t)real_author_id);
 		stmt_insert3.bind(3, hash); // last_backup

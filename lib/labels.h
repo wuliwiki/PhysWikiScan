@@ -471,7 +471,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 	if (!dry_run) {
 		// insert into "labels"
 		SQLite::Statement stmt_insert(db_rw,
-			R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
+			R"(INSERT OR REPLACE INTO "labels" ("id", "type", "entry", "order") VALUES (?, ?, ?, ?);)");
 		stmt_insert.bind(1, label);
 		stmt_insert.bind(2, type);
 		stmt_insert.bind(3, entry);
@@ -584,7 +584,7 @@ inline void db_update_labels(
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "entry" FROM "entry_refs" WHERE "label"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
+		R"(INSERT OR REPLACE INTO "labels" ("id", "type", "entry", "order") VALUES (?,?,?,?);)");
 	SQLite::Statement stmt_update0(db_rw,
 		R"(UPDATE "labels" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_update(db_rw,

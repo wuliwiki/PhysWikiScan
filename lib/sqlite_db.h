@@ -56,7 +56,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
+		R"(INSERT OR REPLACE INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
 	SQLite::Statement stmt_undelete(db_rw,
 		R"(UPDATE "entries" SET "deleted"=0 WHERE "id"=?;)");
 	Str str, title;
@@ -117,7 +117,7 @@ inline void db_update_parts_chapters(
 	// insert chapters
 	cout << "inserting chapters to db_rw..." << endl;
 	SQLite::Statement stmt_insert_chap(db_rw,
-		R"(INSERT INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
 
 	for (Long i = 0; i < size(chap_name); ++i) {
 		// cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
@@ -293,7 +293,7 @@ inline void db_update_entry_uprefs(
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "upref" FROM "entry_uprefs" WHERE "entry"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "entry_uprefs" ("entry", "upref") VALUES (?, ?);)");
+		R"(INSERT OR REPLACE INTO "entry_uprefs" ("entry", "upref") VALUES (?, ?);)");
 	SQLite::Statement stmt_delete(db_rw,
 		R"(DELETE FROM "entry_uprefs" WHERE "entry"=? AND "upref"=?;)");
 	Str str;

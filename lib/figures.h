@@ -189,7 +189,7 @@ inline void db_update_images(
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "aka" FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "images" ("hash", "ext", "figure") VALUES (?,?,?);)");
+		R"(INSERT OR REPLACE INTO "images" ("hash", "ext", "figure") VALUES (?,?,?);)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "images" SET "figure"=? WHERE "hash"=?;)");
 
 	for (auto &fig_id : fig_ids) {
@@ -262,7 +262,7 @@ inline void db_update_figures(
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "entry" FROM "entry_refs" WHERE "label"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "figures" ("id", "entry", "order", "image") VALUES (?, ?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "figures" SET "entry"=?, "order"=?, "image"=?, "caption"=?, "deleted"=0 WHERE "id"=?;)");
 	// get all figure envs defined in `entries`, to detect deleted figures

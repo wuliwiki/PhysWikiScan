@@ -39,7 +39,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 	SQLite::Statement stmt_update(db,
 		R"(UPDATE "bibliography" SET "order"=?, "details"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db,
-		R"(INSERT INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "bibliography" ("id", "order", "details") VALUES (?, ?, ?);)");
 	unordered_set<Str> id_flip_sign;
 
 	for (Long i = 0; i < size(bib_labels); i++) {

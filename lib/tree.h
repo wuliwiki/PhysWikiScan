@@ -453,7 +453,7 @@ inline void db_update_edges(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "from", "weak" FROM "edges" WHERE "to"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT INTO "edges" ("from", "to", "weak") VALUES (?, ?, ?);)");
+		R"(INSERT OR REPLACE INTO "edges" ("from", "to", "weak") VALUES (?, ?, ?);)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "edges" SET "weak"=? WHERE "from"=? AND "to"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=? AND "to"=?;)");

@@ -476,7 +476,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
 	Bool_O isdraft, vecStr_O keywords, Str_O license, Str_O type, vecStr_O labels, vecLong_O label_orders,
 	vecStr &str_verb, // [out] temp storage of verbatim strings
-	unordered_map<Str, Long> bib_order, // bib -> (\cite{} order from 1)
+	unordered_map<Str, Long> &bib_order, // bib -> (\cite{} order from 1)
 	Pentry_O pentry, set<Char32> &illegal_chars,
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
 {
