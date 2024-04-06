@@ -91,13 +91,13 @@ inline void db_update_authors(SQLite::Database &db)
 }
 
 // update db "authors" and "history" table from backup files
-inline void db_update_author_history(Str_I path, SQLite::Database &db_rw)
+inline void db_update_author_history(SQLite::Database &db_rw)
 {
 	vecStr fnames;
 	unordered_map<Str, Long> new_authors;
 	unordered_map<Long, Long> author_contrib;
-	Str author;
-	Str sha1, time, entry;
+	Str author, sha1, time, entry;
+	Str path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
 	file_list_ext(fnames, path, "tex", false);
 	cout << "updating sqlite database \"history\" table (" << fnames.size()
 		 << " backup) ..." << endl; cout.flush();
@@ -811,3 +811,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	clear(sb) << u8"更新 entries.last_backup： " << entry << '.' << hash;
 	db_log(sb);
 }
+
+// --history
+// update db "history" table from backup files
+inline void arg_history(SQLite::Database &db_rw)
+{
+        db_update_author_history(db_rw);
+        db_update_authors(db_rw);
+}
+

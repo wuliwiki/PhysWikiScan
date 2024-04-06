@@ -460,14 +460,6 @@ inline void arg_bib(SQLite::Database &db_rw)
 	db_update_bib(bib_labels, bib_details, db_rw);
 }
 
-// --history
-// update db "history" table from backup files
-inline void arg_history(Str_I path, SQLite::Database &db_rw)
-{
-	db_update_author_history(path, db_rw);
-	db_update_authors(db_rw);
-}
-
 // generate html from a single tex
 // output title from first line comment
 // use `clear=true` to only keep the title line and key-word line of the tex file
@@ -632,7 +624,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// insert HTML body
 	if (replace(html, "PhysWikiHTMLbody", str) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
-	if (replace(html, "PhysWikiEntry", entry) != (gv::is_wiki? 6:2))
+	if (replace(html, "PhysWikiEntry", entry) != 6)
 		throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
 
 	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
@@ -776,7 +768,7 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		SQLite::Database &db_rw, bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
-	Str html, fname;
+	Str html, fname, last_node_id;
 	unordered_map<Str, pair<Str, Pentry>> entry_info;
 	unordered_map<Str, unordered_map<Str, bool>> entry_uprefs_change; // entry -> (entry -> [1]add/[0]del)
 	vecStr autoref_labels;
@@ -811,12 +803,9 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 		lstinline(html, str_verbs[i]);
 		verb(html, str_verbs[i]);
 		// tree button link
-		if (gv::is_wiki) {
-			static Str last_node_id;
-			get_tree_last_node(last_node_id, html, entry, db_rw);
-			if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
-				throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
-		}
+		get_tree_last_node(last_node_id, html, entry, db_rw);
+		if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
+			throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
 		// write html file
 		if (write_html)
 			write(html, fname); // save html file
