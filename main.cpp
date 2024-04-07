@@ -100,6 +100,7 @@ Long read_path_file(vecStr_O paths_in, vecStr_O paths_out, vecStr_O paths_data, 
 void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_IO args)
 {
 	Long N = size(args);
+	path_in.clear(); path_out.clear(); path_data.clear(); url.clear();
 
 	// directly specify path (depricated)
 	if (N > 3 && args[N - 4] == "--path-in-out-data") {
@@ -107,7 +108,7 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
 		path_out = args[N - 2];
 		path_data = args[N - 1];
 		url = "";
-		args.erase(args.begin() + N - 4, args.end());
+		args.resize(args.size()-4);
 		return;
 	}
 
@@ -118,6 +119,29 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
 		path_data = args[N - 2];
 		url = args[N - 1];
 		args.erase(args.begin() + N - 5, args.end());
+		args.resize(args.size()-5);
+		return;
+	}
+
+	// paths for user note
+	if (N > 1 && args[N - 2] == "--path-user") {
+		Str sub_folder;
+		Str &id = args.back(); // authors.id
+		if (id.back() != '/') id += '/';
+		if (size(id) > 8 && id.substr(id.size()-8) == "/online/") {
+			id.erase(id.size()-7); sub_folder = "online/";
+		}
+		else if (size(id) > 9 && id.substr(id.size()-9) == "/changed/") {
+			id.erase(id.size()-8); sub_folder = "changed/";
+		}
+		else
+			sub_folder = "changed/";
+
+		path_in << "../user-notes/" << id;
+		path_out << "../user-notes/" << id << sub_folder;
+		path_data << "../user-notes/" << id << "cmd_data/";
+		url << "https://wuli.wiki/user/" << id << sub_folder;
+		args.resize(args.size()-2);
 		return;
 	}
 
@@ -134,33 +158,17 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
 			path_data = paths_data[i_path];
 			url = urls[i_path];
 		}
-		else { // set path to user note folder
-			Str sub_folder;
-			Str &user = args.back();
-			if (user.back() != '/') user += '/';
-			if (size(user) > 8 && user.substr(user.size()-8) == "/online/") {
-				user.erase(user.size()-7); sub_folder = "online/";
-			}
-			else if (size(user) > 9 && user.substr(user.size()-9) == "/changed/") {
-				user.erase(user.size()-8); sub_folder = "changed/";
-			}
-			else
-				sub_folder = "changed/";
-
-			path_in = "../user-notes/"; path_in << user;
-			path_out = "../user-notes/"; path_out << user << sub_folder;
-			path_data = "../user-notes/"; path_data << user << "cmd_data/";
-			url = "https://wuli.wiki/user/"; url << user << sub_folder;
-		}
-		args.pop_back(); args.pop_back();
+		else
+			throw internal_err(u8"非法的 --path 参数");
+		args.resize(args.size()-2);
 		return;
 	}
-	else { // default path
-		path_in = paths_in[0];
-		path_out = paths_out[0];
-		path_data = paths_data[0];
-		url = urls[0];
-	}
+
+	// default path
+	path_in = paths_in[0];
+	path_out = paths_out[0];
+	path_data = paths_data[0];
+	url = urls[0];
 }
 
 inline void replace_eng_punc_to_chinese(Str_I path_in)

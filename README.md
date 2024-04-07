@@ -8,7 +8,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * 输入路径可以是 `PhysWiki` 文件夹， 只会读取所有 `.tex` 文件。 `main.tex` 文件用于生成目录。
 * 在任何命令最后放 `--path 数字` 可以指定 `set_path.txt` 中的某套路径和 url 设置。
 * 若不指定 `--path` 则默认使用 `--path 0`。
-* 在命令最后放 `--path "用户名"` 或者 `用户名/changed` 可以指定某个用户笔记文件夹（`../user-notes/用户名/changed`）， 使用 `用户名/online` 则可以把子目录 `/changed` 改为 `/online`（发布）。 最后可以加一个 `/` 也可以不加。
+* 在命令最后放 `--path-user 用户id` 或者 `用户id/changed` 可以指定某个用户笔记文件夹（`../user-notes/用户id/changed`）， 使用 `用户id/online` 则可以把子目录 `/changed` 改为 `/online`（发布）。 最后可以加一个 `/` 也可以不加。
 * 也可以通过 `--path-in-out-data-url 输入路径 输出路径 数据文件路径 url` 来指定输入，输出路径，和数据文件路径，网页所在 url 路径（如 `http://wuli.wiki/online/`， 也可以为空， 用于文章，公式，图片，脚注等链接）。 该选项必须出现在命令最后， 不能和 `--path` 混用。
 * 路径可以是绝对路径或相对路径（相对于当前路径）
 
