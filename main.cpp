@@ -221,7 +221,9 @@ int main(int argc, const char *argv[]) {
 			gv::is_wiki = false;
 
 		// === parse arguments ===
-		SQLite::Database db_rw(gv::path_data + "scan.db", SQLite::OPEN_READWRITE);
+		clear(sb) << gv::path_data << "scan.db";
+		if (!file_exist(sb)) throw internal_err(u8"数据库文件不存在：" + sb);
+		SQLite::Database db_rw(sb, SQLite::OPEN_READWRITE);
 		db_rw.exec("PRAGMA busy_timeout = 3000;");
 
 		if (args[0] == "." && args.size() == 1) {

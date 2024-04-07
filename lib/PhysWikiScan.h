@@ -443,11 +443,11 @@ inline void arg_toc(SQLite::Database &db_rw)
 	vecStr part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
 	vecLong entry_part, chap_part, entry_chap;
 	table_of_contents(part_ids, part_name, chap_first, chap_last,
-					  chap_ids, chap_name, chap_part, entry_first, entry_last,
-					  entries, titles, is_draft, entry_part, entry_chap, db_rw);
+		chap_ids, chap_name, chap_part, entry_first, entry_last,
+		entries, titles, is_draft, entry_part, entry_chap, db_rw);
 
 	db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
-							 entry_first, entry_last, db_rw);
+		entry_first, entry_last, db_rw);
 	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
 }
 

@@ -248,8 +248,9 @@ inline void table_of_contents(
 			if (!stmt_select.executeStep()) {
 				db_log(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
 				vecStr titles_tmp;
-				entries_titles(entries, titles_tmp);
-				db_check_add_entry_simulate_editor(entries, db_rw);
+				vecStr entries_tmp;
+				entries_titles(entries_tmp, titles_tmp);
+				db_check_add_entry_simulate_editor(entries_tmp, db_rw);
 				stmt_select.reset();
 				stmt_select.bind(1, entry);
 				if (!stmt_select.executeStep())
