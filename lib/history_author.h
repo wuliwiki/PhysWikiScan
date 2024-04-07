@@ -91,6 +91,7 @@ inline void db_update_authors(SQLite::Database &db)
 }
 
 // update db "authors" and "history" table from backup files
+// assuming all backup files already named after "authors.aka" if applicable
 inline void db_update_author_history(SQLite::Database &db_rw)
 {
 	vecStr fnames;
@@ -134,15 +135,6 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 	for (Long i = 0; i < size(db_author_ids0); ++i) {
 		db_id_to_author[db_author_ids0[i]] = db_author_names0[i];
 		db_author_to_id[db_author_names0[i]] = db_author_ids0[i];
-	}
-
-	SQLite::Statement stmt_select3(db_rw,
-		R"(SELECT "id", "aka" FROM "authors" WHERE "aka" != -1;)");
-	unordered_map<int, int> db_author_aka;
-	while (stmt_select3.executeStep()) {
-		int id = stmt_select3.getColumn(0);
-		int aka = stmt_select3.getColumn(1);
-		db_author_aka[id] = aka;
 	}
 
 	db_author_ids0.clear(); db_author_names0.clear();
@@ -289,15 +281,19 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		cout << u8"新作者： " << new_author.second << ". " << new_author.first << endl;
 
 	cout << "\nupdating author contribution..." << endl;
-	for (auto &e : db_author_aka) {
-		author_contrib[e.second] += author_contrib[e.first];
-		author_contrib[e.first] = 0;
-	}
 
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "aka" FROM "authors" WHERE "id"=?;)");
 	SQLite::Statement stmt_contrib(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
 	for (auto &e : author_contrib) {
-		stmt_contrib.bind(1, (int64_t)e.second);
-		stmt_contrib.bind(2, (int64_t)e.first);
+		// check author existence & authors.aka (only for wiki)
+		stmt_select3.bind(1, (int64_t)e.first); // authors.id
+		if (!stmt_select3.executeStep()) throw internal_err(SLS_WHERE);
+		if (gv::is_wiki && stmt_select3.getColumn(0).getInt64() >= 0)
+			throw internal_err(u8"所有备份文件必须转换成 authors.aka 的！");
+		stmt_select3.reset();
+		// update authors.contrib
+		stmt_contrib.bind(1, (int64_t)e.second); // authors.contrib
+		stmt_contrib.bind(2, (int64_t)e.first); // authors.id
 		if (stmt_contrib.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_contrib.reset();
 	}
