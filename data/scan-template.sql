@@ -1,63 +1,63 @@
 -- 小时百科在线编辑器数据库
--- 为方便编程， 所有字段都必须 NOT NULL
+-- 为方便编程， 所有字段都必须 NOT NULL，用 0,01,'' 代替
+-- 为方便 sqldiff 对比版本，所有表必须有 PRIMARY KEY
 
 -- 所有表定义的版本
 CREATE TABLE "table_version" ( -- 20240403
-	"table"   TEXT    NOT NULL UNIQUE, -- 当前数据库中的所有表
-	"version" TEXT    NOT NULL,        -- 每个表的当前版本（版本号是更新时间）
+	"table"      TEXT    NOT NULL UNIQUE, -- 当前数据库中的所有表
+	"version"    TEXT    NOT NULL,        -- 每个表的当前版本（版本号是更新时间）
+	"importance" INTEGER NOT NULL,        -- [0] 可生成 [1] 重要数据 [2] 临时数据（无需备份）
 	PRIMARY KEY("table")
 );
 
-INSERT INTO "table_version" VALUES ('table_version',    '20240403');
-INSERT INTO "table_version" VALUES ('entries',          '20240403');
-INSERT INTO "table_version" VALUES ('entry_uprefs',     '20240403');
-INSERT INTO "table_version" VALUES ('entry_authors',    '20240403');
-INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405');
-INSERT INTO "table_version" VALUES ('entry_refs',       '20240403');
-INSERT INTO "table_version" VALUES ('licenses',         '20240403');
-INSERT INTO "table_version" VALUES ('license_apply',    '20240403');
-INSERT INTO "table_version" VALUES ('types',            '20240403');
-INSERT INTO "table_version" VALUES ('tags',             '20240403');
-INSERT INTO "table_version" VALUES ('entry_tags',       '20240403');
-INSERT INTO "table_version" VALUES ('seo_keys',         '20240403');
-INSERT INTO "table_version" VALUES ('nodes',            '20240403');
-INSERT INTO "table_version" VALUES ('edges',            '20240403');
-INSERT INTO "table_version" VALUES ('tag_types',        '20240403');
-INSERT INTO "table_version" VALUES ('repost',           '20240403');
-INSERT INTO "table_version" VALUES ('entry_score',      '20240403');
-INSERT INTO "table_version" VALUES ('occupied',         '20240403');
-INSERT INTO "table_version" VALUES ('locked',           '20240403');
-INSERT INTO "table_version" VALUES ('opened',           '20240403');
-INSERT INTO "table_version" VALUES ('parts',            '20240403');
-INSERT INTO "table_version" VALUES ('chapters',         '20240403');
-INSERT INTO "table_version" VALUES ('figures',          '20240403');
-INSERT INTO "table_version" VALUES ('images',           '20240403');
-INSERT INTO "table_version" VALUES ('files',            '20240403');
-INSERT INTO "table_version" VALUES ('figure_files',     '20240403');
-INSERT INTO "table_version" VALUES ('entry_files',      '20240403');
-INSERT INTO "table_version" VALUES ('code',             '20240403');
-INSERT INTO "table_version" VALUES ('languages',        '20240403');
-INSERT INTO "table_version" VALUES ('labels',           '20240403');
-INSERT INTO "table_version" VALUES ('history',          '20240403');
-INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240403');
-INSERT INTO "table_version" VALUES ('review',           '20240403');
-INSERT INTO "table_version" VALUES ('authors',          '20240403');
-INSERT INTO "table_version" VALUES ('rights',           '20240403');
-INSERT INTO "table_version" VALUES ('author_rights',    '20240403');
-INSERT INTO "table_version" VALUES ('salary',           '20240403');
-INSERT INTO "table_version" VALUES ('salary_change',    '20240403');
-INSERT INTO "table_version" VALUES ('bibliography',     '20240403');
-INSERT INTO "table_version" VALUES ('bib_type',         '20240403');
-INSERT INTO "table_version" VALUES ('bib_doi',          '20240403');
-INSERT INTO "table_version" VALUES ('bib_url',          '20240403');
-INSERT INTO "table_version" VALUES ('journals',         '20240403');
-INSERT INTO "table_version" VALUES ('bib_journal',      '20240403');
-INSERT INTO "table_version" VALUES ('bib_all_tags',     '20240403');
-INSERT INTO "table_version" VALUES ('bib_tags',         '20240403');
-INSERT INTO "table_version" VALUES ('bib_cite',         '20240403');
-INSERT INTO "table_version" VALUES ('bib_all_authors',  '20240403');
-INSERT INTO "table_version" VALUES ('bib_authors',      '20240403');
-INSERT INTO "table_version" VALUES ('right_set',        '20240404');
+INSERT INTO "table_version" VALUES ('table_version',    '20240407', 1);
+INSERT INTO "table_version" VALUES ('entries',          '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_uprefs',     '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_authors',    '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405', 0);
+INSERT INTO "table_version" VALUES ('entry_refs',       '20240403', 0);
+INSERT INTO "table_version" VALUES ('licenses',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('license_apply',    '20240403', 1);
+INSERT INTO "table_version" VALUES ('types',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('tags',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_tags',       '20240403', 0);
+INSERT INTO "table_version" VALUES ('seo_keys',         '20240403', 0);
+INSERT INTO "table_version" VALUES ('nodes',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('edges',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('repost',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_score',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('occupied',         '20240403', 2);
+INSERT INTO "table_version" VALUES ('locked',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('opened',           '20240403', 2);
+INSERT INTO "table_version" VALUES ('parts',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('chapters',         '20240403', 0);
+INSERT INTO "table_version" VALUES ('figures',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('images',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('files',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('figure_files',     '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_files',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('code',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
+INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
+INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
+INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240407', 1);
+INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('authors',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('author_rights',    '20240403', 1);
+INSERT INTO "table_version" VALUES ('salary',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('bibliography',     '20240403', 0);
+INSERT INTO "table_version" VALUES ('bib_type',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_doi',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_url',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('journals',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_journal',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_all_tags',     '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_tags',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_cite',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_all_authors',  '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_authors',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('right_set',        '20240404', 1);
 
 ----------------------------------------------------------------------------------------------------------
 -- 百科文章
@@ -246,12 +246,6 @@ CREATE TABLE "entry_tags" ( -- 20240403
 );
 
 CREATE INDEX idx_entry_tags_tag ON "entry_tags"("tag");
-
-CREATE TABLE "tag_types" ( -- 20240403
-	"id"      TEXT    NOT NULL UNIQUE, -- entries.id （暂时不包括 \issueDraft）
-	"name"    TEXT    NOT NULL,        -- 中文名
-	PRIMARY KEY("id")
-);
 
 -- 文章转载（到其他平台）
 CREATE TABLE "repost" ( -- 20240403
@@ -502,26 +496,6 @@ CREATE INDEX idx_history_time ON "history"("time");
 CREATE INDEX idx_history_author ON "history"("author");
 CREATE INDEX idx_history_last ON "history"("last");
 
--- 贡献调整
--- 用于作者排名或者补贴的一次性修改
-CREATE TABLE "contrib_adjust" ( -- 20240403
-	"id"                  INTEGER NOT NULL UNIQUE,
-	"entry"               TEXT    NOT NULL,
-	"author"              INTEGER NOT NULL,            -- 如有 authors.aka 必须使用
-	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
-	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改补贴
-	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改作者列表排名
-	"creator"             INTEGER NOT NULL,            -- 修改者
-	"time"                TEXT    NOT NULL,            -- 修改时间
-	PRIMARY KEY("id" AUTOINCREMENT),
-	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	FOREIGN KEY("author")  REFERENCES "authors"("id")
-);
-
-CREATE INDEX idx_contrib_adjust_entry ON "contrib_adjust"("entry");
-CREATE INDEX idx_contrib_adjust_author ON "contrib_adjust"("author");
-CREATE INDEX idx_contrib_adjust_minutes ON "contrib_adjust"("minutes");
-
 -- 审稿记录
 CREATE TABLE "review" ( -- 20240403
 	"hash"     TEXT    NOT NULL UNIQUE,            -- history.hash
@@ -626,25 +600,28 @@ CREATE INDEX idx_salary_license ON "salary"("license");
 CREATE INDEX idx_salary_begin ON "salary"("begin");
 CREATE INDEX idx_salary_end ON "salary"("end");
 
--- 补贴手动调整
--- 贡献调整（history 记录之外的贡献，例如转载、画图、代码等）
-CREATE TABLE "salary_change" ( -- 20240403
-	"id"        INTEGER NOT NULL UNIQUE,           -- 编号
-	"author"    INTEGER NOT NULL,                  -- 作者（空代表所有）
-	"entry"     TEXT    NOT NULL DEFAULT '',       -- 文章
-	"time"      TEXT    NOT NULL DEFAULT '',       -- 何时做出的调整
-	"value"     REAL    NOT NULL,                  -- 金额（非零实数）
-	"comment"   TEXT    NOT NULL DEFAULT '',       -- 备注
-	"approved"  INTEGER NOT NULL,                  -- [0|1] 是否生效（需要审核）
-	"comment2"  TEXT    NOT NULL DEFAULT '',       -- 备注（仅管理员可见）
+-- 贡献调整
+-- 用于作者排名或者补贴的一次性修改
+CREATE TABLE "contrib_adjust" ( -- 20240407
+	"id"                  INTEGER NOT NULL UNIQUE,
+	"entry"               TEXT    NOT NULL,            -- 文章
+	"author"              INTEGER NOT NULL,            -- 如有 authors.aka 必须使用
+	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
+	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改补贴
+	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改作者列表排名
+	"creator"             INTEGER NOT NULL,            -- 修改者
+	"time"                TEXT    NOT NULL,            -- 何时做出贡献
+	"reason"              TEXT    NOT NULL DEFAULT '', -- 调整原因（可以由申请者填写）
+	"approved"            INTEGER NOT NULL,            -- [0|1] 是否通过
+	"comment2"            TEXT    NOT NULL DEFAULT '', -- 备注（仅管理员可见）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
-	FOREIGN KEY("author") REFERENCES "authors"("id")
+	FOREIGN KEY("author")  REFERENCES "authors"("id")
 );
 
-CREATE INDEX idx_salary_change_author ON "salary_change"("author");
-CREATE INDEX idx_salary_change_entry ON "salary_change"("entry");
-CREATE INDEX idx_salary_change_time ON "salary_change"("time");
+CREATE INDEX idx_contrib_adjust_entry ON "contrib_adjust"("entry");
+CREATE INDEX idx_contrib_adjust_author ON "contrib_adjust"("author");
+CREATE INDEX idx_contrib_adjust_time ON "contrib_adjust"("time");
 
 
 ----------------------------------------------------------------------------------------------------------
