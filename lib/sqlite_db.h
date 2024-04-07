@@ -51,12 +51,13 @@ inline void db_get_parts(vecStr_O ids, vecStr_O captions, SQLite::Database &db)
 			throw internal_err(SLS_WHERE);
 }
 
+// for entry files in the folder, make sure it's in db and not deleted
 inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT OR REPLACE INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 1, 0);)");
+		R"(INSERT OR REPLACE INTO "entries" ("id", "caption", "draft", "deleted") VALUES (?, ?, 2, 0);)");
 	SQLite::Statement stmt_undelete(db_rw,
 		R"(UPDATE "entries" SET "deleted"=0 WHERE "id"=?;)");
 	Str str, title;
@@ -92,44 +93,6 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		}
 		stmt_select.reset();
 	}
-}
-
-// delete and rewrite "chapters" and "parts" table of sqlite db
-inline void db_update_parts_chapters(
-		vecStr_I part_ids, vecStr_I part_name, vecStr_I chap_first, vecStr_I chap_last,
-		vecStr_I chap_ids, vecStr_I chap_name, vecLong_I chap_part,
-		vecStr_I entry_first, vecStr_I entry_last, SQLite::Database &db_rw)
-{
-	cout << "updating sqlite database (" << part_name.size() << " parts, "
-		 << chap_name.size() << " chapters) ..." << endl;
-	cout.flush();
-	cout << "clear parts and chatpers tables" << endl;
-	table_clear("chapters", db_rw);
-
-	// insert parts
-	cout << "inserting parts to db_rw..." << endl;
-	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str>> part_tab;
-	for (Long i = 0; i < size(part_name); ++i)
-		part_tab[make_tuple(part_ids[i])] = make_tuple((int64_t)i, part_name[i], chap_first[i], chap_last[i]);
-	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
-	cout << "\n\n\n" << endl;
-
-	// insert chapters
-	cout << "inserting chapters to db_rw..." << endl;
-	SQLite::Statement stmt_insert_chap(db_rw,
-		R"(INSERT OR REPLACE INTO "chapters" ("id", "order", "caption", "part", "entry_first", "entry_last") VALUES (?, ?, ?, ?, ?, ?);)");
-
-	for (Long i = 0; i < size(chap_name); ++i) {
-		// cout << "chap " << i << ". " << chap_ids[i] << ": " << chap_name[i] << " chapters: " << entry_first[i] << " -> " << entry_last[i] << endl;
-		stmt_insert_chap.bind(1, chap_ids[i]);
-		stmt_insert_chap.bind(2, int64_t(i));
-		stmt_insert_chap.bind(3, chap_name[i]);
-		stmt_insert_chap.bind(4, part_ids[chap_part[i]]);
-		stmt_insert_chap.bind(5, entry_first[i]);
-		stmt_insert_chap.bind(6, entry_last[i]);
-		stmt_insert_chap.exec(); stmt_insert_chap.reset();
-	}
-	cout << "done." << endl;
 }
 
 // update "entries" table of sqlite db, based on the info from main.tex

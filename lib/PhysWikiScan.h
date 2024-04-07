@@ -432,25 +432,6 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
-// --toc
-// table of contents
-// generate index.html from main.tex
-inline void arg_toc(SQLite::Database &db_rw)
-{
-	cout << u8"\n\n\n\n\n正在从 main.tex 生成目录 index.html ...\n" << endl;
-	vecStr titles, entries;
-	vecBool is_draft;
-	vecStr part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, entry_first, entry_last;
-	vecLong entry_part, chap_part, entry_chap;
-	table_of_contents(part_ids, part_name, chap_first, chap_last,
-		chap_ids, chap_name, chap_part, entry_first, entry_last,
-		entries, titles, is_draft, entry_part, entry_chap, db_rw);
-
-	db_update_parts_chapters(part_ids, part_name, chap_first, chap_last, chap_ids, chap_name, chap_part,
-		entry_first, entry_last, db_rw);
-	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
-}
-
 // --bib
 // parse bibliography.tex and update db
 inline void arg_bib(SQLite::Database &db_rw)

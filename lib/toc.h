@@ -26,8 +26,8 @@ inline Long ignore_entries(vecStr_IO names)
 
 // get `entries` from "contents/*.tex" (ignore some)
 // get `titles` from main.tex
-// warn repeated `titles` or `entries` in main.tex (case insensitive)
-// warn `entries` not in main.tex (including comments)
+// forbid repeated `entries` in main.tex (case insensitive)
+// warn `entries` not in main.tex (also not in comments)
 inline void entries_titles(vecStr_O entries, vecStr_O titles)
 {
 	// 文件夹中的文章文件（忽略不用编译的）
@@ -61,15 +61,15 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 
 	// go through uncommented entries in main.tex
 	while (1) {
-		ind0 = find(str, "\\entry", ind0);
+		ind0 = find_command(str, "entry", ind0);
 		if (ind0 < 0)
 			break;
 
 		// get chinese title and entry label
 		command_arg(title, str, ind0);
-		replace(title, "\\ ", " ");
 		if (title.empty())
 			throw scan_err(u8"main.tex 中文章标题不能为空");
+		replace(title, "\\ ", " ");
 		command_arg(entry, str, ind0, 1);
 
 		Long ind = search(entry, entries);
@@ -176,19 +176,18 @@ inline void auto_add_toc_labels_prt_cpt()
 	write(str, gv::path_in + "main.tex");
 }
 
-// create table of content from main.tex
+// create index.html from main.tex
 // path must end with '/'
 // `entries` are the \entry{}{} commands in main.tex, in order of appearance
 // titles[i] is the chinese title of entries[i].tex from first line of comment
 // `entry_part[i]` is the part number of `entries[i]`, 0: no info, 1: the first part, etc.
 // `entry_chap[i]` is similar to `entry_part[i]`, for chapters
-// if entry_part.size() == 0, `chap_names, entry_chap, entry_part, part_names` will be ignored
 inline void table_of_contents(
 		vecStr_O part_ids, vecStr_O part_names, vecStr_O part_chap_first, vecStr_O part_chap_last, // part info
 		vecStr_O chap_ids, vecStr_O chap_names, vecLong_O chap_part, vecStr_O chap_entry_first, vecStr_O chap_entry_last, // chapter info
 		vecStr_O entries, vecStr_O titles, vecBool_O is_draft, vecLong_O entry_part, vecLong_O entry_chap, // entry info
-		SQLite::Database &db_rw)
-{
+		SQLite::Database &db_rw
+) {
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "draft", "type" FROM "entries" WHERE "id"=?;)");
 
@@ -207,7 +206,7 @@ inline void table_of_contents(
 
 	read(str, gv::path_in + "main.tex");
 	CRLF_to_LF(str);
-	read(html, gv::path_out + "templates/index_template.html"); // read html template
+	read(html, gv::path_out + "templates/index_template.html");
 	CRLF_to_LF(html);
 	ind0 = find(html, "PhysWikiHTMLbody", ind0);
 	if (ind0 < 0)
@@ -217,7 +216,7 @@ inline void table_of_contents(
 	rm_comments(str); // remove comments
 	if (str.empty()) str = " ";
 
-	char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry
+	char last_command = 'n'; // 'p': \part, 'c': \chapter, 'e': \entry, 'b': \bibli
 	Str db_title, label;
 
 	while (1) {
@@ -243,12 +242,11 @@ inline void table_of_contents(
 
 			titles.push_back(title);
 
-			// get db info
+			// get db entry info
 			stmt_select.bind(1, entry);
 			if (!stmt_select.executeStep()) {
 				db_log(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
-				vecStr titles_tmp;
-				vecStr entries_tmp;
+				vecStr entries_tmp, titles_tmp;
 				entries_titles(entries_tmp, titles_tmp);
 				db_check_add_entry_simulate_editor(entries_tmp, db_rw);
 				stmt_select.reset();
@@ -261,9 +259,8 @@ inline void table_of_contents(
 			type.push_back(stmt_select.getColumn(2));
 			stmt_select.reset();
 
-			// TODO: enable this when editor can update db title
-			// if (db_title != title)
-			//    throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中文章标题 “" + db_title + u8"” 不符！");
+			if (db_title != title)
+				throw scan_err(u8"目录标题 “" + title + u8"” 与数据库中文章标题 “" + db_title + u8"” 不符！");
 
 			// insert entry into html table of contents
 			link_class = type.back();
@@ -288,7 +285,8 @@ inline void table_of_contents(
 			command_arg(title, str, ind1);
 			replace(title, "\\ ", " ");
 			if (last_command != 'p' && last_command != 'e') 
-				throw scan_err(u8R"(main.tex 中 \chapter{} 必须在 \entry{}{} 或者 \part{} 之后， 不允许空的 \chapter{}： )" + title);
+				throw scan_err(u8R"(main.tex 中 \chapter{} 必须在 \entry{}{} 或者 \part{} 之后， 不允许空的 \chapter{}： )"
+					+ title);
 			if (chap_ids.size() > 1)
 				chap_entry_last.push_back(entries.back());
 			// get chapter id from label cpt_xxx, where xxx is id
@@ -321,7 +319,8 @@ inline void table_of_contents(
 			if (part_ids.size() > 1)
 				part_chap_last.push_back(chap_ids.back());
 			if (last_command != 'e' && last_command != 'n')
-				throw scan_err(u8R"(main.tex 中 \part{} 必须在 \entry{} 之后或者目录开始， 不允许空的 \chapter{} 或 \part{}： )" + title);
+				throw scan_err(u8R"(main.tex 中 \part{} 必须在 \entry{} 之后或者目录开始， 不允许空的 \chapter{} 或 \part{}： )"
+					+ title);
 			// get part id from label prt_xxx, where xxx is id
 			Long ind_label = find_command(str, "label", ind1);
 			Long ind_LF = find(str, '\n', ind1);
@@ -353,6 +352,7 @@ inline void table_of_contents(
 			clear(sb) << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
 					<< title << u8"</a>　\n";
 			ind0 = insert(html, sb, ind0);
+			last_command = 'b';
 			++ind1;
 		}
 	}
@@ -360,6 +360,10 @@ inline void table_of_contents(
 
 	part_chap_last.push_back(chap_ids.back());
 	chap_entry_last.push_back(entry);
+
+	Long kk = find_repeat(part_names);
+	if (kk >= 0)
+		throw scan_err(u8"目录中 “部分” 的名称重复：" + part_names[kk]);
 
 	// list parts
 	ind0 = find(html, "PhysWikiPartList", 0);
@@ -374,10 +378,57 @@ inline void table_of_contents(
 
 	// write to index.html
 	write(html, gv::path_out + "index.html");
-	Long kk = find_repeat(chap_ids);
+	kk = find_repeat(chap_ids);
 	if (kk >= 0)
 		throw scan_err(u8"\\chapter{} label 重复定义： " + chap_ids[kk]);
 	kk = find_repeat(part_ids);
 	if (kk >= 0)
 		throw scan_err(u8"\\part{} label 重复定义： " + part_ids[kk]);
+}
+
+// delete and rewrite "chapters" and "parts" table of sqlite db
+inline void db_update_parts_chapters(
+		// "parts" table
+		vecStr_I part_ids, vecStr_I part_name, vecStr_I chap_first, vecStr_I chap_last,
+		// "chapters" table
+		vecStr_I chap_ids, vecStr_I chap_name, vecLong_I chap_part,
+		vecStr_I entry_first, vecStr_I entry_last, SQLite::Database &db_rw)
+{
+	cout << "updating database (" << part_name.size() << " parts, "
+		 << chap_name.size() << " chapters) ... ";
+	cout.flush();
+
+	// insert parts
+	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str>> part_tab;
+	for (Long i = 0; i < size(part_ids); ++i)
+		part_tab[make_tuple(part_ids[i])] = make_tuple((int64_t)i, part_name[i], chap_first[i], chap_last[i]);
+	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
+
+	// insert chapters
+	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str,Str>> chap_tab;
+	for (Long i = 0; i < size(chap_ids); ++i)
+		chap_tab[make_tuple(chap_ids[i])] = make_tuple((int64_t)i, chap_name[i], part_ids[chap_part[i]],
+			entry_first[i], entry_last[i]);
+	update_sqlite_table(chap_tab, "chapters", "", {"id", "order", "caption", "part", "entry_first", "entry_last"}, 1, db_rw);
+	cout << "done." << endl;
+}
+
+// --toc
+// table of contents
+// generate index.html from main.tex
+inline void arg_toc(SQLite::Database &db_rw)
+{
+	cout << u8"\n\n\n\n\n正在从 main.tex 生成目录 index.html ...\n" << endl;
+	vecStr titles, entries;
+	vecBool is_draft;
+	vecStr part_ids, part_name, part_chap_first, part_chap_last;
+	vecStr chap_ids, chap_name, entry_first, entry_last;
+	vecLong entry_part, chap_part, entry_chap;
+	table_of_contents(part_ids, part_name, part_chap_first, part_chap_last, // `parts` table
+		chap_ids, chap_name, chap_part, entry_first, entry_last, // `chapters` table
+		entries, titles, is_draft, entry_part, entry_chap, db_rw); // `entries` table
+
+	db_update_parts_chapters(part_ids, part_name, part_chap_first, part_chap_last, chap_ids, chap_name, chap_part,
+		entry_first, entry_last, db_rw);
+	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
 }
