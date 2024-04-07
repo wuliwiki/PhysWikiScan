@@ -118,7 +118,6 @@ void get_path(Str_O path_in, Str_O path_out, Str_O path_data, Str_O url, vecStr_
 		path_out = args[N - 3];
 		path_data = args[N - 2];
 		url = args[N - 1];
-		args.erase(args.begin() + N - 5, args.end());
 		args.resize(args.size()-5);
 		return;
 	}
