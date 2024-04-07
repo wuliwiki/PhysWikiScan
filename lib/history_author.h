@@ -40,6 +40,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 // if an author has "authors.aka", return aka; otherwise return the same `author_id`
 inline Long real_author(Long_I author_id, SQLite::Database &db_read)
 {
+	SLS_ERR("this should not be used now, editor logs in the author as aka already!");
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "aka" FROM "authors" WHERE "id"=?;)");
 	stmt_select.bind(1, (int64_t)author_id);
@@ -51,24 +52,22 @@ inline Long real_author(Long_I author_id, SQLite::Database &db_read)
 
 // update db table "entry_authors", based on backup count in "history" and "contrib_adjust"
 // TODO: consider "contrib_adjust" table
-inline void db_update_authors1(unordered_map<Long, Long> &real_author_minutes, Str_I entry, SQLite::Database &db_rw)
+inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I entry, SQLite::Database &db_rw)
 {
-	real_author_minutes.clear();
+	author_minutes.clear();
 	SQLite::Statement stmt_count(db_rw,
 		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
 
 	stmt_count.bind(1, entry);
 	while (stmt_count.executeStep()) {
 		Long id = stmt_count.getColumn(0).getInt64();
-		if (gv::is_wiki)
-			id = real_author(id, db_rw);
 		Long time = 5*stmt_count.getColumn(1).getInt64();
-		real_author_minutes[id] += time;
+		author_minutes[id] += time;
 	}
 	stmt_count.reset();
 
 	unordered_map<tuple<Str,int64_t>,tuple<int64_t>> records;
-	for (auto &e : real_author_minutes)
+	for (auto &e : author_minutes)
 		records[make_tuple(entry, (int64_t)e.first)] = make_tuple((int64_t)e.second);
 	clear(sb) << "\"entry\"='" << entry << '\'';
 	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"}, 2, db_rw);
@@ -573,7 +572,6 @@ inline void history_normalize(SQLite::Database &db_rw)
 // use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
-	Long real_author_id = (gv::is_wiki ? real_author(author_id, db_rw) : author_id);
 	Str str; // content of entry
 	Str time_new_str;
 	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
@@ -630,7 +628,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		time_new_str = time_str("%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
-		stmt_insert.bind(3, (int64_t)real_author_id);
+		stmt_insert.bind(3, (int64_t)author_id);
 		stmt_insert.bind(4, entry);
 		stmt_insert.bind(5, int64_t(u8count(str)));
 		stmt_insert.bind(6, 0);
@@ -642,7 +640,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update2.reset();
 		clear(sb) << backup_path
-			<< time_new_str << '_' << real_author_id << '_' << entry << ".tex";
+			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
 			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
 		write(str, sb);
@@ -651,7 +649,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		SQLite::Statement stmt_insert3(db_rw,
 			R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
 		stmt_insert3.bind(1, entry);
-		stmt_insert3.bind(2, (int64_t)real_author_id);
+		stmt_insert3.bind(2, (int64_t)author_id);
 		stmt_insert3.bind(3, hash); // last_backup
 		stmt_insert3.exec(); stmt_insert3.reset();
 		return;
@@ -678,7 +676,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	bool replace = false; // replace the last backup
 	time_t time = std::time(nullptr);
 	time_t time_new = time;
-	if (real_author_id == author_id_last) {
+	if (author_id == author_id_last) {
 		if (time <= time_last) {
 			replace = true;
 			time_new = time_last;
@@ -688,7 +686,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 				time_new = time_last + ((time-time_last)/300+1)*300;
 		}
 	}
-	else { // real_author_id != author_id_last
+	else { // author_id != author_id_last
 		if (time <= time_last)
 			time_new = time_last + 1;
 	}
@@ -734,11 +732,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			R"(UPDATE "entry_authors" SET "last_backup"=? WHERE "entry"=? AND "author"=?;)");
 		stmt_update5.bind(1, hash); // last_backup
 		stmt_update5.bind(2, entry);
-		stmt_update5.bind(3, (int64_t)real_author_id);
+		stmt_update5.bind(3, (int64_t)author_id);
 		Long changed = stmt_update5.exec();
 		if (changed != 1) {
 			if (changed != 0) throw scan_err(SLS_WHERE);
-			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)real_author_id);
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id);
 			stmt_insert5.bind(3, hash);
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
@@ -756,20 +754,20 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		time_new_str = time_t2str(time_new, "%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
-		stmt_insert.bind(3, (int64_t)real_author_id);
+		stmt_insert.bind(3, (int64_t)author_id);
 		stmt_insert.bind(4, entry);
 		stmt_insert.bind(5, (int64_t)char_add);
 		stmt_insert.bind(6, (int64_t)char_del);
 		stmt_insert.bind(7, hash_last);
 		stmt_insert.exec(); stmt_insert.reset();
 
-		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << real_author_id
+		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id
 			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
 		db_log(sb);
 
 		// write new file
 		clear(sb) << backup_path
-			<< time_new_str << '_' << real_author_id << '_' << entry << ".tex";
+			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
 			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
 		write(str, sb);
@@ -779,11 +777,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			R"(UPDATE "entry_authors" SET "contrib"="contrib"+5, "last_backup"=? WHERE "entry"=? AND "author"=?;)");
 		stmt_update3.bind(1, hash); // last_backup
 		stmt_update3.bind(2, entry);
-		stmt_update3.bind(3, (int64_t)real_author_id);
+		stmt_update3.bind(3, (int64_t)author_id);
 		Long changed = stmt_update3.exec();
 		if (changed != 1) {
 			if (changed != 0) throw scan_err(SLS_WHERE);
-			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)real_author_id);
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id);
 			stmt_insert5.bind(3, hash);
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
@@ -793,7 +791,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		// update "authors.contrib"
 		SQLite::Statement stmt_update4(db_rw,
 			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "id"=?;)");
-		stmt_update4.bind(1, (int64_t)real_author_id);
+		stmt_update4.bind(1, (int64_t)author_id);
 		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update4.reset();
 		db_log(u8"更新 authors.contrib += 5");
