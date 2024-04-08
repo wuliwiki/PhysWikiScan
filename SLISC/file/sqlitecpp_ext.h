@@ -13,21 +13,54 @@ namespace slisc  {
 // SQL table cell value (unsafe!)
 struct SQLval {
 	char type;
-	union {
-        int64_t i;
-        const char *s;
-    };
-	SQLval &operator=(Str_I val) { type = 's'; s = val.c_str(); return *this; };
+	int64_t i;
+	Str s;
+	explicit SQLval() : type('n') {}
+	explicit SQLval(char type) : type(type) {}
+	SQLval(Long_I i) : type('i'), i(i) {}
+	SQLval(Str_I str) : type('s'), s(str) {}
+	SQLval(Str && str) noexcept : type('s'), s(move(str)) {}
+
 	SQLval &operator=(Long_I val) { type = 'i'; i = val; return *this; };
+	SQLval &operator=(Str_I val) { type = 's'; s = val; return *this; };
+	SQLval &operator=(Str && val) { type = 's'; s = move(val); return *this; };
+
 	bool operator==(const SQLval &rhs) const {
+		if (type != rhs.type)
+			return false;
 		if (type == 's')
-			return strcmp(s, rhs.s) == 0;
-		else
+			return s == rhs.s;
+		else if (type == 'i')
 			return i == rhs.i;
+		else
+			throw internal_err(SLS_WHERE);
+	}
+	bool operator!=(const SQLval &rhs) const {
+		return !((*this) == rhs);
 	}
 };
 
 typedef vector<SQLval> vecSQLval;
+
+inline void bind(SQLite::Statement &stmt, Int i, const SQLval &val)
+{
+	if (val.type == 's')
+		stmt.bind(i, val.s);
+	else if (val.type == 'i')
+		stmt.bind(i, val.i);
+	else
+		throw internal_err(SLS_WHERE);
+}
+
+inline void getColumn(SQLval &val, SQLite::Statement &stmt, Int i)
+{
+	if (val.type == 's')
+		val.s = stmt.getColumn(i).getString();
+	else if (val.type == 'i')
+		val.i = stmt.getColumn(i).getInt64();
+	else
+		throw internal_err(SLS_WHERE);
+}
 
 } // namespace slisc
 
@@ -37,7 +70,7 @@ template <>
 struct hash<slisc::SQLval> {
 	size_t operator()(const SQLval &val) {
 		if (val.type == 's')
-			return slisc::hash_cstr(val.s);
+			return std::hash<Str>{}(val.s);
 		else
 			return std::hash<int64_t>{}(val.i);
 	}
@@ -100,13 +133,13 @@ inline void update_sqlite_table(
 	Long_I Npk, // first Npk of field_names are primary keys
 	SQLite::Database &db_rw,
 	void (*callback) ( // callback for db change
-		char act, // [i] insert [u] update [d] delete [a] all deleted (cols_changed[0] will be number of deleted records)
-		Str_I table, vecStr_I field_names, const pair<vecSQLval, vecSQLval> &row,
-		vecLong_I cols_changed, const vecSQLval &old_vals // row.second(cols_changed[j]) was old_vals[j]
+		char act, // [i] insert [u] update [d] delete [a] all deleted (ind_changed[0] will be # of deleted records)
+		Str_I table, vecStr_I field_names, const pair<vecSQLval, vecSQLval> &row, // the row in `data`
+		vecLong_I ind_changed, const vecSQLval &old_vals // row.second(ind_changed[j]) was old_vals[j]
 	) = nullptr
 ) {
 	vecSQLval old_vals;
-	vecLong cols_changed;
+	vecLong ind_changed;
 
 	if (data.empty()) {
 		// delete all records
@@ -115,8 +148,8 @@ inline void update_sqlite_table(
 			sb << " WHERE " << condition;
 		Long Ndel = db_rw.exec(sb);
 		if (callback) {
-			cols_changed.push_back(Ndel);
-			callback('a', table_name, field_names, make_pair(vecSQLval(), vecSQLval()), cols_changed, old_vals);
+			ind_changed.push_back(Ndel);
+			callback('a', table_name, field_names, make_pair(vecSQLval(), vecSQLval()), ind_changed, old_vals);
 		}
 		return;
 	}
@@ -132,7 +165,6 @@ inline void update_sqlite_table(
 
 	pair<vecSQLval, vecSQLval> old_row;
 	vecSQLval key(Npk);
-	std::forward_list<Str> vs; // temporary strings for SQLval to point to
 
 	// field types
 	auto &row0 = *data.begin();
@@ -140,28 +172,18 @@ inline void update_sqlite_table(
 		key[i].type = row0.first[i].type;
 
 	while (stmt_select.executeStep()) {
-		for (Int j = 0; j < Npk; ++j) {
-			if (key[j].type == 's') {
-				vs.push_front(stmt_select.getColumn(j).getString());
-				key[j] = vs.front();
-			}
-			else
-				key[j] = stmt_select.getColumn(j).getInt64();
-		}
+		for (Int j = 0; j < Npk; ++j)
+			getColumn(key[j], stmt_select, j);
 		auto p_row = data.find(key);
 		if (p_row == data.end()) {
 			// key not found, deleted
-			for (Long j = 0; j < Npk; ++j) {
-				if (key[j].type == 's')
-					stmt_delete.bind(j+1, key[j].s);
-				else
-					stmt_delete.bind(j+1, key[j].i);
-			}
+			for (Long j = 0; j < Npk; ++j)
+				bind(stmt_delete, j+1, key[j]);
 			if (stmt_delete.exec() != 1)
 				SLS_ERR(SLS_WHERE);
 			stmt_delete.reset();
 			if (callback)
-				callback('d', table_name, field_names, row0, cols_changed, old_vals);
+				callback('d', table_name, field_names, row0, ind_changed, old_vals);
 			continue;
 		}
 		// check for change
@@ -169,68 +191,39 @@ inline void update_sqlite_table(
 			auto &vals = p_row->second;
 			for (Long j = 0; j < Nval; ++j) {
 				Long col = Npk+j;
-				if (vals[j].type == 's') {
-					vs.push_front(stmt_select.getColumn(col).getString());
-					if (vals[j].s != vs.front()) {
-						cols_changed.push_back(j);
-						old_vals.emplace_back();
-						old_vals.back() = vs.front();
-					}
-				}
-				else {
-					Long old_i = stmt_select.getColumn(col).getInt64();
-					if (vals[j].i != old_i) {
-						cols_changed.push_back(j);
-						old_vals.emplace_back();
-						old_vals.back() = old_i;
-					}
+				SQLval val; val.type = vals[j].type;
+				getColumn(val, stmt_select, col);
+				if (vals[j] != val) {
+					ind_changed.push_back(j);
+					old_vals.push_back(val);
 				}
 			}
-			if (!cols_changed.empty()) {
+			if (!ind_changed.empty()) {
 				// update db record
-				for (Long j = 0; j < Nval; ++j) {
-					if (vals[j].type == 's')
-						stmt_update.bind(j+1, vals[j].s);
-					else
-						stmt_update.bind(j+1, vals[j].i);
-				}
-				for (Long j = 0; j < Npk; ++j) {
-					if (key[j].type == 's')
-						stmt_update.bind(Nval+j+1, key[j].s);
-					else
-						stmt_update.bind(Nval+j+1, key[j].i);
-				}
+				for (Long j = 0; j < Nval; ++j)
+					bind(stmt_update, j+1, vals[j]);
+				for (Long j = 0; j < Npk; ++j)
+					bind(stmt_update, Nval+j+1, key[j]);
 				if (stmt_update.exec() != 1) SLS_ERR(SLS_WHERE);
 				stmt_update.reset();
 				if (callback)
-					callback('u', table_name, field_names, *p_row, cols_changed, old_vals);
+					callback('u', table_name, field_names, *p_row, ind_changed, old_vals);
 			}
 		}
 		data.erase(p_row);
-		cols_changed.clear();
-		vs.clear();
+		ind_changed.clear();
 	}
 	stmt_select.reset();
 
 	// new records
 	for (auto &row : data) {
-		auto &key = row.first; auto &val = row.second;
-		for (Long j = 0; j < Npk; ++j) {
-			if (key[j].type == 's')
-				stmt_insert.bind(j+1, key[j].s);
-			else
-				stmt_insert.bind(j+1, key[j].i);
-		}
-		for (Long j = 0; j < Nval; ++j) {
-			Long col = Npk+j+1;
-			if (val[j].type == 's')
-				stmt_insert.bind(col, val[j].s);
-			else
-				stmt_insert.bind(col, val[j].i);
-		}
+		for (Long j = 0; j < Npk; ++j)
+			bind(stmt_insert, j+1, row.first[j]);
+		for (Long j = 0; j < Nval; ++j)
+			bind(stmt_insert, Npk+j+1, row.second[j]);
 		stmt_insert.exec(); stmt_insert.reset();
 		if (callback)
-			callback('i', table_name, field_names, row, cols_changed, old_vals);
+			callback('i', table_name, field_names, row, ind_changed, old_vals);
 	}
 }
 

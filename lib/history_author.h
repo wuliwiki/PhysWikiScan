@@ -51,6 +51,7 @@ inline Long real_author(Long_I author_id, SQLite::Database &db_read)
 }
 
 // update db table "entry_authors", based on backup count in "history" and "contrib_adjust"
+// will destroy `author_minutes`
 // TODO: consider "contrib_adjust" table
 inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I entry, SQLite::Database &db_rw)
 {
@@ -69,12 +70,12 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 	unordered_map<vecSQLval,vecSQLval> records;
 	for (auto &e : author_minutes) {
 		vecSQLval key(2), val(1);
-		key[0] = entry; key[1] = e.first; val[0] = e.second;
+		key[0] = entry; key[1] = e.first; val[0] = move(e.second);
 		records[move(key)] = move(val);
 	}
 	clear(sb) << "\"entry\"='" << entry << '\'';
 	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"},
-						2, db_rw, &sqlite_callback);
+		2, db_rw, &sqlite_callback);
 }
 
 // update all authors
