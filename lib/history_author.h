@@ -70,7 +70,7 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 	unordered_map<vecSQLval,vecSQLval> records;
 	for (auto &e : author_minutes) {
 		vecSQLval key(2), val(1);
-		key[0] = entry; key[1] = e.first; val[0] = move(e.second);
+		key[0] = entry; key[1] = e.first; val[0] = e.second;
 		records[move(key)] = move(val);
 	}
 	clear(sb) << "\"entry\"='" << entry << '\'';

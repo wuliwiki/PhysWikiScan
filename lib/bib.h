@@ -176,7 +176,7 @@ inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 // will destroy `entry_bib_order`
 inline void db_update_entry_bibs(
 		//                 entry ->           (bib -> \cite{} order)
-		unordered_map<Str, unordered_map<Str,   Long>> &entry_bib_order,
+		const unordered_map<Str, unordered_map<Str,   Long>> &entry_bib_order,
 		SQLite::Database &db_rw)
 {
 	unordered_map<vecSQLval, vecSQLval> records; // (entry,bib) -> order
@@ -185,7 +185,7 @@ inline void db_update_entry_bibs(
 		records.clear();
 		for (auto &bib_order : e.second) {
 			vecSQLval key(2), val(1);
-			key[0] = entry; key[1] = bib_order.first; val[0] = move(bib_order.second);
+			key[0] = entry; key[1] = bib_order.first; val[0] = bib_order.second;
 			records[move(key)] = move(val);
 		}
 		update_sqlite_table(records, "entry_bibs", R"("entry"=')" + entry + '\'',

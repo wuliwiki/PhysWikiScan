@@ -12,37 +12,28 @@ namespace slisc  {
 
 // SQL table cell value (unsafe!)
 struct SQLval {
-	char type;
-	int64_t i;
-	Str s;
-	explicit SQLval() : type('n') {}
+	char type; // 's' string; 'i' int64_t; 'n' no value;
+	union {
+        int64_t i;
+        const char *s;
+    };
+	SQLval() = default;
 	explicit SQLval(char type) : type(type) {}
-	SQLval(Long_I i) : type('i'), i(i) {}
-	SQLval(Str_I str) : type('s'), s(str) {}
-	SQLval(Str && str) noexcept : type('s'), s(move(str)) {}
-
+	SQLval &operator=(Str_I val) { type = 's'; s = val.c_str(); return *this; };
 	SQLval &operator=(Long_I val) { type = 'i'; i = val; return *this; };
-	SQLval &operator=(Str_I val) { type = 's'; s = val; return *this; };
-	SQLval &operator=(Str && val) { type = 's'; s = move(val); return *this; };
-
 	bool operator==(const SQLval &rhs) const {
-		if (type != rhs.type)
-			return false;
 		if (type == 's')
-			return s == rhs.s;
-		else if (type == 'i')
-			return i == rhs.i;
+			return strcmp(s, rhs.s) == 0;
 		else
-			throw internal_err(SLS_WHERE);
+			return i == rhs.i;
 	}
-	bool operator!=(const SQLval &rhs) const {
-		return !((*this) == rhs);
-	}
+	bool operator!=(const SQLval &rhs) const { return !(operator==(rhs)); }
 };
 
+typedef const SQLval &SQLval_I;
 typedef vector<SQLval> vecSQLval;
 
-inline void bind(SQLite::Statement &stmt, Int i, const SQLval &val)
+inline void bind(SQLite::Statement &stmt, Int_I i, SQLval_I val)
 {
 	if (val.type == 's')
 		stmt.bind(i, val.s);
@@ -52,10 +43,12 @@ inline void bind(SQLite::Statement &stmt, Int i, const SQLval &val)
 		throw internal_err(SLS_WHERE);
 }
 
-inline void getColumn(SQLval &val, SQLite::Statement &stmt, Int i)
+inline void getColumn(SQLval &val, SQLite::Statement &stmt, Int_I i, Str &str)
 {
-	if (val.type == 's')
-		val.s = stmt.getColumn(i).getString();
+	if (val.type == 's') {
+		str = stmt.getColumn(i).getString();
+		val.s = str.c_str();
+	}
 	else if (val.type == 'i')
 		val.i = stmt.getColumn(i).getInt64();
 	else
@@ -68,9 +61,9 @@ namespace std {
 
 template <>
 struct hash<slisc::SQLval> {
-	size_t operator()(const SQLval &val) {
+	size_t operator()(SQLval_I val) {
 		if (val.type == 's')
-			return std::hash<Str>{}(val.s);
+			return slisc::hash_cstr(val.s);
 		else
 			return std::hash<int64_t>{}(val.i);
 	}
@@ -130,11 +123,11 @@ inline void update_sqlite_table(
 	Str_I table_name,
 	Str_I condition, // the SQL statement after "WHERE"
 	vecStr_I field_names, // field names of `data`, in order
-	Long_I Npk, // first Npk of field_names are primary keys
+	Int_I Npk, // first Npk of field_names are primary keys
 	SQLite::Database &db_rw,
 	void (*callback) ( // callback for db change
-		char act, // [i] insert [u] update [d] delete [a] all deleted (ind_changed[0] will be # of deleted records)
-		Str_I table, vecStr_I field_names, const pair<vecSQLval, vecSQLval> &row, // the row in `data`
+		char act, // [i] insert [u] update [d] delete [a] all deleted (ind_changed[0] will be number of deleted records)
+		Str_I table, vecStr_I field_names, const pair<vecSQLval, vecSQLval> &row,
 		vecLong_I ind_changed, const vecSQLval &old_vals // row.second(ind_changed[j]) was old_vals[j]
 	) = nullptr
 ) {
@@ -147,14 +140,14 @@ inline void update_sqlite_table(
 		if (!condition.empty())
 			sb << " WHERE " << condition;
 		Long Ndel = db_rw.exec(sb);
-		if (callback) {
+		if (Ndel && callback) {
 			ind_changed.push_back(Ndel);
 			callback('a', table_name, field_names, make_pair(vecSQLval(), vecSQLval()), ind_changed, old_vals);
 		}
 		return;
 	}
 
-	Long Nval = size(field_names) - Npk;
+	Int Nval = (int)size(field_names) - Npk;
 	Str q_select, q_insert, q_update, q_delete;
 	update_sqlite_table_query(q_select, q_insert, q_update, q_delete,
 		table_name, condition, field_names, Npk);
@@ -165,6 +158,7 @@ inline void update_sqlite_table(
 
 	pair<vecSQLval, vecSQLval> old_row;
 	vecSQLval key(Npk);
+	vecStr str_pool(Npk+Nval); // temporary strings for SQLval to point to
 
 	// field types
 	auto &row0 = *data.begin();
@@ -172,12 +166,13 @@ inline void update_sqlite_table(
 		key[i].type = row0.first[i].type;
 
 	while (stmt_select.executeStep()) {
+		Long ipool = 0;
 		for (Int j = 0; j < Npk; ++j)
-			getColumn(key[j], stmt_select, j);
+			getColumn(key[j], stmt_select, j, str_pool[ipool++]);
 		auto p_row = data.find(key);
 		if (p_row == data.end()) {
 			// key not found, deleted
-			for (Long j = 0; j < Npk; ++j)
+			for (Int j = 0; j < Npk; ++j)
 				bind(stmt_delete, j+1, key[j]);
 			if (stmt_delete.exec() != 1)
 				SLS_ERR(SLS_WHERE);
@@ -189,10 +184,9 @@ inline void update_sqlite_table(
 		// check for change
 		if (Nval > 0) {
 			auto &vals = p_row->second;
-			for (Long j = 0; j < Nval; ++j) {
-				Long col = Npk+j;
-				SQLval val; val.type = vals[j].type;
-				getColumn(val, stmt_select, col);
+			for (Int j = 0; j < Nval; ++j) {
+				SQLval val(vals[j].type);
+				getColumn(val, stmt_select, Npk+j, str_pool[ipool++]);
 				if (vals[j] != val) {
 					ind_changed.push_back(j);
 					old_vals.push_back(val);
@@ -200,9 +194,9 @@ inline void update_sqlite_table(
 			}
 			if (!ind_changed.empty()) {
 				// update db record
-				for (Long j = 0; j < Nval; ++j)
+				for (Int j = 0; j < Nval; ++j)
 					bind(stmt_update, j+1, vals[j]);
-				for (Long j = 0; j < Npk; ++j)
+				for (Int j = 0; j < Npk; ++j)
 					bind(stmt_update, Nval+j+1, key[j]);
 				if (stmt_update.exec() != 1) SLS_ERR(SLS_WHERE);
 				stmt_update.reset();
@@ -217,9 +211,9 @@ inline void update_sqlite_table(
 
 	// new records
 	for (auto &row : data) {
-		for (Long j = 0; j < Npk; ++j)
+		for (Int j = 0; j < Npk; ++j)
 			bind(stmt_insert, j+1, row.first[j]);
-		for (Long j = 0; j < Nval; ++j)
+		for (Int j = 0; j < Nval; ++j)
 			bind(stmt_insert, Npk+j+1, row.second[j]);
 		stmt_insert.exec(); stmt_insert.reset();
 		if (callback)

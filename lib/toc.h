@@ -389,10 +389,10 @@ inline void table_of_contents(
 // delete and rewrite "chapters" and "parts" table of sqlite db
 inline void db_update_parts_chapters(
 		// "parts" table
-		vecStr_I part_ids, vecStr &part_name, vecStr &chap_first, vecStr &chap_last,
+		vecStr_I part_ids, vecStr_I part_name, vecStr_I chap_first, vecStr_I chap_last,
 		// "chapters" table
-		vecStr_I chap_ids, vecStr &chap_name, vecLong &chap_part,
-		vecStr &entry_first, vecStr &entry_last, SQLite::Database &db_rw)
+		vecStr_I chap_ids, vecStr chap_name, vecLong &chap_part,
+		vecStr_I entry_first, vecStr_I entry_last, SQLite::Database &db_rw)
 {
 	cout << "updating database (" << part_name.size() << " parts, "
 		 << chap_name.size() << " chapters) ... " << endl;
@@ -401,8 +401,8 @@ inline void db_update_parts_chapters(
 	unordered_map<vecSQLval, vecSQLval> part_tab;
 	for (Long i = 0; i < size(part_ids); ++i) {
 		vecSQLval key(1), val(4);
-		key[0] = part_ids[i]; val[0] = i; val[1] = move(part_name[i]);
-		val[2] = move(chap_first[i]); val[3] = move(chap_last[i]);
+		key[0] = part_ids[i]; val[0] = i; val[1] = part_name[i];
+		val[2] = chap_first[i]; val[3] = chap_last[i];
 		part_tab[move(key)] = move(val);
 	}
 	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"},
@@ -413,8 +413,8 @@ inline void db_update_parts_chapters(
 	for (Long i = 0; i < size(chap_ids); ++i) {
 		vecSQLval key(1), val(5);
 		key[0] = chap_ids[i]; val[0] = i;
-		val[1] = move(chap_name[i]); val[2] = move(part_ids[chap_part[i]]);
-		val[3] = move(entry_first[i]); val[4] = move(entry_last[i]);
+		val[1] = chap_name[i]; val[2] = part_ids[chap_part[i]];
+		val[3] = entry_first[i]; val[4] = entry_last[i];
 		chap_tab[move(key)] = move(val);
 	}
 	update_sqlite_table(chap_tab, "chapters", "", {"id", "order", "caption", "part", "entry_first", "entry_last"},
