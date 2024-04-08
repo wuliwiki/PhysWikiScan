@@ -17,6 +17,60 @@ inline void change_set(set<T> &s, const unordered_map<T, bool> &change)
 			s.erase(e.first);
 }
 
+inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
+	const pair<vecSQLval,vecSQLval> &row,
+	vecLong_I cols_changed, const vecSQLval &old_vals)
+{
+	Str str;
+	if (act == 'a') {
+		str << "批量删除 " << cols_changed[0] << " 条记录，表 \"" << table << '\"';
+		db_log(str);
+		return;
+	}
+	else if (act == 'i') str = "插入记录 ";
+	else if (act == 'd') str = "删除记录 ";
+	else if (act == 'u') str = "更新记录 ";
+	else
+		throw internal_err(SLS_WHERE);
+	str << "表 \"" << table << "\" ";
+	Long Nkey = size(row.first), Nval = size(row.second);
+
+	if (act == 'i' || act == 'd') {
+		for (Long i = 0; i < Nkey+Nval; ++i) {
+			auto &e = (i < Nkey ? row.first[i] : row.second[i-Nkey]);
+			str << field_names[i] << ':';
+			if (e.type == 's')
+				str << e.s << ", ";
+			else
+				str << e.i << ", ";
+		}
+		str.resize(str.size() - 2);
+	}
+	else if (act == 'u') {
+		for (Long i = 0; i < Nkey; ++i) {
+			auto &e = row.first[i];
+			str << field_names[i] << ':';
+			if (e.type == 's')
+				str << e.s << ", ";
+			else
+				str << e.i << ", ";
+		}
+		str.resize(str.size() - 2);
+		str << " 更改 ";
+		for (Long i = 0; i < size(cols_changed); ++i) {
+			str << field_names[Nkey+i] << ':';
+			if (old_vals[i].type == 's')
+				str << old_vals[i].s << "->" << row.second[cols_changed[i]].s << ", ";
+			else
+				str << old_vals[i].i << "->" << row.second[cols_changed[i]].i << ", ";
+		}
+		str.resize(str.size() - 2);
+	}
+	else
+		throw scan_err(SLS_WHERE);
+	db_log(str);
+}
+
 // get table of content info from db "chapters", in ascending "order"
 inline void db_get_chapters(vecStr_O ids, vecStr_O captions, vecStr_O parts,
 							SQLite::Database &db)
@@ -93,101 +147,6 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		}
 		stmt_select.reset();
 	}
-}
-
-// update "entries" table of sqlite db, based on the info from main.tex
-// `entries` are a list of entreis from main.tex
-inline void db_update_entries_from_toc(
-		vecStr_I entries, vecStr_I titles, vecLong_I entry_part, vecStr_I part_ids,
-		vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw)
-{
-	cout << "updating sqlite database (" <<
-		entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
-
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "last"=?, "next"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "caption", "part", "chapter", "last", "next" FROM "entries" WHERE "id"=?;)");
-	SQLite::Statement stmt_select0(db_rw,
-		R"(SELECT "id" FROM "entries" WHERE "id"!='';)");
-	SQLite::Statement stmt_update0(db_rw,
-		R"(UPDATE "entries" SET "part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
-
-	// get all entreis from db to check which are not in main.tex
-	unordered_set<Str> entry_no_toc;
-	while (stmt_select0.executeStep()) {
-		const Str &entry = stmt_select0.getColumn(0);
-		entry_no_toc.insert(entry);
-	}
-
-	Str empty;
-	Long N = size(entries);
-
-	for (Long i = 0; i < N; i++) {
-		auto &entry = entries[i];
-		entry_no_toc.erase(entry);
-		auto &entry_last = (i == 0 ? empty : entries[i-1]);
-		auto &entry_next = (i == N-1 ? empty : entries[i+1]);
-
-		if (!exist("entries", "id", entry, db_rw))
-			throw scan_err(u8"main.tex 中的文章在数据库中未找到： " + entry);
-
-		// check if there is any change (unexpected)
-		stmt_select.bind(1, entry);
-		SLS_ASSERT(stmt_select.executeStep());
-		const Str &db_title = stmt_select.getColumn(0);
-		const Str &db_part = stmt_select.getColumn(1);
-		const Str &db_chapter = stmt_select.getColumn(2);
-		const Str &db_last = stmt_select.getColumn(3);
-		const Str &db_next = stmt_select.getColumn(4);
-		stmt_select.reset();
-
-		bool changed = false;
-		if (titles[i] != db_title) {
-			clear(sb) << entry << " 检测到标题改变（将更新） " << db_title << " -> " << titles[i];
-			db_log(sb);
-			changed = true;
-		}
-		if (part_ids[entry_part[i]] != db_part) {
-			clear(sb) << entry << " 检测到所在部分改变（将更新） " << db_part << " -> " << part_ids[entry_part[i]];
-			db_log(sb);
-			changed = true;
-		}
-		if (chap_ids[entry_chap[i]] != db_chapter) {
-			clear(sb) << entry << " 检测到所在章节改变（将更新） " << db_chapter << " -> " << chap_ids[entry_chap[i]];
-			db_log(sb);
-			changed = true;
-		}
-		if (entry_last != db_last) {
-			clear(sb) << entry << " 检测到上一个文章改变（将更新） " << db_last << " -> " << entry_last;
-			db_log(sb);
-			changed = true;
-		}
-		if (entry_next != db_next) {
-			clear(sb) << entry << " 检测到下一个文章改变（将更新） " << db_next << " -> " << entry_next;
-			db_log(sb);
-			changed = true;
-		}
-		if (changed) {
-			stmt_update.bind(1, titles[i]);
-			stmt_update.bind(2, part_ids[entry_part[i]]);
-			stmt_update.bind(3, chap_ids[entry_chap[i]]);
-			stmt_update.bind(4, entry_last);
-			stmt_update.bind(5, entry_next);
-			stmt_update.bind(6, entry);
-			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
-			stmt_update.reset();
-		}
-	}
-
-	// clean entries.part/chap/last/next for entries outsize main.tex
-	for (auto &entry : entry_no_toc) {
-		stmt_update0.bind(1, entry);
-		if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
-		stmt_update0.reset();
-	}
-
-	cout << "done." << endl;
 }
 
 // sum history.add and history.del for an author for a given time period
@@ -288,10 +247,14 @@ inline void db_update_entry_uprefs(
 inline void db_update_autorefs(Str_I entry, vecStr_I autoref_labels,
 	SQLite::Database &db_rw)
 {
-	unordered_map<tuple<Str,Str>, tuple<>> entry_ref;
-	for (auto &label : autoref_labels)
-		entry_ref[make_tuple(entry, label)];
-	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"=='" + entry + "'", {"entry", "label"}, 2, db_rw);
+	unordered_map<vecSQLval, vecSQLval> entry_ref;
+	for (auto &label : autoref_labels) {
+		vecSQLval key(2);
+		key[0] = entry; key[1] = label;
+		entry_ref[move(key)];
+	}
+	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"=='" + entry + "'", {"entry", "label"},
+						2, db_rw, &sqlite_callback);
 }
 
 // make db consistent

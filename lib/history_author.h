@@ -65,12 +65,16 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 		author_minutes[id] += time;
 	}
 	stmt_count.reset();
-
-	unordered_map<tuple<Str,int64_t>,tuple<int64_t>> records;
-	for (auto &e : author_minutes)
-		records[make_tuple(entry, (int64_t)e.first)] = make_tuple((int64_t)e.second);
+	// update_sqlite_table()
+	unordered_map<vecSQLval,vecSQLval> records;
+	for (auto &e : author_minutes) {
+		vecSQLval key(2), val(1);
+		key[0] = entry; key[1] = e.first; val[0] = e.second;
+		records[move(key)] = move(val);
+	}
 	clear(sb) << "\"entry\"='" << entry << '\'';
-	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"}, 2, db_rw);
+	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"},
+						2, db_rw, &sqlite_callback);
 }
 
 // update all authors

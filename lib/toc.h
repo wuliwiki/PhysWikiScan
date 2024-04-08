@@ -395,21 +395,123 @@ inline void db_update_parts_chapters(
 		vecStr_I entry_first, vecStr_I entry_last, SQLite::Database &db_rw)
 {
 	cout << "updating database (" << part_name.size() << " parts, "
-		 << chap_name.size() << " chapters) ... ";
-	cout.flush();
+		 << chap_name.size() << " chapters) ... " << endl;
 
 	// insert parts
-	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str>> part_tab;
-	for (Long i = 0; i < size(part_ids); ++i)
-		part_tab[make_tuple(part_ids[i])] = make_tuple((int64_t)i, part_name[i], chap_first[i], chap_last[i]);
-	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"}, 1, db_rw);
+	unordered_map<vecSQLval, vecSQLval> part_tab;
+	for (Long i = 0; i < size(part_ids); ++i) {
+		vecSQLval key(1), val(4);
+		key[0] = part_ids[i]; val[0] = i; val[1] = part_name[i]; val[2] = chap_first[i]; val[3] = chap_last[i];
+		part_tab[move(key)] = move(val);
+	}
+	update_sqlite_table(part_tab, "parts", "", {"id", "order", "caption", "chap_first", "chap_last"},
+						1, db_rw, &sqlite_callback);
 
 	// insert chapters
-	unordered_map<tuple<Str>, tuple<int64_t,Str,Str,Str,Str>> chap_tab;
-	for (Long i = 0; i < size(chap_ids); ++i)
-		chap_tab[make_tuple(chap_ids[i])] = make_tuple((int64_t)i, chap_name[i], part_ids[chap_part[i]],
-			entry_first[i], entry_last[i]);
-	update_sqlite_table(chap_tab, "chapters", "", {"id", "order", "caption", "part", "entry_first", "entry_last"}, 1, db_rw);
+	unordered_map<vecSQLval, vecSQLval> chap_tab;
+	for (Long i = 0; i < size(chap_ids); ++i) {
+		vecSQLval key(1), val(5);
+		key[0] = chap_ids[i]; val[0] = i; val[1] = chap_name[i]; val[2] = part_ids[chap_part[i]];
+		val[3] = entry_first[i]; val[4] = entry_last[i];
+		chap_tab[move(key)] = move(val);
+	}
+	update_sqlite_table(chap_tab, "chapters", "", {"id", "order", "caption", "part", "entry_first", "entry_last"},
+						1, db_rw, &sqlite_callback);
+	cout << "done." << endl;
+}
+
+// update "entries" table of sqlite db, based on the info from main.tex
+// `entries` are a list of entreis from main.tex
+inline void db_update_entries_from_toc(
+		vecStr_I entries, vecStr_I titles, vecLong_I entry_part, vecStr_I part_ids,
+		vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw)
+{
+	cout << "updating sqlite database (" <<
+		entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
+
+	SQLite::Statement stmt_update(db_rw,
+		R"(UPDATE "entries" SET "caption"=?, "part"=?, "chapter"=?, "last"=?, "next"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "caption", "part", "chapter", "last", "next" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_select0(db_rw,
+		R"(SELECT "id" FROM "entries" WHERE "id"!='';)");
+	SQLite::Statement stmt_update0(db_rw,
+		R"(UPDATE "entries" SET "part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
+
+	// get all entreis from db to check which are not in main.tex
+	unordered_set<Str> entry_no_toc;
+	while (stmt_select0.executeStep()) {
+		const Str &entry = stmt_select0.getColumn(0);
+		entry_no_toc.insert(entry);
+	}
+
+	Str empty;
+	Long N = size(entries);
+
+	for (Long i = 0; i < N; i++) {
+		auto &entry = entries[i];
+		entry_no_toc.erase(entry);
+		auto &entry_last = (i == 0 ? empty : entries[i-1]);
+		auto &entry_next = (i == N-1 ? empty : entries[i+1]);
+
+		if (!exist("entries", "id", entry, db_rw))
+			throw scan_err(u8"main.tex 中的文章在数据库中未找到： " + entry);
+
+		// check if there is any change (unexpected)
+		stmt_select.bind(1, entry);
+		SLS_ASSERT(stmt_select.executeStep());
+		const Str &db_title = stmt_select.getColumn(0);
+		const Str &db_part = stmt_select.getColumn(1);
+		const Str &db_chapter = stmt_select.getColumn(2);
+		const Str &db_last = stmt_select.getColumn(3);
+		const Str &db_next = stmt_select.getColumn(4);
+		stmt_select.reset();
+
+		bool changed = false;
+		if (titles[i] != db_title) {
+			clear(sb) << entry << " 检测到标题改变（将更新） " << db_title << " -> " << titles[i];
+			db_log(sb);
+			changed = true;
+		}
+		if (part_ids[entry_part[i]] != db_part) {
+			clear(sb) << entry << " 检测到所在部分改变（将更新） " << db_part << " -> " << part_ids[entry_part[i]];
+			db_log(sb);
+			changed = true;
+		}
+		if (chap_ids[entry_chap[i]] != db_chapter) {
+			clear(sb) << entry << " 检测到所在章节改变（将更新） " << db_chapter << " -> " << chap_ids[entry_chap[i]];
+			db_log(sb);
+			changed = true;
+		}
+		if (entry_last != db_last) {
+			clear(sb) << entry << " 检测到上一个文章改变（将更新） " << db_last << " -> " << entry_last;
+			db_log(sb);
+			changed = true;
+		}
+		if (entry_next != db_next) {
+			clear(sb) << entry << " 检测到下一个文章改变（将更新） " << db_next << " -> " << entry_next;
+			db_log(sb);
+			changed = true;
+		}
+		if (changed) {
+			stmt_update.bind(1, titles[i]);
+			stmt_update.bind(2, part_ids[entry_part[i]]);
+			stmt_update.bind(3, chap_ids[entry_chap[i]]);
+			stmt_update.bind(4, entry_last);
+			stmt_update.bind(5, entry_next);
+			stmt_update.bind(6, entry);
+			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update.reset();
+		}
+	}
+
+	// clean entries.part/chap/last/next for entries outsize main.tex
+	for (auto &entry : entry_no_toc) {
+		stmt_update0.bind(1, entry);
+		if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update0.reset();
+	}
+
 	cout << "done." << endl;
 }
 

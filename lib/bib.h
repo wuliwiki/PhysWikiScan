@@ -178,14 +178,16 @@ inline void db_update_entry_bibs(
 		const unordered_map<Str, unordered_map<Str,   Long>> &entry_bib_order,
 		SQLite::Database &db_rw)
 {
-	unordered_map<tuple<Str,Str>, tuple<int64_t>> records; // (entry,bib) -> order
+	unordered_map<vecSQLval, vecSQLval> records; // (entry,bib) -> order
 	for (auto &e : entry_bib_order) {
 		auto &entry = e.first;
 		records.clear();
-		for (auto &bib_order : e.second)
-			records[make_tuple(entry, bib_order.first)] = tuple<int64_t>(bib_order.second);
-
+		for (auto &bib_order : e.second) {
+			vecSQLval key(2), val(1);
+			key[0] = entry; key[1] = bib_order.first; val[0] = bib_order.second;
+			records[move(key)] = move(val);
+		}
 		update_sqlite_table(records, "entry_bibs", R"("entry"=')" + entry + '\'',
-			{"entry", "bib", "order"}, 2, db_rw);
+			{"entry", "bib", "order"}, 2, db_rw, &sqlite_callback);
 	}
 }
