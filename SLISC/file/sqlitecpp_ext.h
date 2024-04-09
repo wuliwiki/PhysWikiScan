@@ -166,9 +166,8 @@ inline void update_sqlite_table(
 		key[i].type = row0.first[i].type;
 
 	while (stmt_select.executeStep()) {
-		Long ipool = 0;
 		for (Int j = 0; j < Npk; ++j)
-			getColumn(key[j], stmt_select, j, str_pool[ipool++]);
+			getColumn(key[j], stmt_select, j, str_pool[j]);
 		auto p_row = data.find(key);
 		if (p_row == data.end()) {
 			// key not found, deleted
@@ -186,7 +185,7 @@ inline void update_sqlite_table(
 			auto &vals = p_row->second;
 			for (Int j = 0; j < Nval; ++j) {
 				SQLval val(vals[j].type);
-				getColumn(val, stmt_select, Npk+j, str_pool[ipool++]);
+				getColumn(val, stmt_select, Npk+j, str_pool[Npk+j]);
 				if (vals[j] != val) {
 					ind_changed.push_back(j);
 					old_vals.push_back(val);
