@@ -76,7 +76,7 @@ CREATE TABLE "entries" ( -- 20240403
 	"type"         TEXT    NOT NULL DEFAULT '',      -- 类型
 	"keys"         TEXT    NOT NULL DEFAULT '',      -- 【待迁移到 seo_keys 表】"关键词1|...|关键词N"
 	"draft"        INTEGER NOT NULL DEFAULT 2,       -- 【待迁移到 entry_tags 表】[0|1|2] 是否草稿（文章是否标记 \issueDraft， 2 代表未知）
-	"deleted"      INTEGER NOT NULL DEFAULT 0,       -- 【待迁移到 entry_tags 表】[0|1] 是否已删除
+	"deleted"      INTEGER NOT NULL DEFAULT 0,       -- 【待迁移到 entry_tags 表】[0|1] 是否已删除（tex 文件删除，只留备份文件）
 	"last_pub"     TEXT    NOT NULL DEFAULT '',      -- 最后过审，空代表没有 (review.hash)
 	"last_backup"  TEXT    NOT NULL DEFAULT '',      -- 最后备份，空代表没有 (history.hash)
 	PRIMARY KEY("id"),

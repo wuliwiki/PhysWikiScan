@@ -436,7 +436,7 @@ inline void db_update_entries_from_toc(
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "caption", "part", "chapter", "last", "next" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select0(db_rw,
-		R"(SELECT "id" FROM "entries" WHERE "id"!='';)");
+		R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
 	SQLite::Statement stmt_update0(db_rw,
 		R"(UPDATE "entries" SET "part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
 
@@ -509,9 +509,18 @@ inline void db_update_entries_from_toc(
 
 	// clean entries.part/chap/last/next for entries outsize main.tex
 	for (auto &entry : entry_no_toc) {
-		stmt_update0.bind(1, entry);
-		if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
-		stmt_update0.reset();
+		stmt_select.bind(1, entry);
+		SLS_ASSERT(stmt_select.executeStep());
+		if (!stmt_select.getColumn(1).getString().empty() || !stmt_select.getColumn(2).getString().empty() ||
+			!stmt_select.getColumn(3).getString().empty() || !stmt_select.getColumn(4).getString().empty()) {
+			// \entry{}{} just removed from main.tex
+			clear(sb) << entry << R"( 检测到文章从目录移除，将更新 "part"='', "chapter"='', "last"='', "next"='')";
+			db_log(sb);
+			stmt_update0.bind(1, entry);
+			if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
+			stmt_update0.reset();
+		}
+		stmt_select.reset();
 	}
 
 	cout << "done." << endl;
@@ -531,7 +540,7 @@ inline void arg_toc(SQLite::Database &db_rw)
 	table_of_contents(part_ids, part_name, part_chap_first, part_chap_last, // `parts` table
 		chap_ids, chap_name, chap_part, entry_first, entry_last, // `chapters` table
 		entries, titles, is_draft, entry_part, entry_chap, db_rw); // `entries` table
-
+	// `entries` are only from main.tex
 	db_update_parts_chapters(part_ids, part_name, part_chap_first, part_chap_last, chap_ids, chap_name, chap_part,
 		entry_first, entry_last, db_rw);
 	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);

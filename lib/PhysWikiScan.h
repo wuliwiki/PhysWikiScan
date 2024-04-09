@@ -916,6 +916,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_
 
 // delete entries
 // if failed, db will not change
+// delete the tex file
 inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
 	vecStr ref_by, vtmp(1);
@@ -925,7 +926,8 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "entry" FROM "entry_uprefs" WHERE "upref"=?;)");
 	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=? WHERE "id"=?;)");
+		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=?, )"
+		R"("part"='', "chapter"='', "last"='', "next"='', WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
