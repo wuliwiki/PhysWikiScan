@@ -572,9 +572,11 @@ CREATE INDEX idx_author_rights_author ON "author_rights"("author");
 CREATE INDEX idx_author_rights_right ON "author_rights"("right");
 
 -- 工资规则
+-- rule: 作者 -> 时薪
 -- rule: 作者 + 协议 -> 时薪
 -- rule: 作者 + 文章 -> 缩放
 -- rule: 文章 -> 缩放
+-- 工资 = 时长 * 时薪 * 缩放； 如果有多条适用的时薪规则，就取高的。缩放同理。
 CREATE TABLE "salary" ( -- 20240403
 	"id"            INTEGER NOT NULL UNIQUE,           -- 编号
 	"author"        INTEGER NOT NULL DEFAULT -1,       -- 作者（-1 代表所有）
