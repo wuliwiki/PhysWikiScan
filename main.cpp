@@ -227,6 +227,8 @@ int main(int argc, const char *argv[]) {
 		else
 			gv::is_wiki = false;
 
+		ensure_dir(gv::path_out +"code/matlab/");
+
 		// === parse arguments ===
 		clear(sb) << gv::path_data << "scan.db";
 		if (!file_exist(sb)) throw internal_err(u8"数据库文件不存在：" + sb);

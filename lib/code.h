@@ -28,7 +28,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 {
 	Long ind0 = 0, ind1 = 0;
 	Intvs intvIn, intvOut;
-	Str code, ind_str;
+	Str code, ind_str, fname;
 	find_env(intvIn, str, "lstlisting", 'i');
 	Long N = find_env(intvOut, str, "lstlisting", 'o');
 	Str lang, caption, capption_str; // language, caption
@@ -137,7 +137,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 		}
 		if (lang == "matlab" && gv::is_wiki) {
 			if (!caption.empty() && caption.back() == 'm') {
-				Str fname; fname << gv::path_out << "code/" << lang << '/' << caption;
+				clear(fname) << gv::path_out << "code/" << lang << '/' << caption;
 				// if (gv::is_entire && file_exist(fname))
 				//	throw scan_err(u8"代码文件名重复： " + fname);
 				if (file_exist(fname))
