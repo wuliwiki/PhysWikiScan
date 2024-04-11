@@ -917,6 +917,8 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_
 // delete entries
 // if failed, db will not change
 // delete the tex file
+// TODO: "labels" etc forms might still have records from `entries`
+// TODO: also delete related files from online/ changed/
 inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_throw = false)
 {
 	vecStr ref_by, vtmp(1);
@@ -928,6 +930,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=?, )"
 		R"("part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
@@ -996,6 +999,9 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		stmt_update.bind(6, entry);
 		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update.reset();
+
+		stmt_delete.bind(1, entry); // delete from "nodes"
+		stmt_delete.exec(); // don't check return
 
 		// delete file
 		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
