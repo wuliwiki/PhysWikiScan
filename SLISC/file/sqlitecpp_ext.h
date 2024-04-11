@@ -134,6 +134,7 @@ inline void update_sqlite_table(
 	vecSQLval old_vals;
 	vecLong ind_changed;
 	Str stmp;
+	pair<vecSQLval,vecSQLval> row_empty;
 
 	if (data.empty()) {
 		// delete all records
@@ -143,7 +144,7 @@ inline void update_sqlite_table(
 		Long Ndel = db_rw.exec(stmp);
 		if (Ndel && callback) {
 			ind_changed.push_back(Ndel);
-			callback('a', table_name, field_names, make_pair(vecSQLval(), vecSQLval()), ind_changed, old_vals);
+			callback('a', table_name, field_names, row_empty, ind_changed, old_vals);
 		}
 		return;
 	}
@@ -178,7 +179,7 @@ inline void update_sqlite_table(
 				SLS_ERR(SLS_WHERE);
 			stmt_delete.reset();
 			if (callback)
-				callback('d', table_name, field_names, row0, ind_changed, old_vals);
+				callback('d', table_name, field_names, row_empty, ind_changed, old_vals);
 			continue;
 		}
 		// check for change

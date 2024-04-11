@@ -253,7 +253,7 @@ inline void db_update_autorefs(Str_I entry, vecStr_I autoref_labels,
 		key[0] = entry; key[1] = label;
 		entry_ref[move(key)];
 	}
-	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"=='" + entry + "'", {"entry", "label"},
+	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"='" + entry + "'", {"entry", "label"},
 						2, db_rw, &sqlite_callback);
 }
 

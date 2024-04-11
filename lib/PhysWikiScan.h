@@ -1014,6 +1014,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 
 // delete an entry if the tex file no longer exist but entries.deleted==0
 // use --delete, skip if failed, throw when finished
+// TODO: also clean files in online/ entry/ and db tables for all deleted files
 inline void auto_delete_entries(SQLite::Database &db_rw)
 {
 	SQLite::Statement stmt_select(db_rw,
