@@ -443,7 +443,7 @@ inline void arg_bib(SQLite::Database &db_rw)
 
 // generate html from a single tex
 // output title from first line comment
-// use `clear=true` to only keep the title line and key-word line of the tex file
+// use `clear=true` to only keep the first few commented metadata of the tex file
 inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &img_to_delete,
 	Str_O title, Char &is_eng, vecStr_O fig_ids, vecStr_O fig_captions,
 	unordered_map<Str, unordered_map<Str, Str>> &fig_ext_hash,
@@ -461,12 +461,13 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	if (clear) {
 		// this option is used when deleting the entry, it will help to remove all labels, figures, etc from the db
 		// and get error if they are still being referenced
-		Long ind0 = find(str, '\n', 0);
-		if (ind0 > 0) {
-			ind0 = find(str, '\n', ind0);
-			if (ind0 > 0)
-				str.resize(ind0+1);
+		Long ind0 = 0, ind = 0;
+		while (size(str) > ind && str[ind] == '%') {
+			ind = find(str, '\n', ind);
+			if (ind < 0) break;
+			ind0 = ind;
 		}
+		str.resize(ind0+1);
 	}
 
 	// read title from first comment
@@ -700,7 +701,7 @@ inline void PhysWikiOnlineN_round1(
 				titles.resize(entries.size());
 			}
 			// update db table nodes for 1 entry (might also delete "edges" if nodes are deleted)
-			db_update_nodes(pentries[i], entry, db_rw);
+			db_update_nodes(pentries[i], entry, clear, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
@@ -914,6 +915,30 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_
 	}
 }
 
+// delete online/changed tex file, and images files of an `entry`
+inline void delete_entry_output_files(Str_I entry, SQLite::Database &db_read)
+{
+	SQLite::Statement stmt_select4(db_read, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select5(db_read, R"(SELECT "hash", "ext" FROM "images" WHERE "figure"=?;)");
+	// clean files
+	clear(sb) << gv::path_out << "../online/" << entry << ".html";
+	file_remove(sb); file_remove(sb << ".tmp");
+	clear(sb) << gv::path_out << "../changed/" << entry << ".html";
+	file_remove(sb); file_remove(sb << ".tmp");
+	stmt_select4.bind(1, entry);
+	while (stmt_select4.executeStep()) {
+		const Str &fig_id = stmt_select4.getColumn(0);
+		stmt_select5.bind(1, fig_id);
+		const Str &img_hash = stmt_select5.getColumn(0);
+		const Str &img_ext = stmt_select5.getColumn(0);
+		clear(sb) << gv::path_out << "../online/" << img_hash << '.' << img_ext;
+		file_remove(sb);
+		clear(sb) << gv::path_out << "../changed/" << img_hash << '.' << img_ext;
+		file_remove(sb);
+	}
+	stmt_select4.reset();
+}
+
 // delete entries
 // if failed, db will not change
 // delete the tex file
@@ -930,7 +955,6 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=?, )"
 		R"("part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
-	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
@@ -977,7 +1001,10 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 
 		// make sure no one is referencing anything else
 		vtmp[0] = entry;
-		try { PhysWikiOnlineN(vtmp, true, db_rw); }
+		try {
+			bool clear = true; // only keep the starting first comments of a tex file
+			PhysWikiOnlineN(vtmp, clear, db_rw);
+		}
 		catch (const std::exception &e) {
 			err_msg << "\n\n" << e.what() << "\n\n";
 		}
@@ -1000,12 +1027,10 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update.reset();
 
-		stmt_delete.bind(1, entry); // delete from "nodes"
-		stmt_delete.exec(); // don't check return
-
-		// delete file
+		// delete files
 		stmp.clear(); stmp << gv::path_in << "contents/" << entry << ".tex";
 		file_remove(stmp);
+		delete_entry_output_files(entry, db_rw);
 		cout << "成功(浅)删除： " << stmp << endl;
 	}
 	if (!err_msg.empty())
@@ -1068,6 +1093,8 @@ inline void arg_delete_cleanup(SQLite::Database &db_rw)
 		}
 		stmt_select3.reset();
 		stmt_delete6.bind(1, entry); stmt_delete6.exec(); stmt_delete6.reset();
+
+		delete_entry_output_files(entry, db_rw);
 	}
 	stmt_select2.reset();
 }
@@ -1086,8 +1113,6 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
-	SQLite::Statement stmt_select4(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
-	SQLite::Statement stmt_select5(db_rw, R"(SELECT "hash", "ext" FROM "images" WHERE "figure"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
@@ -1155,23 +1180,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 			}
 		}
 
-		// clean files
-		SQLite::Statement stmt_select4(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
-		while (stmt_select4.executeStep()) {
-			const Str &fig_id = stmt_select4.getColumn(0);
-			stmt_select5.bind(1, fig_id);
-			const Str &img_hash = stmt_select5.getColumn(0);
-			const Str &img_ext = stmt_select5.getColumn(0);
-			clear(sb) << gv::path_out << "../online/" << img_hash << '.' << img_ext;
-			file_remove(sb);
-			clear(sb) << gv::path_out << "../changed/" << img_hash << '.' << img_ext;
-			file_remove(sb);
-			clear(sb) << gv::path_out << "../online/" << entry << ".html";
-			file_remove(sb);
-			clear(sb) << gv::path_out << "../changed/" << entry << ".html";
-			file_remove(sb);
-		}
-		stmt_select4.reset();
+		delete_entry_output_files(entry, db_rw);
 	}
 }
 

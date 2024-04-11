@@ -360,8 +360,11 @@ inline void db_get_tree(
 // update "nondes" table in db, for 1 entry
 // also deletes related db "edges" if a node is deleted
 // only pentry[i].first is used
-inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_rw)
+// clear_all: (for deleting an entry) clear all nodes, incuding node_id==entry, throw if used by an edge
+inline void db_update_nodes(Pentry_I pentry, Str_I entry, Bool_I clear_all, SQLite::Database &db_rw)
 {
+	if (clear_all && !pentry.empty())
+		throw internal_err("`clear_all` must be used with empty `pentry` " SLS_WHERE);
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id", "order" FROM "nodes" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "to" FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
@@ -369,14 +372,14 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, SQLite::Database &db_r
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "nodes" SET "order"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "edges" WHERE "from"=?;)");
 	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "nodes" WHERE "id"=?;)");
-	unordered_set<Str> nodes_deleted; // old nodes of `entry`, id_node == entry is not included
+	unordered_set<Str> nodes_deleted; // old nodes of `entry`, id_node == entry is not included unless `clear_all`
 	unordered_map<Str, Long> db_node_order; // includinig default node
 
 	// get db nodes of `entry` to see which are deleted
 	stmt_select.bind(1, entry);
 	while (stmt_select.executeStep()) {
 		const Str &node_id = stmt_select.getColumn(0);
-		if (node_id != entry)
+		if (node_id != entry || clear_all)
 			nodes_deleted.insert(node_id);
 		db_node_order[node_id] = stmt_select.getColumn(1).getInt64();
 	}
