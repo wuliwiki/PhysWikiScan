@@ -25,7 +25,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * `--backup 文章 作者id` 把 `contents/文章.tex` 备份到 `../PhysWiki-backup/YYYYMMDDHHMM_作者id_文章.tex`， 若 hash 已经在数据库中则不备份并输出 `exist 已存在的文件名 history.id`。 同一文章同一作者，若距离上次备份超过 30 分钟，则使用当前时间， 否则增加到上次备份时间加五分钟的整数倍，若已经存在，则覆盖。 如果新增了文件和记录，就会在 stdout 输出 `added 文件名 history.id`； 若替换了文件和记录，就会输出 `replaced 文件名 history.id`。
 * `--bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `--delete 文章1 文章2 ...` 相当于先把文章除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否文章本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除文章文件。
-* `--auto-delete` 把 `contents` 中不存在的， 但是数据库中未标记删除的文章标记删除。
+* `--delete-cleanup` （`--delete` 本身就要求包含这些功能）删除数据库中已删除词条的 label，ref 等残留记录，删除 online/changed 中的相关文件。
 * `--delete-hard 文章1 文章2 ...` 如果文章没有标记删除就先使用 `--delete 文章`， 然后删除指定文章所有数据和相关文件和备份（在多个文章之间共享的除外）。
 * `--delete-figure 图片1 图片2 ...` 删除数据库中已经被标记 `figures.deleted` 的图片以及所有相关 `images` 和图片文件。
 

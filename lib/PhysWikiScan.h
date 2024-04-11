@@ -1014,14 +1014,24 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 
 // delete an entry if the tex file no longer exist but entries.deleted==0
 // use --delete, skip if failed, throw when finished
-// TODO: also clean files in online/ entry/ and db tables for all deleted files
-inline void auto_delete_entries(SQLite::Database &db_rw)
+// clean files in online/ entry/ and db tables for all deleted files
+// clean db tables
+inline void arg_delete_cleanup(SQLite::Database &db_rw)
 {
-	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "id" FROM "entries" WHERE "deleted"=0;)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries" WHERE "deleted"=0;)");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id" FROM "entries" WHERE "deleted"=1;)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "entry"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "labels" WHERE "entry"=?;)");
+	SQLite::Statement stmt_delete2(db_rw, R"(DELETE FROM "entry_uprefs" WHERE "entry"=?;)");
+	SQLite::Statement stmt_delete3(db_rw, R"(DELETE FROM "entry_bibs" WHERE "entry"=?;)");
+	SQLite::Statement stmt_delete4(db_rw, R"(DELETE FROM "entry_refs" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "nodes" WHERE "entry"=?;)");
+	SQLite::Statement stmt_delete5(db_rw, R"(DELETE FROM "edges" WHERE "to"=?;)");
+	SQLite::Statement stmt_delete6(db_rw, R"(DELETE FROM "nodes" WHERE "entry"=?;)");
+
 	vecStr entries_to_delete;
 	Str err_msg;
-	while(stmt_select.executeStep()) {
+	while (stmt_select.executeStep()) {
 		const Str &entry = stmt_select.getColumn(0);
 		if (entry == "main" || entry == "bibliography") continue;
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
@@ -1042,6 +1052,24 @@ inline void auto_delete_entries(SQLite::Database &db_rw)
 	}
 	if (!err_msg.empty())
 		throw scan_err(err_msg);
+
+	while (stmt_select2.executeStep()) {
+		const Str &entry = stmt_select2.getColumn(0);
+		stmt_delete.bind(1, entry); stmt_delete.exec(); stmt_delete.reset();
+		stmt_update.bind(1, entry); stmt_update.exec(); stmt_update.reset();
+		stmt_delete2.bind(1, entry); stmt_delete2.exec(); stmt_delete2.reset();
+		stmt_delete3.bind(1, entry); stmt_delete3.exec(); stmt_delete3.reset();
+		stmt_delete4.bind(1, entry); stmt_delete4.exec(); stmt_delete4.reset();
+
+		stmt_select3.bind(1, entry);
+		while (stmt_select3.executeStep()) {
+			const Str &node_id = stmt_select3.getColumn(0);
+			stmt_delete5.bind(1, node_id); stmt_delete5.exec(); stmt_delete5.reset();
+		}
+		stmt_select3.reset();
+		stmt_delete6.bind(1, entry); stmt_delete6.exec(); stmt_delete6.reset();
+	}
+	stmt_select2.reset();
 }
 
 // arg_delete(), plus everything associated with this entry
@@ -1058,6 +1086,8 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "figures" SET "deleted"=1 WHERE "id"=?;)");
+	SQLite::Statement stmt_select4(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select5(db_rw, R"(SELECT "hash", "ext" FROM "images" WHERE "figure"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
@@ -1124,6 +1154,24 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 				}
 			}
 		}
+
+		// clean files
+		SQLite::Statement stmt_select4(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
+		while (stmt_select4.executeStep()) {
+			const Str &fig_id = stmt_select4.getColumn(0);
+			stmt_select5.bind(1, fig_id);
+			const Str &img_hash = stmt_select5.getColumn(0);
+			const Str &img_ext = stmt_select5.getColumn(0);
+			clear(sb) << gv::path_out << "../online/" << img_hash << '.' << img_ext;
+			file_remove(sb);
+			clear(sb) << gv::path_out << "../changed/" << img_hash << '.' << img_ext;
+			file_remove(sb);
+			clear(sb) << gv::path_out << "../online/" << entry << ".html";
+			file_remove(sb);
+			clear(sb) << gv::path_out << "../changed/" << entry << ".html";
+			file_remove(sb);
+		}
+		stmt_select4.reset();
 	}
 }
 
