@@ -73,8 +73,8 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 		key[0] = entry; key[1] = e.first; val[0] = e.second;
 		records[move(key)] = move(val);
 	}
-	clear(sb) << "\"entry\"='" << entry << '\'';
-	update_sqlite_table(records, "entry_authors", sb, {"entry", "author", "contrib"},
+	Str condition; condition << "\"entry\"='" << entry << '\'';
+	update_sqlite_table(records, "entry_authors", condition, {"entry", "author", "contrib"},
 		2, db_rw, &sqlite_callback);
 }
 
@@ -82,7 +82,7 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 inline void db_update_authors(SQLite::Database &db)
 {
 	cout << "updating database for author lists...." << endl;
-	SQLite::Statement stmt_select( db,
+	SQLite::Statement stmt_select(db,
 		R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
 	Str entry;
 	unordered_map<Long, Long> dummy;

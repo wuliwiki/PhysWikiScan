@@ -133,13 +133,14 @@ inline void update_sqlite_table(
 ) {
 	vecSQLval old_vals;
 	vecLong ind_changed;
+	Str stmp;
 
 	if (data.empty()) {
 		// delete all records
-		clear(sb) << "DELETE FROM \"" << table_name << '"';
+		clear(stmp) << "DELETE FROM \"" << table_name << '"';
 		if (!condition.empty())
-			sb << " WHERE " << condition;
-		Long Ndel = db_rw.exec(sb);
+			stmp << " WHERE " << condition;
+		Long Ndel = db_rw.exec(stmp);
 		if (Ndel && callback) {
 			ind_changed.push_back(Ndel);
 			callback('a', table_name, field_names, make_pair(vecSQLval(), vecSQLval()), ind_changed, old_vals);

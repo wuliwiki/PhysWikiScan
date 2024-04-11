@@ -927,7 +927,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		R"(SELECT "entry" FROM "entry_uprefs" WHERE "upref"=?;)");
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "entries" SET "deleted"=1, "caption"=?, "keys"=?, "type"=?, "license"=?, "draft"=?, )"
-		R"("part"='', "chapter"='', "last"='', "next"='', WHERE "id"=?;)");
+		R"("part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
 
 	for (auto &entry : entries) {
 		if (entry == "main" || entry == "bibliography")
@@ -947,7 +947,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (db_deleted) {
 			if (file_exist(sb))
-				db_deleted = false;
+				;
 			else {
 				if (no_throw)
 					continue;
@@ -1016,6 +1016,7 @@ inline void auto_delete_entries(SQLite::Database &db_rw)
 	Str err_msg;
 	while(stmt_select.executeStep()) {
 		const Str &entry = stmt_select.getColumn(0);
+		if (entry == "main" || entry == "bibliography") continue;
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (!file_exist(sb)) {
 			scan_warn(u8"发现 entries.deleted=0 但是文章文件不存在（尝试用 --delete 删除）：" + entry);
