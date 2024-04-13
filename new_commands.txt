@@ -124,6 +124,7 @@
 "mel" "*" "3" "\langle{#1}|{#2}|{#3}\rangle"
 "mel" "" "3" "\left\langle #1 \middle| #2 \middle| #3 \right\rangle"
 
+"norm" "*" "1" "\| #1 \|"
 "norm" "" "1" "\left\lVert #1 \right\rVert"
 
 "opn" "" "0" "\operatorname"
