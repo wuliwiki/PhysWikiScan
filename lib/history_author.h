@@ -8,30 +8,66 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
 	// 作者贡献 15 分钟以上才会显示
 	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "author", "contrib" FROM "entry_authors" WHERE "entry"=? AND "contrib">=15 )"
-		R"(ORDER BY "contrib" DESC, "author" ASC;)");
-	SQLite::Statement stmt_select2(db_read, R"(SELECT "name", "hide" FROM "authors" WHERE "id"=?;)");
+		R"(SELECT "author", "contrib" FROM "entry_authors" WHERE "entry"=?;)");
+	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
+	SQLite::Statement stmt_select3(db_read, R"(SELECT 1 FROM "author_rights" WHERE "author"=? AND "right"=?;)");
+	SQLite::Statement stmt_select4(db_read,
+		R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
 
-	vecLong author_ids; // authors.id
-	vecStr authors; // authors.name
+	vector<tuple<int64_t,int64_t,Str>> contrib_id_name; // authors.name
+	vecStr authors;
 
+	// get author info from "entry_authors" table
 	stmt_select.bind(1, entry);
-	while (stmt_select.executeStep())
-		author_ids.push_back(stmt_select.getColumn(0).getInt64());
-	stmt_select.reset();
+	while (stmt_select.executeStep()) {
+		int64_t id = stmt_select.getColumn(0).getInt64();
+		stmt_select3.bind(1, id);
+		stmt_select3.bind(2, "hide");
+		bool hide = stmt_select3.executeStep();
+		stmt_select3.reset();
+		if (hide) continue;
 
-
-	for (auto &id : author_ids) {
 		stmt_select2.bind(1, (int64_t)id);
 		if (!stmt_select2.executeStep())
-			throw internal_err(u8"文章： " + entry + u8" 作者 id 不存在： " + num2str(id));
-		bool hide = stmt_select2.getColumn(1).getInt();
-		if (!hide)
-			authors.push_back(stmt_select2.getColumn(0));
+			throw internal_err(u8"文章： " + entry + u8" 作者 id 不存在： " + num2str((Long)id));
+
+		contrib_id_name.emplace_back(
+			stmt_select.getColumn(1).getInt64(), // contrib
+			id,
+			stmt_select2.getColumn(0).getString() // name
+		);
 		stmt_select2.reset();
 	}
-	if (authors.empty())
+	stmt_select.reset();
+
+	// get extra contrib from "author_contrib" table
+	stmt_select4.bind(1, entry);
+	while (stmt_select4.executeStep()) {
+		Long id = stmt_select4.getColumn(0).getInt64();
+		Long minutes = stmt_select4.getColumn(0).getInt64();
+		bool exist = false;
+		for (auto &e : contrib_id_name) {
+			if (get<1>(e) == id)
+				get<0>(e) += minutes;
+			exist = true;
+			break;
+		}
+		if (!exist) {
+			...
+		}
+	}
+
+	sortd(contrib_id_name);
+
+	if (contrib_id_name.empty())
 		return u8"待更新";
+
+	Str authors_str;
+	for (auto &e : contrib_id_name)
+		authors.push_back(get<2>(e));
+	join(authors_str, authors);
+
+
 	Str str;
 	join(str, authors, "; ");
 	return str;

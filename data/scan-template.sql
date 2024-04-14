@@ -562,7 +562,7 @@ CREATE TABLE "right_set" ( -- 20240404
 -- 作者权限或限制
 CREATE TABLE "author_rights" ( -- 20240403
 	"author"   INTEGER NOT NULL,    -- authors.id
-	"right"    TEXT    NOT NULL,    --rights.id
+	"right"    TEXT    NOT NULL,    -- rights.id
 	PRIMARY KEY("author", "right"),
 	FOREIGN KEY("author") REFERENCES "authors"("id"),
 	FOREIGN KEY("right") REFERENCES "rights"("id")
