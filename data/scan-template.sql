@@ -530,7 +530,7 @@ CREATE TABLE "authors" ( -- 20240403
 	"hide"       INTEGER NOT NULL DEFAULT 0,  -- 【待迁移到 authors_rights 表】[0|1] 不出现在文章作者列表
 	"aka"        INTEGER NOT NULL DEFAULT -1, -- 百科编辑器将该作者视为其他 id 登录，笔记编辑器忽略（scan 应该忽略该字段）
 	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）（如有 aka 计入 aka）
-	"referee"    TEXT    NOT NULL DEFAULT '', -- "part:parts.id chap:chapters.id sub:phys" 哪些部分/学科的审稿人
+	"referee"    TEXT    NOT NULL DEFAULT '', -- 【待迁移到 referees 表】"part:parts.id chap:chapters.id sub:phys" 哪些部分/学科的审稿人
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")
 );
