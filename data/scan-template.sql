@@ -40,7 +40,7 @@ INSERT INTO "table_version" VALUES ('code',             '20240403', 1);
 INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
 INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
 INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
-INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240407', 1);
+INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240414', 1);
 INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
 INSERT INTO "table_version" VALUES ('authors',          '20240403', 1);
 INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
@@ -609,12 +609,11 @@ CREATE TABLE "contrib_adjust" ( -- 20240407
 	"entry"               TEXT    NOT NULL,            -- 文章
 	"author"              INTEGER NOT NULL,            -- 如有 authors.aka 必须使用
 	"minutes"             INTEGER NOT NULL,            -- 增减的分钟数
-	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改补贴
-	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否修改作者列表排名
-	"creator"             INTEGER NOT NULL,            -- 修改者
+	"adjust_salary"       INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否计入补贴
+	"adjust_author_list"  INTEGER NOT NULL DEFAULT 0,  -- [0|1] 是否影响作者列表排名
 	"time"                TEXT    NOT NULL,            -- 何时做出贡献
-	"reason"              TEXT    NOT NULL DEFAULT '', -- 调整原因（可以由申请者填写）
-	"approved"            INTEGER NOT NULL,            -- [0|1] 是否通过
+	"reason"              TEXT    NOT NULL DEFAULT '', -- 贡献内容（可以由申请者填写）
+	"approved"            INTEGER NOT NULL DEFAULT -1, -- 批准者id，-1 表示未批准
 	"comment2"            TEXT    NOT NULL DEFAULT '', -- 备注（仅管理员可见）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
