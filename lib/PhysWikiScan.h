@@ -743,7 +743,7 @@ inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLit
 
 // convert \autoref{} in *.tmp to html, write *.html
 // will ignore entries in entry_err
-inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> err msg
+inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 		vecStr_I entries, vecStr_I titles, vector<Pentry> &pentries,
 		vector<vecStr> &str_verbs, // temporary verbatim storage
 		vector<Char> &is_eng, // use english
@@ -758,40 +758,48 @@ inline void PhysWikiOnlineN_round2(const map<Str, Str> &entry_err, // entry -> e
 	for (Long i = 0; i < size(entries); ++i) {
 		auto &entry = entries[i];
 		if (entry_err.count(entry)) continue;
-		cout << std::setw(5) << std::left << i
-			 << std::setw(10) << std::left << entry
-			 << titles[i] << endl; cout.flush();
-		fname = gv::path_out + entry + ".html";
-		read(html, fname + ".tmp"); // read html file
-		// process \pentry{} and tree
-		{
-			// check dependency tree and auto mark redundant pentry with ~
-			vector<DGnode> tree; vector<Node> nodes; unordered_map<Str, Long> node_id2ind;
-			db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
-			// convert \pentry{} to html
-			pentry_cmd(html, pentries[i], is_eng[i], db_rw); // use after db_get_tree1()
-			// update db `edges.hide` only
-			db_update_edges_hide(pentries[i], entry, db_rw);
-		}
-		// process \autoref and \upref
-		autoref_tilde_upref(html, entry, db_rw);
-		// replace \upref{} with link icon
-		upref(entry_uprefs_change[entry], html, entry, db_rw);
-		autoref(autoref_labels, html, entry, is_eng[i], db_rw);
-		db_update_autorefs(entry, autoref_labels, db_rw);
+		try {
+			cout << std::setw(5) << std::left << i
+				 << std::setw(10) << std::left << entry
+				 << titles[i] << endl;
+			cout.flush();
+			fname = gv::path_out + entry + ".html";
+			read(html, fname + ".tmp"); // read html file
+			// process \pentry{} and tree
+			{
+				// check dependency tree and auto mark redundant pentry with ~
+				vector<DGnode> tree;
+				vector<Node> nodes;
+				unordered_map<Str, Long> node_id2ind;
+				db_get_tree1(tree, nodes, node_id2ind, entry_info, pentries[i], entry, db_rw);
+				// convert \pentry{} to html
+				pentry_cmd(html, pentries[i], is_eng[i], db_rw); // use after db_get_tree1()
+				// update db `edges.hide` only
+				db_update_edges_hide(pentries[i], entry, db_rw);
+			}
+			// process \autoref and \upref
+			autoref_tilde_upref(html, entry, db_rw);
+			// replace \upref{} with link icon
+			upref(entry_uprefs_change[entry], html, entry, db_rw);
+			autoref(autoref_labels, html, entry, is_eng[i], db_rw);
+			db_update_autorefs(entry, autoref_labels, db_rw);
 
-		// verbatim recover (in inverse order of `verbatim()`)
-		lstlisting(html, str_verbs[i]);
-		lstinline(html, str_verbs[i]);
-		verb(html, str_verbs[i]);
-		// tree button link
-		get_tree_last_node(last_node_id, html, entry, db_rw);
-		if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
-			throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
-		// write html file
-		if (write_html)
-			write(html, fname); // save html file
-		file_remove(fname + ".tmp");
+			// verbatim recover (in inverse order of `verbatim()`)
+			lstlisting(html, str_verbs[i]);
+			lstinline(html, str_verbs[i]);
+			verb(html, str_verbs[i]);
+			// tree button link
+			get_tree_last_node(last_node_id, html, entry, db_rw);
+			if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
+				throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
+			// write html file
+			if (write_html)
+				write(html, fname); // save html file
+			file_remove(fname + ".tmp");
+		}
+		catch (std::runtime_error &e) {
+			entry_err[entry] = e.what();
+		}
 	}
 	cout << endl; cout.flush();
 	db_update_entry_uprefs(entry_uprefs_change, db_rw);
