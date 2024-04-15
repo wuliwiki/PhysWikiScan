@@ -789,7 +789,8 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 			lstinline(html, str_verbs[i]);
 			verb(html, str_verbs[i]);
 			// tree button link
-			get_tree_last_node(last_node_id, html, entry, db_rw);
+			if (!clear)
+				get_tree_last_node(last_node_id, html, entry, db_rw);
 			if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
 				throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
 			// write html file
