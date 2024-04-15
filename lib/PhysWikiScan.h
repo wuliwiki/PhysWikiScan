@@ -730,7 +730,7 @@ inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLit
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw scan_err(u8"文章不存在 node：" + entry);
-	int order = stmt_select.getColumn(1);
+	Long order = stmt_select.getColumn(1).getInt64();
 	if (order > 1) {
 		if (!stmt_select.executeStep())
 			throw scan_err(SLS_WHERE);
@@ -877,7 +877,7 @@ inline void dep_json(SQLite::Database &db_read)
 	for (Long i = 0; i < size(tree); ++i) {
 		for (auto &j : tree[i]) {
 			auto &node_i = nodes[i], &node_j = nodes[j];
-			int strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
+			Long strength = (node_i.entry == node_j.entry ? 3 : 1); // I thought this is strength, but it has no effect
 			str << R"(    {"source": ")" << node_j.id << "\", ";
 			str << R"("target": ")" << node_i.id << "\", ";
 			str << "\"value\": " << strength << "},\n";

@@ -410,7 +410,7 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, Bool_I clear_all, SQLi
 			check_repeat.insert(node_id);
 		// update or insert into db "nodes" table
 		assert(!node_id.empty());
-		int order = i+1;
+		int64_t order = i+1;
 		if (!db_node_order.count(node_id)) {
 			stmt_insert.bind(1, node_id);
 			stmt_insert.bind(2, entry);

@@ -608,6 +608,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 // use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
@@ -615,7 +616,6 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 		R"(UPDATE "entry_authors" SET "contrib"="contrib"+5, "last_backup"=? WHERE "entry"=? AND "author"=?;)");
 	SQLite::Statement stmt_update4(db_rw,
 		R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "id"=?;)");
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
 	   R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
 VALUES (?, ?, ?, ?, ?, ?, ?);)");
@@ -662,7 +662,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		throw internal_err(u8"arg_backup(): 找不到要备份的文章：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
 
-	// check first backup
+	// check if is the first backup
 	if (hash_last.empty()) {
 		db_log(u8"entries.last_backup 为空， 当前为第一次备份。");
 
@@ -711,7 +711,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	}
 	Str time_last_str = stmt_select2.getColumn(0);
 	std::time_t time_last = str2time_t(time_last_str);
-	int author_id_last = stmt_select2.getColumn(1);
+	Long author_id_last = stmt_select2.getColumn(1).getInt64();
 	if (stmt_select2.getColumn(2).getString() != entry)
 		throw scan_err(SLS_WHERE);
 	const Str &hash_last_last = stmt_select2.getColumn(3);
@@ -745,7 +745,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		if (!stmt_select2.executeStep())
 			throw internal_err(SLS_WHERE);
 		const Str &time_last_last_str = stmt_select2.getColumn(0);
-		int author_id_last_last = stmt_select2.getColumn(1);
+		Long author_id_last_last = stmt_select2.getColumn(1).getInt64();
 		stmt_select2.reset();
 		clear(sb) << backup_path
 			<< time_last_last_str << '_' << author_id_last_last << '_' << entry << ".tex";
