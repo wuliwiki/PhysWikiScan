@@ -10,8 +10,6 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 		R"(SELECT "author", "contrib" FROM "entry_authors" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT 1 FROM "author_rights" WHERE "author"=? AND "right"='hide';)");
-	SQLite::Statement stmt_select4(db_read,
-		R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
 
     // entry_authors.contrib (minutes), authors.id, authors.name
 	vector<tuple<int64_t,int64_t,Str>> contrib_id_name; // only store non-hidden
@@ -75,12 +73,13 @@ inline Long real_author(Long_I author_id, SQLite::Database &db_read)
 
 // update db table "entry_authors", based on backup count in "history" and "contrib_adjust"
 // will destroy `author_minutes`
-// TODO: consider "contrib_adjust" table
 inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I entry, SQLite::Database &db_rw)
 {
 	author_minutes.clear();
 	SQLite::Statement stmt_count(db_rw,
 		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
+    SQLite::Statement stmt_select(db_rw,
+        R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
 
 	stmt_count.bind(1, entry);
 	while (stmt_count.executeStep()) {
@@ -89,6 +88,15 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 		author_minutes[id] += time;
 	}
 	stmt_count.reset();
+
+    // consider "contrib_adjust" table
+    stmt_select.bind(1, entry);
+    while (stmt_select.executeStep()) {
+        author_minutes[stmt_select.getColumn(0).getInt64()]
+            += stmt_select.getColumn(1).getInt64();
+    }
+    stmt_select.reset();
+
 	// update_sqlite_table()
 	unordered_map<vecSQLval,vecSQLval> records;
 	for (auto &e : author_minutes) {
