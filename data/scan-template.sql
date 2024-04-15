@@ -111,7 +111,7 @@ CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 CREATE TABLE "entry_authors" ( -- 20240403
 	"entry"        TEXT    NOT NULL,
 	"author"       INTEGER NOT NULL,
-	"contrib"      INTEGER NOT NULL,              -- 根据 "history" 和 "contrib_adjust" 生成
+	"contrib"      INTEGER NOT NULL,              -- 贡献时长（分钟）根据 "history" 和 "contrib_adjust" 生成
 	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 最后备份，例如用于查看最后编辑时间
 	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry")       REFERENCES "entries"("id"),
@@ -535,7 +535,7 @@ CREATE TABLE "authors" ( -- 20240414
 	"uuid"       TEXT    NOT NULL DEFAULT '', -- "8-4-4-4-12" 网站用户系统的 ID
 	"name"       TEXT    NOT NULL,            -- 昵称
 	"aka"        INTEGER NOT NULL DEFAULT -1, -- 百科编辑器将该作者视为其他 id 登录，笔记编辑器忽略（scan 应该忽略该字段）
-	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）
+	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 总贡献（分钟）根据 "history" 和 "contrib_adjust" 生成
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")
 );

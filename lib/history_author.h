@@ -3,26 +3,24 @@
 #include "../SLISC/str/str_diff_patch.h"
 
 // calculate author list of an entry, based on "entry_authors" table (already using aka)
-// consider "authors.hide"
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
 	// 作者贡献 15 分钟以上才会显示
 	SQLite::Statement stmt_select(db_read,
 		R"(SELECT "author", "contrib" FROM "entry_authors" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
-	SQLite::Statement stmt_select3(db_read, R"(SELECT 1 FROM "author_rights" WHERE "author"=? AND "right"=?;)");
+	SQLite::Statement stmt_select3(db_read, R"(SELECT 1 FROM "author_rights" WHERE "author"=? AND "right"='hide';)");
 	SQLite::Statement stmt_select4(db_read,
 		R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
 
-	vector<tuple<int64_t,int64_t,Str>> contrib_id_name; // authors.name
-	vecStr authors;
+    // entry_authors.contrib (minutes), authors.id, authors.name
+	vector<tuple<int64_t,int64_t,Str>> contrib_id_name; // only store non-hidden
 
 	// get author info from "entry_authors" table
 	stmt_select.bind(1, entry);
 	while (stmt_select.executeStep()) {
 		int64_t id = stmt_select.getColumn(0).getInt64();
 		stmt_select3.bind(1, id);
-		stmt_select3.bind(2, "hide");
 		bool hide = stmt_select3.executeStep();
 		stmt_select3.reset();
 		if (hide) continue;
@@ -40,37 +38,26 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	}
 	stmt_select.reset();
 
-	// get extra contrib from "author_contrib" table
-	stmt_select4.bind(1, entry);
-	while (stmt_select4.executeStep()) {
-		Long id = stmt_select4.getColumn(0).getInt64();
-		Long minutes = stmt_select4.getColumn(0).getInt64();
-		bool exist = false;
-		for (auto &e : contrib_id_name) {
-			if (get<1>(e) == id)
-				get<0>(e) += minutes;
-			exist = true;
-			break;
-		}
-		if (!exist) {
-			...
-		}
-	}
-
-	sortd(contrib_id_name);
-
-	if (contrib_id_name.empty())
-		return u8"待更新";
+    // sort by contrib (descend), then by id (ascend)
+    std::sort(contrib_id_name.begin(), contrib_id_name.end(),
+        [](tuple<int64_t,int64_t,Str> &a, tuple<int64_t,int64_t,Str> &b){
+        auto diff = get<0>(b) - get<0>(a);
+        if (diff == 0)
+            return get<1>(a) < get<1>(b);
+        else
+            return diff < 0;
+    });
 
 	Str authors_str;
-	for (auto &e : contrib_id_name)
+    vecStr authors;
+	for (auto &e : contrib_id_name) {
+		if (get<0>(e) < 15) break;
 		authors.push_back(get<2>(e));
-	join(authors_str, authors);
-
-
-	Str str;
-	join(str, authors, "; ");
-	return str;
+	}
+	if (authors.empty())
+		return u8"待更新";
+	join(authors_str, authors, "; ");
+	return authors_str;
 }
 
 // if an author has "authors.aka", return aka; otherwise return the same `author_id`
