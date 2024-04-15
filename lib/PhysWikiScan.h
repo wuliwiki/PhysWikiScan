@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "scan_global.h"
 #include "tex2html.h"
 #include "check_entry.h"

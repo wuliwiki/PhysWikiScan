@@ -11,7 +11,7 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	SQLite::Statement stmt_select2(db_read, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_read, R"(SELECT 1 FROM "author_rights" WHERE "author"=? AND "right"='hide';)");
 
-    // entry_authors.contrib (minutes), authors.id, authors.name
+	// entry_authors.contrib (minutes), authors.id, authors.name
 	vector<tuple<int64_t,int64_t,Str>> contrib_id_name; // only store non-hidden
 
 	// get author info from "entry_authors" table
@@ -36,18 +36,18 @@ inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 	}
 	stmt_select.reset();
 
-    // sort by contrib (descend), then by id (ascend)
-    std::sort(contrib_id_name.begin(), contrib_id_name.end(),
-        [](tuple<int64_t,int64_t,Str> &a, tuple<int64_t,int64_t,Str> &b){
-        auto diff = get<0>(b) - get<0>(a);
-        if (diff == 0)
-            return get<1>(a) < get<1>(b);
-        else
-            return diff < 0;
-    });
+	// sort by contrib (descend), then by id (ascend)
+	std::sort(contrib_id_name.begin(), contrib_id_name.end(),
+		[](tuple<int64_t,int64_t,Str> &a, tuple<int64_t,int64_t,Str> &b){
+		auto diff = get<0>(b) - get<0>(a);
+		if (diff == 0)
+			return get<1>(a) < get<1>(b);
+		else
+			return diff < 0;
+	});
 
 	Str authors_str;
-    vecStr authors;
+	vecStr authors;
 	for (auto &e : contrib_id_name) {
 		if (get<0>(e) < 15) break;
 		authors.push_back(get<2>(e));
@@ -78,8 +78,8 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 	author_minutes.clear();
 	SQLite::Statement stmt_count(db_rw,
 		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
-    SQLite::Statement stmt_select(db_rw,
-        R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
 
 	stmt_count.bind(1, entry);
 	while (stmt_count.executeStep()) {
@@ -89,13 +89,13 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 	}
 	stmt_count.reset();
 
-    // consider "contrib_adjust" table
-    stmt_select.bind(1, entry);
-    while (stmt_select.executeStep()) {
-        author_minutes[stmt_select.getColumn(0).getInt64()]
-            += stmt_select.getColumn(1).getInt64();
-    }
-    stmt_select.reset();
+	// consider "contrib_adjust" table
+	stmt_select.bind(1, entry);
+	while (stmt_select.executeStep()) {
+		author_minutes[stmt_select.getColumn(0).getInt64()]
+			+= stmt_select.getColumn(1).getInt64();
+	}
+	stmt_select.reset();
 
 	// update_sqlite_table()
 	unordered_map<vecSQLval,vecSQLval> records;
@@ -608,6 +608,20 @@ inline void history_normalize(SQLite::Database &db_rw)
 // use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_update3(db_rw,
+		R"(UPDATE "entry_authors" SET "contrib"="contrib"+5, "last_backup"=? WHERE "entry"=? AND "author"=?;)");
+	SQLite::Statement stmt_update4(db_rw,
+		R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "id"=?;)");
+	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+	   R"(INSERT INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
+VALUES (?, ?, ?, ?, ?, ?, ?);)");
+	SQLite::Statement stmt_insert5(db_rw,
+		R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
+
 	Str str; // content of entry
 	Str time_new_str;
 	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
@@ -625,8 +639,6 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 	Str hash = sha1sum(str).substr(0, 16);
 
 	// check if hash exist
-	SQLite::Statement stmt_select2(db_rw,
-		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
 	stmt_select2.bind(1, hash);
 	if (stmt_select2.executeStep()) {
 		// hash already exists
@@ -645,17 +657,10 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 	stmt_select2.reset();
 
 	// get latest backup from `entries.last_backup`
-	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	stmt_select.bind(1, entry);
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的文章：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT OR REPLACE INTO "history" ("hash", "time", "author", "entry", "add", "del", "last")
-VALUES (?, ?, ?, ?, ?, ?, ?);)");
-	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "entries" SET "last_backup"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_insert5(db_rw,
-		R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
 
 	// check first backup
 	if (hash_last.empty()) {
@@ -681,13 +686,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
 		write(str, sb);
 
-		// insert into "entry_authors"
+		// insert into "entry_authors", contrib 5min
 		SQLite::Statement stmt_insert3(db_rw,
 			R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
 		stmt_insert3.bind(1, entry);
 		stmt_insert3.bind(2, (int64_t)author_id);
 		stmt_insert3.bind(3, hash); // last_backup
 		stmt_insert3.exec(); stmt_insert3.reset();
+
+		// update "authors.contrib", add 5min
+		stmt_update4.bind(1, (int64_t)author_id);
+		stmt_update4.exec(); stmt_update4.reset();
 		return;
 	}
 	else if (size(hash_last) != 16) {
@@ -808,9 +817,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
 		write(str, sb);
 
-		// update "entry_authors"
-		SQLite::Statement stmt_update3(db_rw,
-			R"(UPDATE "entry_authors" SET "contrib"="contrib"+5, "last_backup"=? WHERE "entry"=? AND "author"=?;)");
+		// update "entry_authors", add 5min
 		stmt_update3.bind(1, hash); // last_backup
 		stmt_update3.bind(2, entry);
 		stmt_update3.bind(3, (int64_t)author_id);
@@ -824,9 +831,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update3.reset();
 		db_log(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
-		// update "authors.contrib"
-		SQLite::Statement stmt_update4(db_rw,
-			R"(UPDATE "authors" SET "contrib"="contrib"+5 WHERE "id"=?;)");
+		// update "authors.contrib", add 5min
 		stmt_update4.bind(1, (int64_t)author_id);
 		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update4.reset();
@@ -846,7 +851,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 // update db "history" table from backup files
 inline void arg_history(SQLite::Database &db_rw)
 {
-        db_update_author_history(db_rw);
-        db_update_authors(db_rw);
+		db_update_author_history(db_rw);
+		db_update_authors(db_rw);
 }
 
