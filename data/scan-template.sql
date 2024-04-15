@@ -41,8 +41,9 @@ INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
 INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
 INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
 INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240414', 1);
+INSERT INTO "table_version" VALUES ('referee',          '20240414', 1);
 INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('authors',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('authors',          '20240414', 1);
 INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
 INSERT INTO "table_version" VALUES ('author_rights',    '20240403', 1);
 INSERT INTO "table_version" VALUES ('salary',           '20240403', 1);
@@ -106,7 +107,6 @@ CREATE INDEX idx_entry_uprefs_entry ON "entry_uprefs"("entry");
 CREATE INDEX idx_entry_uprefs_upref ON "entry_uprefs"("upref");
 
 -- 文章作者列表
--- 如果有 authors.aka， 必须使用（笔记除外）
 -- 有备份的都要记录，显示时再根据 contrib, authors.hide 隐藏
 CREATE TABLE "entry_authors" ( -- 20240403
 	"entry"        TEXT    NOT NULL,
@@ -496,6 +496,14 @@ CREATE INDEX idx_history_time ON "history"("time");
 CREATE INDEX idx_history_author ON "history"("author");
 CREATE INDEX idx_history_last ON "history"("last");
 
+-- 审稿人（可以给任意文章审稿）
+CREATE TABLE "referee" ( -- 20240414
+	"author"    INTEGER NOT NULL UNIQUE,      -- author.id
+	"subjects"  TEXT    NOT NULL DEFAULT '',  -- 审稿范围（学科、方向等，仅供人阅读）
+	PRIMARY KEY("author"),
+	FOREIGN KEY("author") REFERENCES "authors"("id")
+);
+
 -- 审稿记录
 CREATE TABLE "review" ( -- 20240403
 	"hash"     TEXT    NOT NULL UNIQUE,            -- history.hash
@@ -522,15 +530,12 @@ CREATE INDEX idx_review_entry ON "review"("entry");
 ----------------------------------------------------------------------------------------------------------
 
 -- 所有作者
-CREATE TABLE "authors" ( -- 20240403
+CREATE TABLE "authors" ( -- 20240414
 	"id"         INTEGER NOT NULL UNIQUE,     -- ID
 	"uuid"       TEXT    NOT NULL DEFAULT '', -- "8-4-4-4-12" 网站用户系统的 ID
 	"name"       TEXT    NOT NULL,            -- 昵称
-	"applied"    INTEGER NOT NULL DEFAULT 0,  -- [0|1] 已申请
-	"hide"       INTEGER NOT NULL DEFAULT 0,  -- 【待迁移到 authors_rights 表】[0|1] 不出现在文章作者列表
 	"aka"        INTEGER NOT NULL DEFAULT -1, -- 百科编辑器将该作者视为其他 id 登录，笔记编辑器忽略（scan 应该忽略该字段）
-	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）（如有 aka 计入 aka）
-	"referee"    TEXT    NOT NULL DEFAULT '', -- 【待迁移到 referees 表】"part:parts.id chap:chapters.id sub:phys" 哪些部分/学科的审稿人
+	"contrib"    INTEGER NOT NULL DEFAULT 0,  -- 贡献的分钟数（折算）
 	PRIMARY KEY("id" AUTOINCREMENT),
 	FOREIGN KEY("aka") REFERENCES "authors"("id")
 );
