@@ -40,7 +40,7 @@ inline void bind(SQLite::Statement &stmt, Int_I i, SQLval_I val)
 	else if (val.type == 'i')
 		stmt.bind(i, val.i);
 	else
-		throw internal_err(SLS_WHERE);
+		throw sls_err(SLS_WHERE);
 }
 
 inline void getColumn(SQLval &val, SQLite::Statement &stmt, Int_I i, Str &str)
@@ -52,7 +52,7 @@ inline void getColumn(SQLval &val, SQLite::Statement &stmt, Int_I i, Str &str)
 	else if (val.type == 'i')
 		val.i = stmt.getColumn(i).getInt64();
 	else
-		throw internal_err(SLS_WHERE);
+		throw sls_err(SLS_WHERE);
 }
 
 } // namespace slisc
@@ -61,7 +61,7 @@ namespace std {
 
 template <>
 struct hash<slisc::SQLval> {
-	size_t operator()(SQLval_I val) {
+	size_t operator()(slisc::SQLval_I val) {
 		if (val.type == 's')
 			return slisc::hash_cstr(val.s);
 		else

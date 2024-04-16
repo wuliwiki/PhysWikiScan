@@ -482,20 +482,11 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 }
 
 // process upref
-inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0]del
-	 Str_IO str, Str_I entry, SQLite::Database &db_read)
+inline Long upref(unordered_set<Str> &uprefs, Str_IO str, Str_I entry)
 {
-	uprefs_change.clear();
-	SQLite::Statement stmt_select(db_read,
-		R"(SELECT "upref" FROM "entry_uprefs" WHERE "entry"=?;)");
-	stmt_select.bind(1, entry);
-	vecStr db_uprefs;
-	while (stmt_select.executeStep())
-		db_uprefs.push_back(stmt_select.getColumn(0));
-	vecBool db_uprefs_visited(db_uprefs.size(), false);
-
 	Long ind0 = 0, right, N = 0;
-	Str entry1;
+	Str entry1; // \upref{entry1}
+	uprefs.clear();
 	while (1) {
 		ind0 = find_command(str, "upref", ind0);
 		if (ind0 < 0)
@@ -514,30 +505,8 @@ inline Long upref(unordered_map<Str, Bool> &uprefs_change, // entry -> [1]add/[0
 		sb << gv::url << entry1
 			<< R"(.html" target="_blank"><span class="icon"><i class="fa fa-bookmark-o"></i></span></a></sup>)";
 		str.replace(ind0, right - ind0, sb);
+		uprefs.insert(entry1);
 		++N;
-
-		// --- db ---
-		Long ind = search(entry1, db_uprefs);
-		if (ind < 0) {
-			if (!uprefs_change.count(entry1)) {
-				bool deleted = get_int("entries", "id", entry1, "deleted", db_read);
-				if (deleted)
-					throw scan_err(u8"不允许 \\upref{被删除的文章}：" + entry1 + SLS_WHERE);
-				db_log(u8"检测到新增的 upref（将添加）：" + entry1);
-				uprefs_change[entry1] = true;
-			}
-		}
-		else
-			db_uprefs_visited[ind] = true;
-	}
-	for (Long i = 0; i < size(db_uprefs); ++i) {
-		if (!db_uprefs_visited[i]) {
-			bool deleted = get_int("entries", "id", entry1, "deleted", db_read);
-			if (deleted)
-				db_log(u8"检测到删除命令 \\upref{被删除的文章}（删除文章时应该已经确保了没有被 upref 才对）（将视为没有被删除）：" + entry1);
-			db_log(u8"检测到删除的 upref（将删除）：" + db_uprefs[i]);
-			uprefs_change[db_uprefs[i]] = false;
-		}
 	}
 	return N;
 }
@@ -705,4 +674,40 @@ inline void db_update_labels(
 			throw scan_err(sb);
 		}
 	}
+}
+
+// update entry_uprefs
+inline void db_update_entry_uprefs(
+		//                 entry -> uprefs
+		const unordered_map<Str, unordered_set<Str>> &entry_uprefs,
+		SQLite::Database &db_rw)
+{
+	cout << "updating entry_uprefs ..." << endl;
+	unordered_map<vecSQLval, vecSQLval> entry_upref;
+	for (auto &e : entry_uprefs) {
+		auto &entry = e.first;
+		entry_upref.clear();
+		for (auto &upref : e.second) {
+			vecSQLval key(2);
+			key[0] = entry; key[1] = upref;
+			entry_upref[move(key)];
+		}
+		update_sqlite_table(entry_upref, "entry_uprefs", "\"entry\"='" + entry + "'", {"entry", "upref"},
+						2, db_rw, &sqlite_callback);
+	}
+	cout << "done." << endl;
+}
+
+// update table "entry_refs"
+inline void db_update_autorefs(Str_I entry, vecStr_I autoref_labels,
+	SQLite::Database &db_rw)
+{
+	unordered_map<vecSQLval, vecSQLval> entry_ref;
+	for (auto &label : autoref_labels) {
+		vecSQLval key(2);
+		key[0] = entry; key[1] = label;
+		entry_ref[move(key)];
+	}
+	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"='" + entry + "'", {"entry", "label"},
+						2, db_rw, &sqlite_callback);
 }

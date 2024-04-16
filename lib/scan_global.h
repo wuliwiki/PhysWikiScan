@@ -1,10 +1,14 @@
 // global variables, must be set only once
 #pragma once
 
-#include "../SLISC/file/file.h"
-#include "../SLISC/file/sqlite_ext.h"
+#include <regex>
+#include "../SLISC/str/str.h"
+#include "../SLISC/util/time.h"
+#include "../SLISC/util/sha1sum.h"
 #include "../SLISC/str/str.h"
 #include "../SLISC/algo/graph.h"
+#include "../SLISC/file/sqlite_ext.h"
+#include "../SLISC/file/sqlitecpp_ext.h"
 
 using namespace slisc;
 
@@ -109,4 +113,59 @@ inline void scan_log_limit()
 			write(sb.substr(ind + 1), log_file);
 		}
 	}
+}
+
+// callback function for update_sqlite_table()
+inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
+	const pair<vecSQLval,vecSQLval> &row,
+	vecLong_I cols_changed, const vecSQLval &old_vals)
+{
+	Str str;
+	if (act == 'a') {
+		str << "批量删除 " << cols_changed[0] << " 条记录，表 \"" << table << '\"';
+		db_log(str);
+		return;
+	}
+	else if (act == 'i') str = "插入记录 ";
+	else if (act == 'd') str = "删除记录 ";
+	else if (act == 'u') str = "更新记录 ";
+	else
+		throw internal_err(SLS_WHERE);
+	str << "表 \"" << table << "\" ";
+	Long Nkey = size(row.first), Nval = size(row.second);
+
+	if (act == 'i' || act == 'd') {
+		for (Long i = 0; i < Nkey+Nval; ++i) {
+			auto &e = (i < Nkey ? row.first[i] : row.second[i-Nkey]);
+			str << field_names[i] << ':';
+			if (e.type == 's')
+				str << e.s << ", ";
+			else
+				str << e.i << ", ";
+		}
+		str.resize(str.size() - 2);
+	}
+	else if (act == 'u') {
+		for (Long i = 0; i < Nkey; ++i) {
+			auto &e = row.first[i];
+			str << field_names[i] << ':';
+			if (e.type == 's')
+				str << e.s << ", ";
+			else
+				str << e.i << ", ";
+		}
+		str.resize(str.size() - 2);
+		str << " 更改 ";
+		for (Long i = 0; i < size(cols_changed); ++i) {
+			str << field_names[Nkey+i] << ':';
+			if (old_vals[i].type == 's')
+				str << old_vals[i].s << "->" << row.second[cols_changed[i]].s << ", ";
+			else
+				str << old_vals[i].i << "->" << row.second[cols_changed[i]].i << ", ";
+		}
+		str.resize(str.size() - 2);
+	}
+	else
+		throw scan_err(SLS_WHERE);
+	db_log(str);
 }

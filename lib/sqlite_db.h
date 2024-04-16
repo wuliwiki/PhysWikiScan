@@ -1,10 +1,4 @@
 #pragma once
-#include <regex>
-#include "../SLISC/str/str.h"
-#include "../SLISC/file/file.h"
-#include "../SLISC/file/sqlitecpp_ext.h"
-#include "../SLISC/util/time.h"
-#include "../SLISC/util/sha1sum.h"
 
 // add or delete elements from a set
 template <class T>
@@ -15,60 +9,6 @@ inline void change_set(set<T> &s, const unordered_map<T, bool> &change)
 			s.insert(e.first);
 		else
 			s.erase(e.first);
-}
-
-inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
-	const pair<vecSQLval,vecSQLval> &row,
-	vecLong_I cols_changed, const vecSQLval &old_vals)
-{
-	Str str;
-	if (act == 'a') {
-		str << "批量删除 " << cols_changed[0] << " 条记录，表 \"" << table << '\"';
-		db_log(str);
-		return;
-	}
-	else if (act == 'i') str = "插入记录 ";
-	else if (act == 'd') str = "删除记录 ";
-	else if (act == 'u') str = "更新记录 ";
-	else
-		throw internal_err(SLS_WHERE);
-	str << "表 \"" << table << "\" ";
-	Long Nkey = size(row.first), Nval = size(row.second);
-
-	if (act == 'i' || act == 'd') {
-		for (Long i = 0; i < Nkey+Nval; ++i) {
-			auto &e = (i < Nkey ? row.first[i] : row.second[i-Nkey]);
-			str << field_names[i] << ':';
-			if (e.type == 's')
-				str << e.s << ", ";
-			else
-				str << e.i << ", ";
-		}
-		str.resize(str.size() - 2);
-	}
-	else if (act == 'u') {
-		for (Long i = 0; i < Nkey; ++i) {
-			auto &e = row.first[i];
-			str << field_names[i] << ':';
-			if (e.type == 's')
-				str << e.s << ", ";
-			else
-				str << e.i << ", ";
-		}
-		str.resize(str.size() - 2);
-		str << " 更改 ";
-		for (Long i = 0; i < size(cols_changed); ++i) {
-			str << field_names[Nkey+i] << ':';
-			if (old_vals[i].type == 's')
-				str << old_vals[i].s << "->" << row.second[cols_changed[i]].s << ", ";
-			else
-				str << old_vals[i].i << "->" << row.second[cols_changed[i]].i << ", ";
-		}
-		str.resize(str.size() - 2);
-	}
-	else
-		throw scan_err(SLS_WHERE);
-	db_log(str);
 }
 
 // get table of content info from db "chapters", in ascending "order"
@@ -203,58 +143,6 @@ inline void author_char_stat(Str_I time_start, Str_I time_end, Str author, SQLit
 	cout << "新增字符：" << tot_add << endl;
 	cout << "删除字符：" << tot_del << endl;
 	cout << "新增减删除：" << tot_add - tot_del << endl;
-}
-
-// update entry_uprefs
-inline void db_update_entry_uprefs(
-		//                 entry -> (upref -> [1]add/[0]del)
-		const unordered_map<Str, unordered_map<Str, Bool>> &entry_uprefs_change,
-		SQLite::Database &db_rw)
-{
-	cout << "updating entry_uprefs ..." << endl;
-	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "upref" FROM "entry_uprefs" WHERE "entry"=?;)");
-	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT OR REPLACE INTO "entry_uprefs" ("entry", "upref") VALUES (?, ?);)");
-	SQLite::Statement stmt_delete(db_rw,
-		R"(DELETE FROM "entry_uprefs" WHERE "entry"=? AND "upref"=?;)");
-	Str str;
-	set<Str> /*uprefs,*/ ref_by;
-	for (auto &e : entry_uprefs_change) {
-		auto &entry = e.first;
-		auto &uprefs_change = e.second;
-		
-		for (auto &ee : uprefs_change) {
-			auto &entry_refed = ee.first;
-			auto &is_add = ee.second;
-			// apply change
-			if (is_add) {
-				stmt_insert.bind(1, entry);
-				stmt_insert.bind(2, entry_refed);
-				stmt_insert.exec(); stmt_insert.reset();
-			}
-			else {
-				stmt_delete.bind(1, entry);
-				stmt_delete.bind(2, entry_refed);
-				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
-				stmt_delete.reset();
-			}
-		}
-	}
-}
-
-// update table "entry_refs"
-inline void db_update_autorefs(Str_I entry, vecStr_I autoref_labels,
-	SQLite::Database &db_rw)
-{
-	unordered_map<vecSQLval, vecSQLval> entry_ref;
-	for (auto &label : autoref_labels) {
-		vecSQLval key(2);
-		key[0] = entry; key[1] = label;
-		entry_ref[move(key)];
-	}
-	update_sqlite_table(entry_ref, "entry_refs", "\"entry\"='" + entry + "'", {"entry", "label"},
-						2, db_rw, &sqlite_callback);
 }
 
 // make db consistent
