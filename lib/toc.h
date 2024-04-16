@@ -115,8 +115,6 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles, SQLite::Database &
 	for (Long i = 0; i < size(entries); ++i) {
 		if (!in_toc[i] && !in_toc_comment[i]) {
 			auto &entry1 = entries[i];
-			if (entry1 == "testCH")
-				int a = 3;
 			bool in_other_toc = false;
 			// check if `entry1` is in \upref{} of another entry of type 'Toc'
 			stmt_select.bind(1, entry1);
