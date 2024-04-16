@@ -10,55 +10,58 @@ CREATE TABLE "table_version" ( -- 20240403
 	PRIMARY KEY("table")
 );
 
-INSERT INTO "table_version" VALUES ('table_version',    '20240407', 1);
+INSERT INTO "table_version" VALUES ('bibliography',     '20240403', 0);
+INSERT INTO "table_version" VALUES ('chapters',         '20240403', 0);
 INSERT INTO "table_version" VALUES ('entries',          '20240403', 0);
 INSERT INTO "table_version" VALUES ('entry_uprefs',     '20240403', 0);
 INSERT INTO "table_version" VALUES ('entry_authors',    '20240403', 0);
 INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405', 0);
 INSERT INTO "table_version" VALUES ('entry_refs',       '20240403', 0);
-INSERT INTO "table_version" VALUES ('licenses',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('license_apply',    '20240403', 1);
-INSERT INTO "table_version" VALUES ('types',            '20240403', 1);
-INSERT INTO "table_version" VALUES ('tags',             '20240403', 1);
 INSERT INTO "table_version" VALUES ('entry_tags',       '20240403', 0);
-INSERT INTO "table_version" VALUES ('seo_keys',         '20240403', 0);
-INSERT INTO "table_version" VALUES ('nodes',            '20240403', 0);
 INSERT INTO "table_version" VALUES ('edges',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('repost',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('entry_score',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('occupied',         '20240403', 2);
-INSERT INTO "table_version" VALUES ('locked',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('opened',           '20240403', 2);
-INSERT INTO "table_version" VALUES ('parts',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('chapters',         '20240403', 0);
-INSERT INTO "table_version" VALUES ('figures',          '20240403', 1);
-INSERT INTO "table_version" VALUES ('images',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('files',            '20240403', 1);
-INSERT INTO "table_version" VALUES ('figure_files',     '20240403', 1);
-INSERT INTO "table_version" VALUES ('entry_files',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('code',             '20240403', 1);
-INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
-INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_toc',        '20240415', 0);
 INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
-INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240414', 1);
-INSERT INTO "table_version" VALUES ('referee',          '20240414', 1);
-INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
+INSERT INTO "table_version" VALUES ('nodes',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('parts',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('seo_keys',         '20240403', 0);
+
 INSERT INTO "table_version" VALUES ('authors',          '20240414', 1);
-INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
 INSERT INTO "table_version" VALUES ('author_rights',    '20240403', 1);
-INSERT INTO "table_version" VALUES ('salary',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('bibliography',     '20240403', 0);
 INSERT INTO "table_version" VALUES ('bib_type',         '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_doi',          '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_url',          '20240403', 1);
-INSERT INTO "table_version" VALUES ('journals',         '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_journal',      '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_all_tags',     '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_tags',         '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_cite',         '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_all_authors',  '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_authors',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240414', 1);
+INSERT INTO "table_version" VALUES ('code',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_score',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_files',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('figures',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('files',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('figure_files',     '20240403', 1);
+INSERT INTO "table_version" VALUES ('images',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('journals',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('licenses',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('license_apply',    '20240403', 1);
+INSERT INTO "table_version" VALUES ('locked',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
+INSERT INTO "table_version" VALUES ('repost',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('referee',          '20240414', 1);
+INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
 INSERT INTO "table_version" VALUES ('right_set',        '20240404', 1);
+INSERT INTO "table_version" VALUES ('salary',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('types',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('tags',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('table_version',    '20240407', 1);
+
+INSERT INTO "table_version" VALUES ('occupied',         '20240403', 2);
+INSERT INTO "table_version" VALUES ('opened',           '20240403', 2);
 
 ----------------------------------------------------------------------------------------------------------
 -- 百科文章
@@ -146,6 +149,17 @@ CREATE TABLE "entry_refs" ( -- 20240403
 CREATE INDEX idx_entry_refs_entry ON "entry_refs"("entry");
 CREATE INDEX idx_entry_refs_label ON "entry_refs"("label");
 
+-- 文章是否出现在其他目录中
+-- 允许一篇文章出现在不同目录中，但在同一目录中不能多次出现
+CREATE TABLE "entry_toc" ( -- 20240415
+	"entry"    TEXT NOT NULL,                -- entries.id
+	"toc"      TEXT NOT NULL,                -- entries.id （entries.type='Toc'）
+	"order"    INTEGER NOT NULL DEFAULT 0,   -- \upref{} 的顺序，从 1 开始
+	PRIMARY KEY("entry", "toc"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("toc") REFERENCES "entries"("id")
+);
+
 -- 创作协议
 CREATE TABLE "licenses" ( -- 20240403
 	"id"        TEXT NOT NULL UNIQUE,      -- 协议 id，只允许字母和数字，字母开头，空代表未知
@@ -180,6 +194,14 @@ CREATE TABLE "types" ( -- 20240403
 );
 
 INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
+
+INSERT INTO types VALUES('Art',    '文章', '类似于学术论文');
+INSERT INTO types VALUES('Map',    '导航', '介绍百科中的一章、一部分等，具有大量链接到其中的词条');
+INSERT INTO types VALUES('Note',   '笔记', '类似于讲义、复习资料，把知识要点列出');
+INSERT INTO types VALUES('Test',   '测试', '临时测试，将定期删除');
+INSERT INTO types VALUES('Toc',    '目录', '百科页面的目录');
+INSERT INTO types VALUES('Tutor',  '教程', '类似于教材的一节');
+INSERT INTO types VALUES('Wiki',   '综述', '类似于维基百科的条目，中立、全面、一般性的介绍');
 
 -- SEO 关键词（用于 html header 中的搜索引擎优化）
 -- TODO: 用于代替 entries.keys
@@ -555,6 +577,19 @@ CREATE TABLE "rights" ( -- 20240403
 	PRIMARY KEY("id")
 );
 
+INSERT INTO rights VALUES('admin',    '超级管理员', '修改任意用户权限');
+INSERT INTO rights VALUES('export',   '导出 md',   '用于转载到知乎等');
+INSERT INTO rights VALUES('license',  '付费协议',   '更改任意文章、代码、图片等协议到付费协议或移除付费协议');
+INSERT INTO rights VALUES('note',     '笔记调试',   '以任意用户的身份登录笔记');
+INSERT INTO rights VALUES('occupy',   '占用管理',   '');
+INSERT INTO rights VALUES('pub',      '发布文章',   '');
+INSERT INTO rights VALUES('salary',   '修改工资',   '');
+INSERT INTO rights VALUES('toc',      '编辑目录',   '');
+
+INSERT INTO rights VALUES('hide',     '匿名',      '不出现在文章作者列表中');
+INSERT INTO rights VALUES('nonote',   '禁用笔记',   '');
+INSERT INTO rights VALUES('nowiki',   '禁编百科',   '禁止使用百科编辑器');
+
 -- 权限或限制的集合
 CREATE TABLE "right_set" ( -- 20240404
 	"id"      TEXT     NOT NULL UNIQUE,
@@ -563,6 +598,11 @@ CREATE TABLE "right_set" ( -- 20240404
 	"comment" TEXT     NOT NULL DEFAULT '',  -- 说明
 	PRIMARY KEY("id")
 );
+
+INSERT INTO right_set VALUES('all',     '超级管理员', 'admin salary note occupy license pub export',  '一切权限（限制除外）');
+INSERT INTO right_set VALUES('editor',  '编辑',      'occupy license pub export',                    '审稿和协调创作');
+INSERT INTO right_set VALUES('author',  '作者',      'toc',                                          '通过申请后的普通作者');
+INSERT INTO right_set VALUES('guest',   '游客',      '',                                             '游客（authors.applied=0）登录编辑器后的默认权限');
 
 -- 作者权限或限制
 CREATE TABLE "author_rights" ( -- 20240403
