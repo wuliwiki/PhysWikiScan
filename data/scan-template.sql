@@ -19,7 +19,6 @@ INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405', 0);
 INSERT INTO "table_version" VALUES ('entry_refs',       '20240403', 0);
 INSERT INTO "table_version" VALUES ('entry_tags',       '20240403', 0);
 INSERT INTO "table_version" VALUES ('edges',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('entry_toc',        '20240415', 0);
 INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
 INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
 INSERT INTO "table_version" VALUES ('nodes',            '20240403', 0);
@@ -148,17 +147,6 @@ CREATE TABLE "entry_refs" ( -- 20240403
 
 CREATE INDEX idx_entry_refs_entry ON "entry_refs"("entry");
 CREATE INDEX idx_entry_refs_label ON "entry_refs"("label");
-
--- 文章是否出现在其他目录中
--- 允许一篇文章出现在不同目录中，但在同一目录中不能多次出现
-CREATE TABLE "entry_toc" ( -- 20240415
-	"entry"    TEXT NOT NULL,                -- entries.id
-	"toc"      TEXT NOT NULL,                -- entries.id （entries.type='Toc'）
-	"order"    INTEGER NOT NULL DEFAULT 0,   -- \upref{} 的顺序，从 1 开始
-	PRIMARY KEY("entry", "toc"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id"),
-	FOREIGN KEY("toc") REFERENCES "entries"("id")
-);
 
 -- 创作协议
 CREATE TABLE "licenses" ( -- 20240403
