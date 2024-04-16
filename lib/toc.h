@@ -28,7 +28,7 @@ inline Long ignore_entries(vecStr_IO names)
 // get `titles` from main.tex
 // forbid repeated `entries` in main.tex (case insensitive)
 // warn `entries` not in main.tex (also not in comments)
-inline void entries_titles(vecStr_O entries, vecStr_O titles)
+inline void entries_titles(vecStr_O entries, vecStr_O titles, SQLite::Database &db_read)
 {
 	// 文件夹中的文章文件（忽略不用编译的）
 	entries.clear(); titles.clear();
@@ -109,18 +109,37 @@ inline void entries_titles(vecStr_O entries, vecStr_O titles)
 		in_toc_comment[ind] = true;
 	}
 
-	Bool warned = false;
+	SQLite::Statement stmt_select(db_read, R"(SELECT "entry" FROM "entry_uprefs" WHERE "upref"=?;")");
+	SQLite::Statement stmt_select2(db_read, R"(SELECT 1 FROM "entries" WHERE "id"=? AND "type"='Toc';")");
+	bool warned = false;
 	for (Long i = 0; i < size(entries); ++i) {
 		if (!in_toc[i] && !in_toc_comment[i]) {
+			auto &entry1 = entries[i];
+			if (entry1 == "testCH")
+				int a = 3;
+			bool in_other_toc = false;
+			// check if `entry1` is in \upref{} of another entry of type 'Toc'
+			stmt_select.bind(1, entry1);
+			while (stmt_select.executeStep()) {
+				stmt_select2.bind(1, stmt_select.getColumn(0).getString());
+				if (stmt_select2.executeStep()) {
+					in_other_toc = true; stmt_select2.reset(); break;
+				}
+				stmt_select2.reset();
+			}
+			stmt_select.reset();
+			if (in_other_toc) continue;
+
+			// `entry1` not in any kind of toc
 			if (!warned) {
-				cout << u8"\n\n警告: 以下文章没有被 main.tex 提及（注释中也没有），但仍会被编译" << endl;
+				cout << u8"\n\n警告: 以下文章没有被 main.tex 提及（注释中也没有，其他目录中也没有），但仍会被编译" << endl;
 				warned = true;
 			}
-			read(str, gv::path_in + "contents/" + entries[i] + ".tex");
+			read(str, clear(sb) << gv::path_in << "contents/" << entry1 << ".tex");
 			CRLF_to_LF(str);
 			get_title(title, str);
 			titles[i] = title;
-			cout << std::setw(10) << std::left << entries[i]
+			cout << std::setw(10) << std::left << entry1
 				<< std::setw(20) << std::left << title << endl;
 		}
 	}
@@ -247,7 +266,7 @@ inline void table_of_contents(
 			if (!stmt_select.executeStep()) {
 				db_log(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
 				vecStr entries_tmp, titles_tmp;
-				entries_titles(entries_tmp, titles_tmp);
+				entries_titles(entries_tmp, titles_tmp, db_rw);
 				db_check_add_entry_simulate_editor(entries_tmp, db_rw);
 				stmt_select.reset();
 				stmt_select.bind(1, entry);

@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
 #define VERSION_MINOR 12
-#define VERSION_PATCH 5
+#define VERSION_PATCH 6
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -240,6 +240,14 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (args[0] == "--toc" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);
+			arg_toc(db_rw);
+			transaction.commit();
+		}
+		else if (args[0] == "--toc-all" && args.size() == 1) {
+			// get entries from folder
+			SQLite::Transaction transaction(db_rw);
+			vecStr entries, titles;
+			entries_titles(entries, titles, db_rw);
 			arg_toc(db_rw);
 			transaction.commit();
 		}

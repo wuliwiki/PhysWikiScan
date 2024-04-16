@@ -1206,12 +1206,11 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	//	vecStr matlab_files;
 	//	file_list_full(matlab_files, gv::path_out + "code/matlab/");
 
-
 	vecStr entries, titles;
 
 	// get entries from folder
 	vecStr titles_tmp;
-	entries_titles(entries, titles_tmp);
+	entries_titles(entries, titles_tmp, db_rw);
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vector<Pentry> pentries;
 	vector<Char> is_eng(entries.size(), -1);
