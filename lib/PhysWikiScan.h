@@ -747,7 +747,9 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 		vecStr_I entries, vecStr_I titles, vector<Pentry> &pentries,
 		vector<vecStr> &str_verbs, // temporary verbatim storage
 		vector<Char> &is_eng, // use english
-		SQLite::Database &db_rw, bool write_html = true)
+		SQLite::Database &db_rw,
+		bool to_delete = false,
+		bool write_html = true)
 {
 	cout << "\n\n\n\n" << u8"====== 第 2 轮转换 ======\n" << endl;
 	Str html, fname, last_node_id;
@@ -789,7 +791,7 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 			lstinline(html, str_verbs[i]);
 			verb(html, str_verbs[i]);
 			// tree button link
-			if (!clear)
+			if (!to_delete)
 				get_tree_last_node(last_node_id, html, entry, db_rw);
 			if (replace(html, "PhysWikiLastNnodeId", last_node_id) != 2)
 				throw internal_err(u8"\"PhysWikiLastNnodeId\" 在 entry_template.html 中数量不对");
@@ -893,7 +895,7 @@ inline void dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_rw)
+inline void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw)
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
@@ -903,13 +905,13 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool clear, SQLite::Database &db_
 	vector<Pentry> pentries;
 	vector<vecStr> str_verbs;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, str_verbs, clear, is_eng, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, str_verbs, to_delete, is_eng, db_rw);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
 //		dep_json(db_read);
 
-	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, str_verbs, is_eng, db_rw, !clear);
+	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, str_verbs, is_eng, db_rw, to_delete, !to_delete);
 
 	if (!entry_err.empty()) {
 		if (size(entry_err) > 1) {
