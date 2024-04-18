@@ -614,7 +614,7 @@ inline void db_update_labels(
 				// check if label exist in db for another entry
 				stmt_select3.bind(1, label);
 				if (stmt_select3.executeStep()) {
-					clear(sb) << u8"label 已经被定义，文章：" << stmt_select3.getColumn(0).getString();
+					clear(sb) << "label " << label << u8" 已被定义，文章：" << stmt_select3.getColumn(0).getString();
 					throw scan_err(sb);
 				}
 				stmt_select3.reset();
