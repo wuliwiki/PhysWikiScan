@@ -551,6 +551,8 @@ inline void db_update_labels(
 		R"(SELECT "id" FROM "labels" WHERE "entry"=?;)");
 	SQLite::Statement stmt_select1(db_rw,
 		R"(SELECT "order" FROM "labels" WHERE "id"=?;)");
+	SQLite::Statement stmt_select3(db_rw,
+		R"(SELECT "entry" FROM "labels" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "entry" FROM "entry_refs" WHERE "label"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
@@ -609,6 +611,14 @@ inline void db_update_labels(
 
 			Long ind = search(label, db_labels);
 			if (ind < 0) {
+				// check if label exist in db for another entry
+				stmt_select3.bind(1, label);
+				if (stmt_select3.executeStep()) {
+					clear(sb) << u8"label 已经被定义，文章：" << stmt_select3.getColumn(0).getString();
+					throw scan_err(sb);
+				}
+				stmt_select3.reset();
+
 				clear(sb) << u8"内部警告：数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
 				scan_warn(sb);
