@@ -800,15 +800,15 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 				write(html, fname); // save html file
 			file_remove(fname + ".tmp");
 		}
-		catch (const std::runtime_error &e) {
+		catch (const std::exception &e) {
 			entry_err[entry] = e.what();
-		}
-		catch (...) {
-			entry_err[entry] = "throw 类型未知";
 		}
 	}
 	cout << endl; cout.flush();
-	db_update_entry_uprefs(entry_uprefs, db_rw);
+	try { db_update_entry_uprefs(entry_uprefs, db_rw); }
+	catch (const std::exception &e) {
+		entry_err["db_update_entry_uprefs()"] = e.what();
+	}
 }
 
 // generate json file containing dependency tree
