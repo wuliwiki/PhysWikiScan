@@ -800,8 +800,11 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 				write(html, fname); // save html file
 			file_remove(fname + ".tmp");
 		}
-		catch (std::runtime_error &e) {
+		catch (const std::runtime_error &e) {
 			entry_err[entry] = e.what();
+		}
+		catch (...) {
+			entry_err[entry] = "throw 类型未知";
 		}
 	}
 	cout << endl; cout.flush();
