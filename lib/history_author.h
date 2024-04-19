@@ -651,7 +651,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			<< " hash=" << hash;
 		SLS_WARN(sb);
 		if (db_entry != entry)
-			throw scan_err(u8"已存在的备份文件属于另一个文章（这不可能，因为标题 entries.caption 禁止重复，不同文章的内容不可能一样）");
+			throw scan_err(u8"已存在的备份文件属于另一篇文章（这不可能，因为标题 entries.caption 禁止重复，不同文章的内容不可能一样）");
 		return;
 	}
 	stmt_select2.reset();

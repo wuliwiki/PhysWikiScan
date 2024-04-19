@@ -128,8 +128,10 @@ inline void update_sqlite_table(
 	void (*callback) ( // callback for db change
 		char act, // [i] insert [u] update [d] delete [a] all deleted (ind_changed[0] will be number of deleted records)
 		Str_I table, vecStr_I field_names, const pair<vecSQLval, vecSQLval> &row,
-		vecLong_I ind_changed, const vecSQLval &old_vals // row.second(ind_changed[j]) was old_vals[j]
-	) = nullptr
+		vecLong_I ind_changed, const vecSQLval &old_vals, // row.second(ind_changed[j]) was old_vals[j]
+		void *data // user data
+	) = nullptr,
+	void *callback_data = nullptr // user data for callback()
 ) {
 	vecSQLval old_vals;
 	vecLong ind_changed;
@@ -144,7 +146,7 @@ inline void update_sqlite_table(
 		Long Ndel = db_rw.exec(stmp);
 		if (Ndel && callback) {
 			ind_changed.push_back(Ndel);
-			callback('a', table_name, field_names, row_empty, ind_changed, old_vals);
+			callback('a', table_name, field_names, row_empty, ind_changed, old_vals, callback_data);
 		}
 		return;
 	}
@@ -179,7 +181,7 @@ inline void update_sqlite_table(
 				SLS_ERR(SLS_WHERE);
 			stmt_delete.reset();
 			if (callback)
-				callback('d', table_name, field_names, row_empty, ind_changed, old_vals);
+				callback('d', table_name, field_names, row_empty, ind_changed, old_vals, callback_data);
 			continue;
 		}
 		// check for change
@@ -202,7 +204,7 @@ inline void update_sqlite_table(
 				if (stmt_update.exec() != 1) SLS_ERR(SLS_WHERE);
 				stmt_update.reset();
 				if (callback)
-					callback('u', table_name, field_names, *p_row, ind_changed, old_vals);
+					callback('u', table_name, field_names, *p_row, ind_changed, old_vals, callback_data);
 			}
 		}
 		data.erase(p_row);
@@ -218,7 +220,7 @@ inline void update_sqlite_table(
 			bind(stmt_insert, Npk+j+1, row.second[j]);
 		stmt_insert.exec(); stmt_insert.reset();
 		if (callback)
-			callback('i', table_name, field_names, row, ind_changed, old_vals);
+			callback('i', table_name, field_names, row, ind_changed, old_vals, callback_data);
 	}
 }
 

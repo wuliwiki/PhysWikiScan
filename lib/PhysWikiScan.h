@@ -1242,7 +1242,7 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	}
 
 	if (!entry_err.empty()) {
-		cout << SLS_RED_BOLD << entry_err.size() << u8"个文章编译失败： " SLS_NO_STYLE << endl;
+		cout << SLS_RED_BOLD << entry_err.size() << u8"篇文章编译失败： " SLS_NO_STYLE << endl;
 		for (auto &e : entry_err) {
 			cout << SLS_RED_BOLD << e.first << SLS_NO_STYLE << endl;
 			cout << e.second << endl;

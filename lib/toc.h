@@ -503,12 +503,12 @@ inline void db_update_entries_from_toc(
 			changed = true;
 		}
 		if (entry_last != db_last) {
-			clear(sb) << entry << " 检测到上一个文章改变（将更新） " << db_last << " -> " << entry_last;
+			clear(sb) << entry << " 检测到上一篇文章改变（将更新） " << db_last << " -> " << entry_last;
 			db_log(sb);
 			changed = true;
 		}
 		if (entry_next != db_next) {
-			clear(sb) << entry << " 检测到下一个文章改变（将更新） " << db_next << " -> " << entry_next;
+			clear(sb) << entry << " 检测到下一篇文章改变（将更新） " << db_next << " -> " << entry_next;
 			db_log(sb);
 			changed = true;
 		}

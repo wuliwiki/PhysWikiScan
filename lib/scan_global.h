@@ -118,7 +118,7 @@ inline void scan_log_limit()
 // callback function for update_sqlite_table()
 inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
 	const pair<vecSQLval,vecSQLval> &row,
-	vecLong_I cols_changed, const vecSQLval &old_vals)
+	vecLong_I cols_changed, const vecSQLval &old_vals, void *data)
 {
 	Str str;
 	if (act == 'a') {

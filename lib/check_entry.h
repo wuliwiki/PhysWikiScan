@@ -97,7 +97,7 @@ inline bool is_draft(Str_I str)
 	Intvs intv;
 	find_env(intv, str, "issues");
 	if (intv.size() > 1)
-		throw scan_err(u8"每个文章最多支持一个 issues 环境!");
+		throw scan_err(u8"每篇文章最多支持一个 issues 环境!");
 	else if (intv.empty())
 		return false;
 	Long ind = find(str, "\\issueDraft", intv.L(0));
