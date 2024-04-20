@@ -1,5 +1,7 @@
 #pragma once
 
+void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw);
+
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
@@ -466,6 +468,7 @@ inline void db_update_entries_from_toc(
 
 	Str empty;
 	Long N = size(entries);
+	vecStr entries_recompile;
 
 	for (Long i = 0; i < N; i++) {
 		auto &entry = entries[i];
@@ -486,11 +489,11 @@ inline void db_update_entries_from_toc(
 		const Str &db_next = stmt_select.getColumn(4);
 		stmt_select.reset();
 
-		bool changed = false;
+		bool changed = false, recompile = false;
 		if (titles[i] != db_title) {
 			clear(sb) << entry << " 检测到标题改变（将更新） " << db_title << " -> " << titles[i];
 			db_log(sb);
-			changed = true;
+			changed = recompile = true;
 		}
 		if (part_ids[entry_part[i]] != db_part) {
 			clear(sb) << entry << " 检测到所在部分改变（将更新） " << db_part << " -> " << part_ids[entry_part[i]];
@@ -505,12 +508,12 @@ inline void db_update_entries_from_toc(
 		if (entry_last != db_last) {
 			clear(sb) << entry << " 检测到上一篇文章改变（将更新） " << db_last << " -> " << entry_last;
 			db_log(sb);
-			changed = true;
+			changed = recompile = true;
 		}
 		if (entry_next != db_next) {
 			clear(sb) << entry << " 检测到下一篇文章改变（将更新） " << db_next << " -> " << entry_next;
 			db_log(sb);
-			changed = true;
+			changed = recompile = true;
 		}
 		if (changed) {
 			stmt_update.bind(1, titles[i]);
@@ -521,6 +524,7 @@ inline void db_update_entries_from_toc(
 			stmt_update.bind(6, entry);
 			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_update.reset();
+			if (recompile) entries_recompile.push_back(entry);
 		}
 	}
 
@@ -539,6 +543,10 @@ inline void db_update_entries_from_toc(
 		}
 		stmt_select.reset();
 	}
+
+	// recompile
+	if (!entries_recompile.empty())
+		PhysWikiOnlineN(entries_recompile, false, db_rw);
 
 	cout << "done." << endl;
 }
