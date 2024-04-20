@@ -28,7 +28,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 				throw scan_err(sb);
 			}
 			clear(sb) << u8"检测到删除文献（将删除）： " << to_string(info.order) << ". " << id;
-			db_log(sb);
+			db_log_print(sb);
 			stmt_delete.bind(1, id);
 			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_delete.reset();
@@ -51,14 +51,14 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			if (order != info.order) {
 				clear(sb) << u8"数据库中文献 "; sb << id << " 编号改变（将更新）： " << to_string(info.order)
 													<< " -> " << to_string(order);
-				db_log(sb);
+				db_log_print(sb);
 				changed = true;
 				id_flip_sign.insert(id);
 				stmt_update.bind(1, -(int64_t)order); // to avoid unique constraint
 			}
 			if (bib_detail != info.detail) {
 				clear(sb) << u8"数据库中文献 " << id << " 详情改变（将更新）： " << info.detail << " -> " << bib_detail;
-				db_log(sb);
+				db_log_print(sb);
 				changed = true;
 				stmt_update.bind(1, (int64_t)order); // to avoid unique constraint
 			}
@@ -70,7 +70,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 			}
 		}
 		else {
-			db_log(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
+			db_log_print(u8"数据库中不存在文献（将添加）： " + num2str(order) + ". " + id);
 			stmt_insert.bind(1, id);
 			stmt_insert.bind(2, -(int64_t)order);
 			stmt_insert.bind(3, bib_detail);

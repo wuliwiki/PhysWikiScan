@@ -22,7 +22,7 @@ inline Long fix_foreign_key_occupied(
 			int64_t author_id = stmt_select.getColumn(1);
 			stmt_select.reset();
 			clear(sb) << u8"occupied.entry->entries 外键不存在（将删除）：" << entry << " 作者：" << author_id;
-			scan_warn(sb);
+			scan_log_warn(sb);
 
 			stmt_delete.bind(1, rowid);
 			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
@@ -45,7 +45,7 @@ inline Long fix_foreign_key_occupied(
 			int64_t author_id = stmt_select.getColumn(1);
 			stmt_select.reset();
 			clear(sb) << u8"occupied.entry->authors 外键不存在（将删除）：" << entry << " 作者：" << author_id;
-			scan_warn(sb);
+			scan_log_warn(sb);
 
 			stmt_delete.bind(1, rowid);
 			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
@@ -80,12 +80,12 @@ inline Long fix_foreign_key_figures(
 
 			if (!deleted) {
 				clear(sb) << u8"找不到 figures.image，且 figures 未标记删除（将忽略）：" << fig_id << '.' << image_hash;
-				scan_warn(sb);
+				scan_log_warn(sb);
 				continue;
 			}
 
 			clear(sb) << u8"figures.image->images.hash 外键不存在（已标记删除）（将彻底删除）：" << fig_id << '.' << image_hash << " 文章 " << entry;
-			scan_warn(sb);
+			scan_log_warn(sb);
 			stmt_delete.bind(1, rowid);
 			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_delete.reset();
@@ -111,7 +111,7 @@ inline Long fix_foreign_key_figures(
 
 			clear(sb) << u8"figures.entry->entries.id 外键不存在（将改为 ''，请人工判断是否应该删除）："
 				<< fig_id << '.' << image_hash << " 文章 " << entry;
-			scan_warn(sb);
+			scan_log_warn(sb);
 			stmt_update.bind(1, rowid);
 			stmt_update.exec(); stmt_update.reset();
 			++N;

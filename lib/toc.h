@@ -264,7 +264,7 @@ inline void table_of_contents(
 			// get db entry info
 			stmt_select.bind(1, entry);
 			if (!stmt_select.executeStep()) {
-				db_log(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
+				db_log_print(u8"数据库中找不到 main.tex 中文章（将试图修复）： " + entry);
 				vecStr entries_tmp, titles_tmp;
 				entries_titles(entries_tmp, titles_tmp, db_rw);
 				db_check_add_entry_simulate_editor(entries_tmp, db_rw);
@@ -492,27 +492,27 @@ inline void db_update_entries_from_toc(
 		bool changed = false, recompile = false;
 		if (titles[i] != db_title) {
 			clear(sb) << entry << " 检测到标题改变（将更新） " << db_title << " -> " << titles[i];
-			db_log(sb);
+			db_log_print(sb);
 			changed = recompile = true;
 		}
 		if (part_ids[entry_part[i]] != db_part) {
 			clear(sb) << entry << " 检测到所在部分改变（将更新） " << db_part << " -> " << part_ids[entry_part[i]];
-			db_log(sb);
+			db_log_print(sb);
 			changed = true;
 		}
 		if (chap_ids[entry_chap[i]] != db_chapter) {
 			clear(sb) << entry << " 检测到所在章节改变（将更新） " << db_chapter << " -> " << chap_ids[entry_chap[i]];
-			db_log(sb);
+			db_log_print(sb);
 			changed = true;
 		}
 		if (entry_last != db_last) {
 			clear(sb) << entry << " 检测到上一篇文章改变（将更新） " << db_last << " -> " << entry_last;
-			db_log(sb);
+			db_log_print(sb);
 			changed = recompile = true;
 		}
 		if (entry_next != db_next) {
 			clear(sb) << entry << " 检测到下一篇文章改变（将更新） " << db_next << " -> " << entry_next;
-			db_log(sb);
+			db_log_print(sb);
 			changed = recompile = true;
 		}
 		if (changed) {
@@ -524,7 +524,8 @@ inline void db_update_entries_from_toc(
 			stmt_update.bind(6, entry);
 			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_update.reset();
-			if (recompile) entries_recompile.push_back(entry);
+			if (recompile)
+				entries_recompile.push_back(entry);
 		}
 	}
 
@@ -536,7 +537,7 @@ inline void db_update_entries_from_toc(
 			!stmt_select.getColumn(3).getString().empty() || !stmt_select.getColumn(4).getString().empty()) {
 			// \entry{}{} just removed from main.tex
 			clear(sb) << entry << R"( 检测到文章从目录移除，将更新 "part"='', "chapter"='', "last"='', "next"='')";
-			db_log(sb);
+			db_log_print(sb);
 			stmt_update0.bind(1, entry);
 			if (stmt_update0.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_update0.reset();

@@ -259,7 +259,7 @@ inline void db_get_tree1(
 					   << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
 				}
 			}
-			scan_warn(ss.str());
+			scan_log_warn(ss.str());
 		}
 	}
 

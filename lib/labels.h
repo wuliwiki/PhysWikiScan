@@ -249,7 +249,7 @@ inline Long autoref(
 			else if (type == "sub") kind = u8"子节";
 			else if (type == "lst") {
 				kind = u8"代码";
-				scan_warn(u8"autoref lstlisting 功能未完成！");
+				scan_log_warn(u8"autoref lstlisting 功能未完成！");
 				++ind0; continue;
 			}
 			else
@@ -268,7 +268,7 @@ inline Long autoref(
 			else if (type == "sub") kind = "sub. ";
 			else if (type == "lst") {
 				kind = "code. ";
-				scan_warn(u8"autoref lstlisting 功能未完成！");
+				scan_log_warn(u8"autoref lstlisting 功能未完成！");
 				++ind0; continue;
 			}
 			else
@@ -621,7 +621,7 @@ inline void db_update_labels(
 
 				clear(sb) << u8"内部警告：数据库中不存在 label（将模拟 editor 插入）：" << label << ", " << type << ", "
 					<< entry << ", " << to_string(order);
-				scan_warn(sb);
+				scan_log_warn(sb);
 				stmt_insert.bind(1, label);
 				stmt_insert.bind(2, type);
 				stmt_insert.bind(3, entry);
@@ -635,12 +635,12 @@ inline void db_update_labels(
 			if (entry != db_label_entries[ind]) {
 				clear(sb) << "label " << label << u8" 的文章发生改变："
 					<< db_label_entries[ind] << " -> " << entry << SLS_WHERE;
-				db_log(sb);
+				db_log_print(sb);
 				changed = true;
 			}
 			if (order != db_label_orders[ind]) {
-				db_log("label " + label + u8" 的 order 发生改变（将更新）："
-						 + to_string(db_label_orders[ind]) + " -> " + to_string(order));
+				db_log_print("label " + label + u8" 的 order 发生改变（将更新）："
+							 + to_string(db_label_orders[ind]) + " -> " + to_string(order));
 				changed = true;
 			}
 			if (changed) {
@@ -671,7 +671,7 @@ inline void db_update_labels(
 		if (db_label_ref_bys[i].empty() // 标签没被引用
 			|| (db_label_ref_bys[i].size() == 1 && db_label_ref_bys[i][0] == entry) // 标签只被本文引用
 		) {
-			db_log(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
+			db_log_print(u8"检测到 label 被删除（将从数据库删除）： " + db_label);
 			// delete from "labels"
 			stmt_delete.bind(1, db_label);
 			if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);

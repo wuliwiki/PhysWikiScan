@@ -628,7 +628,7 @@ inline void PhysWikiOnlineN_round1(
 		vecStr_O titles, vecStr_IO entries,
 		vector<Pentry> &pentries,
 		vector<vecStr> &str_verbs, // temp storage for verbatim strings
-		bool clear,
+		bool to_delete,
 		vector<Char> &is_eng,
 		SQLite::Database &db_rw
 ) {
@@ -638,7 +638,8 @@ inline void PhysWikiOnlineN_round1(
 	titles.resize(entries.size()); pentries.resize(entries.size());
 	str_verbs.clear(); str_verbs.resize(entries.size());
 
-	cout << u8"\n\n======  第 1 轮转换 ======\n" << endl;
+	scan_log_print(clear(sb) << u8"\n\n======  第 1 轮转换 ======\n");
+
 	bool update_db, isdraft;
 	Str key_str, license, type;
 	unordered_set<Str> update_entries;
@@ -654,22 +655,21 @@ inline void PhysWikiOnlineN_round1(
 		auto &entry = entries[i];
 		try {
 			if (i == N0)
-				cout << u8"\n\n\n 以下文章引用标签序号发生改变也需要更新：\n" << endl;
-
-			cout << std::setw(5) << std::left << i
-				 << std::setw(10) << std::left << entry; cout.flush();
+				scan_log_print(clear(sb) << u8"\n\n\n 以下文章引用标签序号发生改变也需要更新：\n");
+			stringstream ss;
+			ss << std::setw(5) << std::left << i << std::setw(10) << std::left << entry;
 
 			// =================================================================
 			PhysWikiOnline1(html, update_db, img_to_delete, titles[i], is_eng[i],
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
 				license, type, labels, label_orders, str_verbs[i],
-				entry_bib_order[entry], pentries[i], illegal_chars, entry, clear, rules,
+				entry_bib_order[entry], pentries[i], illegal_chars, entry, to_delete, rules,
 				db_rw); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");
 
-			cout << titles[i] << endl; cout.flush();
+			ss << titles[i]; scan_log_print(ss.str());
 
 			// update db "entries"
 			if (update_db) {
@@ -701,10 +701,11 @@ inline void PhysWikiOnlineN_round1(
 				titles.resize(entries.size());
 			}
 			// update db table nodes for 1 entry (might also delete "edges" if nodes are deleted)
-			db_update_nodes(pentries[i], entry, clear, db_rw);
+			db_update_nodes(pentries[i], entry, to_delete, db_rw);
 		}
 		catch (const std::exception &e) {
 			cout << SLS_RED_BOLD << u8"\n错误：" << e.what() << SLS_NO_STYLE << endl;
+			scan_log(clear(sb) << u8"\n错误：" << e.what());
 			entry_err[entry] = e.what();
 		}
 	}
@@ -997,7 +998,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		}
 		else { // !db_deleted
 			if (!file_exist(sb)) {
-				scan_warn(u8"要删除的文章未被标记删除，但文章文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
+				scan_log_warn(u8"要删除的文章未被标记删除，但文章文件不存在（将创建 dummy 文件并尝试删除）：" + entry);
 				clear(sb1) << "% " << db_title << "\n\n";
 				write(sb1, sb);
 			}
@@ -1075,7 +1076,7 @@ inline void arg_delete_cleanup(SQLite::Database &db_rw)
 		if (entry == "main" || entry == "bibliography") continue;
 		clear(sb) << gv::path_in << "contents/" << entry << ".tex";
 		if (!file_exist(sb)) {
-			scan_warn(u8"发现 entries.deleted=0 但是文章文件不存在（尝试用 --delete 删除）：" + entry);
+			scan_log_warn(u8"发现 entries.deleted=0 但是文章文件不存在（尝试用 --delete 删除）：" + entry);
 			try {
 				SQLite::Transaction transaction(db_rw);
 				arg_delete({entry}, db_rw);
@@ -1135,7 +1136,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 		// delete entries.figures and all associated images
 		stmt_select0.bind(1, entry);
 		if (!stmt_select0.executeStep()) {
-			db_log(u8"arg_delete(): 数据库中找不到要删除的文章（将忽略）： " + entry);
+			db_log_print(u8"arg_delete(): 数据库中找不到要删除的文章（将忽略）： " + entry);
 			stmt_select0.reset();
 			continue;
 		}
@@ -1179,7 +1180,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 		}
 		catch (const std::exception &e) {
 			if (find(e.what(), "FOREIGN KEY") >= 0) {
-				db_log("db foreign key err, trying to resolve...");
+				db_log_print("db foreign key err, trying to resolve...");
 				// delete from figures using `figures.entry`
 				stmt_select3.bind(1, entry);
 				while (stmt_select3.executeStep())
@@ -1235,7 +1236,7 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	// TODO: warn unused figures, based on "ref_by"
 
 	if (!illegal_chars.empty()) {
-		scan_warn(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
+		scan_log_warn(u8"非法字符的 code point 已经保存到 data/illegal_chars.txt");
 		ofstream fout("data/illegal_chars.txt");
 		for (auto c: illegal_chars)
 			fout << u8(c) << endl;

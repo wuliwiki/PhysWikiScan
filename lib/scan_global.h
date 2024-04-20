@@ -42,7 +42,7 @@ public:
 	explicit internal_err(Str_I msg): scan_err(u8"内部错误（请联系管理员）： " + msg) {}
 };
 
-// write log
+// append to log file
 // if `print_time`, time will be inserted at first none LF
 inline void scan_log(Str_I str, bool print_time = false)
 {
@@ -71,9 +71,16 @@ inline void scan_log(Str_I str, bool print_time = false)
 	file.close();
 }
 
+// scan_log() and print to `stdout`
+inline void scan_log_print(Str_I str)
+{
+	scan_log(str);
+	cout << str << endl;
+}
+
 // db log, also output to stdout
-// in case of warning about db, use scan_warn()
-inline void db_log(Str_I str)
+// in case of warning about db, use scan_log_warn()
+inline void db_log_print(Str_I str)
 {
 	static Str str1;
 	clear(str1) << "[DB] " << str;
@@ -81,14 +88,14 @@ inline void db_log(Str_I str)
 	scan_log(str1);
 }
 
-// warning
-inline void scan_warn(Str_I str)
+// print warning and append to log file
+inline void scan_log_warn(Str_I str)
 {
 	SLS_WARN(str);
 	scan_log("[Warning] " + str);
 }
 
-// error
+// cerr and append to log file
 inline void scan_cerr(Str_I str)
 {
 	scan_log("[Error] " + str);
@@ -115,7 +122,7 @@ inline void scan_log_limit()
 	}
 }
 
-// callback function for update_sqlite_table()
+// callback function for update_sqlite_table() in sqlitecpp_ext.h
 inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
 	const pair<vecSQLval,vecSQLval> &row,
 	vecLong_I cols_changed, const vecSQLval &old_vals, void *data)
@@ -123,7 +130,7 @@ inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
 	Str str;
 	if (act == 'a') {
 		str << "批量删除 " << cols_changed[0] << " 条记录，表 \"" << table << '\"';
-		db_log(str);
+		db_log_print(str);
 		return;
 	}
 	else if (act == 'i') str = "插入记录 ";
@@ -167,5 +174,5 @@ inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
 	}
 	else
 		throw scan_err(SLS_WHERE);
-	db_log(str);
+	db_log_print(str);
 }

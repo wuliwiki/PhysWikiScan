@@ -54,7 +54,8 @@ inline void global_forbid_char(set<Char32> &illegal_chars, Str_I str)
 		if (ind >= 0 || c32 > 65536) {
 			Long beg = (u8count(str, 0, it) < 20) ? 0 : Long(it - 20);
 			Long end = (u8count(str, it, size(str)) < 20) ? size(str) : Long(it + 20);
-			scan_warn(u8"latex 代码中出现非法字符【" + (*it) + u8"】，建议使用公式环境和命令表示： " + str.substr(beg, end-beg));
+			scan_log_warn(u8"latex 代码中出现非法字符【" + (*it) + u8"】，建议使用公式环境和命令表示： " +
+						  str.substr(beg, end - beg));
 			// TODO: 应该搞一个批量替换功能
 			illegal_chars.insert(c32);
 		}
@@ -120,7 +121,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 			return N;
 		try {ind0 = skip_command(str, ind0, 1);}
 		catch (...) {
-			scan_warn(u8"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
+			scan_log_warn(u8"\\autoref 后面没有大括号: " + str.substr(ind0, 20));
 		}
 		if (ind0 >= size(str))
 			return N;
@@ -138,7 +139,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 		if (error)
 			throw scan_err(msg);
 		else
-			scan_warn(msg);
+			scan_log_warn(msg);
 		++N;
 	}
 }
@@ -258,7 +259,7 @@ inline Long check_normal_text_punc(Str_IO str, Bool_I error, Bool_I replace = fa
 					if (error)
 						throw scan_err(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”");
 					else
-						scan_warn(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”\n");
+						scan_log_warn(u8"正文中使用英文标点：“" + str.substr(ind0, 40) + u8"”\n");
 				}
 			}
 		}

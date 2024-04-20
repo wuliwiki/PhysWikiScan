@@ -107,7 +107,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 			ind0 = intvIn.L(i);
 
 		// TODO: get [label=xxx]
-		// scan_warn("lstlisting 的 label 暂时没有处理！");
+		// scan_log_warn("lstlisting 的 label 暂时没有处理！");
 
 		// recover code from verbatim index
 		ind_str = str.substr(ind0, intvIn.R(i) + 1 - ind0);
@@ -130,7 +130,7 @@ inline Long lstlisting(Str_IO str, vecStr_I str_verb)
 			prism_line_num = "class=\"line-numbers\"";
 			if (!lang.empty()) {
 				prism_lang = " class=\"language-" + lang + "\"";
-				scan_warn(u8"lstlisting 环境不支持 " + lang + u8" 语言， 可能未添加高亮！");
+				scan_log_warn(u8"lstlisting 环境不支持 " + lang + u8" 语言， 可能未添加高亮！");
 			}
 			else
 				prism_lang = " class=\"language-plain\"";

@@ -229,7 +229,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			else {
 				authorID = ++author_id_max;
 				clear(sb) << u8"备份文件中的作者不在数据库中（将添加）： " << author << " ID: " << author_id_max;
-				db_log(sb);
+				db_log_print(sb);
 				new_authors[author] = author_id_max;
 				stmt_insert_auth.bind(1, int64_t(author_id_max));
 				stmt_insert_auth.bind(2, author);
@@ -240,14 +240,14 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
 			clear(sb) << path << fname << ".tex";
 			clear(sb1) << "移动文件 " << fpath << " -> " << sb;
-			scan_warn(sb1);
+			scan_log_warn(sb1);
 			file_move(sb, fpath);
 		}
 
 		author_contrib[authorID] += 5;
 		if (entries.count(entry) == 0 &&
 			entries_deleted_inserted.count(entry) == 0) {
-			scan_warn(u8"内部警告：备份文件中的文章不在数据库中（将模拟编辑器添加）： " + entry);
+			scan_log_warn(u8"内部警告：备份文件中的文章不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
 			entries_deleted_inserted.insert(entry);
@@ -258,18 +258,18 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			if (get<0>(time_author_entry_fexist) != time) {
 				clear(sb) << u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " +
 							 get<0>(time_author_entry_fexist);
-				db_log(sb);
+				db_log_print(sb);
 			}
 			if (get<1>(time_author_entry_fexist) != authorID) {
 				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： "
 					<< to_string(get<1>(time_author_entry_fexist)) << '.'
 					<< db_id_to_author[get<1>(time_author_entry_fexist)];
-				db_log(sb);
+				db_log_print(sb);
 			}
 			if (get<2>(time_author_entry_fexist) != entry) {
 				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： "
 					<< get<2>(time_author_entry_fexist);
-				db_log(sb);
+				db_log_print(sb);
 			}
 			get<3>(time_author_entry_fexist) = true;
 		}
@@ -281,7 +281,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 				const Str &db_hash = stmt_select4.getColumn(0);
 				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
 								 << db_hash << " -> " << sha1 << ' ' << fname;
-				db_log(sb);
+				db_log_print(sb);
 				stmt_update.bind(1, sha1);
 				stmt_update.bind(2, db_hash);
 				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
@@ -289,7 +289,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			}
 			else {
 				clear(sb) << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
-				db_log(sb);
+				db_log_print(sb);
 				stmt_insert.bind(1, sha1);
 				stmt_insert.bind(2, time);
 				stmt_insert.bind(3, (int64_t)authorID);
@@ -307,7 +307,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		if (!get<3>(row.second)) {
 			clear(sb) << u8"数据库 history 中文件不存在：" << row.first << ", " << get<0>(row.second) << ", " <<
 				 get<1>(row.second) << ", " << get<2>(row.second);
-			db_log(sb);
+			db_log_print(sb);
 		}
 	}
 	cout << "\ndone." << endl;
@@ -366,7 +366,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 			if (last_hash != db_last_hash) {
 				clear(sb) << u8"内部警告：检测到 history.last 改变，将模拟编辑器更新："
 					<< db_last_hash << " -> " << last_hash;
-				scan_warn(sb);
+				scan_log_warn(sb);
 				stmt_update.bind(1, last_hash);
 				stmt_update.bind(2, hash);
 				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
@@ -384,7 +384,7 @@ inline void db_update_history_last(SQLite::Database &db_rw)
 		if (last_backup != db_last_backup) {
 			clear(sb) << u8"内部警告：检测到 entry.last_backup 改变，将模拟编辑器更新："
 				<< db_last_backup << " -> " << last_backup;
-			scan_warn(sb);
+			scan_log_warn(sb);
 			stmt_update2.bind(1, last_backup);
 			stmt_update2.bind(2, entry);
 			if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
@@ -634,7 +634,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	sb << entry << ".tex";
 	read(str, sb);
 	if (str.empty())
-		db_log(u8"--backup 忽略空文件：" + entry);
+		db_log_print(u8"--backup 忽略空文件：" + entry);
 	CRLF_to_LF(str);
 	Str hash = sha1sum(str).substr(0, 16);
 
@@ -664,7 +664,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 	// check if is the first backup
 	if (hash_last.empty()) {
-		db_log(u8"entries.last_backup 为空， 当前为第一次备份。");
+		db_log_print(u8"entries.last_backup 为空， 当前为第一次备份。");
 
 		time_new_str = time_str("%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
@@ -683,7 +683,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		clear(sb) << backup_path
 			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
 		if (file_exist(sb))
-			scan_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
+			scan_log_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
 		write(str, sb);
 
 		// insert into "entry_authors", contrib 5min
@@ -763,7 +763,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_update.reset();
 		clear(sb) << u8"更新 history： " << hash_last << " -> " << hash << ", add = " <<
 			char_add << ", del = " << char_del;
-		db_log(sb);
+		db_log_print(sb);
 
 		// replace last (latest) backup
 		clear(sb) << backup_path
@@ -786,7 +786,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
 		stmt_update5.reset();
-		db_log(u8"更新 entry_authors.last_backup");
+		db_log_print(u8"更新 entry_authors.last_backup");
 	}
 	else { // !replace  (new backup)
 		// calculate char add/del
@@ -808,7 +808,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id
 			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
-		db_log(sb);
+		db_log_print(sb);
 
 		// write new file
 		clear(sb) << backup_path
@@ -829,13 +829,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
 		stmt_update3.reset();
-		db_log(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
+		db_log_print(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
 		// update "authors.contrib", add 5min
 		stmt_update4.bind(1, (int64_t)author_id);
 		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update4.reset();
-		db_log(u8"更新 authors.contrib += 5");
+		db_log_print(u8"更新 authors.contrib += 5");
 	}
 
 	stmt_update2.bind(1, hash);
@@ -844,7 +844,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	stmt_update2.reset();
 
 	clear(sb) << u8"更新 entries.last_backup： " << entry << '.' << hash;
-	db_log(sb);
+	db_log_print(sb);
 }
 
 // --history

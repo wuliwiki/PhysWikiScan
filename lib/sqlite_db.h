@@ -63,7 +63,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 		stmt_select.bind(1, entry);
 		bool deleted = false;
 		if (!stmt_select.executeStep()) {
-			scan_warn(u8"内部警告：文章不存在数据库中， 将模拟 editor 添加： " + entry);
+			scan_log_warn(u8"内部警告：文章不存在数据库中， 将模拟 editor 添加： " + entry);
 			// 从 tex 文件获取标题
 			read(str, sb); // read tex file
 			CRLF_to_LF(str);
@@ -79,7 +79,7 @@ inline void db_check_add_entry_simulate_editor(vecStr_I entries, SQLite::Databas
 				title = stmt_select.getColumn(0).getString();
 				clear(sb) << u8"文章文件存在，但数据库却标记了已删除（将恢复）："
 					<< entry << " (" << title << ')';
-				db_log(sb);
+				db_log_print(sb);
 				stmt_undelete.bind(1, entry);
 				if (stmt_undelete.exec() != 1) throw internal_err(SLS_WHERE);
 				stmt_undelete.reset();
@@ -236,7 +236,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 	for (auto &img_hash : db_images) {
 		if (!images_figures.count(img_hash) && !images_figures_old.count(img_hash)) {
 			clear(sb) << u8"图片 " << img_hash << u8" 没有被 figures 表中任何环境引用（将删除）。";
-			db_log(sb);
+			db_log_print(sb);
 			stmt_delete4.bind(1, img_hash);
 			if (stmt_delete4.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_delete4.reset();
