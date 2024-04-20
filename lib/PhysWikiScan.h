@@ -638,6 +638,9 @@ inline void PhysWikiOnlineN_round1(
 	titles.resize(entries.size()); pentries.resize(entries.size());
 	str_verbs.clear(); str_verbs.resize(entries.size());
 
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT OR IGNORE INTO "entry_to_update" ("entry", "update") VALUES (?,?);)");
+
 	scan_log_print(clear(sb) << u8"\n\n======  第 1 轮转换 ======\n");
 
 	bool update_db, isdraft;
@@ -694,9 +697,12 @@ inline void PhysWikiOnlineN_round1(
 			// order change means `update_entries` needs to be updated with autoref() as well.
 			// but just in case, we also run 1st round again for them
 			if (!gv::is_entire && !update_entries.empty()) {
-				for (auto &new_entry: update_entries)
+				for (auto &new_entry: update_entries) {
+					stmt_insert.bind(1, entry); stmt_insert.bind(2, new_entry);
+					stmt_insert.exec(); stmt_insert.reset();
 					if (search(new_entry, entries) < 0)
 						entries.push_back(new_entry);
+				}
 				update_entries.clear();
 				titles.resize(entries.size());
 			}

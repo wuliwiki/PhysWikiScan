@@ -10,57 +10,58 @@ CREATE TABLE "table_version" ( -- 20240403
 	PRIMARY KEY("table")
 );
 
-INSERT INTO "table_version" VALUES ('bibliography',     '20240403', 0);
-INSERT INTO "table_version" VALUES ('chapters',         '20240403', 0);
-INSERT INTO "table_version" VALUES ('entries',          '20240403', 0);
-INSERT INTO "table_version" VALUES ('entry_uprefs',     '20240403', 0);
-INSERT INTO "table_version" VALUES ('entry_authors',    '20240403', 0);
-INSERT INTO "table_version" VALUES ('entry_bibs',       '20240405', 0);
-INSERT INTO "table_version" VALUES ('entry_refs',       '20240403', 0);
-INSERT INTO "table_version" VALUES ('entry_tags',       '20240403', 0);
-INSERT INTO "table_version" VALUES ('edges',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('history',          '20240403', 0);
-INSERT INTO "table_version" VALUES ('labels',           '20240403', 0);
-INSERT INTO "table_version" VALUES ('nodes',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('parts',            '20240403', 0);
-INSERT INTO "table_version" VALUES ('seo_keys',         '20240403', 0);
+INSERT INTO "table_version" VALUES ('bibliography',      '20240403', 0);
+INSERT INTO "table_version" VALUES ('chapters',          '20240403', 0);
+INSERT INTO "table_version" VALUES ('entries',           '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_uprefs',      '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_authors',     '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_bibs',        '20240405', 0);
+INSERT INTO "table_version" VALUES ('entry_refs',        '20240403', 0);
+INSERT INTO "table_version" VALUES ('entry_tags',        '20240403', 0);
+INSERT INTO "table_version" VALUES ('edges',             '20240403', 0);
+INSERT INTO "table_version" VALUES ('history',           '20240403', 0);
+INSERT INTO "table_version" VALUES ('labels',            '20240403', 0);
+INSERT INTO "table_version" VALUES ('nodes',             '20240403', 0);
+INSERT INTO "table_version" VALUES ('parts',             '20240403', 0);
+INSERT INTO "table_version" VALUES ('seo_keys',          '20240403', 0);
 
-INSERT INTO "table_version" VALUES ('authors',          '20240414', 1);
-INSERT INTO "table_version" VALUES ('author_rights',    '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_type',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_doi',          '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_url',          '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_journal',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_all_tags',     '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_tags',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_cite',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_all_authors',  '20240403', 1);
-INSERT INTO "table_version" VALUES ('bib_authors',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('contrib_adjust',   '20240414', 1);
-INSERT INTO "table_version" VALUES ('code',             '20240403', 1);
-INSERT INTO "table_version" VALUES ('entry_score',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('entry_files',      '20240403', 1);
-INSERT INTO "table_version" VALUES ('figures',          '20240403', 1);
-INSERT INTO "table_version" VALUES ('files',            '20240403', 1);
-INSERT INTO "table_version" VALUES ('figure_files',     '20240403', 1);
-INSERT INTO "table_version" VALUES ('images',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('journals',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('licenses',         '20240403', 1);
-INSERT INTO "table_version" VALUES ('license_apply',    '20240403', 1);
-INSERT INTO "table_version" VALUES ('locked',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('languages',        '20240403', 1);
-INSERT INTO "table_version" VALUES ('repost',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('referee',          '20240414', 1);
-INSERT INTO "table_version" VALUES ('review',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('rights',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('right_set',        '20240404', 1);
-INSERT INTO "table_version" VALUES ('salary',           '20240403', 1);
-INSERT INTO "table_version" VALUES ('types',            '20240403', 1);
-INSERT INTO "table_version" VALUES ('tags',             '20240403', 1);
-INSERT INTO "table_version" VALUES ('table_version',    '20240407', 1);
+INSERT INTO "table_version" VALUES ('authors',           '20240414', 1);
+INSERT INTO "table_version" VALUES ('author_rights',     '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_type',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_doi',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_url',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_journal',       '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_all_tags',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_tags',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_cite',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_all_authors',   '20240403', 1);
+INSERT INTO "table_version" VALUES ('bib_authors',       '20240403', 1);
+INSERT INTO "table_version" VALUES ('contrib_adjust',    '20240414', 1);
+INSERT INTO "table_version" VALUES ('code',              '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_score',       '20240403', 1);
+INSERT INTO "table_version" VALUES ('entry_files',       '20240403', 1);
+INSERT INTO "table_version" VALUES ('figures',           '20240403', 1);
+INSERT INTO "table_version" VALUES ('files',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('figure_files',      '20240403', 1);
+INSERT INTO "table_version" VALUES ('images',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('journals',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('licenses',          '20240403', 1);
+INSERT INTO "table_version" VALUES ('license_apply',     '20240403', 1);
+INSERT INTO "table_version" VALUES ('locked',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('languages',         '20240403', 1);
+INSERT INTO "table_version" VALUES ('repost',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('referee',           '20240414', 1);
+INSERT INTO "table_version" VALUES ('review',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('rights',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('right_set',         '20240404', 1);
+INSERT INTO "table_version" VALUES ('salary',            '20240403', 1);
+INSERT INTO "table_version" VALUES ('types',             '20240403', 1);
+INSERT INTO "table_version" VALUES ('tags',              '20240403', 1);
+INSERT INTO "table_version" VALUES ('table_version',     '20240407', 1);
 
-INSERT INTO "table_version" VALUES ('occupied',         '20240403', 2);
-INSERT INTO "table_version" VALUES ('opened',           '20240403', 2);
+INSERT INTO "table_version" VALUES ('entries_to_update', '20240420', 2);
+INSERT INTO "table_version" VALUES ('occupied',          '20240403', 2);
+INSERT INTO "table_version" VALUES ('opened',            '20240403', 2);
 
 ----------------------------------------------------------------------------------------------------------
 -- 百科文章
@@ -286,6 +287,16 @@ CREATE TABLE "entry_score" ( -- 20240403
 CREATE INDEX idx_entry_score_entry ON "entry_score"("entry");
 CREATE INDEX idx_entry_score_version ON "entry_score"("version");
 CREATE INDEX idx_entry_score_time ON "entry_score"("time");
+
+-- 编译文章（包括 main.tex）到 online 时，也需要更新的其他文章（例如 \auroef{} 编号改变等）
+-- 编译文章到 change 时会根据数据库改变更新该表
+CREATE TABLE "entries_to_update" ( -- 20240420
+	"entry"    TEXT    NOT NULL,     -- entries.id
+	"update"   TEXT    NOT NULL,     -- entries.id
+	PRIMARY KEY("entry", "update"),
+	FOREIGN KEY("entry")  REFERENCES "entries"("id"),
+	FOREIGN KEY("update")  REFERENCES "entries"("id")
+);
 
 -- 文章占用列表
 CREATE TABLE "occupied" (

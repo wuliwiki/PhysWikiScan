@@ -458,6 +458,8 @@ inline void db_update_entries_from_toc(
 		R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
 	SQLite::Statement stmt_update0(db_rw,
 		R"(UPDATE "entries" SET "part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
+	SQLite::Statement stmt_insert(db_rw,
+		R"(INSERT OR IGNORE INTO "entry_to_update" ("entry", "update") VALUES (?,?);)");
 
 	// get all entreis from db to check which are not in main.tex
 	unordered_set<Str> entry_no_toc;
@@ -524,8 +526,12 @@ inline void db_update_entries_from_toc(
 			stmt_update.bind(6, entry);
 			if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 			stmt_update.reset();
-			if (recompile)
+			if (recompile) {
 				entries_recompile.push_back(entry);
+				stmt_insert.bind(1, "main");
+				stmt_insert.bind(2, entry);
+				stmt_insert.exec(); stmt_insert.reset();
+			}
 		}
 	}
 
@@ -549,7 +555,7 @@ inline void db_update_entries_from_toc(
 	if (!entries_recompile.empty())
 		PhysWikiOnlineN(entries_recompile, false, db_rw);
 
-	cout << "done." << endl;
+	scan_log_print("done.");
 }
 
 // --toc
