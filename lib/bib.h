@@ -21,7 +21,7 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 		info.order = stmt_select.getColumn(1).getInt64();
 		info.detail = stmt_select.getColumn(2).getString();
 		const Str &ref_by_str = stmt_select.getColumn(3);
-		parse(info.ref_by, ref_by_str);
+		split(info.ref_by, ref_by_str);
 		if (search(id, bib_labels) < 0) {
 			if (!info.ref_by.empty()) {
 				clear(sb) << u8"检测到删除的文献： " << id << u8"， 但被以下文章引用： " << ref_by_str;

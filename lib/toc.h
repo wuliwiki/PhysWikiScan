@@ -459,7 +459,7 @@ inline void db_update_entries_from_toc(
 	SQLite::Statement stmt_update0(db_rw,
 		R"(UPDATE "entries" SET "part"='', "chapter"='', "last"='', "next"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT OR IGNORE INTO "entry_to_update" ("entry", "update") VALUES (?,?);)");
+		R"(INSERT OR IGNORE INTO "entries_to_update" ("entry", "update") VALUES (?,?);)");
 
 	// get all entreis from db to check which are not in main.tex
 	unordered_set<Str> entry_no_toc;

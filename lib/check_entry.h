@@ -179,7 +179,7 @@ inline void get_keywords(vecStr_O keywords, Str_I str)
 		++ind;
 	}
 	if (keys_str.empty()) return;
-	parse(keywords, keys_str, "|");
+	split(keywords, keys_str, "|");
 	for (auto key : keywords)
 		trim(key);
 }

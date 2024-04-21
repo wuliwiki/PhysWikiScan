@@ -172,7 +172,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 	unordered_set<Str> labels;
 	while (stmt_select_labels.executeStep()) {
 		entry = stmt_select_labels.getColumn(0).getString();
-		parse(labels, stmt_select_labels.getColumn(1));
+		split(labels, stmt_select_labels.getColumn(1));
 		for (auto &label : labels) {
 			db_labels_unused.erase(label);
 			stmt_update_labels_entry.bind(1, entry);
@@ -189,7 +189,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 	unordered_set<Str> figs;
 	while (stmt_select_figs.executeStep()) {
 		entry = stmt_select_figs.getColumn(0).getString();
-		parse(figs, stmt_select_figs.getColumn(1));
+		split(figs, stmt_select_figs.getColumn(1));
 		for (auto &fig_id : figs) {
 			db_figs_unused.erase(fig_id);
 			stmt_update_figs_entry.bind(1, entry);
@@ -211,7 +211,7 @@ inline void arg_fix_db(SQLite::Database &db_rw)
 	while (stmt_select3.executeStep()) {
 		fig_id = stmt_select3.getColumn(0).getString();
 		image_hash = stmt_select3.getColumn(1).getString();
-		parse(image_old, stmt_select3.getColumn(2));
+		split(image_old, stmt_select3.getColumn(2));
 		if (size(image_old) > 1)
 			throw internal_err(u8"暂时不允许多于一个 image_old！");
 		stmt_select4.bind(1, image_hash);

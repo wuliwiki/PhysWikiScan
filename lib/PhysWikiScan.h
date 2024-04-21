@@ -639,7 +639,7 @@ inline void PhysWikiOnlineN_round1(
 	str_verbs.clear(); str_verbs.resize(entries.size());
 
 	SQLite::Statement stmt_insert(db_rw,
-		R"(INSERT OR IGNORE INTO "entry_to_update" ("entry", "update") VALUES (?,?);)");
+		R"(INSERT OR IGNORE INTO "entries_to_update" ("entry", "update") VALUES (?,?);)");
 
 	scan_log_print(clear(sb) << u8"\n\n======  第 1 轮转换 ======\n");
 
