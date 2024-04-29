@@ -365,10 +365,10 @@ inline Long find_env(Intvs_O intv, Str_I str, Str_I env, char option = 'i')
 				ind0 = skip_command(str, ind0, 1);
 		}
 		intv.pushL(ind0);
-
+		Long ind0_ = ind0;
 		ind0 = find_command_spec(str, "end", env, ind0);
 		if (ind0 < 0)
-			throw scan_err("find_env() failed!");
+			throw scan_err(clear(sb) << "\\end{" << env << "} 找不到！ 附近代码：" << str.substr(ind0_, 20));
 		if (option == 'o')
 			ind0 = skip_command(str, ind0, 1);
 		if (ind0 < 0) {
