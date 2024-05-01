@@ -192,8 +192,8 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		R"(INSERT OR REPLACE INTO "authors" ("id", "name") VALUES (?, ?);)");
 	SQLite::Statement stmt_select4(db_rw,
 		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
+	SQLite::Statement stmt_update(db_rw, R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
+	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 
 	Str fpath;
 
@@ -305,9 +305,10 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 
 	for (auto &row : db_history) {
 		if (!get<3>(row.second)) {
-			clear(sb) << u8"数据库 history 中文件不存在：" << row.first << ", " << get<0>(row.second) << ", " <<
+			clear(sb) << u8"数据库 history 中文件不存在（将删除）：" << row.first << ", " << get<0>(row.second) << ", " <<
 				 get<1>(row.second) << ", " << get<2>(row.second);
 			db_log_print(sb);
+			stmt_delete.bind(1, row.first); stmt_delete.exec(); stmt_delete.reset();
 		}
 	}
 	cout << "\ndone." << endl;
