@@ -481,7 +481,7 @@ inline Long check_add_label(Str_O label, Str_I entry, Str_I type, Long_I order,
 	return 0;
 }
 
-// process upref
+// process \upref{entry_id} and \enref{text}{entry_id}
 inline Long upref(unordered_set<Str> &uprefs, Str_IO str, Str_I entry)
 {
 	Long ind0 = 0, right, N = 0;
@@ -504,6 +504,30 @@ inline Long upref(unordered_set<Str> &uprefs, Str_IO str, Str_I entry)
 		sb = R"(<sup><a href=")";
 		sb << gv::url << entry1
 			<< R"(.html" target="_blank"><span class="icon"><i class="fa fa-bookmark-o"></i></span></a></sup>)";
+		str.replace(ind0, right - ind0, sb);
+		uprefs.insert(entry1);
+		++N;
+	}
+
+	// \enref{text}{entry_id}
+	ind0 = 0;
+	Str link_text;
+	while (1) {
+		ind0 = find_command(str, "enref", ind0);
+		if (ind0 < 0)
+			break;
+		if (is_in_cmd(str, "pentry", ind0))
+			throw scan_err(u8"预备知识中不允许出现 \\enref 命令");
+		command_arg(link_text, str, ind0, 0, true, true);
+		command_arg(entry1, str, ind0, 1, true, true);
+		if (entry1 == entry)
+			throw scan_err(u8"不允许 \\enref{...}{" + entry1 + u8"} 本文");
+		clear(sb) << gv::path_in << "contents/" << entry1 << ".tex";
+		if (!file_exist(sb))
+			throw scan_err(u8"\\upref 引用的文件未找到： " + entry1 + ".tex");
+		right = skip_command(str, ind0, 2);
+		clear(sb) << R"(<a href=")" << gv::url << entry1
+			<< R"(.html" target="_blank">)" << link_text << "</a>";
 		str.replace(ind0, right - ind0, sb);
 		uprefs.insert(entry1);
 		++N;
