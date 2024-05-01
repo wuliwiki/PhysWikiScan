@@ -520,6 +520,8 @@ inline Long upref(unordered_set<Str> &uprefs, Str_IO str, Str_I entry)
 			throw scan_err(u8"预备知识中不允许出现 \\enref 命令");
 		command_arg(link_text, str, ind0, 0, true, true);
 		command_arg(entry1, str, ind0, 1, true, true);
+		if (entry1.empty())
+			throw scan_err(u8"\\enref{}{} 参数不能为空");
 		if (entry1 == entry)
 			throw scan_err(u8"不允许 \\enref{...}{" + entry1 + u8"} 本文");
 		clear(sb) << gv::path_in << "contents/" << entry1 << ".tex";
