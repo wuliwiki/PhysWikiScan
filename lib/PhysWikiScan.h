@@ -432,15 +432,6 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
-// --bib
-// parse bibliography.tex and update db
-inline void arg_bib(SQLite::Database &db_rw)
-{
-	vecStr bib_labels, bib_details;
-	bibliography(bib_labels, bib_details);
-	db_update_bib(bib_labels, bib_details, db_rw);
-}
-
 // generate html from a single tex
 // output title from first line comment
 // use `clear=true` to only keep the first few commented metadata of the tex file

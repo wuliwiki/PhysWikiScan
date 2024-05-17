@@ -149,6 +149,14 @@ inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 	bib_labels.clear(); bib_details.clear();
 	read(str, gv::path_in + "bibliography.tex");
 	CRLF_to_LF(str);
+	// check language
+	bool is_eng;
+	if ((size(str) > 7 && str.substr(size(str) - 7) == "\n%%eng\n") ||
+			gv::path_in.substr(gv::path_in.size()-4) == "/en/")
+		is_eng = true;
+	else
+		is_eng = false;
+
 	Long ind0 = 0;
 	while (1) {
 		ind0 = find_command(str, "bibitem", ind0);
@@ -167,6 +175,7 @@ inline Long bibliography(vecStr_O bib_labels, vecStr_O bib_details)
 		throw scan_err(u8"文献 label 重复：" + bib_labels[ret]);
 	Str html;
 	read(html, gv::path_out + "templates/bib_template.html");
+	replace(html, "PhysWikiBibTitle", (is_eng ? u8"Bibliography" : u8"参考文献"));
 	replace(html, "PhysWikiBibList", bib_list);
 	write(html, gv::path_out + "bibliography.html");
 	return N;
@@ -191,4 +200,13 @@ inline void db_update_entry_bibs(
 		update_sqlite_table(records, "entry_bibs", R"("entry"=')" + entry + '\'',
 			{"entry", "bib", "order"}, 2, db_rw, &sqlite_callback);
 	}
+}
+
+// --bib
+// parse bibliography.tex and update db
+inline void arg_bib(SQLite::Database &db_rw)
+{
+	vecStr bib_labels, bib_details;
+	bibliography(bib_labels, bib_details);
+	db_update_bib(bib_labels, bib_details, db_rw);
 }
