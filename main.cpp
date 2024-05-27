@@ -1,6 +1,6 @@
 #define VERSION_MAJOR 0
-#define VERSION_MINOR 12
-#define VERSION_PATCH 10
+#define VERSION_MINOR 13
+#define VERSION_PATCH 0
 
 #ifdef _MSC_VER
 #define SLS_HAS_FILESYSTEM
@@ -245,7 +245,7 @@ int main(int argc, const char *argv[]) {
 		}
 		else if (args[0] == "--toc" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);
-			arg_toc(db_rw);
+			arg_toc(db_rw, db_read_wiki);
 			transaction.commit();
 		}
 		else if (args[0] == "--toc-all" && args.size() == 1) {
@@ -253,7 +253,7 @@ int main(int argc, const char *argv[]) {
 			SQLite::Transaction transaction(db_rw);
 			vecStr entries, titles;
 			entries_titles(entries, titles, db_rw);
-			arg_toc(db_rw);
+			arg_toc(db_rw, db_read_wiki);
 			transaction.commit();
 		}
 		else if (args[0] == "--wc" && args.size() == 1)
@@ -328,11 +328,11 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			arg_delete(entries, db_rw);
+			arg_delete(entries, db_rw, db_read_wiki);
 			transaction.commit();
 		}
 		else if (args[0] == "--delete-cleanup" && args.size() == 1) {
-			arg_delete_cleanup(db_rw);
+			arg_delete_cleanup(db_rw, db_read_wiki);
 		}
 		else if (args[0] == "--delete-hard" && args.size() > 1) {
 			vecStr entries;
@@ -344,7 +344,7 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			arg_delete_hard(entries, db_rw);
+			arg_delete_hard(entries, db_rw, db_read_wiki);
 			transaction.commit();
 		}
 		else if (args[0] == "--delete-figure" && args.size() > 1) {

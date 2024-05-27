@@ -959,7 +959,7 @@ inline void delete_entry_output_files(Str_I entry, SQLite::Database &db_read)
 // delete the tex file
 // TODO: "labels" etc forms might still have records from `entries`
 // TODO: also delete related files from online/ changed/
-inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_throw = false)
+inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki, Bool_I no_throw = false)
 {
 	vecStr ref_by, vtmp(1);
 	Str stmp, err_msg;
@@ -1018,7 +1018,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 		vtmp[0] = entry;
 		try {
 			bool clear = true; // only keep the starting first comments of a tex file
-			PhysWikiOnlineN(vtmp, clear, db_rw);
+			PhysWikiOnlineN(vtmp, clear, db_rw, db_read_wiki);
 		}
 		catch (const std::exception &e) {
 			err_msg << "\n\n" << e.what() << "\n\n";
@@ -1056,7 +1056,7 @@ inline void arg_delete(vecStr_I entries, SQLite::Database &db_rw, Bool_I no_thro
 // use --delete, skip if failed, throw when finished
 // clean files in online/ entry/ and db tables for all deleted files
 // clean db tables
-inline void arg_delete_cleanup(SQLite::Database &db_rw)
+inline void arg_delete_cleanup(SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries" WHERE "deleted"=0;)");
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id" FROM "entries" WHERE "deleted"=1;)");
@@ -1079,7 +1079,7 @@ inline void arg_delete_cleanup(SQLite::Database &db_rw)
 			scan_log_warn(u8"发现 entries.deleted=0 但是文章文件不存在（尝试用 --delete 删除）：" + entry);
 			try {
 				SQLite::Transaction transaction(db_rw);
-				arg_delete({entry}, db_rw);
+				arg_delete({entry}, db_rw, db_read_wiki);
 				transaction.commit();
 			}
 			catch (const std::exception &e) {
@@ -1116,7 +1116,7 @@ inline void arg_delete_cleanup(SQLite::Database &db_rw)
 
 // arg_delete(), plus everything associated with this entry
 // except stuff shared between multiple entries
-inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
+inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	vecStr history_hash, figures, figs_dangling;
 	SQLite::Statement stmt_select0(db_rw, R"(SELECT "deleted" FROM "entries" WHERE "id"=?;)");
@@ -1146,7 +1146,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 			figures.push_back(stmt_select1.getColumn(0));
 		stmt_select1.reset();
 		if (!deleted) // do normal delete first
-			arg_delete({entry}, db_rw, true);
+			arg_delete({entry}, db_rw, db_read_wiki, true);
 		arg_delete_figs_hard(figures, db_rw);
 
 		// delete all history records and files
@@ -1220,7 +1220,7 @@ inline void PhysWikiOnline(SQLite::Database &db_rw, unique_ptr<SQLite::Database>
 	vector<Char> is_eng(entries.size(), -1);
 
 	arg_bib(db_rw);
-	arg_toc(db_rw);
+	arg_toc(db_rw, db_read_wiki);
 	map<Str, Str> entry_err;
 	set<Char32> illegal_chars;
 	vector<vecStr> verb_strs;

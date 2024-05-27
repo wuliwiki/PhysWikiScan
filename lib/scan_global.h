@@ -12,6 +12,8 @@
 
 using namespace slisc;
 
+void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki);
+
 namespace gv {
 	Str path_in; // e.g. ../PhysWiki/
 	Str path_out; // e.g. ../littleshi.cn/online/

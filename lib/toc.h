@@ -1,7 +1,5 @@
 #pragma once
 
-void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw);
-
 // remove special .tex files from a list of name
 // return number of names removed
 // names has ".tex" extension
@@ -464,7 +462,7 @@ inline void db_update_parts_chapters(
 // `entries` are a list of entreis from main.tex
 inline void db_update_entries_from_toc(
 		vecStr_I entries, vecStr_I titles, vecLong_I entry_part, vecStr_I part_ids,
-		vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw)
+		vecLong_I entry_chap, vecStr_I chap_ids, SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	cout << "updating sqlite database (" <<
 		entries.size() << " entries) with info from main.tex..." << endl; cout.flush();
@@ -572,7 +570,7 @@ inline void db_update_entries_from_toc(
 
 	// recompile
 	if (!entries_recompile.empty())
-		PhysWikiOnlineN(entries_recompile, false, db_rw);
+		PhysWikiOnlineN(entries_recompile, false, db_rw, db_read_wiki);
 
 	scan_log_print("done.");
 }
@@ -580,7 +578,7 @@ inline void db_update_entries_from_toc(
 // --toc
 // table of contents
 // generate index.html from main.tex
-inline void arg_toc(SQLite::Database &db_rw)
+inline void arg_toc(SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	cout << u8"\n\n\n\n\n正在从 main.tex 生成目录 index.html ...\n" << endl;
 	vecStr titles, entries;
@@ -594,5 +592,5 @@ inline void arg_toc(SQLite::Database &db_rw)
 	// `entries` are only from main.tex
 	db_update_parts_chapters(part_ids, part_name, part_chap_first, part_chap_last, chap_ids, chap_name, chap_part,
 		entry_first, entry_last, db_rw);
-	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw);
+	db_update_entries_from_toc(entries, titles, entry_part, part_ids, entry_chap, chap_ids, db_rw, db_read_wiki);
 }
