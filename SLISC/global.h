@@ -217,6 +217,8 @@ using std::exp; using std::log; using std::log10;
 using std::expm1; using std::log1p; using std::hypot;
 using std::sinh; using std::cosh; using std::tanh;
 using std::runtime_error; using std::move;
+using std::unique_ptr;
+
 constexpr size_t npos = std::string::npos; // `using` doesn't work
 
 // Scalar types

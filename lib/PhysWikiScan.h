@@ -442,8 +442,9 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	vecStr &str_verb, // [out] temp storage of verbatim strings
 	unordered_map<Str, Long> &bib_order, // bib -> (\cite{} order from 1)
 	Pentry_O pentry, set<Char32> &illegal_chars,
-	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read)
-{
+	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read,
+	unique_ptr<SQLite::Database> &db_read_wiki // wiki db when compiling user note
+) {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
 	if (!is_valid(str))
@@ -520,7 +521,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	if (replace(html, "PhysWikiHTMLtitle", db_title) != 1)
 		throw internal_err(u8"\"PhysWikiHTMLtitle\" 在 entry_template.html 中数量不对");
 	// get license
-	get_entry_license(license, str, db_read);
+	get_entry_license(license, str, db_read, db_read_wiki);
 	// get entry type
 	get_entry_type(type, str, db_read);
 	// check globally forbidden char
@@ -621,7 +622,8 @@ inline void PhysWikiOnlineN_round1(
 		vector<vecStr> &str_verbs, // temp storage for verbatim strings
 		bool to_delete,
 		vector<Char> &is_eng,
-		SQLite::Database &db_rw
+		SQLite::Database &db_rw,
+		unique_ptr<SQLite::Database> &db_read_wiki
 ) {
 	vecStr rules;  // for newcommand()
 	define_newcommands(rules);
@@ -658,7 +660,7 @@ inline void PhysWikiOnlineN_round1(
 				fig_ids, fig_captions, fig_ext_hash, isdraft, keywords,
 				license, type, labels, label_orders, str_verbs[i],
 				entry_bib_order[entry], pentries[i], illegal_chars, entry, to_delete, rules,
-				db_rw); // db_rw is only for fixing db error
+				db_rw, db_read_wiki); // db_rw is only for fixing db error
 			// ===================================================================
 			// save html file
 			write(html, gv::path_out + entry + ".html.tmp");
@@ -896,7 +898,8 @@ inline void dep_json(SQLite::Database &db_read)
 }
 
 // like PhysWikiOnline, but convert only specified files
-inline void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw)
+inline void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database &db_rw,
+	unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	db_check_add_entry_simulate_editor(entries, db_rw);
 	vecStr titles(entries.size());
@@ -906,7 +909,7 @@ inline void PhysWikiOnlineN(vecStr_IO entries, bool to_delete, SQLite::Database 
 	vector<Pentry> pentries;
 	vector<vecStr> str_verbs;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, str_verbs, to_delete, is_eng, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, str_verbs, to_delete, is_eng, db_rw, db_read_wiki);
 
 	// generate dep.json
 //	if (file_exist(gv::path_out + "../tree/data/dep.json"))
@@ -1198,7 +1201,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw)
 
 // convert PhysWiki/ folder to wuli.wiki/online folder
 // goal: should not need to be used!
-inline void PhysWikiOnline(SQLite::Database &db_rw)
+inline void PhysWikiOnline(SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	gv::is_entire = true; // compiling the whole wiki
 
@@ -1222,7 +1225,7 @@ inline void PhysWikiOnline(SQLite::Database &db_rw)
 	set<Char32> illegal_chars;
 	vector<vecStr> verb_strs;
 
-	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, verb_strs, false, is_eng, db_rw);
+	PhysWikiOnlineN_round1(entry_err, illegal_chars, titles, entries, pentries, verb_strs, false, is_eng, db_rw, db_read_wiki);
 
 	PhysWikiOnlineN_round2(entry_err, entries, titles, pentries, verb_strs, is_eng, db_rw);
 

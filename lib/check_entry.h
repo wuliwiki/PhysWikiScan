@@ -41,7 +41,8 @@ inline void get_title(Str_O title, Str_I str)
 // if a license is defined and in db, then return `licenses.id`
 // if is defined but not in db, then throw an error
 // if is not defined, then output empty string
-inline void get_entry_license(Str_O license, Str_I str, SQLite::Database &db_read)
+inline void get_entry_license(Str_O license, Str_I str, SQLite::Database &db_read,
+	unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	Long ind = 0; license.clear();
 	while (str[ind] == '%') {
@@ -61,8 +62,14 @@ inline void get_entry_license(Str_O license, Str_I str, SQLite::Database &db_rea
 		return;
 
 	// check db
-	if (!exist("licenses", "id", license, db_read))
-		throw internal_err(u8"license 不存在于数据库：" + license);
+	if (gv::is_wiki) {
+		if (!exist("licenses", "id", license, db_read))
+			throw internal_err(u8"license 不存在于 wiki 数据库：" + license);
+	}
+	else {
+		if (!exist("licenses", "id", license, *db_read_wiki))
+			throw internal_err(u8"用户笔记的 license 不存在于 wiki 数据库：" + license);
+	}
 }
 
 // get the type of entry (entries.type)

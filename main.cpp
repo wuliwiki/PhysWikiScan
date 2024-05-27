@@ -234,9 +234,14 @@ int main(int argc, const char *argv[]) {
 		if (!file_exist(sb)) throw internal_err(u8"数据库文件不存在：" + sb);
 		SQLite::Database db_rw(sb, SQLite::OPEN_READWRITE);
 		db_rw.exec("PRAGMA busy_timeout = 3000;");
+		
+		unique_ptr<SQLite::Database> db_read_wiki;
+		if (!gv::is_wiki)
+			db_read_wiki = unique_ptr<SQLite::Database>(
+				new SQLite::Database("data/scan.db", SQLite::OPEN_READONLY));
 
 		if (args[0] == "." && args.size() == 1) {
-			PhysWikiOnline(db_rw);
+			PhysWikiOnline(db_rw, db_read_wiki);
 		}
 		else if (args[0] == "--toc" && args.size() == 1) {
 			SQLite::Transaction transaction(db_rw);
@@ -307,7 +312,7 @@ int main(int argc, const char *argv[]) {
 				entries.push_back(arg);
 			}
 			SQLite::Transaction transaction(db_rw);
-			PhysWikiOnlineN(entries, false, db_rw);
+			PhysWikiOnlineN(entries, false, db_rw, db_read_wiki);
 			transaction.commit();
 		}
 		else if (args[0] == "--tree" && args.size() == 1) {
