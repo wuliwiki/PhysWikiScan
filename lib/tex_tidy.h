@@ -305,6 +305,58 @@ inline Long chinese_alpha_num_space(Str_IO str)
 	return N;
 }
 
+// cases like \textbf{中文}abc
+inline Long chinese_alpha_num_space_cmd(Str_IO str)
+{
+	SLS_ERR("not finished or debugged!");
+	static vecStr cmds = { "\\textbf", "\\textsl", "\\enref", "\\href" };
+	vecLong narg = {1, 1, 2, 2}; // # of args of `cmds[i]`
+	vecLong iarg = {0, 0, 0, 1}; // which arg of `cmds[i]` is displayed text
+	Long icmd, ind0 = 0;
+	Str arg;
+	while (1) {
+		Long start = find(icmd, str, cmds, ind0);
+		if (start < 0) break;
+		command_arg(arg, str, ind0, iarg[icmd]);
+		if (arg.empty())
+			throw scan_err(clear(sb) << u8"命令 " << cmds[icmd] << u8" 参数不能为空！");
+		// check left
+		if (is_chinese(arg, 0)) {
+			char last = str[start-1];
+			if (last != ' ' && (is_alphanum(last) || last == '$' ||
+						(start>1 && last == ')' && str[start-2] == '\\'))) {
+				str.insert(start, " "); ++start;
+			}
+		}
+		else {
+			char first = arg[0];
+			if (is_alphanum(first) || first == '$' ||
+						(size(arg) > 1 && first == '\\' && arg[1] == '(')) {
+				u8_iter it(str, start);
+				--it;
+				if (*it != " " && is_chinese(*it, 0)) {
+					str.insert(start, " ");
+					++start;
+				}
+			}
+		}
+		// check right
+		Long end = skip_command(str, start, narg[icmd]);
+		u8_iter it(str, start); --it;
+		if (is_chinese(arg, 0)) {
+			if (str[start-1] != ' ' && is_alphanum(str[start-1])) {
+				str.insert(start, " "); ++start;
+			}
+		}
+		else if (is_alphanum(arg[0])) {
+			u8_iter it(str, start); --it;
+			if (*it != " " && is_chinese(*it, 0)) {
+				str.insert(start, " "); ++start;
+			}
+		}
+	}
+}
+
 // ensure spaces outside of chinese double quotes, if it's next to a chinese character
 // return the number of spaces added
 inline Long chinese_double_quote_space(Str_IO str)

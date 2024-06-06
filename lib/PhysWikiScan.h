@@ -536,6 +536,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	if (str.empty()) str = " ";
 	// ensure spaces between chinese char and alphanumeric char
 	chinese_alpha_num_space(str);
+	// chinese_alpha_num_space_cmd(str); // cases like \textbf{中文}abc
 	// ensure spaces outside of chinese double quotes
 	chinese_double_quote_space(str);
 	// check escape characters in normal text i.e. `& # _ ^`
