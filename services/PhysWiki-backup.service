@@ -6,3 +6,6 @@ ExecStart=/mnt/drive/PhysWiki-backup/auto_commit.sh
 ExecStop=/bin/kill $MAINPID
 WorkingDirectory=/mnt/drive/PhysWiki-backup/
 Restart=always
+
+[Install]
+WantedBy=multi-user.target
