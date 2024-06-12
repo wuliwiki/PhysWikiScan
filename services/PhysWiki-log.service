@@ -1,0 +1,8 @@
+[Unit]
+Description=sync PhysWiki-log
+
+[Service]
+ExecStart=/mnt/drive/PhysWiki-log/sync.sh
+ExecStop=/bin/kill $MAINPID
+WorkingDirectory=/mnt/drive/PhysWiki-log/
+Restart=always
