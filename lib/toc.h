@@ -296,8 +296,11 @@ inline void table_of_contents(
 			}
 			if (!link_class.empty())
 				link_class = "class=\"" + link_class + "\" ";
-			clear(sb) << "<a " << link_class << "href = \"" << gv::url << entry
-				<< R"(.html" target = "_blank">)" << title << u8"</a>　\n";
+			clear(sb);
+			if (last_command == 'e')
+				sb << "， \n"; 
+			sb << "<a " << link_class << "href = \"" << gv::url << entry
+				<< R"(.html" target = "_blank">)" << title << u8"</a>";
 			ind0 = insert(html, sb, ind0);
 
 			entry_part.push_back(partNo);
@@ -332,10 +335,10 @@ inline void table_of_contents(
 			chap_names.push_back(title);
 			chap_part.push_back(partNo);
 			if (is_eng)
-				ind0 = insert(html, u8"\n\n<h3><b>Chapter " + num2str(chapNo+1) + u8". " + title
+				ind0 = insert(html, u8"\n\n\n<h3><b>Chapter " + num2str(chapNo+1) + u8". " + title
 					+ "</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);
 			else
-				ind0 = insert(html, u8"\n\n<h3><b>第" + num2chinese(chapNo+1) + u8"章 " + title
+				ind0 = insert(html, u8"\n\n\n<h3><b>第" + num2chinese(chapNo+1) + u8"章 " + title
 					+ "</b></h5>\n<div class = \"tochr\"></div><hr><div class = \"tochr\"></div>\n<p class=\"toc\">\n", ind0);		
 			++ind1; last_command = 'c';
 		}
@@ -366,14 +369,14 @@ inline void table_of_contents(
 			part_names.push_back(title);
 			if (is_eng)
 				ind0 = insert(html,
-					"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
+					"\n</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
 					"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
 						+ num2str32(partNo) + u8"\">Part " + num2str(partNo) + u8". " + title + "</h3>\n"
 					"</div>\n\n<div class = \"w3-container\">\n"
 					, ind0);
 			else
 				ind0 = insert(html,
-					"</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
+					"\n</p></div>\n\n<div class = \"w3-container w3-center w3-teal w3-text-white\">\n"
 					"<h2 align = \"center\" style=\"padding-top: 0px;\" id = \"part"
 						+ num2str32(partNo) + u8"\">第" + num2chinese(partNo) + u8"部分 " + title + "</h3>\n"
 					"</div>\n\n<div class = \"w3-container\">\n"
@@ -385,7 +388,7 @@ inline void table_of_contents(
 			if (last_command != 'e')
 				throw scan_err(u8"\\bibli 必须放在最后, 且不允许空的 \\chapter{}");
 			title = (is_eng ? u8"Bibliography" : u8"参考文献");
-			clear(sb) << "<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
+			clear(sb) << "， \n<a href = \"" << gv::url << R"(bibliography.html" target = "_blank">)"
 					<< title << u8"</a>　\n";
 			ind0 = insert(html, sb, ind0);
 			last_command = 'b';
