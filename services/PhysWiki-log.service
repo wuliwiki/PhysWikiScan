@@ -5,6 +5,7 @@ Description=sync PhysWiki-log
 ExecStart=/mnt/drive/PhysWiki-log/sync.sh
 ExecStop=/bin/kill $MAINPID
 WorkingDirectory=/mnt/drive/PhysWiki-log/
+Environment="HOME=/root/"
 Restart=always
 
 [Install]
