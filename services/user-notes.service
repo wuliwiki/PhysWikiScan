@@ -1,0 +1,12 @@
+[Unit]
+Description=commit user-notes
+
+[Service]
+ExecStart=/mnt/drive/user-notes/auto_commit.sh
+ExecStop=/bin/kill $MAINPID
+WorkingDirectory=/mnt/drive/user-notes/
+Environment="HOME=/root/"
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
