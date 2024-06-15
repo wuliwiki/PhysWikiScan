@@ -207,6 +207,7 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 // replace autoref with html link
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
+// also deal with \aref{text}{label}
 // return number of autoref replaced, or -1 if failed
 inline Long autoref(
 	vecStr_O autoref_labels, // all labels in \autoref{}
@@ -215,7 +216,7 @@ inline Long autoref(
 ) {
 	Long ind0{}, ind3{}, N{}, ienv{};
 	bool inEq;
-	Str entry1, label, fig_id, type, kind, newtab, file;
+	Str entry1, label, fig_id, type, kind, newtab, file, link_text;
 	vecStr envNames{"equation", "align", "gather"};
 	autoref_labels.clear();
 
@@ -226,87 +227,104 @@ inline Long autoref(
 
 	while (1) {
 		newtab.clear(); file.clear();
-		ind0 = find_command(str, "autoref", ind0);
+		Long ikey;
+		ind0 = find(ikey, str, {"\\autoref{", "\\aref{"}, ind0);
 		if (is_in_tag(str, "code", ind0)) {
 			++ind0; continue;
 		}
 		if (ind0 < 0)
 			break;
 		inEq = index_in_env(ienv, ind0, envNames, str);
-		command_arg(label, str, ind0);
+		if (ikey == 0) { // autoref{}
+			command_arg(label, str, ind0);
+		}
+		else { // aref{}{}
+			command_arg(link_text, str, ind0, 0);
+			command_arg(label, str, ind0, 1);
+		}
 		entry1 = label_entry(label, db_read);
 		type = label_type(label);
-		if (!is_eng) {
-			if (type == "eq") kind = u8"式";
-			else if (type == "fig") kind = u8"图";
-			else if (type == "def") kind = u8"定义";
-			else if (type == "lem") kind = u8"引理";
-			else if (type == "the") kind = u8"定理";
-			else if (type == "cor") kind = u8"推论";
-			else if (type == "ex") kind = u8"例";
-			else if (type == "exe") kind = u8"习题";
-			else if (type == "tab") kind = u8"表";
-			else if (type == "sub") kind = u8"子节";
-			else if (type == "lst") {
-				kind = u8"代码";
-				scan_log_warn(u8"autoref lstlisting 功能未完成！");
-				++ind0; continue;
+		if (ikey == 0) { // autoref{}
+			if (!is_eng) {
+				if (type == "eq") kind = u8"式";
+				else if (type == "fig") kind = u8"图";
+				else if (type == "def") kind = u8"定义";
+				else if (type == "lem") kind = u8"引理";
+				else if (type == "the") kind = u8"定理";
+				else if (type == "cor") kind = u8"推论";
+				else if (type == "ex") kind = u8"例";
+				else if (type == "exe") kind = u8"习题";
+				else if (type == "tab") kind = u8"表";
+				else if (type == "sub") kind = u8"子节";
+				else if (type == "lst") {
+					kind = u8"代码";
+					scan_log_warn(u8"autoref lstlisting 功能未完成！");
+					++ind0;
+					continue;
+				} else
+					throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
+			} else {
+				if (type == "eq") kind = "eq. ";
+				else if (type == "fig") kind = "fig. ";
+				else if (type == "def") kind = "def. ";
+				else if (type == "lem") kind = "lem. ";
+				else if (type == "the") kind = "thm. ";
+				else if (type == "cor") kind = "cor. ";
+				else if (type == "ex") kind = "ex. ";
+				else if (type == "exe") kind = "exer. ";
+				else if (type == "tab") kind = "tab. ";
+				else if (type == "sub") kind = "sub. ";
+				else if (type == "lst") {
+					kind = "code. ";
+					scan_log_warn(u8"autoref lstlisting 功能未完成！");
+					++ind0;
+					continue;
+				} else
+					throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
 			}
-			else
-				throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
-		}
-		else {
-			if      (type == "eq")  kind = "eq. ";
-			else if (type == "fig") kind = "fig. ";
-			else if (type == "def") kind = "def. ";
-			else if (type == "lem") kind = "lem. ";
-			else if (type == "the") kind = "thm. ";
-			else if (type == "cor") kind = "cor. ";
-			else if (type == "ex")  kind = "ex. ";
-			else if (type == "exe") kind = "exer. ";
-			else if (type == "tab") kind = "tab. ";
-			else if (type == "sub") kind = "sub. ";
-			else if (type == "lst") {
-				kind = "code. ";
-				scan_log_warn(u8"autoref lstlisting 功能未完成！");
-				++ind0; continue;
-			}
-			else
-				throw scan_err(u8"\\label 类型错误， 必须为 eq/fig/def/lem/the/cor/ex/exe/tab/sub/lst 之一");
-		}
-		ind3 = find(str, '}', ind0);
-
-		// get display order
-		Long db_label_order;
-		if (type == "fig") {
-			fig_id = label_id(label);
-			stmt_select_fig.bind(1, fig_id);
-			if (!stmt_select_fig.executeStep())
-				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
-			db_label_order = stmt_select_fig.getColumn(0).getInt64();
-			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
-			stmt_select_fig.reset();
-		}
-		else {
-			stmt_select.bind(1, label);
-			if (!stmt_select.executeStep())
-				throw scan_err(u8"\\autoref{} 中标签未找到： " + label);
-			db_label_order = stmt_select.getColumn(0).getInt64();
-			if (db_label_order <= 0) throw internal_err(SLS_WHERE);
-			stmt_select.reset();
 		}
 
-		file = gv::url + entry1 + ".html";
-		if (entry1 != entry) // reference another entry1
-			newtab = "target = \"_blank\"";
-		if (!inEq)
-			str.insert(ind3 + 1, " </a>");
-		str.insert(ind3 + 1, kind + ' ' + num2str(db_label_order));
-		if (!inEq) {
-			clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>';
-			str.insert(ind3 + 1, sb);
+		if (ikey == 0) { // autoref{}
+			ind3 = skip_command(str, ind0, 1);
+			// get display order
+			Long db_label_order;
+			if (type == "fig") {
+				fig_id = label_id(label);
+				stmt_select_fig.bind(1, fig_id);
+				if (!stmt_select_fig.executeStep())
+					throw scan_err(u8"引用的标签未找到： " + label);
+				db_label_order = stmt_select_fig.getColumn(0).getInt64();
+				if (db_label_order <= 0) throw internal_err(SLS_WHERE);
+				stmt_select_fig.reset();
+			} else {
+				stmt_select.bind(1, label);
+				if (!stmt_select.executeStep())
+					throw scan_err(u8"引用的标签未找到： " + label);
+				db_label_order = stmt_select.getColumn(0).getInt64();
+				if (db_label_order <= 0) throw internal_err(SLS_WHERE);
+				stmt_select.reset();
+			}
+			file = gv::url + entry1 + ".html";
+			if (entry1 != entry) // reference another entry1
+				newtab = "target = \"_blank\"";
+			if (!inEq)
+				str.insert(ind3, " </a>");
+			str.insert(ind3, kind + ' ' + num2str(db_label_order));
+			if (!inEq) {
+				clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>';
+				str.insert(ind3, sb);
+			}
+			str.erase(ind0, ind3 - ind0);
 		}
-		str.erase(ind0, ind3 - ind0 + 1);
+		else { // \aref{}{}
+			ind3 = skip_command(str, ind0, 2);
+			file = gv::url + entry1 + ".html";
+			if (entry1 != entry) // reference another entry1
+				newtab = "target = \"_blank\"";
+			clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>'
+				<< link_text << "</a>";
+			str.replace(ind0, ind3 - ind0, sb);
+		}
 		autoref_labels.emplace_back(std::move(label));
 		++N;
 	}
