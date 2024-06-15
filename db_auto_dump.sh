@@ -13,5 +13,5 @@ while true; do
     echo -----------------------------------
     ./db_dump.sh
     printf "sleeping...\n\n\n"
-    sleep 12h
+    sleep 8h
 done
