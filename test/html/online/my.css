@@ -1,0 +1,55 @@
+﻿/* 添加微软雅黑，修改字号，行距 */
+html,body{font-family:Verdana,sans-serif,"Microsoft YaHei"; font-size:16px; line-height:1.75}
+h1 {font-family:Verdana,sans-serif,"Microsoft YaHei"; font-size:24px;} 
+h2 {font-family:Verdana,sans-serif,"Microsoft YaHei"; font-size:20px; padding-top: 15px;}
+h3 {font-family:Verdana,sans-serif,"Microsoft YaHei"; font-size:18px; padding-top: 10px;}
+
+/* 设置超链接 */
+a:link{color:rgb(0,136,204); text-decoration:none;}
+a:hover{color:rgb(0,136,204); text-decoration:underline;}
+a:visited{color:rgb(85,26,139); text-decoration:none;}
+
+a.draft:link{color:rgb(131, 164, 181); text-decoration:none;}
+a.draft:hover{color:rgb(131, 164, 181); text-decoration:underline;}
+a.draft:visited{color:rgb(139, 122, 154); text-decoration:none;}
+
+a.Note:link{color:#7db97b; text-decoration:none;}
+a.Note:hover{color:#7db97b; text-decoration:underline;}
+a.Note:visited{color:#3d6b3b; text-decoration:none;}
+
+/* 段落 */
+/* p{text-indent: 10px;} */
+p {white-space: normal;}
+p.toc {word-break: keep-all;}
+
+/* 公式 overflow */
+div.eq {overflow-x: auto; overflow-y: hidden;}
+
+/* icon 左右间距 */
+span.icon {margin-left: 2px; margin-right: 3px;}
+
+/* Matlab 代码格式 */
+span.comment {color: #228B22;}
+span.string {color: rgb(160, 32, 240);}
+span.keyword {color: #0000FF;}
+span.cont {color: #0000FF; text-decoration: underline;}
+span.code {color: #000000;}
+div.nospace {margin-top: -20px; margin-bottom: -20px;}
+
+/* 网页目录格式 */
+div.negative {margin-top: -35px;}
+div.tochr {margin-top: -12px;}
+
+/* 表格 */
+table {border-collapse: collapse;}
+td {border: 1px solid black; text-align: center; padding: 8px}
+
+table.code {border-collapse: collapse; margin-top: -6px; margin-bottom: -6px;}
+tr.code {border: none; text-align: left; padding: 0px}
+td.code {border: none; text-align: left; padding: 0px; width: 720px}
+
+tr.linenum {border: none; text-align: right; padding: 0px}
+td.linenum {border: none; text-align: right; padding: 3px; width: 0px}
+
+/* 代码 */
+code {color: #059c51}

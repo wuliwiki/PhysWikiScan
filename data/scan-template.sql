@@ -160,6 +160,8 @@ CREATE TABLE "licenses" ( -- 20240403
 );
 
 INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIGN KEY 报错
+INSERT INTO "licenses" VALUES('CCBY3','CC BY 3.0','https://creativecommons.org/licenses/by/3.0/','常用于开源作品，如维基百科。允许转载、修改，但需要注明出处。','');
+INSERT INTO "licenses" VALUES('Usr','小时百科志愿创作协议','https://wuli.wiki/online/licens.html','用于免费创作，版权归作者，小时科技拥有使用修改权。','');
 
 -- 创作协议适用范围
 CREATE TABLE "license_apply" ( -- 20240403
@@ -182,15 +184,15 @@ CREATE TABLE "types" ( -- 20240403
 	PRIMARY KEY("id")
 );
 
-INSERT INTO "types" ("id", "caption", "intro") VALUES ('', '未知', ''); -- 防止 FOREIGN KEY 报错
-
-INSERT INTO types VALUES('Art',    '文章', '类似于学术论文');
-INSERT INTO types VALUES('Map',    '导航', '介绍百科中的一章、一部分等，具有大量链接到其中的词条');
-INSERT INTO types VALUES('Note',   '笔记', '类似于讲义、复习资料，把知识要点列出');
-INSERT INTO types VALUES('Test',   '测试', '临时测试，将定期删除');
-INSERT INTO types VALUES('Toc',    '目录', '百科页面的目录');
-INSERT INTO types VALUES('Tutor',  '教程', '类似于教材的一节');
-INSERT INTO types VALUES('Wiki',   '综述', '类似于维基百科的条目，中立、全面、一般性的介绍');
+INSERT INTO "types" VALUES('', '未知', ''); -- 防止 FOREIGN KEY 报错
+INSERT INTO "types" VALUES('Art','文章','类似于学术论文');
+INSERT INTO "types" VALUES('Map','导航','介绍百科中的一章、一部分等，具有大量链接到其中的词条');
+INSERT INTO "types" VALUES('Note','内部笔记','一些可能用于百科创作的笔记或草稿，不公开');
+INSERT INTO "types" VALUES('Sum','总结','类似于讲义或复习资料，把知识要点列出');
+INSERT INTO "types" VALUES('Test','测试','临时测试，将定期删除');
+INSERT INTO "types" VALUES('Toc','目录','百科页面的目录');
+INSERT INTO "types" VALUES('Tutor','教程','类似于教材的一节');
+INSERT INTO "types" VALUES('Wiki','综述','类似于维基百科的条目，中立、全面、一般性的介绍');
 
 -- SEO 关键词（用于 html header 中的搜索引擎优化）
 -- TODO: 用于代替 entries.keys
@@ -562,6 +564,7 @@ CREATE TABLE "authors" ( -- 20240414
 );
 
 INSERT INTO "authors" ("id", "name") VALUES (-1, ''); -- 防止 FOREIGN KEY 报错
+INSERT INTO "authors" VALUES(900,'','服务器后台',-1,0);
 
 CREATE INDEX idx_authors_uuid ON "authors"("uuid");
 CREATE INDEX idx_authors_name ON "authors"("name");

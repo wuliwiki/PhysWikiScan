@@ -1,0 +1,3146 @@
+% 总目录
+% license CCBYSA3
+% type Toc
+
+\input{./others/format}
+
+\renewcommand\thesubsubsection{\thesection.\arabic{subsection}.\arabic{subsubsection}}
+\begin{document}
+\renewcommand{\thelstlisting}{\arabic{lstlisting}}
+\input{./others/MatlabStyle} % 代码格式
+\begin{titlepage}
+\includepdf{./figures/frontcover.pdf}
+\newpage
+\includepdf{./figures/dedication.pdf}
+\end{titlepage}
+\frontmatter % 开始罗马数字页码
+\input{./contents/FrontMatters} % 版权声明 & 关于本书
+\setcounter{tocdepth}{1}
+\tableofcontents % 生成目录
+\mainmatter % 开始阿拉伯数字页码
+\setcounter{secnumdepth}{3}
+
+\part{科普} \label{prt_PS}
+%=============================
+\chapter{数学} \label{cpt_1ac}
+%---------------------------------------
+% \addTODO{例如根号二是无理数、整数和有理数一样多、（想到什么可以添加）}
+\entry{抽象（科普）}{Abstra}
+\entry{数学结构（科普）}{Struct}
+
+\chapter{经典力学} \label{cpt_9}
+%---------------------------------------
+\entry{如何自学物理}{SdyPhy}
+\entry{经典力学及其他物理理论}{MecThe}
+\entry{经典力学（科普）}{CM0}
+\entry{圆周运动：为什么卫星不会掉下来（科普）}{CMintr}
+\entry{为什么月球没有被太阳吸走}{EquivI}
+\entry{牛顿第二定律的矢量形式}{New2}
+\entry{动量和能量、一维势能曲线（科普）}{CM1}
+\entry{傅科摆（科普）}{FouPen}
+\entry{角动量（科普）}{AngMo}
+% \entry{角动量简介}{CM2}
+\entry{网球拍定理（科普）}{Dzhani}
+\entry{旋转的陀螺为什么不会倒（科普）}{PrecPS}
+
+% 万有引力 简介
+
+\chapter{电与磁} \label{cpt_10}
+%---------------------------------------
+\entry{电动力学}{EM0}
+\entry{静电的基本规律和性质}{EM1}
+\entry{荷质比的测定}{Charge}
+\entry{右手定则}{RHRul}
+\entry{电流产生磁场}{CurMag}
+\entry{电路和水路的类比}{EleWat}
+\entry{狭义相对论（科普）}{Relat0}
+
+\chapter{量子力学} \label{cpt_11}
+%---------------------------------------
+\entry{原子的观念（量子序曲）}{AtomId}
+\entry{运动的观念（量子序曲）}{QMPre}
+\entry{数的观念 (量子序曲)}{QMPre6}
+\entry{从天球的音乐到玻尔模型（量子序曲）}{ClBohr}
+\entry{波动⼒学 （量子序曲）}{QMPre7}
+\entry{永恒的陀螺 （量子序曲）}{QMPre2}
+\entry{投影和表示（量子序曲）}{QMPre3}
+\entry{线性谐振⼦ (量子序曲)}{QMPre4}
+\entry{波动和粒子（量子序曲）}{QMPre5}
+\entry{量子力学的基本原理（科普）}{QM0}
+\entry{量子力学常见问题（科普）}{QmFAQ}
+% \entry{原子结构（高中）}{atomH2}
+% \entry{量子力学科普视频脚本}{QMvid}
+
+\chapter{计算机} \label{cpt_CSps}
+%-------------------------------------
+\entry{【导航】文件管理}{FileIn}
+\entry{文本文件与字符编码（ASCII、UTF）}{encode}
+\entry{计算机文件简介}{ComFil}
+\entry{校验和、哈希值}{chkSum}
+\entry{计算机文件备份基础（附 python 增量备份脚本）}{SimBac}
+% \entry{个人数据安全教程}{PsData}
+\entry{如何给文件加密（含 python 加密脚本）}{encryp}
+\entry{用网盘增量备份文件}{PanBak}
+
+\chapter{其他} \label{cpt_12}
+%---------------------------------------
+% \entry{反射}{RefMir}
+\entry{天文学常识}{Astro}
+\entry{时间的计量}{TimeCa}
+\entry{时间的计量 2}{time2}
+\entry{材料科学简介}{MSEINT}
+\entry{金属材料结构（科普）}{MetInt}
+\entry{金属的变形（科普）}{MetDfm}
+\entry{能带模型（科普）}{BNDGP}
+\entry{芝诺时间}{zeno}
+\entry{物质的量与摩尔（高中）}{MOLE}
+
+\part{高中数学} \label{prt_HSmath}
+%======================================
+\chapter{数列与函数} \label{cpt_a}
+%---------------------------------------
+\entry{【导航】高中数学}{HsMOv}
+\entry{充分必要条件}{SufCnd}
+\entry{集合（高中）}{HsSet}
+\entry{函数（高中）}{functi}
+\entry{反函数（高中）}{InvFun}
+\entry{求和符号（高中）}{SumSym}
+\entry{数列的概念与函数特性（高中）}{HsSeFu}
+\entry{等差数列（高中）}{HsAmPg}
+\entry{等比数列求和}{HsGmPg}
+\entry{等差与等比数列总结（初等数学）}{AGS}
+\entry{幂函数（高中）}{power}
+% \entry{函数的平移、缩放、翻转}{FunTra}
+% \entry{函数的旋转和其他变换}{FunRot}
+
+\chapter{三角函数} \label{cpt_1}
+%---------------------------------------
+\entry{角与有向角（高中）}{HsAngl}
+\entry{三角函数（高中）}{HsTrFu}
+\entry{三角恒等变换（高中）}{HsAnTf}
+\entry{三角恒等式}{TriEqv}
+\entry{正弦定理、余弦定理}{CosThe}
+
+\chapter{排列、组合和概率与统计}} \label{cpt_2}
+%---------------------------------------
+% 排列、组合
+\entry{阶乘（高中）}{factor}
+\entry{求积符号（累乘）}{ProdSy}
+\entry{组合（高中）}{HsCb}
+\entry{二项式定理（高中）}{HsBN}
+\entry{隔板法（排列组合）}{BarCom}
+% Giacomo：应当合并，标注超出高中的内容
+\entry{排列}{permut}
+\entry{组合}{combin}
+\entry{二项式定理}{BiNor}
+
+% 概率
+\entry{离散型随机变量（高中）}{HsDRV}
+\entry{条件概率与事件的独立性（高中）}{HsCpMi}
+\entry{随机变量的数字特征（高中）}{HsRdNc}
+\entry{概率习题（高中）}{HsPbEc}
+
+\chapter{解方程} \label{cpt_5}
+%---------------------------------------
+% 一元二次方程
+% TODO：配方法解一元二次方程
+\entry{韦达定理（高中）}{VieHi}
+\entry{二次方程求根公式}{quasol}
+
+% 线性方程组
+\entry{线性方程组（高中）}{LinEqu}
+
+% 复数
+\entry{复数}{CplxNo}
+
+\chapter{几何向量} \label{cpt_19}
+%---------------------------------------
+% Giacomo：几何向量这个板块的基本思路应该是，先用“几何”性质来定义向量的性质，再用向量的“代数性质”给出等价条件。
+\entry{几何向量}{GVec}
+\entry{几何向量的加法和数乘}{GVecOp}
+\entry{几何向量的点乘}{Dot}
+\entry{几何向量的线性相关性}{linDpe}
+\entry{线性相关与线性组合}{LnDpd2} % 待删除/整合
+\entry{几何向量的基底和坐标}{Gvec2}
+
+\entry{几何向量的线性变换}{LTrans}
+\entry{平面旋转变换}{Rot2DT}
+
+% 矢量叉乘
+\entry{几何向量的叉乘}{Cross}
+\entry{矢量叉乘分配律的几何证明}{CrossP}
+\entry{连续叉乘的化简}{TriCro}
+\entry{三矢量的混合积}{TriVM}
+
+\chapter{平面几何} \label{cpt_7}
+%---------------------------------------
+% Giacomo：顺序有待整理
+\entry{解析几何}{JXJH}
+\entry{三角形面积、海伦—秦九韶公式}{Heron}
+\entry{直线和平面的交点}{LPint}
+\entry{点到直线的距离}{P2Line}
+\entry{直线和球的交点}{LinSph}
+\entry{三角形的外接圆}{SphTri}
+\entry{利萨茹曲线}{Lissaj}
+\entry{极坐标系}{Polar}
+\entry{阿基米德螺线}{ArcSpl}
+\entry{摆线}{cycloi}
+\entry{仿射法在解析几何中的应用}{affine}
+\entry{圆锥曲线的极坐标方程}{Cone}
+\entry{抛物线}{Para3}
+\entry{椭圆}{Elips3}
+\entry{双曲线}{Hypb3}
+\entry{圆锥曲线和圆锥}{ConSec}
+\entry{圆锥曲线（总结）}{conic}
+\entry{圆锥曲线的光学性质}{ConOpt}
+\entry{圆锥曲线的配极（高中数学）}{EclPol}
+
+\chapter{立体几何} \label{cpt_7a}
+%---------------------------------------
+\entry{柱坐标系}{Cylin}
+\entry{柱坐标与直角坐标的转换}{CyCar}
+\entry{球坐标系}{Sph}
+\entry{球坐标与直角坐标的转换}{SphCar}
+\entry{球坐标的旋转变换}{SphRot}
+\entry{抛物线坐标系}{ParaCr}
+\entry{椭圆坐标系}{EliCor}
+\entry{解三棱锥顶角}{PrmSol}
+\entry{足球顶点坐标的计算}{FootBl}
+\entry{日晷的计算}{SunDia}
+
+\chapter{待整理} \label{cpt_6}
+%---------------------------------------
+\entry{自然对数函数}{Ln}
+\entry{sinc 函数}{sinc}
+\entry{三角函数 n 倍角公式}{sinNx}
+\entry{双曲函数}{TrigH}
+\entry{利用复数方法证明三角恒等式}{TriCom}
+\entry{反三角函数}{InvTri}
+\entry{四象限 Arctan 函数（atan2）}{Arctan}
+\entry{手动计算开根号（长除法）}{Hsqrt}
+\entry{手动计算开根号（泰勒展开法）}{TSqrt}
+\entry{一元函数的对称与周期性}{shenry}
+
+\part{高中物理} \label{prt_HSphys}
+%======================================
+\chapter{基本概念} \label{cpt_HSphysFoundation}
+% ----------------------------------
+\entry{高中物理导航}{HSPbas}
+\entry{科学计数法、数量级、单位（高中）}{OrdMag}
+\chapter{经典力学} \label{cpt_8}
+\entry{机械运动基础（高中）}{HSPM01}
+\entry{相互作用（高中）}{HSPM02}
+\entry{浮力、阿基米德原理（初中）}{Buoy}
+\entry{牛顿运动定律（高中）}{HSPM03}
+\entry{曲线运动（高中）}{HSPM04}
+\entry{圆周运动（高中）}{HSPM05}
+% \entry{简谐振子（高中）}{SHOhs}
+\entry{万有引力定律（高中）}{HSPM06}
+\entry{功和机械能（高中）}{HSPM07}
+\entry{动量（高中）}{HSPM08}
+\entry{机械振动（高中）}{HSPM09}
+\chapter{电磁学} \label{cpt_HSelect}
+% Giacomo：待细分
+%---------------------------------------
+\entry{静电场（高中）}{HSPE01}
+\entry{静电场的应用（高中）}{HSPE02}
+\entry{恒定电流（高中）}{HSPE03}
+\entry{电路（高中）}{HSPE04}
+\entry{电能（高中）}{HSPE05}
+\entry{磁场（高中）}{HSPE06}
+\entry{电荷在磁场中的圆周运动（高中）}{CBM}
+
+\chapter{热学}\label{cptHSphysThermal}
+%---------------------------------------
+\entry{分子动理论（高中）}{thermo}
+\entry{热学初步（高中）}{therHS}
+\entry{波粒二象性和量子力学初步（高中）}{atomHS}
+
+
+\part{极简微积分} \label{prt_simcalc}
+%======================================
+% addis: 不要再合并了，极简微积分就是一个独立的部分，一切按照导航。 如果对应内容要写更严谨的版本，在别的部分新开文章
+\chapter{极限} \label{cpt_simLim}
+%---------------------------------------
+\entry{【导航】极简微积分}{Calc}
+\entry{数列的极限（极简微积分）}{Lim0}
+\entry{函数的极限（极简微积分）}{FunLim}
+\entry{无穷小、无穷大和阶数（极简微积分）}{InfOrd}
+\entry{小角极限（极简微积分）}{LimArc}
+\entry{自然对数底（极简微积分）}{E}
+\entry{切线与割线}{TanL}
+\entry{级数（极简微积分）}{SerCal}
+\entry{幂级数（极简微积分）}{powerS}
+
+\chapter{导数与微分} \label{cpt_simDer}
+%---------------------------------------
+\entry{导数（简明微积分）}{Der}
+\entry{求导法则（简明微积分）}{DerRul}
+\entry{复合函数求导、链式法则（极简微积分）}{ChainR}
+\entry{反函数求导（极简微积分）}{InvDer}
+\entry{一元函数的微分、微分近似（极简微积分）}{Diff}
+\entry{高阶导数（简明微积分）}{HigDer}
+\entry{基本初等函数的导数（简明微积分）}{FunDer}
+\entry{导数与函数极值（简明微积分）}{DerMax}
+\entry{泰勒展开（简明微积分）}{Taylor}
+
+\chapter{定积分与不定积分} \label{cpt_simInt}
+%---------------------------------------
+\entry{定积分（极简微积分）}{DefInt}
+\entry{不定积分（简明微积分）}{Int}
+\entry{反常积分（简明微积分）}{impro}
+\entry{牛顿—莱布尼兹公式（极简微积分）}{NLeib}
+
+% \chapter{待整理} \label{cpt_simOtr}
+%-------------------------------------
+
+\part{一元微积分} \label{prt_calc1}
+%======================================
+% Giacomo：一元标量函数的微积分
+\chapter{极限} \label{cpt_14}
+%---------------------------------------
+\entry{极限的运算法则}{LimOp}
+\entry{求极限的一些方法}{ChaLim}
+\entry{夹逼定理}{SquzTh}
+
+\chapter{导数与微分} \label{cpt_15}
+%---------------------------------------
+\entry{用极值点大致确定函数图像}{DerImg}
+\entry{平面曲线的曲率和曲率半径（极简微积分）}{curvat}
+\entry{函数的凹凸性（极简微积分）}{CONCV}
+% \entry{泰勒级数 2}{Taylr2}
+\entry{有限差分}{Diffen}
+\entry{导数与差分}{DerDif}
+\entry{二项式定理（非整数幂）}{BiNorR}
+\entry{曲线的切触}{CofCur}
+
+\chapter{定积分与不定积分} \label{cpt_16}
+%---------------------------------------
+\entry{换元积分法}{IntCV}
+\entry{分部积分法}{IntBP}
+\entry{微积分基本定理}{FTcalc}
+\entry{积分表}{ITable}
+\entry{求定积分的一些方法}{ChaDin}
+\entry{不定积分的常用技巧}{intech}
+\entry{曲线的长度}{CurLen}
+
+\chapter{常微分方程} \label{cpt_17}
+%---------------------------------------
+\entry{常微分方程}{ODE}
+\entry{一阶线性微分方程}{ODE1}
+\entry{一维齐次亥姆霍兹方程}{HmhzEq}
+\entry{二阶常系数齐次微分方程}{Ode2}
+\entry{二阶常系数非齐次微分方程}{Ode2N}
+\entry{欧拉方程（微分方程）}{Eulequ}
+
+\chapter{待归类} \label{cpt_18}
+%---------------------------------------
+\entry{极坐标中的曲线方程}{PolCrd}
+\entry{向量值函数}{VECFUN}
+\entry{傅里叶级数（三角）}{FSTri}
+\entry{傅里叶级数（指数）}{FSExp}
+\entry{三角傅里叶变换}{FTTri}
+\entry{傅里叶变换}{FTExp}
+\entry{幂指函数之差的极限}{MZHSZC}
+
+\part{线性代数} \label{prt_LA1}
+%======================================
+\chapter{列向量、行向量和矩阵} \label{cpt_20}
+%---------------------------------------
+\entry{【导航】线性代数}{Vector}
+% 列向量
+\entry{列向量}{colVec}
+
+% 矩阵
+\entry{矩阵及其运算}{Mat}
+% \entry{代数矢量}{NumVec}
+\entry{逆矩阵}{InvMat} % 可以考虑并入 矩阵 中
+
+\entry{相似变换和相似矩阵}{MatSim}
+\entry{转移矩阵}{TransM}
+
+\entry{矩阵的秩}{MatRnk}
+% \entry{奇异值分解（SVD）}{SVD}
+\entry{秩—零化度定理（矩阵）}{rnMat}
+\entry{矩阵的迹}{trace}
+\entry{行列式}{Deter}
+\entry{行列式的性质}{DetPro}
+\entry{行列式唯一性定理}{DetoD}
+\entry{行列式与体积}{DetVol}
+
+\entry{矩阵指数}{MatExp} % Giacomo: 标记更改/移动
+
+% 张量
+\entry{指标与求和约定}{EinSum}
+\entry{张量（向量与矩阵）}{TsrFst}
+% \chapter{旋转矩阵} \label{cpt_21a}
+% %---------------------------------------
+\entry{平面旋转矩阵}{Rot2D}
+\entry{叉乘的矩阵形式}{CrosMt}
+\entry{三维旋转矩阵}{Rot3D}
+\entry{欧拉角}{EulerA}
+\entry{四元数与旋转矩阵}{QuatN}
+\entry{罗德里格旋转公式、定轴旋转矩阵}{RotA}
+\entry{旋转矩阵的导数}{RotDer}
+
+\chapter{线性方程组} \label{cpt_23}
+%---------------------------------------
+\entry{线性方程组与增广矩阵}{LinEq2}
+\entry{高斯消元法解线性方程组}{GAUSS}
+\entry{初等矩阵与初等变化}{EleOpt}
+\entry{高斯消元法求逆矩阵}{InvMGs}
+\entry{线性方程组的解}{LinEq}
+\entry{克拉默法则}{kramer}
+
+\chapter{矩阵的本征值} \label{cpt_22}
+%---------------------------------------
+% Giacomo：要不要移动到 高级线性代数？
+\entry{分块矩阵}{BlkMat}
+\entry{块对角矩阵}{BlDiag}
+
+\entry{实正定矩阵}{DefMaR}
+\entry{复正定矩阵}{DefMat}
+\entry{二次多项式与二次型}{QuaPol}
+\entry{二次型（线性代数）}{qua}
+\entry{对称矩阵}{SymMat}
+\entry{厄米矩阵、自伴矩阵}{HerMat}
+\entry{正交矩阵、酉矩阵}{UniMat}
+
+\entry{矩阵的本征问题}{MatEig}
+% \entry{矩阵的本征值}{eigenM}
+% \entry{本征值与本征向量}{eign}
+\entry{对称矩阵的本征问题}{SymEig}
+\entry{厄米矩阵的本征问题}{HerEig}
+\entry{块对角厄米矩阵的本征问题}{BHeig}
+\entry{对易厄米矩阵与共同本征矢}{Commut}
+
+% 待处理
+\entry{正交矩阵}{lnal05}
+
+\chapter{向量空间和线性映射} \label{cpt_21}
+%---------------------------------------
+\entry{向量空间}{LSpace}
+\entry{向量子空间}{SubSpc}
+\entry{基底（线性代数）}{VecSpn}
+\entry{仿射集}{AffSet}
+\entry{商空间（线性代数）}{QuoSpa}
+\entry{直和与补空间（线性代数）}{DirSum}
+\entry{乘积空间}{lnal06} % 待处理
+
+\entry{线性映射}{LinMap}
+\entry{秩—零化度定理}{MatLS2}
+\entry{线性空间的同态与同构}{lnal02}
+
+
+% 线性映射的矩阵表示
+% Giacomo：这个分区不知道怎么改
+\entry{矢量空间的表示}{VecRep}
+\entry{矩阵与映射}{lnal04}
+\entry{线性映射与矩阵的代数关系}{linmat}
+\entry{矩阵与线性映射}{MatLS}
+
+% 线性方程组的解的几何/线代解释
+\entry{线性方程组的仿射解释}{AS2LF}
+
+\chapter{未归类} \label{cpt_24}
+%---------------------------------------
+% \entry{矩阵的零空间}{Mat0s}
+
+% \chapter{多项式} \label{cpt_51}
+% %---------------------------------------
+% Giacomo：需要移动到更合适的地方
+% TODO: 数域
+\entry{一元多项式}{OnePol}
+\entry{韦达定理（高等代数）}{VietaF}
+\entry{多项式的结式与判别式}{RDPly}
+\entry{带余除法}{DivAlg}
+\entry{多项式的整除}{ExDiv}
+\entry{辗转相除法}{SucDiv}
+
+\entry{多项式的可约性质}{RedPol}
+\entry{因式分解唯一性定理}{UniFac}
+\entry{本原多项式（高等代数）}{PPlyR}
+\entry{一般线性变换的 Jordan（若尔当）标准形}{ltrJor }
+\entry{幂零线性变换的 Jordan（若尔当）标准形}{Jordan }
+\entry{零化多项式}{nullpl  }
+\entry{代数学基本定理}{BscAlg}
+
+
+% \chapter{其他} \label{cpt_24}
+% %---------------------------------------
+\entry{范德蒙矩阵、范德蒙行列式}{VandDe}
+\entry{Rayleigh-Ritz 方法}{RayRit}
+
+\entry{线性最小二乘法}{LstSqr}
+\entry{超定线性方程组的最小二乘法解}{OvrDet}
+
+\part{多元微积分} \label{prt_calc2}
+%======================================
+
+\chapter{多元微积分} \label{cpt_25}
+%---------------------------------------
+% Giacomo: 我仔细想了想没必要细分成那么多情况
+\entry{向量值函数的导数}{DerV}
+\entry{偏导数（简明微积分）}{ParDer}
+% 应融合成一篇
+\entry{偏导数（多元矢量值函数）}{VecPdv}
+\entry{海森矩阵}{Hesian}
+\entry{全微分（简明微积分）}{TDiff}
+\entry{复合函数的偏导、链式法则（多元微积分）}{PChain}
+\entry{全导数（简明微积分）}{TotDer}
+\entry{方向导数}{DerDir}
+\entry{梯度、梯度定理}{Grad}
+\entry{雅可比矩阵、雅可比行列式}{JcbDet}
+\entry{光滑映射（简明微积分）}{SmthM}
+\entry{多元泰勒展开}{NDtalr}
+\entry{二元函数的极值（简明微积分）}{F2Exm}
+\entry{多元函数的极值}{MulPlo}
+\entry{偏导与差分}{ParDf}
+\entry{单变量矢量值函数的积分}{IntV}
+\entry{重积分、面积分、体积分（简明微积分）}{IntN}
+\entry{重积分和宇称}{IntPry}
+\entry{重积分的换序（简明微积分）}{Fubin0}
+\entry{微分形式（简明微积分）}{DForm}
+\entry{广义斯托克斯定理（简明微积分）}{Stoke2}
+\entry{高阶微分（多元微积分）}{MHDiff}
+
+\chapter{应用} \label{cpt_26}
+%---------------------------------------
+\entry{极坐标系中单位矢量的偏导}{DPol1}
+\entry{立体角}{SolAng}
+\entry{高斯积分}{GsInt}
+\entry{偏微分算符}{ParOp}
+\entry{拉格朗日乘数法、条件极值}{LagMul}
+\entry{多维球体的体积}{NSphV}
+\entry{用梯度求曲线和曲面的法向量}{GradNr}
+\entry{多元函数的傅里叶级数}{NdFuri}
+\entry{齐次函数的欧拉定理}{Homeul}
+\entry{一阶线性常微分方程组（简明微积分）}{ODEsys}
+\entry{高阶线性微分方程的降阶}{ODEb4}
+
+\chapter{矢量分析} \label{cpt_27}
+% Giacomo：我不懂矢量分析，就不做具体分类了
+% Giacomo：应该专注于三维空间的特例，一般情况应当移动到上面的对应情况
+%---------------------------------------
+\entry{矢量场（矢量分析）}{Vfield}
+\entry{曲面积分、通量}{SurInt}
+\entry{线积分、环积分（矢量分析）}{IntL}
+\entry{证明闭合曲面的法向量面积分为零}{CSI0}
+\entry{矢量算符}{VecOp}
+\entry{拉普拉斯算符}{Laplac}
+\entry{一种矢量算符的运算方法}{MyNab}
+\entry{矢量算符运算法则}{VopEq}
+\entry{分部积分的高维拓展}{IntBP2}
+\entry{散度、高斯散度定理}{Divgnc}
+\entry{散度的逆运算}{DivInv}
+\entry{牛顿—莱布尼兹公式（矢量分析）}{NLext}
+\entry{旋度（简明微积分）}{Curl}
+\entry{旋度的逆运算}{HlmPr2}
+\entry{正交曲线坐标系}{CurCor}
+\entry{正交曲线坐标系中的重积分}{CrIntN}
+\entry{正交曲线坐标系中的矢量算符}{CVecOp}
+\entry{斯托克斯定理（矢量分析）}{Stokes}
+\entry{调和场（无散无旋场）}{HarmF}
+\entry{亥姆霍兹分解}{HelmTh}
+
+\entry{矢量分析总结}{VecAnl}
+
+\part{数学基础} \label{prt_math0}
+%======================================
+
+
+\chapter{集合论} \label{cpt_28}
+%---------------------------------------
+\entry{【导航】数学基础}{MFnav}
+\entry{公理系统}{axioms}
+\entry{集合}{Set}
+\entry{集合的运算}{OpSet}
+% \entry{存在性和任意性}{EA} %待删除
+\entry{映射}{map}
+\entry{Cantor-Bernstein 定理}{CBTheo}
+\entry{集合的基数}{CardiN}
+\entry{无穷的概念}{infty}
+\entry{公理化集合论}{SetAxi}
+\entry{笛卡尔积}{CartPr}
+
+% \chapter{数} \label{cpt_28a}
+% %---------------------------------------
+\entry{整数}{intger}
+\entry{整数集的倍数与整除}{yulan}
+% Giacomo：TODO：自然数、有理数、代数数、实数、复数。
+
+% \chapter{序论} \label{cpt_29}
+% %---------------------------------------
+
+\entry{二元关系}{Relat}
+\entry{序关系}{OrdRel}
+\entry{序数、超限数}{OrdNum}
+
+
+\chapter{数理逻辑} \label{cpt_8b}
+%---------------------------------------
+% \chapter{数理逻辑：命题逻辑} \label{cpt_8bc}
+% %---------------------------------------
+\entry{命题}{prop}
+\entry{命题的连接词}{propco}
+\entry{公式（数理逻辑）}{wlform}
+\entry{公式的基本等价关系（数理逻辑）}{wffEqR}
+
+% \chapter{数理逻辑：谓词逻辑（一阶逻辑）} \label{cpt_8c}
+%---------------------------------------
+\entry{个体词、谓词与量词（数理逻辑）}{prelo1}
+\entry{量词公式的基本等价关系}{prelo2}
+\entry{量词相关的推理规则}{prelo3}
+
+\chapter{其他} \label{cpt_30}
+%---------------------------------------
+% \chapter{范畴论} \label{cpt_32}
+% %---------------------------------------
+\entry{范畴论}{Cat}
+\entry{范畴}{Catgry}
+
+
+\part{数学分析} \label{prt_anal}
+%======================================
+% Giacomo：数学分析板块需要重新梳理
+% 1. 数学分析需要引入度量空间，那么要不要引入拓扑空间？
+% 2. 实数理论依托于数列，甚至是度量空间的性质，需要穿插进整个part，而不是单独列一个chapter
+
+\chapter{序列与级数} \label{cpt_33}
+%---------------------------------------
+\entry{实数}{ReNum}
+\entry{实数的表示}{ReRep}
+\entry{完备公理（戴德金分割）}{Cmplt}
+\entry{上确界与下确界}{SupInf}
+\entry{实数集的完备公理}{RCompl}
+% {代数数} {超越数} {从集合论看实数} {实数空间和欧几里得空间}
+
+\entry{稠密性与完备性}{OrdCom}
+
+\entry{序列}{seq}
+\entry{序列的极限（数学分析）}{SeqLim}
+\entry{极限存在的判据、柯西序列}{CauSeq}
+\entry{子列极限、上极限与下极限}{SubLim}
+\entry{极限的一般观点 重极限与累次极限}{MulLim}
+\entry{级数（数学分析）}{Series}
+\entry{正项级数的收敛性判别}{PosCov}
+\entry{绝对收敛与条件收敛}{Convg}
+\entry{黎曼重排定理}{RieRes}
+\entry{交错级数的收敛性判别}{AltCov}
+
+\entry{自然常数（数学分析）}{exp}
+\entry{Euler-Mascheroni 常数}{Masche}
+\entry{调和数（基础）}{HarNum}
+\entry{反函数定理}{inverf}
+
+\chapter{连续函数} \label{cpt_35}
+%---------------------------------------
+\entry{极限}{Lim}
+\entry{函数的极限}{limfx}
+\entry{函数极限的性质}{limff}
+\entry{函数的连续性}{contin}
+\entry{函数的连续与间断}{confun}
+\entry{连续函数的性质}{conff}
+\entry{幂函数（数学分析）}{RePw}
+% 未完成： 连通与道路连通  连续映射的性质 连续延拓 一致连续 单调性
+
+\chapter{拓扑空间与度量空间} \label{cpt_36}
+%---------------------------------------
+% {开集与闭集} {实数空间中的紧集}
+\entry{实数中的开集和闭集}{realat}
+% 重复了
+\entry{实数集的拓扑}{ReTop}
+\entry{有限覆盖与紧性}{CptRe}
+
+\entry{度量空间}{Metric}
+\entry{度量空间中的概念}{Metri2}
+\entry{柯西序列、完备度量空间}{cauchy}
+\entry{完备空间}{ComSpa} % 重复了！
+\entry{巴拿赫不动点定理}{ConMap}
+
+\entry{隐函数定理的不动点证明}{IFTFix}
+% 未完成： 贝尔纲定理 $p$-进数 有理数集的赋值
+
+
+\chapter{导数与微分} \label{cpt_37}
+%---------------------------------------
+\entry{导数（数学分析）}{Der2}
+\entry{凸函数}{ConvFu}
+\entry{导数的运算法则}{Der3}
+\entry{莱布尼兹公式}{LeiEqu}
+% 未完成： 求导法则 映射的微分 临界点与极值 隐函数定理 微分同胚 条件极值 拐点
+\entry{微分中值定理}{MeanTh}
+\entry{洛必达法则}{LHopiR}
+\entry{泰勒公式}{Tayl}
+\entry{施勒米希-洛希余项公式}{SchRo}
+\entry{幂级数与解析函数}{anal}
+\entry{柯西—阿达玛公式}{CHF}
+\entry{一致收敛}{UniCnv}
+\entry{一致收敛与极限换序}{UniCo2}
+\entry{隐函数}{ImpFun}
+\entry{一元隐函数的存在及可微定理}{ImFED}
+
+% \chapter{多元函数} \label{cpt_38}
+% %---------------------------------------
+\entry{偏导数（数学分析）}{ParDif}
+\entry{向量函数的微分}{vecdif}
+\entry{多元隐函数的存在定理}{Mulmp}
+\entry{多元数量函数的隐函数定理}{impli}
+\entry{莫尔斯引理}{Morse}
+
+\chapter{黎曼积分} \label{cpt_39}
+---------------------------------------
+\entry{定积分}{DInt}
+\entry{定积分存在条件}{Rieman}
+\entry{可积函数}{InFun}
+\entry{定积分的性质}{DIntP}
+\entry{积分中值定理}{InMT}
+% 多元黎曼积分
+\entry{狄拉克 delta 函数}{Delta}
+\entry{多元狄拉克 delta 函数}{deltaN}
+\entry{狄拉克 delta 导函数}{delta2}
+\entry{零函数（列）}{F0}
+% 未完成： 一致收敛与黎曼积分 牛顿-莱布尼兹公式(连续可微函数) 泰勒余项 反常积分 绝对收敛与条件收敛(反常积分)
+
+% \chapter{傅立叶分析} \label{cpt_40}
+% ---------------------------------------
+\entry{函数的算符}{DifOp}
+\entry{正交函数系}{Fbasis}
+\entry{正交函数系 2}{OFS}
+\entry{连续正交归一基底与傅里叶变换}{COrNoB}
+\entry{傅里叶变换与矢量空间}{FTvec}
+\entry{多元傅里叶变换}{NFTran}
+
+% \part{复分析} \label{prt_analC}
+% %======================================
+\chapter{一元复分析} \label{cpt_41}
+%---------------------------------------
+\entry{复变函数}{Cplx}
+% 未完成：全纯函数与解析函数 复变函数求积分 柯西-古尔萨定理 柯西积分公式
+\entry{幂函数（复数）}{CPow}
+\entry{指数函数（复数）}{CExp}
+\entry{对数函数（复数）}{clog}
+\entry{三角函数（复数）}{CTrig}
+\entry{复变函数的导数、柯西—黎曼条件}{CauRie}
+\entry{解析函数与散度旋度}{HolHar}
+\entry{复变函数的积分}{CpxInt}
+\entry{牛顿—莱布尼兹公式（复变函数）}{AnaInt}
+\entry{柯西积分定理}{CauGou}
+\entry{洛朗级数}{LaurSr}
+\entry{留数定理}{ResThe}
+\entry{Jordan 引理}{JdLem}
+
+\chapter{待整理} \label{cpt_42}
+%---------------------------------------
+\entry{凸函数（补）}{Convex}
+\entry{有界变差}{BouVar}
+\entry{黎曼—斯蒂尔切斯积分}{RSInte}
+\entry{Gamma 函数}{Gamma}
+\entry{Gamma 函数 2}{Gamma2}
+\entry{余元公式}{Gama1}
+\entry{不完全 Gamma 函数}{IncGam}
+\entry{渐近展开}{Asympt}
+\entry{拉普拉斯方法}{LapAsm}
+% 未完成： 无穷级数
+\entry{魏尔施特拉斯逼近定理}{Weiers}
+
+% Giacomo: 或许该移动到常微分方程？
+\entry{包络线}{Velope}
+\entry{包络和奇解}{EnvSol}
+
+\entry{亥姆霍兹分解 2}{HelDe}
+
+\entry{Euler-Maclaurin 求和公式}{EMSum}
+
+\chapter{笔记与总结} \label{cpt_44}
+---------------------------------------
+\entry{Rudin 数学分析笔记 1}{AnalNt}
+\entry{Rudin 数学分析笔记 2}{AnalN2}
+\entry{Rudin 数学分析笔记 3}{AnalN3}
+\entry{Rudin 实分析与复分析笔记 1}{AnalN4}
+\entry{Rudin 实分析与复分析笔记 2}{AnalN5}
+
+
+\part{数论} \label{prt_NumberTh}
+%=====================================
+\chapter{素数与整除} \label{cpt_7d}
+%-------------------------------------
+\entry{整除}{divisb}
+\entry{素数与合数}{prmnt}
+\entry{标准型与唯一分解定理}{stafnt}
+\entry{渐进估计与阶}{asymeq}
+\entry{素数定理}{prithy}
+\entry{最大公约数与最小公倍数}{gcdlcm}
+\entry{整数模与裴蜀定理}{mobezt}
+
+\chapter{剩余与同余} \label{cpt_7e}
+%-------------------------------------
+\entry{同余与剩余类}{modres}
+\entry{线性同余}{linmod}
+\entry{欧拉函数（数论）}{EulFun}
+\entry{数论求和记号}{ntsNot}
+\entry{数论三角和与高斯和}{ntrtre}
+\entry{单位根与本原单位根（数论）}{priru}
+\entry{拉马努金和（数论）}{RamSum}
+\entry{中国剩余定理}{crtnt}
+
+\chapter{费马小定理与二次剩余} \label{cpt_7f}
+%-------------------------------------
+\entry{费马小定理与欧拉定理}{fermse}
+\entry{二次剩余}{quares}
+\entry{Legendre 符号（数论）}{legnnt}
+\entry{Wilson 定理}{wilsth}
+\entry{二次互反律}{gaqrnt}
+\entry{阶与原根}{ordprr}
+
+\chapter{素数相关的解析数论} \label{cpt_8a}
+%-------------------------------------
+\entry{数论函数 theta 与 psi 的阶}{tpont}
+\entry{Bertrand 定理}{bertTh}
+\entry{素数定理的证明}{prthpr}
+
+\chapter{其他} \label{cpt_45}
+%-------------------------------------
+\entry{连分数}{ConFra}
+\entry{无理数（数论）}{irrNum}
+
+\entry{数论函数}{NumFun}
+\entry{Möbius 函数（数论）}{MbusF}
+\entry{积性函数}{MulFun}
+
+\entry{狄利克雷卷积（数论）}{DirCon}
+
+
+\part{组合数学与离散数学} \label{prt_Combin}
+%======================================
+% \entry{【导航】组合数学与离散数学}{Comnav}
+
+
+\chapter{计数组合学} \label{cpt_46}
+%---------------------------------------
+\entry{计数原理}{ProfPM}
+\entry{布置、排列、组合}{APC}
+\entry{范德蒙恒等式}{ChExpn}
+\entry{逆序数}{InvNum}
+\entry{列维—奇维塔符号}{LeviCi}
+\entry{Sperner 定理}{SpeThm}
+\entry{多项式定理}{PolyNm}
+
+
+\chapter{图论} \label{cpt_47}
+%---------------------------------------
+\entry{图}{Graph}
+
+\chapter{其他} \label{cpt_48}
+%---------------------------------------
+\entry{克罗内克 delta 函数}{Kronec}
+
+\part{概率与统计} \label{prt_Statis}
+%======================================
+\chapter{基础} \label{cpt_49}
+%--------------------------------
+\entry{随机变量、概率密度函数}{RandF}
+\entry{标准差与方差}{StDevi}
+\entry{平均值的不确定度}{MeanS}
+\entry{随机变量的变换}{RandCV}
+\entry{多变量分布函数}{MulPdf}
+\entry{中心极限定理}{CLT}
+\entry{生日问题}{Birth}
+\entry{三门问题}{MontyH}
+\entry{从集合论角度看随机事件}{JNran1}
+\entry{贝叶斯公式}{JNran2}
+\entry{样本均值与方差}{SaMeVa}
+\entry{容斥原理}{inex}
+
+\chapter{概率分布} \label{cpt_50}
+%------------------------------------
+\entry{高斯分布（正态分布）}{GausPD}
+\entry{二项分布}{BiDist}
+\entry{泊松分布}{PoisD}
+\entry{对数正态分布}{LogNor}
+\entry{Weibull 分布}{Weibul}
+\entry{抛硬币实验进阶}{CoinEx}
+\entry{高尔顿板}{Galton}
+\entry{二维随机游走}{RW2D}
+\entry{卡方分布}{Chi2}
+\entry{马尔可夫链蒙特卡洛}{MCMC}
+
+% Jier：是否应该整合为抽象代数，放在线性代数后面？另，高等代数从学科分类来说就是线性代数，不应出现在此处。
+\part{代数基础} \label{prt_AlgB}
+%======================================
+
+\chapter{群} \label{cpt_52}
+%---------------------------------------
+% Giacomo：缺少交换群（阿贝尔群）的文章
+% 应当包括 有限生成阿贝尔群基本定理
+\entry{群}{Group}
+\entry{群乘法表及重排定理}{groupt}
+\entry{子群}{Group1}
+\entry{陪集和同余}{coset}
+\entry{正规子群和商群}{NormSG}
+\entry{共轭与共轭类}{gpcon}
+\entry{直积和半直积（群）}{GrpPrd}
+\entry{循环群}{cyclic}
+\entry{单群}{SemGrp}
+\entry{群的同态与同构}{Group2}
+
+\entry{置换群、对称群}{Perm}
+\entry{置换的奇偶性}{permu}
+\entry{群作用}{Group3}
+\entry{换位子群}{CmtGrp}
+
+\entry{一般线性群}{GL}
+
+\entry{自由群}{FreGrp}
+\entry{群的自由积}{FrePrd}
+\entry{群论中的证明和习题解答}{GroupP}
+
+\chapter{环与域} \label{cpt_53}
+%---------------------------------------
+\entry{环}{Ring}
+\entry{剩余类环}{RRing}
+
+\entry{环的理想和商环}{Ideal}
+\entry{环同态}{RingHm}
+\entry{整环}{Domain}
+\entry{素理想与极大理想}{Ideals}
+\entry{爱森斯坦判别式}{EsstCr}
+\entry{真因子树}{FctTre}
+\entry{唯一析因环}{UFD}
+\entry{主理想整环}{PID}
+\entry{欧几里得环}{EuRing}
+\entry{多项式环}{RPlynm}
+
+% 域
+\entry{环和域}{field}
+\entry{素域}{FmLT}
+\entry{分式域}{FrcFld}
+\entry{四元数}{Quat}
+\entry{域的扩张}{FldExp}
+\entry{分裂域}{SpltFd}
+\entry{有限域}{FntFld}
+
+\chapter{模论} \label{cpt_1a}
+%---------------------------------------
+\entry{模}{Module}
+\entry{模的直和}{DSofMo}
+
+
+\part{高等线性代数} \label{prt_LA2}
+%======================================
+\chapter{线性映射与算子} \label{cpt_54}
+%---------------------------------------
+% \entry{【导航】高级线性代数}{mapALA}
+\entry{多线性映射}{MulMap}
+\entry{对称/反对称多线性映射}{SASmap}
+\entry{斜对称映射}{AntMap} % 重复了
+\entry{对偶空间}{DualSp}
+\entry{线性无关判别法}{LinInD}
+\entry{伴随映射}{AdjMap}
+\entry{等距变换}{IsoMe}
+\entry{正交变换与对称变换}{ortho}
+\entry{向量空间的张量积}{vecTsr}
+\entry{向量空间的对称/反对称幂}{vecSAS}
+\entry{有限维度下张量积的存在性}{TPofSp}
+
+\entry{线性映射的张量积}{linSW}
+
+\entry{域上的代数}{AlgFie}
+\entry{张量代数}{Tsralg}
+% TODO：对称代数与多项式环
+\entry{外代数}{ExtAlg}
+
+% \chapter{线性算子} \label{cpt_58}
+% %---------------------------------------
+\entry{线性算子}{LiOper}
+\entry{不变子空间}{InvSP}
+
+\entry{算子代数}{SiOAlg}
+\entry{本征矢量与本征多项式}{EigVM}
+\entry{线性算子对角化的充要条件}{LODia}
+
+\entry{线性算子的张量积}{TPofLO}
+\entry{线性算子的行列式}{APdet}
+\entry{正规算子}{NmOpt}
+
+\chapter{赋范、内积空间和二次型} \label{cpt_57}
+%---------------------------------------
+% Giacomo：从现在开始这个part是“纯代数的”，换言之我们不考虑任何“分析”的性质，相关内容全部移动到泛函分析。
+
+\entry{内积、内积空间}{InerPd}
+\entry{矢量的模和度量的关系}{SNadM}
+\entry{正交归一基底}{OrNrB} % 具体位置有待调整。
+
+\entry{正交分解、投影算符}{projOp}
+\entry{柯西—施瓦茨不等式}{CSNeq}
+\entry{Cauchy-Schwarz 不等式}{WuChy}
+\entry{欧几里得矢量空间}{EuVS}
+\entry{欧几里得矢量空间的正交化、同构及正交群}{EVOIOG}
+\entry{正交空间与辛空间}{OrSp}
+\entry{子空间的正交关系}{OrthSp}
+
+% 复内积空间
+% Giacomo：需要统一一下名词
+\entry{半双线性形式}{sequil}
+\entry{埃尔米特型}{HeFor}
+\entry{幺正变换}{Unitar}
+\entry{埃尔米特矢量空间（酉空间）}{HVorUV}
+\entry{酉群}{UQ}
+
+% 赋范/内积空间中的线性算子
+\entry{线性算子的范数}{ONorm}
+\entry{向量空间上的范数}{norm}
+\entry{对易算符}{Commu}
+\entry{厄米共轭算符的映射结构}{RCrank}
+
+% TODO: 谱定理
+% TODO: 约旦标准形式
+
+% \chapter{二次型} \label{cpt_59}
+% %---------------------------------------
+\entry{双线性函数}{BiFunc}
+\entry{双线性型}{bilinF}
+\entry{二次型}{QuaFor}
+\entry{二次型的规范型}{GuaOQu}
+\entry{实二次型}{RQuaF}
+\entry{正定二次型}{DeQua}
+\entry{指数有限度量空间}{EFSp}
+\entry{斜对称双线性型的规范型}{OBili}
+
+% 待整理
+% \entry{常秩定理}{rankth}
+
+\chapter{张量} \label{cpt_60}
+%---------------------------------------
+% Giacomo: 张量积相关内容写到《线性空间》章节中，
+% 本章节只考虑$(r, s)$型张量这种狭义的张量
+% TODO: 大修
+\entry{张量}{Tensor}
+\entry{协变和逆变}{CoCon}
+\entry{张量的分类}{CatTns}
+\entry{张量的张量积}{TsrPrd}
+
+\entry{彭罗斯图形表示法}{PnrsGN}
+\entry{张量的坐标}{CofTen}
+\entry{张量的坐标变换}{TrTnsr}
+\entry{结构张量代数}{STAlg}
+
+% Giacomo: 待整改、重命名
+\entry{张量积空间}{DirPro}
+\entry{张量积空间的算符}{ProdOp}
+\entry{张量代数（张量）}{TenAlg}
+\entry{张量的对称化和交错化}{SIofTe}
+\entry{张量的外积}{WegofT}
+
+
+\entry{度规张量与指标升降（欧氏空间）}{TofEuc}
+
+% Giacomo：仿射不应该放这里
+\chapter{仿射空间} \label{cpt_61}
+%---------------------------------------
+\entry{仿射空间}{AfSp}
+\entry{仿射子空间}{SAfSp}
+\entry{仿射群}{AfQ}
+\entry{欧几里得空间}{EucSp}
+\entry{保距群（欧氏空间）}{CDQ2Ec}
+\entry{仿射空间中的曲线坐标系}{CFinAf}
+\entry{曲线坐标系下的张量坐标变换（仿射空间）}{TinCur}
+\entry{平行移动}{PTinAS}
+
+\chapter{李代数} \label{cpt_62}
+%-------------------------------------
+\entry{李代数}{LieAlg}
+\entry{李代数的子代数、理想与商代数}{LieSub}
+\entry{李代数的同态与同构}{LieMor}
+\entry{泛包络代数}{UEnAl}
+
+\chapter{其他} \label{cpt_63}
+---------------------------------------
+\entry{多项式矩阵}{matplo}
+\entry{超线性空间}{SVecSp}
+
+
+\part{拓扑学} \label{prt_Topo}
+%=====================================
+\chapter{点集拓扑} \label{cpt_64}
+%-------------------------------------
+\entry{拓扑空间}{Topol}
+\entry{点集的内部、外部和边界}{Topo0}
+\entry{连续映射和同胚}{Topo1}
+\entry{紧致性}{Topo2}
+\entry{连通性}{Topo3}
+\entry{道路连通性}{Topo4}
+\entry{分离性}{Topo5}
+\entry{积拓扑}{Topo6}
+\entry{商拓扑}{Topo7}
+\entry{拓扑空间之间的运算}{TopSpO}
+\entry{映射空间}{Topo8}
+\entry{空间偶和带基点空间}{Topo9}
+\entry{拓扑群}{TopGrp}
+\entry{Tychonoff 定理}{TychT}
+
+\entry{覆叠空间}{CovTop}
+
+\chapter{代数拓扑} \label{cpt_65}
+%-------------------------------------
+% \chapter{复形} \label{cpt_1b}
+% %-------------------------------------
+\entry{单纯形与单纯复形}{SimCom}
+\entry{可三角剖分空间}{Traglt}
+
+% \chapter{同伦论} \label{cpt_1c}
+% %-------------------------------------
+\entry{映射的同伦和空间的同伦}{HomT1}
+\entry{单连通性}{SmpCn}
+\entry{可缩空间}{HomT2}
+\entry{基本群}{HomT3}
+\entry{基本群的计算}{HomT5}
+\entry{高阶同伦群}{HomT4}
+\entry{球面的同伦群}{SphHmt}
+
+% \chapter{同调论} \label{cpt_67}
+% %-------------------------------------
+\entry{复形的单纯同调群}{SimHml}
+\entry{单纯同调群的计算}{SHCal}
+
+% by Jier：微分几何应该适合放在拓扑学后头，有点集拓扑和群论知识就可以讲得足够深入了；李代数的引入可能得两条路同时走，“直接从代数引入”和“从流形到李群到李代数的步步抽象”两种方式．
+% “函数芽”的概念该如何插入？
+%======================================
+\part{微分几何} \label{prt_DifGeo}
+%======================================
+\chapter{古典微分几何} \label{cpt_68}
+%-------------------------------------
+\entry{【导航】微分几何}{DGnav}
+% 部分0: 分析基础
+\entry{欧几里得空间中的曲线}{eucur}
+% 部分1: 平面曲线
+\entry{平面曲线的曲率（古典微分几何）}{cur}
+% 部分2: 空间曲线
+\entry{三维空间中的曲线}{Curv3D}
+% 部分3: 空间曲面
+\entry{三维空间中的曲面}{RSurf}
+\entry{曲面的切空间（古典微分几何）}{tgSpaE}
+\entry{基本型}{FForm}
+\entry{可定向曲面}{OriSur}
+\entry{高斯映射}{GMap}
+\entry{高斯曲率和平均曲率}{GHcurv}
+\entry{等距映射与保形映射}{Isomet}
+\entry{高斯绝妙定理}{GauTE}
+\entry{直纹面（古典微分几何）}{RuSurf}
+
+\chapter{流形} \label{cpt_69}
+%-------------------------------------
+\entry{流形}{Manif}
+\entry{子流形}{SubMnf}
+\entry{积流形}{ManPro}
+\entry{单位分割}{ParUni}
+\entry{切空间（流形）}{tgSpa}
+\entry{光滑映射（流形）}{DiffTg}
+\entry{抽象指标}{AbsInd}
+\entry{切向量场}{Vec}
+\entry{纤维丛}{Fibre}
+\entry{向量丛和切丛}{TanBun}
+% 未完成： 余切丛 向量场的流 闭形式与恰当形式
+\entry{流形上的张量场}{TenMan}
+% \entry{向量丛}{VecBun}
+\entry{微分形式}{Forms}
+\entry{体积形式}{VolFom}
+\entry{霍奇星算子}{HodgeO}
+\entry{外导数}{ExtDer}
+\entry{费罗贝尼乌斯定理}{FrobTh}
+% \entry{定向}{Orient}
+
+% \chapter{辛几何} \label{cpt_70}
+% %-------------------------------------
+\entry{辛流形}{SplcMn}
+
+% \chapter{复几何} \label{cpt_71}
+% %-------------------------------------
+\entry{复流形}{CMani}
+
+\chapter{黎曼几何} \label{cpt_72}
+%-------------------------------------
+\entry{黎曼度量与伪黎曼度量}{RiMetr}
+% \entry{纳什嵌入定理}{NashEm}
+\entry{仿射联络}{affcon}
+\entry{协变导数}{CoDer}
+\entry{黎曼联络}{RieCon}
+\entry{Christoffel 符号}{CrstfS}
+\entry{曲率张量场}{RicciC}
+% 截面曲率
+\entry{高斯恒等式（黎曼几何）}{Egreg}
+\entry{联络形式与结构定理}{ConFom}
+\entry{测地线}{geodes}
+\entry{庞加莱半平面（微分几何计算实例）}{PoiHP}
+
+
+\chapter{向量丛上的联络} \label{cpt_73}
+%-------------------------------------
+\entry{联络（向量丛）}{VecCon}
+\entry{曲率（向量丛）}{VecCur}
+\entry{平行性（向量丛）}{VecPar}
+\entry{和乐群（向量丛）}{VecHol}
+
+
+\chapter{李群和李代数} \label{cpt_74}
+%-------------------------------------
+\entry{矩阵李群}{MatLG}
+\entry{李群}{LieGrp}
+\entry{李群的李代数}{LieGA}
+\entry{流形上的代数结构}{MnfAlg}
+
+
+\part{代数进阶} \label{prt_AlgA}
+%======================================
+\chapter{有限群论} \label{cpt_75}
+---------------------------------------
+\entry{Sylow 定理}{Sylow}
+
+\chapter{Galois 理论} \label{cpt_76}
+---------------------------------------
+\entry{完全域}{CmplD}
+\entry{可分扩张}{SprbEx}
+\entry{本原元定理}{PrmtEl}
+\entry{可分元素的单扩张是可分扩张}{SprbE2}
+\entry{纯不可分扩张}{PInsEx}
+\entry{正规扩张}{NomEx}
+\entry{Galois 扩张}{GExt}
+% 应用
+% \entry{三次与四次多项式的根}{PlyRtS} % pdf 编译不通过
+\entry{分圆多项式和分圆域}{Cycltm}
+% Giacomo：这个应该放在“广义伽罗瓦理论”里面
+\entry{无穷 Galois 扩张与 Krull 定理}{GExInf}
+
+
+
+\chapter{Clifford代数} \label{cpt_7b}
+---------------------------------------
+\entry{Clifford 代数}{clf01}
+\entry{Clifford 代数的基本运算}{clf02}
+\entry{伪标量}{Clf03}
+\entry{单向量}{Clf04}
+\entry{单向量的运算}{Clf05}
+\entry{外同态}{Clf06}
+
+% \chapter{交换代数} \label{cpt_77}
+%--------------------------------------
+% Giacomo：待添加： radical ideal 局部化 C[[x]] 诺特环 (discreet)valuation ring
+
+\chapter{有限群表示论} \label{cpt_78}
+---------------------------------------
+\entry{群表示}{GrpRep}
+
+% Giacomo: 等有缘人重启这个话题吧
+% \part{表示论} \label{prt_Repr}
+% %======================================
+% \chapter{李代数表示论} \label{cpt_79}
+% ---------------------------------------
+% 待添加：复化（李代数表示论） 单李代数 复半单李代数的等价定义 Cartan子代数 根系统（root sysmtem）Dynkin图
+% Giacomo：我个人认为写Dynkin图之前应该先写Coxeter图，应该是几何群论的内容。
+
+\part{常微分方程} \label{prt_Ode}
+%====================================
+\chapter{一阶常微分方程} \label{cpt_80}
+%---------------------------------------
+\entry{常微分方程简介}{ODEint}
+\entry{基本知识（常微分方程）}{ODEPr}
+\entry{自治系统解的特点}{AuSy}
+\entry{平衡位置和圈}{EqliP}
+
+\entry{微分方程 $y^{(N)}=f(x)$}{ynfx}
+\entry{记号方法}{Sign}
+
+\entry{化一般常微分方程组为标准方程组（常微分方程）}{GO2SOD}
+\entry{一般积分}{IntGen}
+\entry{一阶常微分方程解法：变量可分离方程}{ODEa1}
+\entry{一阶常微分方程解法：常数变易法}{ODEa2}
+\entry{一阶常微分方程解法：恰当方程}{ODEa3}
+\entry{一阶隐式常微分方程}{ODEa4}
+\entry{一阶隐式常微分方程的存在唯一性定理}{ODEa5}
+\entry{判别曲线法求一阶隐式常微分方程的奇解}{ODEa6}
+\entry{阿贝尔微分方程恒等式}{AbelID}
+\entry{常微分方程的几何图像}{GofODE}
+\entry{可微映射的导数}{DoDifM}
+
+\chapter{高阶常微分方程和线性微分方程组} \label{cpt_81}
+%---------------------------------------
+\entry{线性微分方程的一般理论}{ODEb1}
+\entry{常系数线性齐次微分方程}{ODEb2}
+\entry{一阶常系数线性微分方程组（常微分方程）}{ODEb3}
+\entry{二阶齐次变系数线性微分方程的幂级数解法}{ODE2P}
+\entry{拉普拉斯变换}{LapTra}
+\entry{拉普拉斯变换的性质}{ProLap}
+\entry{拉普拉斯变换与常系数线性微分方程}{ODELap}
+
+\chapter{一般理论} \label{cpt_82}
+%---------------------------------------
+\entry{压缩映射}{ComMap}
+\entry{李普希茨条件}{LipCon}
+\entry{皮卡映射}{PicMap}
+\entry{常微分方程解的存在、唯一及连续可微定理}{ODEUC}
+\entry{皮卡-林德勒夫定理}{PiLin}
+\entry{解对参数的连续依赖}{ConDep}
+\entry{极大解}{MaxSol}
+% 未完成： 皮亚诺存在定理  柯西-科瓦列夫斯卡娅定理
+\entry{比较定理}{CompT}
+\entry{施图姆—刘维尔理论}{SLthrm}
+\entry{正则 S-L 边值问题本征函数零点数量的证明}{SLzPro}
+
+
+% \chapter{常系数方程(组)} \label{cpt_83}
+%---------------------------------------
+% 未完成： 二维常系数线性常微分方程组的分类  基本解矩阵  特征方程与基本解系 共振与增益 渐近稳定性
+
+% \chapter{微分方程的动力学} \label{cpt_84}
+%---------------------------------------
+% 未完成： 双曲不动点 哈特曼线性化定理 李雅普诺夫函数 极限圈 庞加莱-本迪克森定理 范德波尔振荡器 洛伦兹系统
+
+\part{实变函数} \label{prt_RealAn}
+%======================================
+\chapter{测度论} \label{cpt_85}
+%---------------------------------------
+\entry{集合的极限}{SetLim} % 位置难决定
+\entry{集合的测度（实变函数）}{SetMet}
+\entry{集合环上的测度}{MsExte}
+\entry{可测集合}{MsbSet}
+\entry{可测函数}{MsbFun}
+\entry{Egoroff 定理}{EgrfTh}
+\entry{可测函数的 Lusin 定理}{MsbFSt}
+\entry{依测度收敛}{LimMs}
+% 测度的概念; 测度空间}{}, 开集与闭集的勒贝格测度, 博雷尔集, 博雷尔测度, 零测集, 外测度: 卡拉泰奥多里构造 测度扩张定理, 勒贝格测度, 长度与面积 \entry{复测度与哈恩分解}
+
+% \chapter{可测函数} \label{cpt_86}
+%---------------------------------------
+% 简单函数 \entry{可测函数} \entry{分布律} \entry{按测度收敛} \entry{几乎处处收敛} \entry{叶戈洛夫定理} \entry{可测函数按连续函数逼近}
+
+\chapter{勒贝格积分} \label{cpt_87}
+---------------------------------------
+\entry{Lebesgue 积分}{Lebes1}
+\entry{Lebesgue 积分的一些补充性质}{Lebes2}
+\entry{Lebesgue 可积的函数}{LIntFn}
+\entry{勒贝格控制收敛定理}{LebDC}
+% 单调收敛定理 与黎曼积分的关系 控制收敛定理 傅比尼定理 赫尔德不等式与闵科夫斯基不等式 一致可积性 应用: 绝对收敛的含参数积分 换元公式 长度与面积的计算
+
+% \chapter{广义函数} \label{cpt_88}
+% %-------------------------------------
+\entry{复值测度与广义函数}{GenFun}
+% 拉东-尼科蒂姆定理
+
+\chapter{函数} \label{cpt_89}
+---------------------------------------
+% Giacomo: 不知道该叫什么名字
+\entry{赫尔德条件}{HolFun}
+% 有界变差函数 绝对连续函数 绝对连续函数的牛顿-莱布尼兹公式
+% \entry{扬氏不等式与逼近}  \entry{黑利选择原理} \entry{极大函数}
+
+\part{偏微分方程} \label{prt_PDE}
+%======================================
+\chapter{偏微分方程的解法} \label{cpt_90}
+%---------------------------------------
+% Giacomo: 不知道怎么起名，有更合适的可以改
+\entry{一阶线性偏微分方程与常微分方程组的等价性}{LPaODE}
+\entry{分离变量法解偏微分方程}{SepVar}
+\entry{格林函数解线性非齐次微分方程}{GreenF}
+
+\entry{拉普拉斯方程}{LapEq}
+\entry{调和函数}{HarFun}
+\entry{泊松方程}{PoiEqu}
+\entry{球坐标系中的偏微分算符}{SphNab}
+\entry{球坐标系中的拉普拉斯方程}{SphLap}
+\entry{柱坐标系中的矢量算符}{CylNab}
+\entry{柱坐标系中的拉普拉斯方程}{CylLap}
+
+\entry{三维直角坐标系中的亥姆霍兹方程}{RHM}
+\entry{球坐标系中的亥姆霍兹方程}{SphHHz}
+\entry{柱坐标中的亥姆霍兹方程}{CylHlm}
+
+\entry{分离变量法与张量积空间}{SVarDP}
+
+\entry{（低阶）偏微分方程的分类与特征线}{chacur}
+
+% \chapter{椭圆型偏微分方程} \label{cpt_91}
+%---------------------------------------
+% 赫尔德空间, 索伯列夫空间 I, 索伯列夫空间 II, 椭圆微分算子, 流形上的椭圆微分算子, 位势积分, 等温坐标, 椭圆正则性理论 I, 椭圆正则性理论 II, 椭圆正则性理论 III, 自伴椭圆微分算子的谱, 外尔律, 听音辨鼓问题, 椭圆复形, 流形上的霍奇分解
+
+\chapter{特殊函数} \label{cpt_92}
+%---------------------------------------
+\entry{勒让德多项式}{Legen}
+\entry{连带勒让德函数}{AsLgdr}
+\entry{Hermite 多项式}{HermiP}
+\entry{贝塞尔函数}{Bessel}
+\entry{球贝塞尔函数}{SphBsl}
+\entry{球谐函数}{SphHar}
+\entry{实球谐函数}{RYlm}
+\entry{球谐函数表}{YlmTab}
+\entry{连带拉盖尔多项式}{Laguer}
+\entry{双 Gamma 函数}{digama}
+\entry{Wigner D 矩阵、球谐函数的旋转}{WigDmt}
+\entry{平面波的球谐展开}{Pl2Ylm}
+\entry{库仑势能的球谐展开}{PChYlm}
+\entry{球谐展开中径向函数的归一化}{FrNorm}
+\entry{广义球谐函数}{GenYlm}
+\entry{误差函数}{Erf}
+\entry{黎曼 zeta 函数}{RiZeta}
+\entry{虚误差函数}{Erfi}
+\entry{超几何函数}{HypGeo}
+\entry{Kummer 函数（1F1）}{Kummer}
+\entry{椭圆积分}{EliInt}
+\entry{库仑函数}{CulmF}
+\entry{艾里函数}{AiryF}
+\entry{三角积分}{TriInt}
+
+\part{泛函分析} \label{prt_Funal}
+%====================================
+\chapter{拓扑向量空间、巴拿赫空间和希尔伯特空间} \label{cpt_93}
+%---------------------------------------
+\entry{拓扑向量空间}{tvs}
+\entry{赋范空间（泛函分析）}{NormV}
+\entry{里斯引理（泛函分析）}{RiLem}
+\entry{巴拿赫空间}{banach}
+\entry{巴拿赫定理}{BanThm}
+% $L^p$空间
+% \entry{里斯表示定理I: $L^p$空间} \entry{里斯表示定理II: 博雷尔测度}
+% {弱拓扑与弱星拓扑} {可分空间中的弱拓扑} {$L^p$空间中的弱列紧性} {$L^1$空间中的弱列紧性} {测度族的胎紧性} {测度的弱收敛}
+% {半范数} {线性泛函} {哈恩-巴拿赫定理} {对偶空间} {弱拓扑} {弱紧与弱列紧} {弗雷歇空间} {巴拿赫定理(续)} {实例}
+
+% \chapter{希尔伯特空间} \label{cpt_95}
+% %---------------------------------------
+\entry{希尔伯特空间}{Hilber}
+% {里斯表示定理III: 希尔伯特空间}
+% 拉克斯-米尔格兰姆定理
+\entry{装备希尔伯特空间}{RHS}
+\entry{宇称算符}{Parity}
+
+% \chapter{广义函数与傅里叶变换} \label{cpt_96}
+% %---------------------------------------
+\entry{广义函数}{GenFut}
+% {试验函数与施瓦兹函数} {广义函数与缓增广义函数} %entry{分布导数} {傅里叶变换} {帕塞瓦尔定理} {卷积}
+
+\chapter{有界算子的谱论} \label{cpt_97}
+%---------------------------------------
+\entry{有界算子的谱}{BddSpe}
+\entry{有界算子的预解式}{BddRsv}
+\entry{谱半径}{SpeRad}
+% {算子的函数}
+\entry{谱投影}{SpePrj}
+\entry{例: 有限维方阵}{SpeMat}
+% {紧线性算子} {里斯-邵德尔理论} {例: 弗雷德霍姆积分方程} {例: 具有平方可积核的积分方程} {紧自伴算子} {希尔伯特-施密特算子}
+
+%\chapter{扩展: 巴拿赫代数} \label{cpt_98}
+% {巴拿赫代数} {元素的谱} {盖尔范德表示}
+
+%\chapter{闭算子的谱论} \label{cpt_99}
+% {无界算子} {闭算子} {第一与第二预解公式} {外尔序列} {离散谱与本质谱} {伴随算子} {自伴算子} {弗里德里希扩张} {谱测度} {自伴算子的谱定理} {瑞利-里斯定理}
+
+%\chapter{谱微扰论} \label{cpt_100}
+
+\chapter{一元函数的变分学} \label{cpt_101}
+%---------------------------------------
+\entry{绝对极值与相对极值（变分学）}{AbPol}
+\entry{可取曲线（变分学）}{DesCur}
+\entry{变分}{Varia}
+\entry{极值的必要条件（变分学）}{PolReq}
+\entry{变分的变换（变分学）}{VarCha}
+\entry{变分的基本定理（变分学）}{VarDef}
+\entry{欧拉方程（变分学）}{ElueEV}
+\entry{二次变分}{SecVar}
+\entry{极端曲线}{ExtCur}
+\entry{端点可变问题}{EPQue}
+\entry{斜截条件}{OCCond}
+\entry{多元函数泛函的极值}{MulFP}
+\entry{条件极值问题与拉格朗日方法}{CPLM}
+
+\chapter{笔记} \label{cpt_102}
+%---------------------------------------
+\entry{泛函分析笔记 1}{FnalNt}
+\entry{泛函分析笔记 2}{FnalN2}
+\entry{泛函分析笔记 3}{FnalN3}
+\entry{泛函分析笔记 4}{FnalN4}
+\entry{泛函分析笔记 5}{FnalN5}
+
+\part{物理学中的数学方法} \label{prt_MathPh}
+%======================================
+% 来画个大饼（
+%   大家有想法的可以来写相关文章啊
+% 
+%   可以参考 Nakahara 的目录。
+%
+%   微分流形（有区别于数学文章）
+%   拓扑（一些物理当中比较重要的概念）
+%   李群李代数，李群李代数的表示
+%   纤维丛，示性类
+%   
+\chapter{群表示论(面向物理，偏应用)} \label{cpt_103}
+%--------------------------------------
+\entry{群的矩阵表示及实例}{gprep}
+\entry{群代数与正则表示}{gpalg}
+\entry{表示的约化}{redrep}
+\entry{群函数}{gpfun}
+\entry{舒尔引理（Schur's lemma）}{Schlem}
+
+\chapter{李群和李代数} \label{cpt_104}
+%--------------------------------------
+% 矩阵李群
+% 伽利略群和它的李代数
+\entry{洛伦兹群的李代数}{lielot}
+% SU(2) 的表示分类（粒子自旋）
+% SO(3) 的表示分类（球谐函数）
+% SU(2),SO(3) 的拓扑性质（基本群），以及它与费米子、玻色子分类的关系
+
+
+\part{经典力学} \label{prt_ClaMec}
+%======================================
+\chapter{质点运动学} \label{cpt_105}
+%--------------------------------------
+\entry{物理量和单位转换}{Units}
+\entry{无量纲的物理公式}{NoUnit}
+\entry{位置矢量、位移}{Disp}
+\entry{速度、加速度（一维）}{VnA1}
+\entry{速度、加速度}{VnA}
+\entry{位移与路程}{DPAS}
+\entry{圆周运动的速度}{CMVD}
+\entry{圆周运动的加速度}{CMAD}
+\entry{匀加速直线运动}{CnstAL}
+\entry{匀加速运动}{ConstA}
+\entry{曲线运动的加速度}{PCuvMo}
+\entry{极坐标中的速度和加速度}{PolA}
+\entry{伽利略变换}{GaliTr}
+\entry{速度的坐标系变换（无转动）}{Vtrans}
+\entry{速度的坐标系变换}{Vtran2}
+\entry{加速度的参考系变换}{AccTra}
+
+\chapter{质点动力学} \label{cpt_106}
+%---------------------------------------
+\entry{力的合成与分解}{Fdecom}
+\entry{绳结的受力分析}{Knot}
+\entry{牛顿运动定律、惯性系}{New3}
+\entry{圆周运动的向心力}{CentrF}
+\entry{重力、重量}{Weight}
+\entry{功、功率}{Fwork}
+\entry{动能、动能定理（单个质点）}{KELaw1}
+\entry{势能（简介）}{POTENT}
+\entry{力场、保守场、势能}{V}
+\entry{状态量和过程量}{StaPro}
+\entry{机械能守恒（单个质点）}{ECnst}
+\entry{动量、动量定理（单个质点）}{PLaw1}
+\entry{角动量、角动量定理、角动量守恒（单个质点）}{AMLaw1}
+\entry{质点问题（摘要）}{MPAB}
+\entry{简谐振子（经典力学）}{SHO}
+\entry{多自由度简谐振子（经典力学）}{MSHO}
+\entry{受阻落体}{RFall}
+\entry{单摆}{Pend}
+\entry{圆锥摆}{ConPen}
+\entry{傅科摆的角速度推导}{Fouclt}
+\entry{非惯性参考系、惯性力}{Iner}
+\entry{滑块和运动斜面问题}{blkSlp}
+\entry{离心力}{Centri}
+\entry{科里奥利力}{Corio}
+\entry{旋转参考系的 “机械能守恒”}{Rconst}
+\entry{地球表面的科里奥利力}{ErthCf}
+\entry{地球表面的力}{FOE}
+\entry{潮汐力}{Tidal}
+\entry{相对性原理}{RELTHM}
+\entry{位力定理}{CM01}
+
+\chapter{质点系} \label{cpt_108}
+%---------------------------------------
+\entry{自由度}{DoF}
+\entry{质点系}{PSys}
+\entry{质心的定义}{CM}
+\entry{质心参考系}{CMfram}
+\entry{质点系（摘要）}{MPTA}
+\entry{质点系的动量}{SysMom}
+\entry{动量定理、动量守恒、质心的牛顿第二定律}{PLaw}
+\entry{质点系的动能、柯尼希定理}{Konig}
+\entry{力矩}{Torque}
+\entry{系统的角动量}{AngMom}
+\entry{角动量定理、角动量守恒}{AMLaw}
+\entry{二体系统}{TwoBD}
+\entry{二体碰撞}{TwoCld}
+
+\chapter{刚体} \label{cpt_109}
+%---------------------------------------
+% \entry{【导航】刚体运动}{RigBod}
+\entry{刚体}{RigBd}
+\entry{刚体的平面运动（摘要）}{RGAB}
+\entry{轻杆模型}{rod}
+\entry{木块堆叠问题（里拉斜塔）}{LireTo}
+\entry{刚体的静力平衡}{RBSt}
+\entry{刚体定轴转动、转动惯量}{RigRot}
+\entry{平行轴定理、垂直轴定理、可加性定理}{MIthm}
+\entry{常见几何体的转动惯量}{ExMI}
+\entry{刚体的平面运动方程}{RBEM}
+\entry{惯性张量}{ITensr}
+\entry{刚体的惯量主轴}{PrncAx}
+\entry{刚体的瞬时转轴、角速度的矢量相加}{InsAx}
+\entry{刚体定轴转动 2}{RBrot2}
+\entry{纯滚动}{Pscrol}
+\entry{转动与平动的类比}{RATC}
+\entry{刚体定轴转动的力矩做功、动能、动能定理}{RigEng}
+\entry{刚体的动能、动能定理}{RBKE}
+\entry{刚体的运动方程}{RBEqM}
+\entry{刚体定点旋转的运动方程（欧拉角）}{RigEul}
+\entry{刚体运动方程（四元数）}{RBEMQt}
+\entry{简单刚体系统的静力学分析}{RGDFA}
+\entry{滑动还是翻转}{SDOTN}
+
+\chapter{材料力学} \label{cpt_110}
+%---------------------------------------
+\entry{刚体的内力}{INTFRC}
+\entry{应力}{STRESS}
+\entry{斜面应力公式}{CHYSTR}
+\entry{主应力}{PRSTR}
+\entry{位移与应变}{Strain}
+\entry{杨氏模量、泊松比、剪切模量、广义胡克定律的基本形式}{YoungM}
+\entry{广义胡克定律（弹性力学本构关系）}{ELACST}
+\entry{应力-应变曲线}{SSCUR}
+\entry{应力、应变场的唯一性与叠加原理}{SSPRN}
+
+\chapter{软体和流体力学} \label{cpt_111}
+%---------------------------------------
+\entry{浮力的计算（散度公式）}{Boya2}
+\entry{绳的法向压力}{RopeFP}
+\entry{悬链线}{Catena}
+\entry{流体和固体}{SLG}
+\entry{流、流密度}{CrnDen}
+\entry{伯努利方程}{Bernul}
+\entry{黏度}{viscos}
+\entry{流体运动的描述方法}{fluid1}
+\entry{物质导数（实质导数）}{fluid2}
+\entry{流体力学守恒方程}{fluidC}
+\entry{Navier-Stokes 方程}{NSeq}
+\entry{流体力学方程组}{fluidE}
+% {流体力学的控制方程}
+\entry{流体的控制方程}{scp999}
+
+\chapter{振动与波动} \label{cpt_112}
+%---------------------------------------
+\entry{振动的指数形式}{VbExp}
+\entry{能量法解谐振动问题}{EnerVi}
+\entry{拍频}{beatno}
+\entry{受阻简谐振子}{SHOf}
+\entry{简谐振子的品质因数}{SHOq}
+\entry{简谐振子受迫运动}{SHOfF}
+\entry{弹簧的串联和并联}{Spring}
+\entry{共振}{ResoN}
+\entry{平面简谐波}{PWave}
+\entry{横波与纵波}{LAT}
+\entry{驻波}{StaWav}
+\entry{波包}{WvPck}
+\entry{高斯波包}{GausPk}
+\entry{cos2 波包}{cos2wp}
+\entry{群速度}{GroupV}
+\entry{多普勒效应（一维匀速）}{Dople1}
+\entry{多普勒效应}{Dopler}
+\entry{一维波动方程}{WEq1D}
+% 未完成 边界条件 (两条密度不同的绳子)
+\entry{二维波动方程}{Wv2D}
+\entry{波的能量}{WaEner}
+\entry{波的强度}{WaInte}
+\entry{冲击波}{ShoWav}
+
+\chapter{中心力场问题} \label{cpt_113}
+%---------------------------------------
+\entry{万有引力、引力势能}{Gravty}
+\entry{壳层定理、均匀球体的引力场}{SphF}
+\entry{开普勒三定律}{Keple}
+\entry{中心力场问题}{CenFrc}
+\entry{开普勒问题}{CelBd}
+\entry{开普勒问题的运动方程}{EqMoKp}
+\entry{拉普拉斯—龙格—楞次矢量}{LRLvec}
+\entry{轨道方程、比耐公式}{Binet}
+\entry{开普勒第一定律的证明}{Keple1}
+\entry{开普勒第二和第三定律的证明}{Keple2}
+\entry{散射}{Scater}
+\entry{卢瑟福散射}{RuthSc}
+\entry{闭合轨道的条件}{ClsOrb}
+\entry{Bohr-Sommerfeld 原子模型}{BohrEc}
+\entry{狭义相对论效应造成的近日进动}{relPre}
+
+\chapter{分析力学} \label{cpt_114}
+%---------------------------------------
+\entry{欧拉—拉格朗日方程（经典力学）}{Lagrng}
+\entry{约束及其分类}{Restri}
+\entry{广义力}{LagEqQ}
+\entry{虚位移、虚功、虚功原理}{VirWrk}
+\entry{拉格朗日方程和极值问题}{LagPrb}
+\entry{贝尔特拉米等式}{Beltra}
+\entry{最速降线问题}{Brachi}
+\entry{单摆（大摆角）}{SinPen}
+\entry{双摆和三摆}{Pendu3}
+\entry{小振动}{Oscil}
+\entry{拉格朗日方程的证明、达朗贝尔原理}{dAlbt}
+\entry{最小作用量、哈密顿原理}{HamPrn}
+\entry{运动积分}{motint}
+\entry{端点可变的作用量}{EPAct}
+\entry{莫培督原理}{MPri}
+\entry{二体问题（分析力学）}{twoobj}
+\entry{勒让德变换}{TrLgdr}
+\entry{哈密顿正则方程}{HamCan}
+\entry{泊松括号}{poison}
+\entry{正则变换}{CanTra}
+\entry{正则变换 2}{ClsMec}
+\entry{哈密顿—雅可比方程}{HJeq}
+\entry{浸渐不变量}{ConAdi}
+
+\chapter{轨道力学} \label{cpt_115}
+%---------------------------------------
+\entry{二体问题综述}{ConDB}
+\entry{轨道参数、时间变量}{OribP}
+\entry{限制性三体问题}{TriLim}
+\entry{雅可比常量}{JacCon}
+\entry{雅可比常量2}{JConst}
+\entry{拉格朗日点}{LPoint}
+\entry{光子火箭}{PhRoc}
+\entry{太空电梯}{SpcLad}
+
+\part{光学} \label{prt_Optics}
+%======================================
+\chapter{几何光学} \label{cpt_116}
+%---------------------------------------
+\entry{惠更斯原理}{Huygen}
+\entry{光的折射、斯涅尔定律}{Snel}
+\entry{相移}{PhaSft}
+\entry{薄透镜}{ThnLen}
+
+\chapter{波动光学} \label{cpt_117}
+%---------------------------------------
+\entry{可见光谱}{VisSpt}
+\entry{双缝干涉中一个重要极限}{SltLim}
+\entry{干涉、光强的余弦平方分布}{IntCos}
+\entry{杨氏双缝干涉实验}{Young}
+% \entry{衍射}{optics}
+% {单缝衍射} {多缝衍射} {薄膜干涉}% 例如牛顿环、楔形薄膜
+\entry{劳埃德镜实验}{Lloyd}
+\entry{普通光源的发光机理}{LumiMe}
+\entry{激光原理}{LaserT}
+\entry{单色光}{MonoLi}
+% \entry{偏振光}{PolLig}
+\entry{高斯光束}{GausBm}
+\entry{晶体衍射}{CrysDf}
+\entry{高斯光束 2}{FMGB}
+\entry{高斯光束 3}{GBeam}
+\entry{偏振光三维视角代码（Mathematica）}{PLCode}
+
+\part{电动力学} \label{prt_EM}
+%======================================
+\chapter{静电学} \label{cpt_118}
+%---------------------------------------
+\entry{厘米—克—秒单位制}{CGS}
+\entry{高斯单位制}{GaussU}
+\entry{库仑定律}{ClbFrc}
+\entry{电场}{Efield}
+\entry{电势、电势能}{QEng}
+\entry{电偶极子}{eleDpl}
+\entry{电偶极子 2}{eleDP2}
+\entry{电场的高斯定律}{EGauss}
+\entry{电场的高斯定律证明}{EGausP}
+\entry{静电场的环路定理}{ELECLD}
+\entry{静电势的泊松方程}{EPoiEQ}
+\entry{静电边值条件与唯一性定理}{empoi}
+\entry{电场的能量}{EEng}
+\entry{点电荷模型与连续电荷模型的缺陷}{elecdb}
+
+\chapter{静磁学} \label{cpt_119}
+%---------------------------------------
+\entry{洛伦兹力}{Lorenz}
+\entry{安培力}{FAmp}
+\entry{电流}{I}
+\entry{电流密度}{Idens}
+\entry{磁场}{MagneF}
+\entry{磁矩}{MagMom}
+\entry{磁偶极矩}{Bdipol}
+\entry{磁场的高斯定律}{MagGau}
+\entry{磁通量}{BFlux}
+\entry{磁场的能量}{BEng}
+\entry{安培环路定律（静磁学）}{AmpLaw}
+\entry{毕奥—萨伐尔定律}{BioSav}
+\entry{磁场中闭合电流的合力}{EBLoop}
+\entry{磁场中闭合电流的力矩}{EBTorq}
+
+\chapter{电磁学与麦克斯韦方程组} \label{cpt_120}
+%---------------------------------------
+\entry{法拉第电磁感应定律}{FaraEB}
+\entry{位移电流、安培—麦克斯韦公式}{DisCur}
+\entry{电荷守恒、电流连续性方程}{ChgCsv}
+\entry{麦克斯韦方程组}{MWEq}
+\entry{电磁场标势和矢势}{EMPot}
+\entry{电磁场的规范变换}{Gauge}
+\entry{洛伦兹规范}{LoGaug}
+\entry{库仑规范（电动力学）}{Cgauge}
+\entry{磁标势}{elecdy}
+\entry{磁矢势}{BvecA}
+\entry{电磁场的能量守恒、坡印廷矢量}{EBS}
+
+\chapter{介质} \label{cpt_121}
+%---------------------------------------
+\entry{导体}{Cndctr}
+\entry{导体的静电平衡}{MetEqv}
+\entry{霍尔效应}{Hallef}
+\entry{电介质摘要}{DLT}
+\entry{磁介质摘要}{MGNT}
+\entry{电介质的简单模型}{dieleS}
+\entry{电介质的微观结构}{Dielec}
+\entry{电极化强度}{ElecPo}
+\entry{电极化强度与极化电荷的关系}{ElePAP}
+\entry{介质中的静电场}{EFIDE}
+\entry{极化电流}{PolCur}
+\entry{分子电流和分子磁矩}{MoMaMo}
+\entry{磁介质}{MagMat}
+\entry{磁化强度}{MaInte}
+\entry{顺磁质的磁化}{ParaMa}
+\entry{抗磁质的磁化}{DiaMaM}
+\entry{有磁介质时的安培环路定律}{MaAmpe}
+\entry{静电场与静磁场（总结）}{estfid}
+\entry{动态电磁场问题（总结）}{dynfld}
+\entry{麦克斯韦方程组（介质）}{MWEq1}
+\entry{介质的边界条件}{mbdy}
+\entry{电磁场波动方程（均匀介质）}{MedWF}
+\entry{导体中的电磁波}{MetalW}
+
+\chapter{电路} \label{cpt_122}
+%---------------------------------------
+\entry{电路}{Circ}
+\entry{电压和电动势}{Voltag}
+\entry{电阻、欧姆定律、电阻率、电导率}{Resist}
+\entry{基尔霍夫电路定律}{Kirch}
+\entry{电感}{Induct}
+\entry{电容}{Cpctor}
+\entry{电阻的串联和并联}{Rcomb}
+\entry{电感的串联和并联}{IndCmb}
+\entry{电容的串联和并联}{Ccomb}
+\entry{LC 振荡电路}{LC}
+% \entry{LRC 电路}{LRCcir}
+\entry{力电振动类比}{MeElec}
+\entry{LC 受迫振荡电路}{EleRes}
+\entry{LR 电路}{LRC}
+\entry{Y-Δ 变换、星角变换}{Tri2St}
+\entry{电容—电阻电路充放电曲线}{RCcurv}
+\entry{惠斯通电桥}{WheBrg}
+\entry{阻抗、电抗}{impeda}
+\entry{电抗、容抗、感抗}{CapRea}
+
+\chapter{电磁波} \label{cpt_123}
+%---------------------------------------
+\entry{电场波动方程}{EWEq}
+\entry{真空中的平面电磁波}{VcPlWv}
+\entry{简单的偏振电磁波}{PLREMW}
+\entry{平面电磁波的能量叠加}{PwvAdd}
+\entry{时谐电磁波}{TSEBW}
+\entry{电磁波包的能谱}{WpEng}
+\entry{菲涅尔公式、布儒斯特角、临界角、内反射与外反射}{Fresnl}
+\entry{盒中的电磁波}{EBBox}
+% 边界条件，波动光学简介、波导与谐振腔，TE 波，TM 波……
+
+\chapter{电动力学} \label{cpt_124}
+%---------------------------------------
+\entry{电多极展开（球坐标）}{EMulPo}
+\entry{格林函数与静电边值问题}{EleGr}
+\entry{磁多极矩}{edy33}
+\entry{电磁场推迟势}{RetPt0}
+\entry{电偶极子辐射}{DipRad}
+\entry{李纳维谢尔势}{LWP}
+\entry{带电粒子的辐射}{chgrad}
+\entry{磁单极子}{BMono}
+\entry{恩绍定理}{earnsh}
+\entry{非齐次亥姆霍兹方程、推迟势}{RetPot}
+\entry{磁旋比、玻尔磁子}{BohMag}
+
+\chapter{电磁学与经典场论} \label{cpt_125}
+%---------------------------------------
+\entry{电磁场的动量守恒、动量流密度张量}{EBP}
+\entry{电磁场的参考系变换}{EMRef}
+\entry{拉格朗日电磁势}{EMLagP}
+\entry{电磁场中粒子的拉氏量}{ElecLS}
+\entry{电磁场的作用量}{ElecS}
+\entry{电磁场角动量分解}{EMAMSp}
+\entry{电磁场张量}{EMFT}
+\entry{电磁场的能动张量}{EMtens}
+
+\part{相对论} \label{prt_Relati}
+%======================================
+\chapter{狭义相对论} \label{cpt_126}
+%---------------------------------------
+% 需要多加几篇文章进行举例来帮助初学者理解
+\entry{光速不变假设的一些误解和历史}{SpeRel}
+\entry{事件与尺缩效应}{SRsmt}
+\entry{时间的变换与钟慢效应}{SRtime}
+\entry{洛伦兹变换}{SRLrtz}
+\entry{四维矢量}{vect2}
+\entry{斜坐标系}{ObSys}
+\entry{斜坐标系表示洛伦兹变换}{SROb}
+\entry{自然单位制、普朗克单位制}{NatUni}
+\entry{约化光速}{SRc}
+\entry{洛伦兹变换的代数推导}{LornzT}
+\entry{相对论速度变换}{RelVel}
+\entry{相对论加速度变换}{SRAcc}
+\entry{时空的四维表示}{SR4Rep}
+\entry{闵可夫斯基空间}{MinSpa}
+\entry{双生子佯谬}{Twins}
+\entry{光的多普勒效应}{RelDop}
+\entry{洛伦兹群}{qed1}
+\entry{托马斯进动}{TmsPrs}
+
+\chapter{狭义相对论（二）} \label{cpt_127}
+%这一节更强调数学上严谨和完备的表达，让读者习惯四矢量、张量的基本运算以及熟悉洛伦兹代数的基本结构
+%------------------------------
+\entry{世界线和固有时}{wdline}
+\entry{观测者的标架矢量}{tetrad}
+\entry{狭义相对论的运动学（有质量粒子）}{SRkine}
+\entry{狭义相对论的运动学（无质量粒子和多普勒效应）}{SRkmls}
+\entry{狭义相对论与洛伦兹对称性}{SRrefe}
+\entry{协变矢量、逆变矢量与指标升降}{vecspr}
+
+\chapter{相对论动力学} \label{cpt_128}
+%---------------------------------------
+\entry{相对论动力学假设}{SRDyn}
+\entry{闵可夫斯基时空中的能动张量}{SRFld}
+
+
+\chapter{广义相对论} \label{cpt_129}
+%---------------------------------------
+\entry{引力红移}{grared}
+\entry{施瓦西度规下时空的测地线}{grScGe}
+\entry{引力的弱场近似}{WeakG}
+\entry{爱因斯坦场方程}{EinEqn}
+\entry{爱因斯坦场方程（含宇宙项）}{EinEq2}
+\entry{因果结构}{Causal}
+\entry{广义相对论中的对称性和 Killing 矢量场}{GR}
+\entry{线性引力}{LinGra}
+\entry{ADM 形式}{ADMF}
+
+\chapter{引力波} \label{cpt_166}
+%---------------------------------------
+\entry{引力波的几何描述}{Geomet}
+\entry{TT 规范}{TTGaug}
+\entry{引力波和测试质量的相互作用}{intera}
+
+
+\part{经典场论} \label{prt_ClaFld}
+%======================================
+\chapter{基本思想} \label{cpt_130}
+%---------------------------------------
+\entry{相空间和相流}{PSaPF}
+\entry{从分析力学到场论}{CFa1}
+\entry{场与粒子的相互作用}{IntFP}
+
+\chapter{狭义相对论动力学} \label{cpt_131}
+%---------------------------------------
+\entry{自由粒子拉格朗日函数（狭义相对论）}{FPLSR}
+
+\chapter{电动力学} \label{cpt_132}
+\entry{麦克斯韦方程组（外微分形式）}{MWEq2}
+
+
+\part{量子力学} \label{prt_QM}
+%======================================
+% 未完成 束缚态的一般性质: 节点数, 对称性 (偶势能的基态是偶函数), 简并性(一维情况不简并)
+
+\chapter{入门} \label{cpt_133}
+%---------------------------------------
+\entry{【导航】量子力学}{QMmap}
+\entry{量子力学的诞生}{QMborn}
+\entry{玻尔原子模型}{BohrMd}
+\entry{玻尔原子模型（约化质量）}{HRMass}
+\entry{原子单位制}{AU}
+\entry{指数衰减}{ExpDec}
+\entry{精细结构常数}{FinStr}
+
+\chapter{一般理论} \label{cpt_134}
+%---------------------------------------
+\entry{狄拉克符号}{braket}
+\entry{量子力学的基本原理（量子力学）}{QMPrcp}
+\entry{量子力学中的基本算符}{OprQM}
+\entry{Stern-Gerlach 实验}{SGExp}
+\entry{量子力学与矩阵}{QMmat}
+\entry{量子力学的算符和本征问题}{QM1}
+\entry{算符对易性（量子力学）}{ComOpQ}
+\entry{平均值（量子力学）}{QMavg}
+\entry{守恒量（量子力学）}{QMcons}
+\entry{Ehrenfest 定理}{Ehrenf}
+\entry{概率流密度}{PrbJ}
+\entry{可观测量的相容性}{MsrCmp}
+\entry{不确定性原理}{Uncert}
+\entry{Wigner 基本定理}{WigThe}
+
+\chapter{单粒子一维问题} \label{cpt_135}
+%---------------------------------------
+\entry{平面波的的正交归一化}{EngNor}
+\entry{薛定谔方程（单粒子一维）}{TDSE11}
+\entry{量子散射（一维）}{Sca1D}
+\entry{一维散射态的正交归一化}{ScaNrm}
+\entry{定态薛定谔方程（单粒子一维）}{SchEq}
+\entry{位置表象和动量表象}{moTDSE}
+\entry{好量子数}{GoodQN}
+\entry{算符的矩阵表示}{OpMat}
+
+\chapter{单粒子多维问题} \label{cpt_136}
+%---------------------------------------
+\entry{薛定谔方程（单粒子多维）}{QMndim}
+\entry{薛定谔方程 2（单粒子多维）}{TDSE}
+\entry{薛定谔方程的分离变量法}{SEsep}
+\entry{氢原子的定态薛定谔方程（球坐标）}{RadSE}
+\entry{氢原子的含时薛定谔方程（球坐标）}{RYTDSE}
+\entry{柱坐标系中的薛定谔方程}{CyliSE}
+\entry{轨道角动量（量子力学）}{QOrbAM}
+\entry{轨道角动量升降算符归一化}{QLNorm}
+\entry{球坐标系中的轨道角动量算符}{SphAM}
+\entry{泡利矩阵}{pauliM}
+\entry{自旋角动量}{Spin}
+\entry{自旋角动量矩阵}{spinMt}
+\entry{自旋 1/2 粒子的非相对论波函数}{scheq2}
+\entry{角动量的叠加（量子力学）}{AdAngM}
+\entry{角动量的叠加 2（量子力学）}{AMAdd}
+\entry{算符的指数函数、波函数传播子}{OpExp}
+\entry{拉莫尔进动}{Larmor}
+\entry{平移算符}{tranOp}
+\entry{旋转算符}{rotOp}
+
+\chapter{多粒子问题} \label{cpt_137}
+%---------------------------------------
+\entry{多体薛定谔方程}{NbdQM}
+\entry{全同粒子}{IdPar}
+\entry{泡利不相容原理}{PauliE}
+\entry{粒子交换算符}{ExchOp}
+\entry{量子态的对称化与反对称化}{symetr}
+\entry{全同粒子的交换力}{ExchF}
+\entry{Clebsch–Gordan 系数}{SphCup}
+\entry{Wigner 3j 符号}{ThreeJ}
+\entry{Wigner 6j 符号}{SixJ}
+\entry{Wigner 9j 符号}{NineJ}
+
+\chapter{定态问题} \label{cpt_138}
+%---------------------------------------
+\entry{无限深方势阱}{ISW}
+\entry{一维有限深方势阱}{FSW}
+\entry{方势垒}{SqrPot}
+\entry{无限深阶梯势阱}{StpPot}
+\entry{有限深不对称方势阱}{AMW}
+\entry{阶梯势能散射}{StepV}
+\entry{升降算符}{RLop}
+\entry{量子简谐振子（升降算符法）}{QSHOop}
+\entry{简谐振子升降算符归一化}{QSHOnr}
+\entry{量子简谐振子（级数法）}{QSHOxn}
+\entry{一维自由粒子（量子）}{FreeP1}
+\entry{一维 delta 势能散射}{Dsc1D}
+\entry{一维 delta 势能晶格}{DelCry}
+\entry{线性势能的定态薛定谔方程}{LinPot}
+\entry{不含时微扰理论（量子力学）}{TIPT}
+\entry{含连续态的不含时微扰理论（量子力学）}{TIPTc}
+\entry{二阶不含时微扰理论（量子力学）}{TIPT2}
+% \entry{一维薛定谔方程的格林函数}{adaf}
+\entry{WKB 近似}{WKB}
+\entry{二维无限深方势阱}{ISW2D}
+% \entry{二维有限深方势阱}{FSW2D}
+\entry{无限深圆形势阱}{CirISW}
+\entry{无限深球势阱}{ISphW}
+\entry{有限深球势阱}{FiSph}
+\entry{三维量子简谐振子（球坐标系）}{SHOSph}
+
+\chapter{含时问题} \label{cpt_139}
+%---------------------------------------
+\entry{拉比频率}{RabiF}
+\entry{一维自由高斯波包（量子）}{GausWP}
+\entry{含时微扰理论（束缚态）}{TDPT}
+\entry{含时微扰理论}{TDPTc}
+\entry{几种含时微扰}{TDPEx}
+\entry{费米黄金法则}{FermGR}
+\entry{绝热近似（量子力学）}{AdiaQM}
+\entry{含时微扰理论（绝热）}{AdiaPT}
+
+\chapter{量子散射} \label{cpt_140}
+%---------------------------------------
+\entry{量子散射（单粒子弹性）}{ParWav}
+\entry{量子散射的波恩近似}{BornSc}
+\entry{球面散射态与平面散射态的转换}{Scatt2}
+\entry{Lippmann-Schwinger 方程}{LipSch}
+\entry{含时散射的形式理论}{TDFSc}
+\entry{库仑散射（量子）}{CulmWf}
+\entry{波包的延迟（量子力学）}{tDelay}
+\entry{光电离时间延迟：一维波包、氢原子与氦原子}{HeAna2}
+% \entry{氢原子的 streaking 计算}{HyCLC}
+\entry{多通道散射}{MulSct}
+\entry{多通道散射中的绝热基底}{Adibat}
+\entry{R-矩阵法（量子力学）}{Rmat}
+
+
+\chapter{量子力学 2} \label{cpt_141}
+%---------------------------------------
+\entry{量子力学中的变分法、Rayleigh-Ritz 变分法}{QMVar}
+\entry{密度矩阵}{denMat}
+\entry{约化密度矩阵}{partra}
+\entry{质心系中的多粒子问题}{SECM}
+\entry{量子力学的基本假设}{QMPos}
+\entry{电磁场中的薛定谔方程及规范变换}{QMEM}
+\entry{库仑规范（量子力学）}{CouGau}
+\entry{长度规范}{LenGau}
+\entry{速度规范}{LVgaug}
+\entry{加速度规范}{AccGau}
+\entry{Volkov 波函数}{Volkov}
+\entry{薛定谔绘景和海森堡绘景}{HsbPic}
+\entry{相互作用绘景}{QM06}
+\entry{Hartree-Fock 方法}{HarFor}
+\entry{Baker-Hausdorff 公式}{BAHA}
+\entry{超导唯象解释——伦敦方程}{edy34}
+\entry{延迟选择量子擦除实验}{DCQ}
+
+\chapter{量子信息与量子计算} \label{cpt_142}
+%---------------------------------------
+\entry{量子比特}{Qubit}
+\entry{量子系综}{qEns}
+\entry{量子测量}{qmeas}
+\entry{纠缠}{entang}
+\entry{迹距离}{Trdist}
+\entry{保真度}{fideli}
+\entry{von Neumann 熵}{vonNE}
+\entry{EPR 佯谬与定域隐变量理论}{EPR}
+\entry{Bell 不等式与 CHSH 不等式}{chsh}
+\entry{量子信道}{qchanl}
+\entry{量子信息守恒}{QIcons}
+\entry{量子不可克隆定理}{noClo}
+% \entry{量子系统的纯化}{purify}
+
+\chapter{量子力学与量子场论} \label{cpt_143}
+%---------------------------------------
+\entry{前言}{QFIntro}
+\entry{基本概念}{Basics}
+\entry{全同粒子的统计}{IdParS}
+\entry{近似理论：微扰}{AprPtr}
+\entry{角动量 2 （量子力学）}{QMAM}
+% 第六章直接从 sakurai 翻译， 后面的一些内容非常零碎跳过
+\entry{冷原子基本知识}{UCBas}
+\entry{两个原子间的相互作用}{TwoAtF}
+\entry{Feshbach 共振}{FeshRs}
+\entry{BCS-BEC Crossover 的平均场描述}{BCSBEC}
+\entry{BEC 超流}{BECSup}
+\entry{绘景变换与时间演化}{picQFT}
+
+\chapter{原子分子物理} \label{cpt_144}
+%---------------------------------------
+\entry{氢原子基态的波函数}{HWF0}
+\entry{氢原子的束缚态波函数}{HWF}
+\entry{氢原子波函数分析}{Hanaly}
+\entry{氢原子的精细能级结构}{HfineS}
+\entry{氢线（21厘米线）}{HydroL}
+\entry{类氢原子斯塔克效应（微扰）}{HStark}
+\entry{塞曼效应}{ZemEff}
+\entry{抛物线坐标系中的类氢原子定态波函数}{ParaHy}
+\entry{类氢原子的 Stark 效应（抛物线坐标系）}{HStrk2}
+\entry{电磁场中的类氢原子}{EMHydr}
+\entry{跃迁概率（一阶微扰）}{HionCr}
+\entry{单电子跃迁截面（一阶微扰）}{SIcros}
+\entry{氢原子的跃迁偶极子矩阵元、选择定则}{SelRul}
+\entry{氢原子的跃迁偶极子矩阵元计算（束缚态之间）}{HDipM}
+\entry{氢原子的跃迁偶极子矩阵元（束缚态到连续态）}{HyIon2}
+\entry{跃迁偶极子矩阵的三种形式}{DipEle}
+\entry{康普顿散射}{Comptn}
+\entry{电子轨道与元素周期表}{Ptable}
+\entry{能项符号}{TrmSym}
+\entry{兰姆位移}{LambSh}
+\entry{ponderomotive 能量}{Ponder}
+\entry{氢原子隧道电离}{Htunnl}
+\entry{Keldysh 参数}{keldis}
+\entry{单电子原子模型}{SAE}
+\entry{氦原子中的对易算符与能项符号}{HeComu}
+\entry{ADK 电离率}{ADKrat}
+\entry{Floquet 理论}{Floque}
+\entry{布洛赫理论}{Bloch}
+\entry{FROG}{Frog}
+\entry{惰性气体分子林纳德-琼斯势（量子力学）}{LenJoP}
+\entry{双原子分子势能曲线}{dpecs}
+\entry{双原子分子莫尔斯势（量子力学）}{MoPoQM}
+\entry{碱金属原子（量子力学）}{AlkmQM}
+\entry{双原子分子克拉策势（量子力学）}{kratPo}
+
+\chapter{固体物理} \label{cpt_145}
+%---------------------------------------
+\entry{晶格振动导论}{LatVib}
+\entry{一维单原子链晶格}{onatom}
+\entry{一维双原子链晶格}{twatom}
+\entry{晶格动力学}{latdyn}
+% \entry{晶向、晶面}{CryDir}
+\entry{布拉伐格子、基元与原胞}{BraLat}
+\entry{德鲁德模型}{DrudeM}
+\entry{索末菲模型}{SMFM}
+\entry{晶格热容的爱因斯坦理论}{EScap}
+\entry{晶格热容的德拜理论}{Debye}
+% 能带论导航
+\entry{近自由电子模型}{egasmd}
+\entry{紧束缚近似}{tbappx}
+\entry{倒格空间}{RecLat}
+% 能带密度和费米面
+% 晶体能带的对称性
+% 表面电子态
+\entry{电子运动的准经典模型}{cryele}
+\entry{布里渊区}{BriZon}
+
+\part{高等量子力学} \label{prt_QM2}
+%======================================
+% 可以参考的文献
+%   刘觉平 量子力学
+%   喀兴林 高等量子力学
+
+\chapter{动力学} \label{cpt_146}
+%---------------------------------------
+\entry{时间演化算符（量子力学）}{TOprt}
+\entry{戴森级数}{Dyser}
+\entry{传播子（量子力学）}{PpgtQM}
+\entry{路径积分（量子力学）}{PIntQM}
+
+\chapter{多体系统的量子力学} \label{cpt_147}
+%---------------------------------------
+\entry{二次量子化}{SecQua}
+\entry{产生和湮灭}{QMGnr}
+\entry{单体算符}{oneopr}
+\entry{Hubbard 模型}{hubbar}
+\entry{Hartree-Fock 近似}{HFock}
+\entry{内禀反常霍尔效应}{anHe}
+
+% 单体算符
+% 两体算符
+% 简并费米气体
+% 等
+
+% \chapter{非相对论量子力学的对称性} \label{cpt_148}
+% 主要可以参考刘觉平
+% 伽利略变换
+% 伽利略群与它的李代数
+% 通过对称性确定量子力学的动力学变量
+
+% \chapter{路径积分和不可积相位} \label{cpt_149}
+% 路径积分量子化
+% 不可积相位和 AB 效应
+% 磁单极子和 Dirac 电荷量子化条件
+% 绝热定理
+% Berry 相位
+% 非阿贝尔 Berry 相
+% Chern number
+\chapter{相对论量子力学} \label{cpt_150}
+% 这里是一些到相对论量子力学的初步应用，
+% Dirac 方程的初步推导
+% Dirac 方程的非相对论近似
+\entry{泡利方程}{Pauli}
+\entry{电磁场中的狄拉克方程}{DiracE}
+\entry{狄拉克方程的非相对论近似}{DiracB}
+\entry{自旋轨道耦合}{socpl}
+% 经典场论 - 标量场、旋量场、矢量场
+% 洛伦兹群的旋量表示
+% 庞加莱群的李代数
+
+\part{热力学和统计力学} \label{prt_StaMec}
+%======================================
+\chapter{热力学} \label{cpt_151}
+%---------------------------------------
+\entry{【导航】热力学与统计力学}{StatMe}
+\entry{理想气体状态方程}{PVnRT}
+\entry{温度、温标}{tmp}
+\entry{理想气体}{Igas}
+\entry{理想气体的内能}{IdgEng}
+\entry{压强体积图}{PVgraf}
+\entry{热平衡、热力学第零定律}{TherEq}
+\entry{热传导定律}{Heatco}
+\entry{热力学第一定律}{Th1Law}
+\entry{态函数}{statef}
+\entry{盖斯定律与设计路径}{Hess}
+\entry{准静态过程}{Quasta}
+\entry{等压过程}{EqPre}
+\entry{等体过程}{EqVol}
+\entry{等温过程}{EqTemp}
+\entry{热容量}{ThCapa}
+\entry{绝热过程}{Adiab}
+\entry{节流过程}{ttpro}
+\entry{卡诺热机}{Carnot}
+\entry{热力学第二定律}{Td2Law}
+\entry{亥姆霍兹自由能}{HelmF}
+\entry{吉布斯自由能}{GibbsG}
+\entry{熵的宏观定义}{Entrop}
+\entry{热力学关系式}{MWRel}
+\entry{熵的宏观表达式}{MacroS}
+\entry{范德瓦尔斯气体}{Vand}
+\entry{热动平衡判据}{equcri}
+% 混合熵
+%---------------------------------------
+\chapter{多元系和复相系的热力学} \label{cpt_152}
+\entry{多元系热力学导引}{mulTh}
+\entry{理想气体分压定律}{PartiP}
+\entry{理想气体混合的熵变}{IGME}
+\entry{相简介（热力学）}{PHS}
+\entry{摩尔量与偏摩尔量}{ParMol}
+\entry{相变平衡条件}{PhEquv}
+\entry{理想混合物的热力学量}{IMCPTV}
+\entry{相变的热力学量变化}{PTTVC2}
+\entry{克拉伯龙方程}{Clapey}
+\entry{吉布斯相律}{GBPL}
+\entry{饱和蒸汽压}{VaporP}
+\entry{匀晶相图}{ISOMOR}
+\entry{共晶、共析相图}{EUTECT}
+\entry{包晶相图}{PERITC}
+\entry{化学反应平衡}{chemBl}
+\entry{理想气体化学平衡条件}{ICheEq}
+\entry{表面张力}{sftens}
+\entry{杨氏浸润模型}{YNGMDL}
+\entry{Landau-Ginzburg 理论}{LanGin}
+% 铁磁相变
+% Ising 模型
+% 重整化群理论
+% 临界现象与普适性
+% Landau-Ginzburg 理论
+%---------------------------------------
+\chapter{物质的微观经典理论} \label{cpt_153}
+% 能量均分定理
+\entry{气体分子对容器壁的压强}{MolPre}
+\entry{分子平均碰壁数}{AvgHit}
+\entry{气体分子的速度分布}{VelPdf}
+\entry{麦克斯韦—玻尔兹曼分布}{MxwBzm}
+\entry{经典形核理论}{NCLT}
+\entry{晶核的长大}{GGRW}
+
+\chapter{统计力学} \label{cpt_154}
+%---------------------------------------
+% 玻色气体
+% 费米气体
+% 实际气体状态方程（集团展开法）
+\entry{统计物理·微观与宏观之间的桥梁}{statsc}
+\entry{熵的微观定义与玻尔兹曼公式}{entro2}
+\entry{近独立子系、理想玻色气体和费米气体}{depsys}
+\entry{负温度}{negtem}
+\entry{黑体辐射定律}{BBdLaw}
+\entry{维恩位移定律}{WienDs}
+\entry{斯特藩—玻尔兹曼定律}{SteBol}
+\entry{相空间}{PhSpace}
+\entry{刘维尔定理（热力学与统计物理）}{LiouTh}
+\entry{理想气体的状态密度（相空间）}{IdSDp}
+\entry{理想气体单粒子能级密度}{IdED1}
+\entry{玻尔兹曼分布（统计力学）}{MBsta}
+\entry{热力学量的统计表达式（玻尔兹曼分布）}{TheSta}
+\entry{金属中的自由电子气体}{mfcgas}
+\entry{理想气体（微正则系综法）}{IdNCE}
+\entry{正则系综法}{CEsb}
+\entry{理想气体（正则系宗法）}{IdCE}
+\entry{理想气体（巨正则系综法）}{IdMCE}
+\entry{等间隔能级系统（正则系宗）}{EqCE}
+\entry{巨正则系综法}{MCEsb}
+\entry{量子气体（单能级巨正则系综法）}{QGs1ME}
+\entry{量子气体（巨正则系宗）}{QGsME}
+\entry{光子气体}{PhoGas}
+\entry{理想气体的熵：纯微观分析}{IdeaS}
+\entry{估算理想气体的熵}{IGS}
+\entry{伊辛模型}{Ising}
+\entry{玻尔兹曼方程}{BolzEQ}
+\entry{统计力学公式}{StatEq}
+\entry{玻色爱因斯坦凝聚}{BEC}
+%---------------------------------------
+\chapter{非平衡态热力学} \label{cpt_155}
+\entry{大气密度和压强}{atmDen}
+\entry{沸腾}{ebull}
+\entry{热传导定律、扩散方程与输运过程}{heatc}
+\entry{气体输运过程（微观理论）}{gasTra}
+% 玻尔兹曼方程和弛豫时间近似
+
+\part{量子场论} \label{prt_QFT}
+%======================================
+\chapter{相对论性经典场论} \label{cpt_156}
+%---------------------------------------
+\entry{引言}{QFT0}
+\entry{经典场论基础}{classi}
+\entry{薛定谔经典场}{claSch}
+\entry{标量场}{qed2}
+\entry{Klein-Gordon 方程}{KGeq}
+\entry{狄拉克方程}{qed4}
+\entry{狄拉克方程的自由粒子解}{diracs}
+\entry{狄拉克场}{Dirac}
+\entry{狄拉克矩阵}{diracm}
+\entry{洛伦兹群覆盖群 SL(2,C) 的不可约表示}{qed3}
+\entry{Weyl 旋量}{Weyl}
+\entry{自旋与旋转}{spinqm}
+\entry{狄拉克方程无质量费米子}{DiM0}
+
+\chapter{自由场论的正则形式理论} \label{cpt_157}
+%---------------------------------------
+\entry{标量场的量子化}{quanti}
+\entry{时空中的标量场}{scalar}
+\entry{因果律}{cau}
+\entry{标量场的谱}{spectr}
+\entry{克莱因-戈登传播子}{Klein}
+\entry{Wick 定理（标量场）}{wick}
+\entry{粒子产生}{parti}
+\entry{狄拉克场的量子化}{Diracq}
+\entry{量子化狄拉克场}{quandi}
+\entry{狄拉克场的传播子}{diracD}
+\entry{自旋求和}{spinsu}
+
+\chapter{相互作用场论} \label{cpt_158}
+%---------------------------------------
+\entry{相互作用表象}{Ipic}
+\entry{散射理论与 S 矩阵}{Smat}
+\entry{LSZ约化公式（标量场）}{LSZ}
+\entry{Φ$^4$ 理论的费曼规则}{phi4fy}
+\entry{LSZ约化公式（旋量场）}{lszspn}
+\entry{LSZ 约化公式（矢量场）}{lszqed}
+\entry{QED的费曼规则}{qedfey}
+\entry{Yukawa 势}{yukpot}
+\entry{Bhabha 散射}{Bhabha}
+\entry{Compton 散射}{Compto}
+\entry{Ward-Takahashi 等式}{ward}
+\entry{路径积分与关联函数（量子力学）}{pathi2}
+% \chapter{标量场路径积分} \label{cpt_1e}
+% \chapter{Grassman 数路径积分} \label{cpt_1f}
+% \chapter{电磁场路径积分} \label{cpt_2a}
+% \chapter{非阿贝尔规范场路径积分} \label{cpt_2b}
+
+% \chapter{路径积分形式理论} \label{cpt_159}
+%---------------------------------------
+\chapter{重整化理论} \label{cpt_160}
+%---------------------------------------
+\entry{ϕ$^4$ 理论的重整化（单圈修正）}{phi4c1}
+\entry{QED 重整化理论—电子自能和光子自能的单圈修正}{qedlop}
+\entry{QED 的重整化理论—顶点函数的单圈修正}{qedvet}
+% \chapter{非阿贝尔规范场论} \label{cpt_161}
+
+
+\part{近代物理} \label{prt_MordPh}
+%======================================
+
+\chapter{高能物理} \label{cpt_162}
+%---------------------------------------
+\entry{基本粒子}{BasPar}
+\entry{希格斯粒子}{Higgs}
+
+\chapter{弦理论} \label{cpt_163}
+%---------------------------------------
+\entry{引力量子化}{QuanGR}
+\entry{弦论概述}{STover}
+\entry{弦论的种类}{TYPEst}
+\entry{BRST 量子化}{BRST}
+\entry{RNS 超弦}{RNS}
+\entry{AdS/CFT 对偶}{AdSCFT}
+\entry{AdS/真实世界}{AdSrea}
+% \chapter{经典弦 1} \label{cpt_2c}
+%---------------------------------------
+% \chapter{经典弦 2} \label{cpt_2e}
+%---------------------------------------
+% \chapter{弦量子化} \label{cpt_3a}
+%---------------------------------------
+% \chapter{共形场论 1} \label{cpt_3b}或者叫规范场论？
+%---------------------------------------
+% \chapter{BRST 量子化} \label{cpt_3c}
+%---------------------------------------
+% \chapter{RNS 超弦} \label{cpt_3d}
+%---------------------------------------
+% \chapter{紧致化和T对偶} \label{cpt_3e}
+%---------------------------------------
+% \chapter{超弦理论（续）} \label{cpt_3f}
+%---------------------------------------
+% \chapter{超弦理论（总结）} \label{cpt_4a}
+%---------------------------------------
+% \chapter{第II型弦论} \label{cpt_4b}
+%---------------------------------------
+% \chapter{Heterotic 弦论} \label{cpt_4d}
+%---------------------------------------
+% \chapter{D-膜} \label{cpt_4e}
+%---------------------------------------
+% \chapter{黑洞} \label{cpt_5a}
+%---------------------------------------
+% \chapter{全息原理和AdS/CFT} \label{cpt_5b}
+%---------------------------------------
+% \chapter{弦理论和宇宙学} \label{cpt_5c}
+
+\chapter{宇宙学} \label{cpt_164}
+%---------------------------------------
+\entry{宇宙的演化}{UniEvo}
+\entry{宇宙学红移}{CoReSh}
+\entry{宇宙中的距离}{DisCos}
+\entry{Friedmann-Robertson-Walker (FRW) 度规}{FRW}
+
+\chapter{宇宙学扰动} \label{cpt_165}
+\entry{标量扰动}{ScaPT}
+\entry{张量扰动}{TenPT}
+
+% \chapter{非厄米物理} \label{cpt_7c}
+\entry{非厄米物理导论}{nonHer}
+\entry{非厄米物理中的数学}{nHerMa}
+
+\part{计算机} \label{prt_CS}
+%======================================
+
+\chapter{Python 语言} \label{cpt_168}
+%---------------------------------------
+\entry{【导航】Python}{PyFi}
+\entry{Python 简介与安装}{Python}
+\entry{Python 的 IDE 安装}{PyIDE}
+\entry{Python 解释器使用}{PyItpt}
+% \entry{Python 编码规范}{Pycode}
+\entry{Python 词法与分析}{Pynot1}
+\entry{Python 基本数据类型与转换}{PyData}
+\entry{Python 输入和输出}{Pyio}
+\entry{Python 数字}{PyNum}
+\entry{Python 文件读写}{PyFile}
+\entry{Python 判断与循环}{PyIfFr}
+\entry{Python 函数}{PyFunc}
+\entry{Python 的类}{PyClas}
+\entry{Python 的模块（module）}{PyMod}
+\entry{Python 异常处理}{PyExcp}
+\entry{Python 快速入门}{PyStar}
+\entry{Python 的变量}{PyType}
+\entry{Python 字符串处理}{PyStr}
+\entry{字符串的分片与索引（Python）}{Strsi}
+\entry{NumPy 库}{numpy}
+\entry{Python Matplotlib 画图}{PyPlot}
+\entry{Python RoboMaster EP 教程—RoboMaster SDK 安装}{PyRM1}
+\entry{Python RoboMaster EP 教程—与机器人建立连接}{PyRM2}
+\entry{Python RoboMaster EP 教程—通讯方式}{PyRM4}
+\entry{Python RoboMaster EP 教程—初始化机器人}{PyRM3}
+
+\chapter{C 和 C++ 语言} \label{cpt_171}
+%---------------------------------------
+\entry{【导航】C++}{CppNav}
+\entry{在 Linux 上编译 C/C++ 程序}{linCpp}
+\entry{C++ 基础}{Cpp0}
+\entry{C++ 函数}{CppFun}
+\entry{C++ 中的 SFINAE 技巧}{SFINAE}
+% \entry{从图灵机到 C 语言}{TuriMa}
+% \entry{逻辑门、布尔运算}{LogicG}
+
+% \chapter{C++ 标准库和其他常用库} \label{cpt_5d}
+%---------------------------------
+
+% \chapter{并行计算} \label{cpt_cpar}
+%---------------------------------------
+
+% \chapter{GUI} \label{cpt_5e}
+%---------------------------
+\entry{Visual C++ 的简单画图库 MatPlot}{MtPlot}
+
+\chapter{Rust 语言} \label{cpt_222}
+\entry{Rust 安装}{Rustin}
+
+\chapter{数据结构与算法（C++）} \label{cpt_175}
+%---------------------------------------
+\entry{单链表}{List}
+\entry{双链表}{DList}
+\entry{栈}{stack}
+\entry{单调栈}{Mstack}
+\entry{队列}{queue}
+\entry{单调队列}{Mqueue}
+\entry{trie 树（字典树）}{trie}
+\entry{B 树}{Btree}
+\entry{堆}{heap}
+\entry{二分}{BS}
+\entry{并查集}{DSU}
+\entry{哈希表}{hash}
+\entry{字符串哈希}{Shash}
+\entry{二叉树}{tree}
+\entry{线段树}{STree}
+\entry{广度优先搜索（BFS）}{BFS}
+\entry{树与图的广度优先搜索}{BFS2}
+\entry{深度优先搜索（DFS）}{DFS}
+\entry{树与图的深度优先搜索}{DFS2}
+\entry{单源最短路径}{SSSP}
+\entry{快速排序}{qsort}
+\entry{归并排序}{Msort}
+\entry{堆排序}{hsort}
+\entry{最小生成树}{Prim}
+\entry{快速幂}{qmi}
+\entry{双指针算法}{TP}
+\entry{双指针法运用}{TPex1}
+\entry{Floyd 判圈算法}{FloydC}
+\entry{差分}{AD}
+\entry{前缀和}{PS}
+\entry{背包问题}{dp1}
+\entry{树形动态规划}{dp2}
+\entry{区间动态规划}{dp3}
+\entry{状态压缩动态规划}{dp4}
+\entry{A-star 算法}{Astar}
+\entry{迭代加深}{ID}
+\entry{IDA-star 算法}{IDAs}
+\entry{树状数组}{BIT}
+\entry{KD-Tree}{KDT}
+\entry{Minimax 搜索和 Alpha-Beta 剪枝}{mmsab}
+\entry{蒙特卡洛树搜索算法（理论）}{MCTS}
+\entry{蒙特卡洛树搜索算法（实现 TicTacToe 机-机对战）}{MCTSci}
+
+\chapter{编译器、调试器、构建工具} \label{cpt_compile}
+%-------------------------------------
+\entry{g++ 编译器创建静态和动态链接库（Linux 系统）}{gppLib}
+\entry{调试 C++ 程序}{gdbcpp}
+
+\chapter{常用开发工具} \label{cpt_tools}
+%---------------------------------------
+\entry{Git 和 GitHub 入门}{GitHub}
+% \entry{Git 命令行教程}{Git0}
+\entry{用 Git 备份文件夹}{gitBac}
+
+\chapter{数据库} \label{cpt_db}
+%---------------------------------------
+\entry{SQL 入门语法}{SQLgrm}
+\entry{SQL 入门（SQLite 为例）}{SQLint}
+\entry{MySQL安装}{MSQ001}
+
+\chapter{Linux 系统} \label{cpt_Linux}
+%---------------------------------------
+\entry{Linux 操作系统简介}{Linux0}
+
+\chapter{计算机网络} \label{cpt_173}
+%---------------------------------------
+% \entry{搭建 OpenVPN 服务器}{OpnVPN}
+\entry{开放系统互联基本参考模型（OSI模型）}{OSIRM}
+\entry{香农定理}{ShanTh}
+
+\chapter{计算机基础概念} \label{cpt_CS0}
+%---------------------------------------
+% 二进制， 八进制，十六进制
+% 文件路径
+\entry{计算机语言}{CpLgg}
+\entry{原码、反码、补码}{InvCom}
+\entry{正则表达式}{regex}
+
+% \chapter{计算机原理} \label{cpt_PC}
+%---------------------------------------
+\entry{字长}{WordLe}
+\entry{算术逻辑单元}{ALU}
+\entry{随机存储器}{RAM}
+
+\chapter{计算机图形学} \label{cpt_CG}
+%---------------------------------------
+\entry{计算机图形学}{cg}
+\entry{图像坐标系}{imgFrm}
+\entry{建模坐标系（局部坐标系）}{cgmc}
+\entry{世界坐标系}{Worcod}
+\entry{三维投影}{proj3D}
+\entry{相机模型}{CamMdl}
+\entry{由图像坐标计算射线}{mn2lin}
+\entry{计算 3D 艺术画}{art3D}
+\entry{相机的定位}{CamLoc}
+\entry{长方形相机定位法}{RecCam}
+\entry{解三棱锥 1 （Matlab）}{Pmd1}
+\entry{地球测地线计算（Matlab）}{EGDT}
+\entry{地球的公转（Matlab 绘图）}{georev}
+\entry{足球顶点坐标的计算程序（Matlab）}{foot60}
+\entry{刚体的几何运算（Matlab）}{RigBMa}
+
+% \chapter{GPU 编程} \label{cpt_GPU}
+
+\chapter{人工智能与机器学习} \label{cpt_186}
+%---------------------------------------
+\entry{人工智能导论}{IntrAI}
+% \entry{概率密度函数与人工智能概论}{AIstat}
+\entry{数据}{datast}
+\entry{分类}{Class}
+\entry{回归}{Regres}
+\entry{欠拟合}{unfit}
+\entry{过度拟合}{ovfit}
+\entry{模型评估}{MoEva}
+\entry{留出法}{holdou}
+\entry{交叉验证}{CroVal}
+\entry{线性回归}{LiGr}
+\entry{精度（机器学习）}{Accu}
+\entry{接收者操作特征曲线}{ROC}
+\entry{混淆矩阵}{ConMat}
+\entry{正则化（机器学习）}{Regula}
+% \entry{人工神经元}{neuron}
+\entry{神经网络}{NN}
+\entry{激活函数}{ActFun}
+\entry{梯度下降}{GraDec}
+\entry{全连接网络}{FCNN}
+\entry{卷积}{Conv}
+\entry{卷积神经网络}{ConvNe}
+\entry{残差网络}{ResNet}
+\entry{稠密连接网络}{DensNe}
+\entry{生成对抗网络}{GAN}
+\entry{深度卷积生成对抗网络}{DCGAN}
+\entry{条件生成对抗网络}{cGAN}
+\entry{自编码器}{AE}
+\entry{变分自编码器}{VAE}
+\entry{去噪扩散概率模型}{DDPM}
+\entry{条件去噪扩散概率模型}{cDDPM}
+\entry{KL 散度（相对熵）}{KLD}
+\entry{Jensen-Shannon 散度}{JSD}
+\entry{交叉熵}{CroEnt}
+\entry{强化学习}{rl}
+\entry{ChatGPT}{ChGPT}
+\entry{Transformers 库}{transL}
+
+\chapter{高性能、多线程} \label{cpt_2f}
+\entry{C++ 原子变量原子操作笔记}{atomVO}
+
+\chapter{其他} \label{cpt_187}
+%---------------------------------------
+\entry{信息熵简介}{InfoEn}
+\entry{跨平台源代码编辑器安装}{Code}
+\entry{LaTeX 结构简介}{latxIn}
+\entry{LaTeX 常用符号对照表}{TeXSym}
+\entry{安装使用 TeXlive}{TeXliv}
+\entry{用 cp 或 rsync 增量备份文件夹}{rsyncB}
+\entry{加密货币（数字货币）简介}{crypto}
+\entry{使用数字货币钱包}{CryWal}
+\entry{约定式提交}{CvCo}
+
+\part{科学计算} \label{prt_SciCal}
+%======================================
+\chapter{Matlab 语言} \label{cpt_167}
+%---------------------------------------
+\entry{【导航】科学计算}{NumPhy}
+\entry{Matlab 简介}{Matlab}
+\entry{Matlab 的变量与矩阵}{MatVar}
+\entry{Matlab 的判断与循环}{MIfFor}
+\entry{Matlab 的函数}{MatFun}
+\entry{Matlab 画图}{MatPlt}
+\entry{Matlab 的程序调试及其他功能}{MatOtr}
+\entry{Matlab 解常微分方程组（ode45）}{MatODE}
+\entry{Matlab 性能优化（profiling）}{MLprof}
+\entry{Matlab 画箭头矢量场图}{MQuivr}
+\entry{Matlab 球坐标中的分布图}{MatPol}
+\entry{Matlab 符号计算和任意精度计算}{MatSym}
+\entry{双精度和变精度浮点数测试（Matlab）}{FltMat}
+\entry{Matlab 的稀疏矩阵}{MatSpa}
+\entry{Julia 分形}{julias}
+\entry{用 Matlab 手动提取图片中的曲线坐标}{plt2xy}
+\entry{用 Matlab 制作 gif 动画}{MatGif}
+\entry{用 Matlab 生成 mp4 视频}{MatMp4}
+\entry{Matlab 的 Table 类型}{MatTab}
+\entry{Matlab 调用 C/C++ 语言}{MatlaC}
+
+
+\chapter{Mathematica 语言} \label{cpt_169}
+%--------------------------------------
+% 未完成 Wolfram Alpha
+\entry{Mathematica 笔记}{Mma}
+\entry{Mathematica 文件操作（笔记）}{mmaio}
+\entry{Mathematica 脚本模式}{mmacmd}
+
+\chapter{Python 科学计算} \label{cpt_scipy}
+%---------------------------------------
+\entry{SciPy 数值微分与积分}{SciPy}
+\entry{SciPy 最小二乘法}{PyFit}
+\entry{SciPy 求解常微分方程组的初值问题}{PyIVP}
+\entry{Python 符号计算简介}{SymPy}
+
+\chapter{C/C++ 科学计算} \label{cpt_172}
+%---------------------------------------
+\entry{数据结构：密矩阵}{MatSto}
+\entry{数据结构：带对角矩阵}{BanDmt}
+\entry{BLAS 简介}{BLAS}
+\entry{SLISC 库简介}{SLISC}
+\entry{SLISC 的使用和测试}{SLScom}
+\entry{SLISC 的密矩阵类}{SliMat}
+\entry{SLISC 矩阵的基本运算}{SliAri}
+\entry{SLISC 密矩阵的切割}{SliCut}
+\entry{SLISC 库代码生成}{SLSgen}
+\entry{SLISC 的 Mcoo 矩阵类}{Mcoo}
+\entry{SLISC 的 band 矩阵类}{SliBan}
+\entry{SLISC 的 bit 操作工具}{SliBit}
+\entry{SLISC 的文件读写}{Sfile}
+\entry{SLISC 的计时工具}{SliTim}
+\entry{SLISC 的 matt/matb 文件格式}{matb}
+\entry{GNU Scientific Library}{GSL}
+\entry{Arpack++2 大型本征方程库}{Arpkpp}
+\entry{C++ 矩阵类的实现}{CppMat}
+
+% \chapter{高精度计算与符号计算} \label{cpt_174}
+%---------------------------------------
+\entry{符号计算软件列表}{SymLib}
+
+\chapter{Julia 编程基础（转载）} \label{cpt_177}
+%---------------------------------------
+\entry{初识 Julia}{JuC1S1}
+\entry{Julia 安装和启动}{JuC1S2}
+\entry{编写第一个 Julia 程序}{JuC1S3}
+\entry{改进第一个 Julia 程序}{JuC1S4}
+\entry{Julia 第 1 章小结}{JuC1S5}
+\entry{Julia 的 REPL 环境及其用法}{JuC2S1}
+\entry{Julia 程序包与环境配置}{JuC2S2}
+\entry{Julia 项目的创建与引入}{JuC2S3}
+\entry{Julia 第 2 章小结}{JuC2S4}
+\entry{Julia 的变量与常量}{JuC3S0}
+\entry{Julia 变量的定义}{JuC3S1}
+\entry{Julia 变量的命名}{JuC3S2}
+\entry{Julia 变量的类型}{JuC3S3}
+\entry{Julia 常量}{JuC3S4}
+\entry{Julia 第 3 章小结}{JuC3S5}
+\entry{Julia 的类型系统}{JuC4S0}
+\entry{Julia 类型系统概述}{JuC4S1}
+\entry{Julia 的类型与值}{JuC4S2}
+\entry{Julia 的两个特殊类型}{JuC4S3}
+\entry{Julia 的三种主要类型}{JuC4S4}
+\entry{Julia 第 4 章小结}{JuC4S5}
+\entry{Julia 的数值与运算}{JuC5S0}
+\entry{Julia 的数值类型}{JuC5S1}
+\entry{Julia 整数}{JuC5S2}
+\entry{Julia 浮点数}{JuC5S3}
+\entry{Julia 的复数和有理数}{JuC5S4}
+\entry{Julia 常用的数学运算}{JuC5S5}
+\entry{Julia 数值类型的提升}{JuC5S6}
+\entry{Julia 数学函数速览}{JuC5S7}
+\entry{Julia 第 5 章小结}{JuC5S8}
+\entry{Julia Unicode 字符}{JuC6S1}
+\entry{Julia 字符}{JuC6S2}
+\entry{Julia 字符串}{JuC6S3}
+\entry{Julia 非常规的字符串值}{JuC6S4}
+\entry{Julia 第 6 章小结}{JuC6S5}
+\entry{Julia 参数化类型}{JuC7S0}
+\entry{Julia 类型的参数化}{JuC7S1}
+\entry{Julia 参数化的更多知识}{JuC7S2}
+\entry{Julia 容器：元组}{JuC7S3}
+\entry{Julia 第 7 章小结}{JuC7S4}
+\entry{Julia 字典与集合}{JuC8S0}
+\entry{Julia 索引与迭代}{JuC8S1}
+\entry{Julia 标准字典}{JuC8S2}
+\entry{Julia 集合}{JuC8S3}
+\entry{Julia 通用操作}{JuC8S4}
+\entry{Julia 第 8 章 小结}{JuC8S5}
+\entry{Julia 容器：数组（上）}{JuC9S0}
+\entry{Julia 类型}{JuC9S1}
+\entry{Julia 数组的表示}{JuC9S2}
+\entry{Julia 数组的构造}{JuC9S3}
+\entry{Julia 数组的基本要素}{JuC9S4}
+\entry{Julia 访问数组元素值}{JuC9S5}
+\entry{Julia 修改数组元素值}{JuC9S6}
+\entry{Julia 第 9 章 小结}{JuC9S7}
+\entry{Julia 广播式的修改}{JuCAS1}
+\entry{Julia 元素值的排序}{JuCAS2}
+\entry{Julia 数组的拷贝}{JuCAS3}
+\entry{Julia 数组的拼接}{JuCAS4}
+\entry{Julia 数组的比较}{JuCAS5}
+\entry{Julia 再说数组的构造}{JuCAS6}
+\entry{Julia 第10章 小结}{JuCAS7}
+\entry{Julia 流程控制}{JuCBS0}
+\entry{Julia 最简单的代码块}{JuCBS1}
+\entry{Julia if 语句}{JuCBS2}
+\entry{Julia for 语句}{JuCBS3}
+\entry{Julia while 语句}{JuCBS4}
+\entry{Julia let 语句}{JuCBS5}
+\entry{Julia 错误的报告与处理}{JuCBS6}
+\entry{Julia 第11章 小结}{JuCBS7}
+\entry{函数与方法}{JuCCS1}
+\entry{Julia 中的函数}{JuCCS2}
+\entry{Julia 函数的基本编写方式}{JuCCS3}
+\entry{Julia 函数的参数}{JuCCS4}
+\entry{Julia 函数的结果}{JuCCS5}
+\entry{Julia 衍生方法}{JuCCS6}
+\entry{Julia 函数的参数化}{JuCCS7}
+\entry{Julia do 代码块}{JuCCS8}
+\entry{Julia 第 12 章 小结}{JuCCS9}
+
+
+\chapter{数值计算理论} \label{cpt_178}
+%---------------------------------------
+% 转载自专栏 https://www.zhihu.com/column/c_1226443594048942080
+% 未完成
+\entry{数值计算的误差}{NumErr}
+\entry{计算机算数}{CmArit}
+\entry{数值解线性方程组（入门）}{NLinEq}
+\entry{数值解线性方程组（进阶）}{NLinE2}
+\entry{数值解线性方程组（高级）}{NLinE3}
+\entry{数值解常微分方程（入门）}{NordEq}
+
+\chapter{常用算法} \label{cpt_179}
+%---------------------------------------
+\entry{二分法（Matlab 示例）}{Bisec}
+\entry{多区间二分法}{MBisec}
+\entry{冒泡法}{Bubble}
+\entry{高斯消元法程序}{GauEli}
+\entry{坐标定轴旋转程序（Matlab）}{turnM}
+\entry{多项式插值}{InterP}
+\entry{多项式插值 2}{PolyIP}
+\entry{开根号的数值计算}{sqrtN}
+\entry{拉格朗日插值法}{LagraP}
+\entry{牛顿求根公式（牛顿迭代法）（Matlab）}{NWTNRT}
+\entry{不动点迭代（Matlab 绘图）}{FPIPLT}
+\entry{Nelder-Mead 算法}{NelMea}
+\entry{最小二乘法拟合函数（Matlab）}{CurFit}
+\entry{最小二乘法拟合多项式（Matlab）}{LSpoly}
+\entry{数值积分（梯形法）}{NumInt}
+\entry{稀疏矩阵}{SprMat}
+\entry{函数求值}{SpcFun}
+\entry{离散傅里叶变换}{DFT}
+\entry{离散正弦变换}{DST}
+\entry{Cholesky 分解}{Choles}
+\entry{傅里叶变换的数值计算、快速傅里叶变换（Matlab）}{FFTft}
+\entry{用傅里叶级数画曲线（Matlab）}{FFTdrw}
+\entry{QR 分解}{QRdeco}
+\entry{双共轭梯度法解线性方程组（BiCG）}{ConGra}
+\entry{二项式定理（非整数幂）的数值验证}{BiNorM}
+% \entry{条件数}{ConNum}
+
+% \chapter{其他} \label{cpt_SciEtc}
+%-------------------------------
+\entry{常用科研软件列表}{SciApp}
+
+
+% \part{数值计算} \label{prt_CalPhy}
+%======================================
+
+% \chapter{偏微分方程数值解} \label{cpt_182}
+%---------------------------------------
+
+\part{计算物理} \label{prt_CalQM}
+%======================================
+\chapter{微分方程数值解} \label{cpt_181}
+%---------------------------------------
+\entry{简谐振子受迫运动的简单数值计算}{SHOFN}
+\entry{天体运动的简单数值计算}{KPNum0}
+\entry{常微分方程（组）的数值解}{OdeNum}
+\entry{中点法解常微分方程（组）}{OdeMid}
+\entry{四阶龙格库塔法（Matlab）}{OdeRK4}
+\entry{刚体转动数值模拟（Matlab）}{RBRNum}
+\entry{陀螺的数值模拟（Matlab）}{TopNum}
+\entry{洛伦兹吸引子}{LrzAct}
+
+\chapter{经典力学的数值计算} \label{cpt_CalCM}
+%---------------------------------------
+\entry{开普勒问题的数值计算（Matlab）}{KepNum}
+\entry{双摆的数值计算（Matlab）}{DbPend}
+\entry{天体物理中 N 体问题的数值计算（Matlab）}{NbodyM}
+\entry{N 体问题软件（天体物理）}{Nbody}
+\entry{拉格朗日方程的数值解（Matlab）}{LagNum}
+\entry{Verlet 算法的简单示例（Matlab）}{VRLT}
+\entry{一维波动方程的简单数值解（Matlab）}{W1dNum}
+\entry{二维波动方程的简单数值解（Matlab）}{wav2dN}
+\entry{单缝衍射的模拟（Matlab）}{DiffrN}
+\entry{双缝干涉的模拟（Matlab）}{DbSliN}
+\entry{多普勒效应与音爆（Matlab 绘图）}{DPLDRW}
+
+\chapter{电磁学的数值计算} \label{cpt_CalEM}
+%-------------------------------------------
+\entry{点电荷系统的静电场 (MATLAB绘图)}{MLTEPD}
+
+\chapter{统计力学的数值计算} \label{cpt_CalSM}
+%-------------------------------------
+\entry{简单的扩散与混合模拟器（MATLAB）}{DIFMIX}
+\entry{麦克斯韦—玻尔兹曼分布的简单数值模拟}{MBdisN}
+\entry{麦克斯韦—玻尔兹曼分布的数值模拟}{MaxwD}
+
+\chapter{一维薛定谔方程数值解} \label{cpt_183}
+%---------------------------------------
+\entry{试射法解一维有限深势阱束缚态数值解（Matlab）}{BndSho}
+\entry{无限深势阱中的高斯波包数值计算（Matlab）}{ISWmat}
+\entry{自由高斯波包的动画绘制（Matlab）}{FreeGs}
+\entry{无限深势阱中的高斯波包模拟（Matlab）}{wvISW}
+\entry{简谐振子中的高斯波包模拟（Matlab）}{SHOgs}
+\entry{有限深方势阱束缚态程序（Matlab)}{FSWmat}
+\entry{方势垒定态波函数程序（Matlab）}{FSBplt}
+\entry{高斯波包的方势垒散射数值计算（Matlab）}{FSBsct}
+\entry{一维薛定谔方程不稳定的差分法数值解（Matlab）}{TDSE1N}
+\entry{Crank-Nicolson 算法解一维含时薛定谔方程（Matlab）}{CraNic}
+\entry{一维有限深方势阱中的光电离模拟（Matlab）}{FSWpi}
+\entry{非线性薛定谔方程的数值解法}{NLSEn}
+\chapter{氢原子薛定谔方程数值解} \label{cpt_184}
+%---------------------------------------
+\entry{库仑函数程序（Matlab 和 Mathematica）}{FlCode}
+\entry{氢原子波函数 Matlab 画图程序}{Hplot}
+\entry{球谐函数数值计算}{YlmNum}
+\entry{Gauss-Lobatto 积分}{GLquad}
+\entry{FEDVR 网格}{FEDVR}
+\entry{Lanczos 算法}{Lanc}
+\entry{指数格点}{ExpGrd}
+\entry{虚时间法求基态波函数}{ImgT}
+\entry{氢原子球坐标薛定谔方程数值解}{HyTDSE}
+\entry{氢原子球坐标薛定谔方程数值解 2}{HTDSE}
+
+% \chapter{氦原子薛定谔方程数值解} \label{cpt_185}
+%---------------------------------------
+% \entry{氦原子数值解 TDSE}{HeTDSE}
+% \entry{氦原子的 Berkeley-ECS 方法}{BerECS}
+% \entry{氦原子波函数数值分析}{HeAnal}
+
+\part{考研} \label{prt_GradEx}
+%======================================
+\chapter{数学} \label{cpt_mathTs}
+%---------------------------------------
+\entry{中国科学院 2012 年考研数学(甲)}{CASM12}
+\entry{中国科学院 2013 年考研数学(甲)}{CASM13}
+\entry{2010 年考研数学试题（数学一）}{PeeM10}
+\entry{2011 年考研数学试题（数学一）}{PeeM11}
+\entry{2012 年考研数学试题（数学一）}{PeeM12}
+\entry{2013 年考研数学试题（数学一）}{PeeM13}
+\entry{2014 年考研数学试题（数学一）}{PeeM14}
+\entry{2015 年考研数学试题（数学一）}{PeeM15}
+\entry{2016 年考研数学试题（数学一）}{PeeM16}
+\entry{2017 年考研数学试题（数学一）}{PeeM17}
+\entry{2018 年考研数学试题（数学一）}{PeeM18}
+\entry{2019 年考研数学试题（数学一）}{PeeM19}
+\entry{北京大学 2020 年强基计划招生考试数学试题}{PKU20}
+
+\chapter{普通物理} \label{cpt_188}
+%---------------------------------------
+\entry{中国科学院 2012 年考研普通物理}{CAS12}
+\entry{中国科学院 2013 年考研普通物理}{CAS13}
+\entry{中国科学院 2014 年考研普通物理}{CAS14}
+\entry{中国科学院 2017 年考研普通物理}{CAS17}
+\entry{中国科学院 2018 年考研普通物理}{CAS18}
+\entry{中国科学院 2020 年考研普通物理}{CAS20}
+\entry{中国科学院 2003 年考研普通物理 A 卷}{ZKYP03}
+\entry{北京师范大学 2012 年考研普通物理}{BNU12}
+\entry{北京师范大学 2013 年考研普通物理}{BNU13}
+\entry{北京师范大学 2016 年考研普通物理}{BNU16}
+\entry{中国科技大学 2013 年考研普通物理}{USTC13}
+\entry{中国科技大学 2014 年考研普通物理}{USTC14}
+\entry{中国科技大学 2015 年考研普通物理（B）}{USTC15}
+\entry{中国科技大学 2016 年考研普通物理}{USTC16}
+\entry{复旦大学 2015 年考研普通物理}{FDU15}
+\entry{复旦大学 2004 硕士研究生入学考试试题}{FDU04}
+\entry{南京大学 2012 年考研普通物理}{NJU12}
+\entry{南京大学 2013 年考研普通物理}{NJU13}
+\entry{南京大学 2014 年考研普通物理}{NJU14}
+\entry{南京大学 2015 年考研普通物理}{NJU15}
+\entry{南京大学 2016 年考研普通物理}{NJU16}
+\entry{南京大学 2017 年考研普通物理}{NJU17}
+\entry{南京大学 2018 年考研普通物理}{NJU18}
+\entry{南京大学 2019 年考研普通物理}{NJU19}
+
+\chapter{量子力学} \label{cpt_189}
+%---------------------------------------------
+\entry{天津大学 2011 年考研量子力学}{TJU11}
+\entry{天津大学 2011 年考研量子力学答案}{TJU11A}
+\entry{天津大学 2012 年考研量子力学}{TJU12}
+\entry{天津大学 2012 年考研量子力学答案}{TJU12A}
+\entry{天津大学 2013 年考研量子力学}{TJU13}
+\entry{天津大学 2014 年考研量子力学}{TJU14}
+\entry{天津大学 2014 年考研量子力学答案}{TJU14A}
+\entry{天津大学 2015 年考研量子力学}{TJU15}
+\entry{天津大学 2015 年考研量子力学答案}{TJU15A}
+\entry{天津大学 2016 年考研量子力学}{TJU16}
+\entry{天津大学 2016 年考研量子力学答案}{TJU16A}
+\entry{天津大学 2017 年考研量子力学}{TJU17}
+\entry{天津大学 2017 年考研量子力学答案}{TJU17A}
+\entry{中国科学院大学 2020 年考研 811 量子力学}{UCSA20}
+\entry{中国科学院大学 2021 年考研 811 量子力学}{UCAS21}
+\entry{复旦大学 1997 量子真题}{FDU97}
+\entry{复旦大学 1998 量子真题}{FDU98}
+\entry{复旦大学 1999 量子真题}{FDU99}
+\entry{复旦大学 2000 量子真题}{FDU00}
+\entry{复旦大学 2001 量子真题}{FDU01}
+\entry{复旦大学 2006 量子真题}{FDU06}
+\entry{复旦大学 2010 量子真题}{FDU10}
+\entry{复旦大学 2014 量子真题}{FDU14}
+\entry{南京理工大学 2006 量子真题}{NJUST2}
+\entry{南京理工大学 2007 量子真题}{NJUST3}
+\entry{南京理工大学 2011 量子真题}{NJUST1}
+\entry{南京理工大学  2015 量子真题}{NJUST}
+
+\chapter{计算机科学与技术} \label{cpt_190}
+%---------------------------------------------
+\entry{2009 年计算机学科专业基础综合全国联考卷}{CSN09}
+\entry{2010 年计算机学科专业基础综合全国联考卷}{CSN10}
+\entry{2011 年计算机学科专业基础综合全国联考卷}{Na11}
+\entry{2012 年计算机学科专业基础综合全国联考卷}{CSN12}
+\entry{2013 年计算机学科专业基础综合全国联考卷}{CSN13}
+\entry{2014 年计算机学科专业基础综合全国联考卷}{CSN14}
+\entry{2015 年计算机学科专业基础综合全国联考卷}{CSN15}
+\entry{2016 年计算机学科专业基础综合全国联考卷}{CSN16}
+\entry{2017 年计算机学科专业基础综合全国联考卷}{CSN17}
+\entry{2018 年计算机学科专业基础综合全国联考卷}{CSN18}
+\entry{2019 年计算机学科专业基础综合全国联考卷}{CSN19}
+\entry{北京航空航天大学 2011 年数据结构与 C 语言程序设计}{BA11}
+\entry{北京航空航天大学 2012 年数据结构与 C 语言程序设计}{BAD12}
+\entry{北京航空航天大学 2013 年数据结构与 C 语言程序设计}{BAD13}
+\entry{中国传媒大学 2013 年数据结构与计算机网络}{DNCC13}
+\entry{中国传媒大学 2014 年数据结构与计算机网络}{DNCC14}
+\entry{上海海事大学 2011 年数据结构}{SMDS11}
+\entry{上海海事大学 2012 年数据结构}{SMDS12}
+\entry{上海海事大学 2013 年数据结构}{SMDS13}
+\entry{上海海事大学 2014 年数据结构}{SMDS14}
+\entry{浙江理工大学 2011 年数据结构}{ZSDS11}
+\entry{浙江理工大学 2012 年数据结构}{ZSDS12}
+\entry{浙江理工大学 2013 年数据结构}{ZSDS13}
+\entry{中山大学 2011 年913专业基础（数据结构）考研真题}{SYDS11}
+\entry{中山大学 2012 年913专业基础（数据结构）考研真题}{SYDS12}
+\entry{中山大学 2014 年913专业基础（数据结构）考研真题}{SYDS14}
+\entry{中山大学 2015 年918专业基础（数据结构）考研真题}{SYDS15}
+\entry{暨南大学 2011 年信息科学技术学院830数据结构考研真题}{DSJN11}
+\entry{沈阳航空航天大学 2012 年818/数据结构专业综合考研真题}{SHDS12}
+
+\chapter{其他} \label{cpt_19a}
+%---------------------------------------------
+\entry{南开 2015 电动力学真题}{NKU}
+\entry{兰州大学 2017 热力学统计物理真题}{LZU}
+\entry{某热力学统计物理考研试题}{RUC12}
+\entry{兰州大学 2016 硕士研究生招生初试试题}{LUZ}
+
+
+\part{搜狗科学百科镜像} \label{prt_sogou}
+%=====================================
+\chapter{目录} \label{cpt_sg1}
+%---------------------------------------
+\entry{【目录】搜狗科学百科镜像}{sogou}
+
+
+\part{附录} \label{prt_Append}
+%======================================
+\chapter{附录} \label{cpt_191}
+%---------------------------------------
+\entry{小时百科符号与规范}{Conven}
+\entry{希腊字母表}{GreekL}
+\entry{常见物理量}{PhyQty}
+\entry{国际单位制}{SIunit}
+\entry{物理学常数}{Consts}
+\entry{国际单位制词头}{UniPre}
+\entry{量类和单位}{QCU}
+\entry{量类的延拓}{QCC}
+\entry{单位制和量纲}{USD}
+\entry{量纲与单位制}{dimunt}
+\entry{量纲式}{DIMF}
+\entry{现象类}{PHEC}
+\entry{量纲空间}{DimS}
+\entry{小时百科参考项目}{WuliRf}
+\entry{小时百科图标}{xwLogo}
+\entry{【目录】小时百科项目}{XStoc}
+
+
+% \part{隐藏内容} \label{prt_Hidden}
+% %======================================
+
+% \chapter{数学} \label{cpt_5f}
+% %---------------------------------------
+% \entry{Quaternion and Rotation}{QuaRot}
+
+% \chapter{力学} \label{cpt_6a}
+% %---------------------------------------
+% \entry{重心}{CenG}
+% \entry{经典系统的线性响应理论}{LiReC1}
+
+% \chapter{光学} \label{cpt_6b}
+% %---------------------------------------
+% \entry{透镜的主平面和节平面}{LnsPln}
+
+% \chapter{电动力学} \label{cpt_6c}
+% %---------------------------------------
+% \entry{用狄拉克 delta 函数表示点电荷的散度}{CEfDiv}
+
+% \chapter{量子力学} \label{cpt_6d}
+% %---------------------------------------
+% \entry{伴随算符}{adjoin}
+% \entry{自伴算符、厄米算符}{HerOp}
+
+% \chapter{计算机} \label{cpt_6e}
+% %---------------------------------------
+% \chapter{其他} \label{cpt_6f}
+% \entry{二极管}{Diode}
+% \entry{偶极子近似（量子力学）}{DipApr}
+% \entry{能均分定理}{EqEng}
+% \entry{单缝的夫琅禾费衍射}{FD}
+% \entry{分布函数的数值拟合}{FitPdf}
+% \entry{有限深势阱中的双粒子}{FSWtwo}
+% \entry{函数空间}{FunSpc}
+% \entry{伽利略变换}{GaliTr}
+% \entry{万有引力和天体运动}{Grav0}
+% \entry{同构}{homomo}
+% \entry{一维和二维氢原子模型势能}{Hy1D2D}
+% \entry{L2 函数空间}{L2FunS}
+% \entry{刘维尔定理（热力学与统计物理）}{LiouTh}
+% \entry{用 Filebrowser 搭建个人网盘}{Fbrows}
+% \entry{命题及其表示法}{Propos}
+% \entry{量子霍尔效应}{QHallE}
+% \entry{给高中生的量子力学简介}{QMIntr}
+% \entry{反射和折射、斯涅尔定律}{Reflec}
+% \entry{环形电流的磁场}{RingB}
+% \entry{TDSE Open Boundary Condition}{SEopBC}
+% \entry{心脏螺旋波}{spiral}
+% \entry{【目录】个人目录}{t}
+% \entry{Tensor}{TestT}
+% \entry{矢量积分}{VecInt}
+% \entry{Wolfram Alpha 简介}{WolfAl}
+% \entry{半波损失}{WvLost}
+
+\bibli
+\end{document}
