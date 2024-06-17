@@ -144,6 +144,7 @@ inline Long autoref_space(Str_I str, Bool_I error)
 	}
 }
 
+// [obsolete] now ~\upref{} will be assumed in autoref()
 // use before `upref()`
 // 1. make sure there is a ~ between autoref and upref
 // 2. make sure autoref and upref are for the same entry

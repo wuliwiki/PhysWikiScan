@@ -208,6 +208,7 @@ inline Long env_labels(vecStr_O fig_ids, vecStr_O labels,
 // no comment allowed
 // does not add link for \autoref inside eq environment (equation, align, gather)
 // also deal with \aref{text}{label}
+// will insert \upref{} after \autoref{}, use before upref()
 // return number of autoref replaced, or -1 if failed
 inline Long autoref(
 	vecStr_O autoref_labels, // all labels in \autoref{}
@@ -215,7 +216,6 @@ inline Long autoref(
 	SQLite::Database &db_read
 ) {
 	Long ind0{}, ind3{}, N{}, ienv{};
-	bool inEq;
 	Str entry1, label, fig_id, type, kind, newtab, file, link_text;
 	vecStr envNames{"equation", "align", "gather"};
 	autoref_labels.clear();
@@ -234,7 +234,7 @@ inline Long autoref(
 		}
 		if (ind0 < 0)
 			break;
-		inEq = index_in_env(ienv, ind0, envNames, str);
+		bool inEq = index_in_env(ienv, ind0, envNames, str);
 		if (ikey == 0) { // autoref{}
 			command_arg(label, str, ind0);
 		}
@@ -307,8 +307,11 @@ inline Long autoref(
 			file = gv::url + entry1 + ".html";
 			if (entry1 != entry) // reference another entry1
 				newtab = "target = \"_blank\"";
-			if (!inEq)
+			if (!inEq) {
+				if (entry1 != entry)
+					str.insert(ind3, "\\upref{" + entry1 + '}');
 				str.insert(ind3, " </a>");
+			}
 			str.insert(ind3, kind + ' ' + num2str(db_label_order));
 			if (!inEq) {
 				clear(sb) << "<a href = \"" << file << '#' << label << "\" " << newtab << '>';

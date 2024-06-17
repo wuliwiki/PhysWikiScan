@@ -781,10 +781,10 @@ inline void PhysWikiOnlineN_round2(map<Str, Str> &entry_err, // entry -> err msg
 				db_update_edges_hide(pentries[i], entry, db_rw);
 			}
 			// process \autoref and \upref
-			autoref_tilde_upref(html, entry, db_rw);
+			// autoref_tilde_upref(html, entry, db_rw);
 			// replace \upref{} with link icon
+			autoref(autoref_labels, html, entry, is_eng[i], db_rw); // use before upref()
 			upref(entry_uprefs[entry], html, entry);
-			autoref(autoref_labels, html, entry, is_eng[i], db_rw);
 			db_update_autorefs(entry, autoref_labels, db_rw);
 
 			// verbatim recover (in inverse order of `verbatim()`)
