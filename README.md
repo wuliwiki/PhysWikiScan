@@ -14,7 +14,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 
 **日常命令**
 * 如果不输入任何参数， 程序运行后会提示从命令行输入参数。
-* `--version` 显示版本号
+* `--version` 显示版本
 * `.` 把全部 `contents/*.tex` 文件转换为 `online/*.html`， 并使用 `main.tex` 生成完整目录 `index.html`。 `main.tex` 中不存在的文章也会被转换（将警告）。
 * `--titles`: 扫描所有 tex 文件， 扫描 `main.tex`， 更新数据库。
 * `--toc`: 生成完整目录 `index.html`， 更新数据库。
@@ -53,24 +53,9 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * 程序默认输出到 `stdout`， 如果有错误， 会输出到 `stderr`。
 
 ## 编译
-* 支持 g++8.3 及以上版本编译器
-* 在 linux 系统中（g++ 编译器）， 用 `make` 编译， `make clean` 清空编译产生的文件。
-* 也可以直接用 `cmake`， 默认选项即可。
+* 依赖 [SQLiteCpp](https://github.com/SRombauts/SQLiteCpp)
+* 支持 g++8.3 及以上版本编译器。
+* 在 Linux 系统中（g++ 编译器）， 用 `make` 编译， `make clean` 清空编译产生的文件。
+* 也可以直接用 `cmake`， 默认选项即可（可能需要手动设置 SQLiteCpp 的路径）。
 * 可以用 CLion 导入 CMakeLists.txt 编译调试。
 * `SLISC/` 中的代码来自 [SLISC](https://github.com/MacroUniverse/SLISC) 仓库。
-
-## 已知 BUG
-* `\begin{example}{}` 或类似环境下面如果多空一行， html 也会空间过大
-* `findNormalText()` 函数不应该包含 subtitle，subsubtitle 等
-* `\eentry` 和 `\rentry` 没有处理
-* 正文中禁止 \\ 换行，以及其他禁止的格式如 `\noindent`， 用户笔记不禁止
-* `\textbackslash` 后面需要删除一个空格（如果有）
-* 例题和习题中的标题仍然是 `<h5>`
-
-## 待办
-* 主要目标是最终完全不需要使用 `./PhysWikiScan .` 命令， 每次用 `--entry` 都更新数据库中所有必要的数据。
-* 不要试图追踪错误的行号！太难了，不值得。 用内容定位足够了。（浪费了一天）
-* 原来的 `PhysWikiCheck()` 去哪了？
-* 代码块应该也像公式一样可以拖动， 而且需要可以上下拖动。 每行长度不应该有限制（研究一下 pdf 里面的代码块能否自动换行）。
-* 检查文章名， `\subsection{}` 和 `\subsubsection{}` 中是否有空格， 提示应该替换成 `\ `
-* 想想怎样编译历史版本或已删除文章。

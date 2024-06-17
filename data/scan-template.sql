@@ -10,7 +10,7 @@ CREATE TABLE "table_version" ( -- 20240403
 	PRIMARY KEY("table")
 );
 
-INSERT INTO "table_version" VALUES ('bibliography',      '20240403', 0);
+INSERT INTO "table_version" VALUES ('bibliography',      '20240617', 0);
 INSERT INTO "table_version" VALUES ('chapters',          '20240403', 0);
 INSERT INTO "table_version" VALUES ('entries',           '20240403', 0);
 INSERT INTO "table_version" VALUES ('entry_uprefs',      '20240403', 0);
@@ -489,7 +489,7 @@ CREATE TABLE "labels" ( -- 20240403
 	"entry"    TEXT    NOT NULL,            -- 所在文章（以 entries.labels 为准）
 	"order"    INTEGER NOT NULL,            -- 显示编号
 	PRIMARY KEY("id"),
-	FOREIGN KEY("entry") REFERENCES "entries"("id"),
+	FOREIGN KEY("entry") REFERENCES "entries"("id")
 );
 
 CREATE INDEX idx_labels_type ON "labels"("type");
@@ -674,17 +674,18 @@ CREATE INDEX idx_contrib_adjust_time ON "contrib_adjust"("time");
 ----------------------------------------------------------------------------------------------------------
 
 -- 文献
--- TODO 待更新 scan
-CREATE TABLE "bibliography" ( -- 20240403
-	"id"        TEXT NOT NULL UNIQUE,      -- \cite{xxx} 中的 xxx
-	"title"     TEXT NOT NULL,             -- 标题
-	"type"      TEXT NOT NULL,             -- 类型
-	"date"      TEXT NOT NULL DEFAULT '',  -- 发表/出版日期
+CREATE TABLE "bibliography" ( -- 20240617
+	"id"        TEXT NOT NULL UNIQUE,         -- \cite{xxx} 中的 xxx
+	"order"     INTEGER NOT NULL,             -- 编号（bibliography.tex 中的顺序，从 1 开始）
+	"title"     TEXT NOT NULL,                -- 标题
+	"type"      TEXT NOT NULL,                -- 类型
+	"date"      TEXT NOT NULL DEFAULT '',     -- 发表/出版日期
+	"details"	TEXT NOT NULL,                -- 显示文字
 	PRIMARY KEY("id"),
 	FOREIGN KEY("type") REFERENCES "bib_type"("id")
 );
 
-INSERT INTO "bibliography" ("id", "order", "details") VALUES ('', 0, '无'); -- 防止 FOREIGN KEY 报错
+INSERT INTO "bibliography" VALUES ('', 0, '无', '', '', ''); -- 防止 FOREIGN KEY 报错
 
 -- 文献类型
 CREATE TABLE "bib_type" ( -- 20240403
