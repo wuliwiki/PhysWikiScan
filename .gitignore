@@ -27,3 +27,4 @@ file_add_del_tmp_file2.txt
 dryrun.log
 targets.log
 scan_log.txt
+/test/html/

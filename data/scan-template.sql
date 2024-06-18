@@ -160,8 +160,7 @@ CREATE TABLE "licenses" ( -- 20240403
 );
 
 INSERT INTO "licenses" ("id", "caption") VALUES ('', '未知'); -- 防止 FOREIGN KEY 报错
-INSERT INTO "licenses" VALUES('CCBY3','CC BY 3.0','https://creativecommons.org/licenses/by/3.0/','常用于开源作品，如维基百科。允许转载、修改，但需要注明出处。','');
-INSERT INTO "licenses" VALUES('Usr','小时百科志愿创作协议','https://wuli.wiki/online/licens.html','用于免费创作，版权归作者，小时科技拥有使用修改权。','');
+INSERT INTO licenses VALUES('CCBYSA3','CC BY-SA 3.0','https://creativecommons.org/licenses/by-sa/3.0/deed.zh-Hans','常用于开源作品，如维基百科。运行转载、修改，但需要注明出处，且使用一样或兼容的协议发布。','');
 
 -- 创作协议适用范围
 CREATE TABLE "license_apply" ( -- 20240403
@@ -680,8 +679,8 @@ CREATE INDEX idx_contrib_adjust_time ON "contrib_adjust"("time");
 CREATE TABLE "bibliography" ( -- 20240617
 	"id"        TEXT NOT NULL UNIQUE,         -- \cite{xxx} 中的 xxx
 	"order"     INTEGER NOT NULL,             -- 编号（bibliography.tex 中的顺序，从 1 开始）
-	"title"     TEXT NOT NULL,                -- 标题
-	"type"      TEXT NOT NULL,                -- 类型
+	"title"     TEXT NOT NULL DEFAULT '',     -- 标题
+	"type"      TEXT NOT NULL DEFAULT '',     -- 类型
 	"date"      TEXT NOT NULL DEFAULT '',     -- 发表/出版日期
 	"details"	TEXT NOT NULL,                -- 显示文字
 	PRIMARY KEY("id"),
@@ -695,6 +694,8 @@ CREATE TABLE "bib_type" ( -- 20240403
 	"id"       TEXT NOT NULL UNIQUE,
 	PRIMARY KEY("id")
 );
+
+INSERT INTO "bib_type" VALUES (''); -- 防止 FOREIGN KEY 报错
 
 -- 文献 DOI
 CREATE TABLE "bib_doi" ( -- 20240403
