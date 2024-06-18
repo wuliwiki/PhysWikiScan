@@ -38,6 +38,7 @@ INSERT INTO "table_version" VALUES ('bib_all_authors',   '20240403', 1);
 INSERT INTO "table_version" VALUES ('bib_authors',       '20240403', 1);
 INSERT INTO "table_version" VALUES ('contrib_adjust',    '20240414', 1);
 INSERT INTO "table_version" VALUES ('code',              '20240403', 1);
+INSERT INTO "table_version" VALUES ('code_lang',         '20240617', 1);
 INSERT INTO "table_version" VALUES ('entry_score',       '20240403', 1);
 INSERT INTO "table_version" VALUES ('entry_files',       '20240403', 1);
 INSERT INTO "table_version" VALUES ('figures',           '20240403', 1);
@@ -48,7 +49,6 @@ INSERT INTO "table_version" VALUES ('journals',          '20240403', 1);
 INSERT INTO "table_version" VALUES ('licenses',          '20240403', 1);
 INSERT INTO "table_version" VALUES ('license_apply',     '20240403', 1);
 INSERT INTO "table_version" VALUES ('locked',            '20240403', 1);
-INSERT INTO "table_version" VALUES ('languages',         '20240403', 1);
 INSERT INTO "table_version" VALUES ('repost',            '20240403', 1);
 INSERT INTO "table_version" VALUES ('referee',           '20240414', 1);
 INSERT INTO "table_version" VALUES ('review',            '20240403', 1);
@@ -467,7 +467,7 @@ CREATE TABLE "code" ( -- 20240403
 	"source"      TEXT     NOT NULL,             -- 来源（如果非原创）
 	PRIMARY KEY("id"),
 	FOREIGN KEY("entry")    REFERENCES "entries"("id"),
-	FOREIGN KEY("language") REFERENCES "languages"("id"),
+	FOREIGN KEY("language") REFERENCES "code_langs"("id"),
 	FOREIGN KEY("license")  REFERENCES "licenses"("id")
 );
 
@@ -476,13 +476,13 @@ CREATE INDEX idx_code_caption ON "entry_files"("entry");
 CREATE INDEX idx_code_lang ON "entry_files"("entry");
 
 -- 编程语言
-CREATE TABLE "languages" ( -- 20240403
+CREATE TABLE "code_langs" ( -- 20240403
 	"id"    TEXT NOT NULL UNIQUE,  -- code.language
 	"name"  TEXT NOT NULL UNIQUE,  -- 名字
 	PRIMARY KEY("id")
 );
 
-INSERT INTO "languages" ("id", "name") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
+INSERT INTO "code_langs" ("id", "name") VALUES ('', '无'); -- 防止 FOREIGN KEY 报错
 
 -- 文章中的其他标签（除图片、代码）
 CREATE TABLE "labels" ( -- 20240403
