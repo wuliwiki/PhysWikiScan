@@ -117,7 +117,7 @@ inline void figure_env(
 			// if current record has non-empty "aka", then use that figure
 			stmt_select.bind(1, fig_id);
 			if (!stmt_select.executeStep())
-				throw internal_err(SLS_WHERE);
+				throw internal_err("图片不存在数据库中：" + fig_id);
 			aka = stmt_select.getColumn(0).getString();
 			stmt_select.reset();
 
