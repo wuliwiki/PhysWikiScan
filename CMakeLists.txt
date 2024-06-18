@@ -8,7 +8,9 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_FLAGS "-std=c++11")
 
 include_directories(SQLiteCpp/include)
-link_directories(SQLiteCpp/lib_x86_linux)
+
+link_directories(SQLiteCpp/lib_x86_linux) # for linux
+# link_directories(SQLiteCpp/lib_arm64_mac) # for mac
 
 # Address Sanitizer
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer -fsanitize=address -pthread")
