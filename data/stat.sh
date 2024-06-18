@@ -1,7 +1,7 @@
 # get number of "history" records for an author in a time range from database
 # ignore CC license and `Use` license
 
-author=Acertain
+author=admin
 time1=202307010000
 time2=202307312359
 

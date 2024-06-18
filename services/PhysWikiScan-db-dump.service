@@ -2,12 +2,11 @@
 Description=dump PhysWikiScan db
 
 [Service]
-ExecStart=/mnt/drive/PhysWikiScan/db_auto_dump.sh
+ExecStart=/mnt/drive/PhysWikiScan/data/db_auto_dump.sh
 ExecStop=/bin/kill $MAINPID
-WorkingDirectory=/mnt/drive/PhysWikiScan/
+WorkingDirectory=/mnt/drive/PhysWikiScan/data/
 Environment="HOME=/root/"
 Restart=always
-
 
 [Install]
 WantedBy=multi-user.target
