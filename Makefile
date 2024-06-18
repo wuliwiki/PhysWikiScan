@@ -14,10 +14,10 @@ opt_asan = false # $(opt_debug)
 opt_std = c++11
 # static link (not all libs supported)
 opt_static = true
-# use Boost lib
-opt_boost = false
 # use SQLiteCpp
 opt_sqlitecpp = true
+opt_sqlitecpp_include = SQLiteCpp/include/
+opt_sqlitecpp_lib = SQLiteCpp/lib_x86_linux/
 #==========================
 
 $(info ) $(info ) $(info ) $(info ) $(info ) $(info )
@@ -50,19 +50,6 @@ else
     $(info Address Sanitizer: off)
 endif
 
-# === Boost ===
-ifeq ($(opt_boost), true)
-    ifeq ($(opt_static), false)
-        $(info Boost: dynamic)
-        boost_lib = -l:libboost_system.so -l:libboost_filesystem.so
-    else
-        $(info Boost: static)
-        boost_lib = -l:libboost_system.a -l:libboost_filesystem.a
-    endif
-else
-    $(info Boost: off)
-endif
-
 # === SQLiteCpp ===
 ifeq ($(opt_sqlitecpp), true)
     opt_sqlite = false
@@ -75,7 +62,7 @@ endif
 
 # === compiler flags ===
 ifeq ($(opt_compiler), g++)
-    compiler_flag = -std=$(opt_std) -Wall -Wno-reorder -fmax-errors=5 -fopenmp
+    compiler_flag = -std=$(opt_std) -Wall -Wno-reorder -fmax-errors=5 -fopenmp -I $(opt_sqlitecpp_include) -L $(opt_sqlitecpp_lib)
 endif
 
 $(info  )$(info  )$(info  )$(info  )
