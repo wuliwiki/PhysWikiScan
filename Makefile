@@ -17,7 +17,11 @@ opt_static = true
 # use SQLiteCpp
 opt_sqlitecpp = true
 opt_sqlitecpp_include = SQLiteCpp/include/
-opt_sqlitecpp_lib = SQLiteCpp/lib_x86_linux/
+    # choose the suitable OS
+opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu18.04/
+# opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu20.04/
+# opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu22.04/
+# opt_sqlitecpp_lib = SQLiteCpp/lib_arm64_mac/
 #==========================
 
 $(info ) $(info ) $(info ) $(info ) $(info ) $(info )
