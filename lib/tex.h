@@ -268,7 +268,7 @@ inline Long command_arg(Str_O arg, Str_I str, Long_I ind, Long_I i = 0, Bool_I t
 	else {
 		throw scan_err("command_arg(): i < 0 not allowed!");
 	}
-	
+
 	ind1 = expect(str, "{", ind0);
 	if (ind1 < 0) {
 		if (!arg_no_brace)
@@ -543,7 +543,7 @@ inline Long find_paren_eq(Intvs_O intv, Str_I str, char option = 'i')
 		// find \(
 		ind0 = find(str, "\\(", ++ind0);
 		if (ind0 < 0) break;
-		// `\\(` means a line break and (, 
+		// `\\(` means a line break and (,
 		//     whether inside or outside equation env
 		if (ind0 > 0 && str[ind0-1] == '\\') continue;
 		intv.pushL(ind0);
@@ -713,7 +713,7 @@ inline void check_display_eq_punc(Str_I str)
 		Long j;
 		for (j = start; j < end; ++j) {
 			char c = str[j], c1 = str[j+1];
-			if (c == '~' && (c1 == '.' || c1 == ','))
+			if (c == '~' && (c1 == '.' || c1 == ',' || c1 == ';'))
 				break;
 		}
 		if (j == end) {
@@ -721,7 +721,7 @@ inline void check_display_eq_punc(Str_I str)
 				char c = str[j];
 				if (c == ' ' || c == '\n') continue;
 				if (c == '~') break;
-				sb = u8R"(根据编写规范，请在行间公式最后添加标点（如 "~," 或 "~."）， 详见 Sample.tex。
+				sb = u8R"(根据编写规范，请在行间公式最后添加标点（如 "~,"，"~;" 或 "~."）， 详见 Sample.tex。
 如果的确没必要，请在最后添加 "~"。 当前公式为：
 )";
 				sb << str.substr(start, end+1-start);
@@ -1076,7 +1076,7 @@ inline Long verbatim(vecStr_O str_verb, Str_IO str)
 		str.replace(ind0, ind2 + 1 - ind0, sb);
 		ind0 += 3;
 	}
-	
+
 	// lstlisting
 	ind0 = 0;
 	Intvs intvIn, intvOut;
@@ -1262,7 +1262,7 @@ inline void clean_entry_str(Str_O str_clean, Str_I str) {
 
 	find_lstinline(intv, str_clean, 'o');
 	str_whipe_intv(str_clean, intv);
-	
+
 	find_env(intv, str_clean, "lstlisting", 'o');
 	str_whipe_intv(str_clean, intv);
 
