@@ -1,4 +1,4 @@
-﻿// tex parser utilities
+// tex parser utilities
 // always remove comments first
 #pragma once
 #include "../SLISC/str/unicode.h"

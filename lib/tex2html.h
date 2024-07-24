@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "tex.h"
 #include "../SLISC/arith/scalar_arith.h"
 
