@@ -1,18 +1,17 @@
 #pragma once
 #include "../SLISC/file/file.h"
 
-// a single \req{node_id} or \reqq{node_id} inside a \pentry{}
+// a single \nref{node_id} or \nreff{node_id} inside a \pentry{}
 struct PentryRef {
-	Str node_id; // \req{node_label}
+	Str node_id; // \nref{node_label}
 	bool weak; // \reqq{} (prefer to be ignored), previously marked *
 	Char hide; // omitted in the tree, previously marked ~
 	PentryRef(Str node_id, bool weak, Char hide = -1):
 		node_id(std::move(node_id)), weak(weak), hide(hide) {};
 };
 
-// all \pentry{} info of an entry
-// pentry[i] is a single \pentry{} command
-// each \pentry{} can optionally followed by a \label{}
+// all \pentry{}{} info of an entry
+// pentry[i] is a single \pentry{}{} command
 //                node_id        \upref
 typedef vector<pair<Str, vector<PentryRef>>> Pentry;
 typedef Pentry &Pentry_O, &Pentry_IO;
@@ -117,13 +116,14 @@ inline bool is_draft(Str_I str)
 }
 
 // get dependent entries (id) from \pentry{}
-// will ignore \pentry{} with no \upref{} or \upreff{}
+// will ignore \pentry{} with no \nref{} or \wnreff{}
 // all PentryRef::hide will set to -1
-inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read)
+inline void get_pentry(Pentry_O pentry_raw, Str_I entry, Str_I str, SQLite::Database &db_read)
 {
 	bool weak;
 	Long ind0 = -1, ikey;
 	Str temp, node_id, label;
+	SQLite::Statement stmt_select1(db_read, R"(SELECT "entry" FROM "nodes" WHERE "id"=? AND "entry" != ')" + entry + "';");
 	pentry_raw.clear();
 	while (1) {
 		ind0 = find_command(str, "pentry", ind0+1);
@@ -137,8 +137,16 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 		if (pentry1.first.substr(0, 4) != "nod_")
 			throw scan_err(u8"\\pentry{...}{nod_xxx} 格式错误，第二个参数不可省略");
 		pentry1.first = pentry1.first.substr(4);
+		// check repeated node_id
+		stmt_select1.bind(1, pentry1.first);
+		if (stmt_select1.executeStep()) {
+			const Str &entry = stmt_select1.getColumn(0);
+			throw scan_err(u8"\\pentry{...}{标签} 中标签 nod_" + pentry1.first + u8" 已存在于文章 " + entry + u8" 请使用预备知识按钮自动生成新的标签。");
+		}
+		stmt_select1.reset();
+
 		Long ind1 = 0, ind2 = 0;
-		bool first_upref = true;
+		bool first_ref = true;
 		while (1) {
 			ind1 = find(ikey, temp, {"\\nref", "\\wnref", "\\upref"}, ind2);
 			if (ikey == 2)
@@ -146,9 +154,9 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 			weak = (ikey == 1);
 			if (ind1 < 0)
 				break;
-			if (!first_upref)
+			if (!first_ref)
 				if (expect(temp, u8"，", ind2) < 0)
-					throw scan_err(u8R"(\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \pentry{文章1\upref{文件名1}， 文章2\upref{文件名2}}。)");
+					throw scan_err(u8R"(\pentry{} 中预备知识格式不对， 应该用中文逗号隔开， 如： \pentry{文章1\nref{文件名1}， 文章2\nref{文件名2}}{nod_标签}。)");
 			command_arg(node_id, temp, ind1);
 			if (node_id.substr(0, 4) != "nod_")
 				throw scan_err(u8"\\nref{nod_xxx} 格式错误");
@@ -158,7 +166,7 @@ inline void get_pentry(Pentry_O pentry_raw, Str_I str, SQLite::Database &db_read
 					throw scan_err(u8R"(\pentry{} 中预备知识重复： )" + node_id + ".tex");
 			pentry1.second.emplace_back(node_id, weak, -1); // `edges.hide` unknown
 			ind2 = skip_command(temp, ind1, 1);
-			first_upref = false;
+			first_ref = false;
 		}
 	}
 	if (!pentry_raw.empty() && pentry_raw.back().second.empty())

@@ -52,10 +52,10 @@ inline void global_forbid_char(set<Char32> &illegal_chars, Str_I str)
 		Char32 c32 = u32(*it)[0];
 		Long ind = search(c32, forbidden32);
 		if (ind >= 0 || c32 > 65536) {
-			Long beg = (u8count(str, 0, it) < 20) ? 0 : Long(it - 20);
-			Long end = (u8count(str, it, size(str)) < 20) ? size(str) : Long(it + 20);
-			scan_log_warn(u8"latex 代码中出现非法字符【" + (*it) + u8"】，建议使用公式环境和命令表示： " +
-						  str.substr(beg, end - beg));
+			// Long beg = (u8count(str, 0, it) < 20) ? 0 : Long(it - 20);
+			// Long end = (u8count(str, it, size(str)) < 20) ? size(str) : Long(it + 20);
+			// scan_log_warn(u8"latex 代码中出现非法字符【" + (*it) + u8"】，建议使用公式环境和命令表示： " +
+						  // str.substr(beg, end - beg));
 			// TODO: 应该搞一个批量替换功能
 			illegal_chars.insert(c32);
 		}
@@ -342,7 +342,6 @@ inline Long chinese_alpha_num_space_cmd(Str_IO str)
 			}
 		}
 		// check right
-		Long end = skip_command(str, start, narg[icmd]);
 		u8_iter it(str, start); --it;
 		if (is_chinese(arg, 0)) {
 			if (str[start-1] != ' ' && is_alphanum(str[start-1])) {

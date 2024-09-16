@@ -557,7 +557,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	// escape characters
 	NormalTextEscape(str);
 	// get dependent entries from \pentry{}
-	get_pentry(pentry, str, db_read);
+	get_pentry(pentry, entry, str, db_read);
 	// add paragraph tags
 	paragraph_tag(str);
 	// add html id for links
@@ -724,6 +724,8 @@ inline void PhysWikiOnlineN_round1(
 		file_remove(e);
 }
 
+// get the last explicitly defined node
+// if none, get the entry node
 inline void get_tree_last_node(Str_O last_node_id, Str_I str, Str_I entry, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select(db_read,

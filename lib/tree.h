@@ -220,11 +220,13 @@ inline void db_get_tree1(
 	// reduce each node of entry0
 	for (Long order = 1; order <= Nnode0; ++order) {
 		auto &root = nodes[order-1];
-		Str &root_caption = entry_info[root.entry].first;
 		auto &pentry1 = pentry0_info[root.order - 1];
 		dag_reduce(alt_paths, tree, order-1);
-		std::stringstream ss;
 		if (!alt_paths.empty()) {
+#ifndef NDEBUG
+			Str &root_caption = entry_info[root.entry].first;
+			std::stringstream ss;
+#endif
 			for (Long j = 0; j < size(alt_paths); ++j) {
 				// mark ignored (add ~ to the end)
 				auto &alt_path = alt_paths[j];
@@ -248,6 +250,7 @@ inline void db_get_tree1(
 				}
 				assert(it != tree1.end());
 				// print result
+#ifndef NDEBUG
 				auto &caption_red = get<0>(entry_info[node_red.entry]);
 				ss << u8"\n已标记 " << root.entry << ':' << root.id << " (" << root_caption << u8") 中多余的预备知识： "
 				   << node_red.entry << ':' << node_red.id << " (" << caption_red << ')' << endl;
@@ -258,8 +261,11 @@ inline void db_get_tree1(
 					ss << nod.entry << ':' << nod.id << " (" << caption
 					   << (i == size(alt_path) - 1 ? ")" : ") <-") << endl;
 				}
+#endif
 			}
+#ifndef NDEBUG
 			scan_log_warn(ss.str());
+#endif
 		}
 	}
 
@@ -403,11 +409,11 @@ inline void db_update_nodes(Pentry_I pentry, Str_I entry, Bool_I clear_all, SQLi
 	unordered_set<Str> check_repeat;
 	for (Long i = 0; i < size(pentry); ++i) {
 		auto &node_id = pentry[i].first;
-		// check repeated node_id
-		if (check_repeat.count(node_id))
-			throw scan_err(u8"重复的 \\pentry{...}{标签}: " + node_id);
-		else
-			check_repeat.insert(node_id);
+               // check repeated node_id
+               if (check_repeat.count(node_id))
+                       throw scan_err(u8"重复的 \\pentry{...}{标签}: " + node_id);
+               else
+                       check_repeat.insert(node_id);
 		// update or insert into db "nodes" table
 		assert(!node_id.empty());
 		int64_t order = i+1;
