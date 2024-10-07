@@ -841,11 +841,14 @@ inline Long FindNormalText(Intvs_O intvNorm, Str_I str)
 	// command environments
 	find_env(intv1, str, "Command", 'o');
 	combine(intv, intv1);
-	// texttt command
+	// \texttt command
 	find_all_command_intv(intv1, "texttt", str);
 	combine(intv, intv1);
-	// input command
+	// \input command
 	find_all_command_intv(intv1, "input", str);
+	combine(intv, intv1);
+	// \cite command
+	find_all_command_intv(intv1, "cite", str);
 	combine(intv, intv1);
 	// Figure environments
 	find_env(intv1, str, "figure", 'o');

@@ -71,41 +71,57 @@ inline Long real_author(Long_I author_id, SQLite::Database &db_read)
 	return (aka < 0 ? author_id : aka);
 }
 
-// update db table "entry_authors", based on backup count in "history" and "contrib_adjust"
-// will destroy `author_minutes`
-inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I entry, SQLite::Database &db_rw)
+// update db table "entry_authors" for 1 entry, based on backup count in "history" and "contrib_adjust"
+inline void db_update_authors1(Str_I entry, SQLite::Database &db_rw)
 {
-	author_minutes.clear();
+	//            author_id -> (minutes, last_backup)
+	unordered_map<Long,    pair<Long,    Str>> author_minutes_last;
+	author_minutes_last.clear();
 	SQLite::Statement stmt_count(db_rw,
 		R"(SELECT "author", COUNT(*) as record_count FROM "history" WHERE "entry"=? GROUP BY "author";)");
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "author", "minutes" FROM "contrib_adjust" WHERE "entry"=? AND "adjust_author_list"=1 AND "approved">=0;)");
+	SQLite::Statement stmt_select2(db_rw,
+		R"(SELECT "hash" FROM "history" WHERE "entry"=? AND "author"=? ORDER BY "time" DESC LIMIT 1;)");
 
 	stmt_count.bind(1, entry);
+	// loop through each author
 	while (stmt_count.executeStep()) {
-		Long id = stmt_count.getColumn(0).getInt64();
+		Long author_id = stmt_count.getColumn(0).getInt64();
+		// update time
 		Long time = 5*stmt_count.getColumn(1).getInt64();
-		author_minutes[id] += time;
+		if (author_minutes_last.count(author_id) != 0)
+			SLS_ERR(SLS_WHERE);
+		auto &minutes_last = author_minutes_last[author_id];
+		minutes_last.first = time;
+		// update last_backup hash
+		stmt_select2.bind(1, entry);
+		stmt_select2.bind(2, (int64_t)author_id);
+		if (!stmt_select2.executeStep())
+			throw internal_err(SLS_WHERE);
+		minutes_last.second = stmt_select2.getColumn(0).getString();
+		stmt_select2.reset();
 	}
 	stmt_count.reset();
 
 	// consider "contrib_adjust" table
 	stmt_select.bind(1, entry);
 	while (stmt_select.executeStep()) {
-		author_minutes[stmt_select.getColumn(0).getInt64()]
-			+= stmt_select.getColumn(1).getInt64();
+		Long author_id = stmt_select.getColumn(0).getInt64();
+		author_minutes_last[author_id].first += stmt_select.getColumn(1).getInt64();
 	}
 	stmt_select.reset();
 
 	// update_sqlite_table()
 	unordered_map<vecSQLval,vecSQLval> records;
-	for (auto &e : author_minutes) {
-		vecSQLval key(2), val(1);
-		key[0] = entry; key[1] = e.first; val[0] = e.second;
+	for (const auto &e : author_minutes_last) {
+		vecSQLval key(2), val(2);
+		key[0] = entry; key[1] = e.first;
+		val[0] = e.second.first; val[1] = e.second.second;
 		records[move(key)] = move(val);
 	}
 	Str condition; condition << "\"entry\"='" << entry << '\'';
-	update_sqlite_table(records, "entry_authors", condition, {"entry", "author", "contrib"},
+	update_sqlite_table(records, "entry_authors", condition, {"entry", "author", "contrib", "last_backup"},
 		2, db_rw, &sqlite_callback);
 }
 
@@ -113,13 +129,12 @@ inline void db_update_authors1(unordered_map<Long, Long> &author_minutes, Str_I 
 inline void db_update_authors(SQLite::Database &db)
 {
 	cout << "updating database for author lists...." << endl;
-	SQLite::Statement stmt_select(db,
-		R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
+	SQLite::Statement stmt_select(db, R"(SELECT "id" FROM "entries" WHERE "id"!='' AND "deleted"=0;)");
+	// TODO: why require "deleted"=0 ?
 	Str entry;
-	unordered_map<Long, Long> dummy;
 	while (stmt_select.executeStep()) {
 		entry = stmt_select.getColumn(0).getString();
-		db_update_authors1(dummy, entry, db);
+		db_update_authors1(entry, db);
 	}
 	stmt_select.reset();
 	cout << "done!" << endl;
