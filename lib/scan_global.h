@@ -125,17 +125,13 @@ inline void scan_log_limit()
 }
 
 // callback function for update_sqlite_table() in sqlitecpp_ext.h
+// this is called when a row is created/updated/deleted, etc
 inline void sqlite_callback(char act, Str_I table, vecStr_I field_names,
 	const pair<vecSQLval,vecSQLval> &row,
 	vecLong_I cols_changed, const vecSQLval &old_vals, void *data)
 {
 	Str str;
-	if (act == 'a') {
-		str << "批量删除 " << cols_changed[0] << " 条记录，表 \"" << table << '\"';
-		db_log_print(str);
-		return;
-	}
-	else if (act == 'i') str = "插入记录 ";
+	if (act == 'i') str = "插入记录 ";
 	else if (act == 'd') str = "删除记录 ";
 	else if (act == 'u') str = "更新记录 ";
 	else
