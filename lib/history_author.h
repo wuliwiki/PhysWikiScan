@@ -145,9 +145,7 @@ inline void db_update_authors(SQLite::Database &db)
 inline void db_update_author_history(SQLite::Database &db_rw)
 {
 	vecStr fnames;
-	unordered_map<Str, Long> new_authors;
-	unordered_map<Long, Long> author_contrib;
-	Str author, sha1, time, entry;
+	Str sha1, time, entry;
 	Str path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
 	file_list_ext(fnames, path, "tex", false);
 	cout << "updating sqlite database \"history\" table (" << fnames.size()
@@ -168,31 +166,24 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 
 	cout << "there are already " << db_history.size() << " backup (history) records in database." << endl;
 
-	Long author_id_max = -1;
-	vecLong db_author_ids0;
-	vecStr db_author_names0;
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "name" FROM "authors")");
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "name", "aka" FROM "authors")");
+			//   autho_id -> (name, aka, contrib)
+	unordered_map<Long,   tuple<Str, Long, Long>> author_info;
 	while (stmt_select2.executeStep()) {
-		db_author_ids0.push_back(stmt_select2.getColumn(0).getInt64());
-		author_id_max = max(author_id_max, db_author_ids0.back());
-		db_author_names0.push_back(stmt_select2.getColumn(1));
+		Long author_id = stmt_select2.getColumn(0).getInt64();
+		const Str &author_name = stmt_select2.getColumn(1);
+		Long author_aka = stmt_select2.getColumn(2).getInt64();
+		author_info[author_id] = make_tuple(author_name, aka, 0);
+		stmt_select3.reset();
 	}
 	stmt_select2.reset();
 
-	cout << "there are already " << db_author_ids0.size() << " author records in database." << endl;
-	unordered_map<Long, Str> db_id_to_author;
-	unordered_map<Str, Long> db_author_to_id;
-	for (Long i = 0; i < size(db_author_ids0); ++i) {
-		db_id_to_author[db_author_ids0[i]] = db_author_names0[i];
-		db_author_to_id[db_author_names0[i]] = db_author_ids0[i];
-	}
-
-	db_author_ids0.clear(); db_author_names0.clear();
-	db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
+	cout << "there are " << author_info.size() << " authors in database." << endl;
 
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT OR REPLACE INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
 
+	// get all entries from db
 	vecStr entries0;
 	get_column(entries0, "entries", "id", db_rw);
 	unordered_set<Str> entries(entries0.begin(), entries0.end()), entries_deleted_inserted;
@@ -202,13 +193,11 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 	SQLite::Statement stmt_insert_entry(db_rw,
 		R"(INSERT OR REPLACE INTO "entries" ("id", "deleted") VALUES (?, 1);)");
 
-	// insert new_authors to "authors" table
-	SQLite::Statement stmt_insert_auth(db_rw,
-		R"(INSERT OR REPLACE INTO "authors" ("id", "name") VALUES (?, ?);)");
 	SQLite::Statement stmt_select4(db_rw,
 		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_update2(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
 
 	Str fpath;
 
@@ -223,45 +212,17 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		time = fname.substr(0, 12);
 		Long ind = (Long)fname.rfind('_');
 		entry = fname.substr(ind+1);
-		author = fname.substr(13, ind-13);
 		Long authorID;
-
-		// check if editor is still saving using old `YYYYMMDDHHMM_author_entry` format
-		Bool use_author_name = true;
-		if (str2int(authorID, author) == size(author)) {
-			// SQLite::Statement stmt_select4(db_rw, R"(SELECT 1 FROM "authors" WHERE "id"=)" + author);
-			// if (stmt_select4.executeStep())
-			use_author_name = false;
+		str2int(authorID, fname.substr(13, ind-13));
+		if (get<1>(author_info[authorID]) >= 0) { // check aka
+			scan_log_warn("检测到作者小号命名的备份文件（将重命名）");
+			// fname_new = "../PhysWiki-backup/" + time2;
+			// 		fname_new << '_' << authorID << '_' << entry << ".tex";
+			// 		cout << "mv " << fname << ' ' << fname_new << endl;
+			// 		file_move(fname_new, fname);
 		}
-
-		if (use_author_name) {
-			// editor is still saving using old `YYYYMMDDHHMM_author_entry` format for now
-			// TODO: delete this block after editor use `YYYYMMDDHHMM_authorID_entry` format
-			if (db_author_to_id.count(author))
-				authorID = db_author_to_id[author];
-			else if (new_authors.count(author))
-				authorID = new_authors[author];
-			else {
-				authorID = ++author_id_max;
-				clear(sb) << u8"备份文件中的作者不在数据库中（将添加）： " << author << " ID: " << author_id_max;
-				db_log_print(sb);
-				new_authors[author] = author_id_max;
-				stmt_insert_auth.bind(1, int64_t(author_id_max));
-				stmt_insert_auth.bind(2, author);
-				stmt_insert_auth.exec();
-				stmt_insert_auth.reset();
-			}
-			// rename to new format
-			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
-			clear(sb) << path << fname << ".tex";
-			clear(sb1) << "移动文件 " << fpath << " -> " << sb;
-			scan_log_warn(sb1);
-			file_move(sb, fpath);
-		}
-
-		author_contrib[authorID] += 5;
-		if (entries.count(entry) == 0 &&
-			entries_deleted_inserted.count(entry) == 0) {
+		get<2>(author_info[authorID]) += 5;
+		if (entries.count(entry) == 0 && entries_deleted_inserted.count(entry) == 0) {
 			scan_log_warn(u8"内部警告：备份文件中的文章不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
@@ -278,7 +239,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			if (get<1>(time_author_entry_fexist) != authorID) {
 				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： "
 					<< to_string(get<1>(time_author_entry_fexist)) << '.'
-					<< db_id_to_author[get<1>(time_author_entry_fexist)];
+					<< get<0>(author_info[get<1>(time_author_entry_fexist)]);
 				db_log_print(sb);
 			}
 			if (get<2>(time_author_entry_fexist) != entry) {
@@ -288,7 +249,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			}
 			get<3>(time_author_entry_fexist) = true;
 		}
-		else {
+		else { // sha1_exist == false
 			stmt_select4.bind(1, time);
 			stmt_select4.bind(2, (int64_t)authorID);
 			stmt_select4.bind(3, entry);
@@ -299,7 +260,8 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 				db_log_print(sb);
 				stmt_update.bind(1, sha1);
 				stmt_update.bind(2, db_hash);
-				if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+				if (stmt_update.exec() != 1)
+					throw internal_err(SLS_WHERE);
 				stmt_update.reset();
 			}
 			else {
@@ -310,7 +272,9 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 				stmt_insert.bind(3, (int64_t)authorID);
 				stmt_insert.bind(4, entry);
 				try { stmt_insert.exec(); }
-				catch (std::exception &e) { throw internal_err(Str(e.what()) + SLS_WHERE); }
+				catch (std::exception &e) {
+					throw internal_err(Str(e.what()) + SLS_WHERE);
+				}
 				stmt_insert.reset();
 				db_history[sha1] = make_tuple(time, authorID, entry, true);
 			}
@@ -320,33 +284,22 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 
 	for (auto &row : db_history) {
 		if (!get<3>(row.second)) {
-			clear(sb) << u8"数据库 history 中文件不存在（将删除）：" << row.first << ", " << get<0>(row.second) << ", " <<
+			clear(sb) << u8"数据库 history 表中文件不存在（将删除）：" << row.first << ", " << get<0>(row.second) << ", " <<
 				 get<1>(row.second) << ", " << get<2>(row.second);
 			db_log_print(sb);
 			stmt_delete.bind(1, row.first); stmt_delete.exec(); stmt_delete.reset();
 		}
 	}
 	cout << "\ndone." << endl;
-
-	for (auto &new_author : new_authors)
-		cout << u8"新作者： " << new_author.second << ". " << new_author.first << endl;
-
 	cout << "\nupdating author contribution..." << endl;
 
-	SQLite::Statement stmt_select3(db_rw, R"(SELECT "aka" FROM "authors" WHERE "id"=?;)");
-	SQLite::Statement stmt_contrib(db_rw, R"(UPDATE "authors" SET "contrib"=? WHERE "id"=?;)");
-	for (auto &e : author_contrib) {
-		// check author existence & authors.aka (only for wiki)
-		stmt_select3.bind(1, (int64_t)e.first); // authors.id
-		if (!stmt_select3.executeStep()) throw internal_err(SLS_WHERE);
-		if (gv::is_wiki && stmt_select3.getColumn(0).getInt64() >= 0)
-			throw internal_err(u8"所有备份文件必须转换成 authors.aka 的！");
-		stmt_select3.reset();
-		// update authors.contrib
-		stmt_contrib.bind(1, (int64_t)e.second); // authors.contrib
-		stmt_contrib.bind(2, (int64_t)e.first); // authors.id
-		if (stmt_contrib.exec() != 1) throw internal_err(SLS_WHERE);
-		stmt_contrib.reset();
+	// update all authors.contrib
+	for (auto &e : author_info) {
+		stmt_update2.bind(1, (int64_t)get<2>(e.second)); // authors.contrib
+		stmt_update2.bind(2, (int64_t)e.first); // authors.id
+		if (stmt_update2.exec() != 1)
+			throw internal_err(SLS_WHERE);
+		stmt_update2.reset();
 	}
 
 	cout << "done." << endl;

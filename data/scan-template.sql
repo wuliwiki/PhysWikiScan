@@ -567,7 +567,6 @@ INSERT INTO "authors" VALUES(900,'','服务器后台',-1,0);
 
 CREATE INDEX idx_authors_uuid ON "authors"("uuid");
 CREATE INDEX idx_authors_name ON "authors"("name");
-CREATE INDEX idx_authors_applied ON "authors"("applied");
 CREATE INDEX idx_authors_aka ON "authors"("aka");
 
 -- 权限或限制种类
