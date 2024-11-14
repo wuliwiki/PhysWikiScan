@@ -115,7 +115,7 @@ CREATE TABLE "entry_authors" ( -- 20240403
 	"entry"        TEXT    NOT NULL,
 	"author"       INTEGER NOT NULL,
 	"contrib"      INTEGER NOT NULL,              -- 贡献时长（分钟）根据 "history" 和 "contrib_adjust" 生成
-	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 最后备份，例如用于查看最后编辑时间
+	"last_backup"  TEXT    NOT NULL DEFAULT '',   -- 该文章和该作者的最后备份
 	PRIMARY KEY("entry", "author"),
 	FOREIGN KEY("entry")       REFERENCES "entries"("id"),
 	FOREIGN KEY("author")      REFERENCES "authors"("id"),
@@ -567,7 +567,6 @@ INSERT INTO "authors" VALUES(900,'','服务器后台',-1,0);
 
 CREATE INDEX idx_authors_uuid ON "authors"("uuid");
 CREATE INDEX idx_authors_name ON "authors"("name");
-CREATE INDEX idx_authors_applied ON "authors"("applied");
 CREATE INDEX idx_authors_aka ON "authors"("aka");
 
 -- 权限或限制种类
