@@ -447,6 +447,8 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 ) {
 	Str str;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
+	if (str.back() != '\n')
+		str += '\n';
 	if (!is_valid(str))
 		throw std::runtime_error(u8"内部错误： 非法的 UTF-8 文档： " + entry + ".tex");
 	CRLF_to_LF(str);
