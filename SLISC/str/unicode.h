@@ -259,7 +259,7 @@ public:
 	// use any of i < 0 or i > s.size() for an invalid iterator
 	explicit u8_iter(Str_I str, Long_I i = 0): ind(i), s(str) {
 		if (ind >= 0 && i < size(s) && !is_char8_start(s, i))
-			throw runtime_error("u8_iter(str, i): not the start of a utf-8 char!");
+			throw runtime_error("u8_iter(str, i): not the start of a utf-8 char! str = " + s.substr(0, 100));
 	};
 
 	// set string index
@@ -331,8 +331,12 @@ public:
 // end is one pass last char
 inline Long u8count(Str_I str, Long_I start = 0, Long end = -1)
 {
-	if (end < 0) end = size(str);
-	if (end == 0) return 0;
+	if (end < 0)
+		end = size(str);
+	if (str.empty() || end == 0)
+		return 0;
+	if (start < 0 || start >= size(str))
+		throw runtime_error("u8_count(): start index out of range");
 	u8_iter it(str, start);
 	Long N = 0;
 	while ((Long)it < end)

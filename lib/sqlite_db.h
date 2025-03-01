@@ -356,9 +356,6 @@ inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new)
 		Long ind1 = find(str, "-]", ind);
 		if (ind1 < 0) {
 			file_rm(file1); file_rm(file2);
-#ifndef NDEBUG
-			file_rm(file_diff);
-#endif
 			throw std::runtime_error("matching -] not found!" SLS_WHERE);
 		}
 		del += u8count(str, ind, ind1);
