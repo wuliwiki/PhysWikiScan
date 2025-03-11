@@ -28,3 +28,4 @@ dryrun.log
 targets.log
 scan_log.txt
 /test/html/
+data/forum.db.*.gz
