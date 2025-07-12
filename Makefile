@@ -16,12 +16,12 @@ opt_std = c++11
 opt_static = true
 # use SQLiteCpp
 opt_sqlitecpp = true
-opt_sqlitecpp_include = SQLiteCpp/include/
+opt_sqlitecpp_include = deps/SQLiteCpp/include/
     # choose the suitable OS
-opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu18.04/
-# opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu20.04/
-# opt_sqlitecpp_lib = SQLiteCpp/SLISC-libs-x64-ubuntu22.04/
-# opt_sqlitecpp_lib = SQLiteCpp/lib_arm64_mac/
+opt_sqlitecpp_lib = deps/SQLiteCpp/lib-x64-ubuntu18.04/
+# opt_sqlitecpp_lib = deps/SQLiteCpp/lib-x64-ubuntu20.04/
+# opt_sqlitecpp_lib = deps/SQLiteCpp/lib-x64-ubuntu22.04/
+# opt_sqlitecpp_lib = deps/SQLiteCpp/lib-arm64-mac/
 #==========================
 
 $(info ) $(info ) $(info ) $(info ) $(info ) $(info )
