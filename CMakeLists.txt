@@ -24,6 +24,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_compile_options(-fmax-errors=5)
 
 include_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/include)
+include_directories(${PROJECT_SOURCE_DIR}/deps/nlohmann_json/include)
 
 # choose the suitable OS
 # link_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu18.04/)

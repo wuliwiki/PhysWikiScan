@@ -1,6 +1,7 @@
 #pragma once
 
 #include "str.h"
+#include <cstring>
 #include <nlohmann/json.hpp>
 
 namespace slisc {
@@ -12,13 +13,12 @@ inline void str_diff_utf8_positions(vector<size_t> &pos, Str_I str)
 	pos.clear();
 	pos.reserve(str.size() + 1);
 	pos.push_back(0);
-	size_t offset = 0;
-	auto it = str.begin();
-	while (it != str.end()) {
-		auto it0 = it;
-		utf8::next(it, str.end());
-		offset += size_t(it - it0);
-		pos.push_back(offset);
+	if (str.empty())
+		return;
+	u8_iter it(str, 0);
+	while ((Long)it < size(str)) {
+		++it;
+		pos.push_back(static_cast<size_t>((Long)it));
 	}
 }
 
@@ -52,38 +52,53 @@ inline void str_diff(vector<tuple<size_t, size_t, Str>> &diff, Str_I str1, Str_I
 		return;
 	}
 
-	Str32 str1_32 = u32(str1);
-	Str32 str2_32 = u32(str2);
 	vector<size_t> pos1_bytes;
 	vector<size_t> pos2_bytes;
 	str_diff_utf8_positions(pos1_bytes, str1);
 	str_diff_utf8_positions(pos2_bytes, str2);
 
-	const size_t n = str1_32.size();
-	const size_t m = str2_32.size();
+	const size_t n = pos1_bytes.size() - 1;
+	const size_t m = pos2_bytes.size() - 1;
 	const Long maxd = Long(n + m);
-	const Long offset = maxd;
-	vector<Long> v(size_t(2 * maxd + 1), 0);
-	vector<vector<Long>> trace;
-	trace.reserve(size_t(maxd + 1));
+	const Long max_edit = (maxd > 20000 ? 20000 : maxd);
+	auto codepoint_equal = [&](Long i, Long j) -> bool {
+		const size_t b1 = pos1_bytes[size_t(i)];
+		const size_t e1 = pos1_bytes[size_t(i) + 1];
+		const size_t b2 = pos2_bytes[size_t(j)];
+		const size_t e2 = pos2_bytes[size_t(j) + 1];
+		const size_t len1 = e1 - b1;
+		const size_t len2 = e2 - b2;
+		if (len1 != len2)
+			return false;
+		return std::memcmp(str1.data() + b1, str2.data() + b2, len1) == 0;
+	};
 
+	vector<vector<Long>> trace;
+	trace.reserve(size_t(max_edit + 1));
 	bool done = false;
-	for (Long d = 0; d <= maxd; ++d) {
+	for (Long d = 0; d <= max_edit; ++d) {
+		vector<Long> v(size_t(2 * d + 1), 0);
 		for (Long k = -d; k <= d; k += 2) {
-			const Long idx = offset + k;
 			Long x;
-			if (k == -d || (k != d && v[idx - 1] < v[idx + 1])) {
-				x = v[idx + 1];
+			if (d == 0) {
+				x = 0;
 			}
 			else {
-				x = v[idx - 1] + 1;
+				const vector<Long> &v_prev = trace[size_t(d - 1)];
+				const Long offset_prev = d - 1;
+				if (k == -d || (k != d && v_prev[size_t(offset_prev + k - 1)] < v_prev[size_t(offset_prev + k + 1)])) {
+					x = v_prev[size_t(offset_prev + k + 1)];
+				}
+				else {
+					x = v_prev[size_t(offset_prev + k - 1)] + 1;
+				}
 			}
 			Long y = x - k;
-			while (x < Long(n) && y < Long(m) && str1_32[size_t(x)] == str2_32[size_t(y)]) {
+			while (x < Long(n) && y < Long(m) && codepoint_equal(x, y)) {
 				++x;
 				++y;
 			}
-			v[idx] = x;
+			v[size_t(k + d)] = x;
 			if (x >= Long(n) && y >= Long(m)) {
 				trace.push_back(v);
 				done = true;
@@ -95,6 +110,11 @@ inline void str_diff(vector<tuple<size_t, size_t, Str>> &diff, Str_I str1, Str_I
 		trace.push_back(v);
 	}
 
+	if (!done) {
+		diff.emplace_back(0, str1.size(), str2);
+		return;
+	}
+
 	vector<char> ops;
 	ops.reserve(n + m);
 	Long x = Long(n);
@@ -103,13 +123,14 @@ inline void str_diff(vector<tuple<size_t, size_t, Str>> &diff, Str_I str1, Str_I
 		const Long k = x - y;
 		const vector<Long> &v_prev = trace[size_t(d - 1)];
 		Long k_prev;
-		if (k == -d || (k != d && v_prev[offset + k - 1] < v_prev[offset + k + 1])) {
+		const Long offset_prev = d - 1;
+		if (k == -d || (k != d && v_prev[size_t(offset_prev + k - 1)] < v_prev[size_t(offset_prev + k + 1)])) {
 			k_prev = k + 1;
 		}
 		else {
 			k_prev = k - 1;
 		}
-		const Long x_prev = v_prev[offset + k_prev];
+		const Long x_prev = v_prev[size_t(offset_prev + k_prev)];
 		const Long y_prev = x_prev - k_prev;
 		while (x > x_prev && y > y_prev) {
 			ops.push_back('M');
