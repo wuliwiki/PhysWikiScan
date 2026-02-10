@@ -672,6 +672,8 @@ inline void history_normalize(SQLite::Database &db_rw)
 // use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
+	Long author_id2 = author_id;
+	SQLite::Statement stmt_author(db_rw, R"(SELECT "aka" FROM "authors" WHERE "id"=?;)");
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "last_backup" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select2(db_rw,
 		R"(SELECT "time", "author", "entry", "last" FROM "history" WHERE "hash"=?;)");
@@ -685,6 +687,14 @@ inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_insert5(db_rw,
 		R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
+
+	stmt_author.bind(1, (int64_t)author_id2);
+	if (!stmt_author.executeStep())
+		throw internal_err(u8"arg_backup(): 作者不存在：" + num2str((Long)author_id2));
+	Long aka = stmt_author.getColumn(0).getInt64();
+	stmt_author.reset();
+	if (aka >= 0)
+		author_id2 = aka;
 
 	Str backup_path = backup_db_path();
 	backup_db_require(backup_path);
@@ -748,7 +758,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		time_new_str = time_str("%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
-		stmt_insert.bind(3, (int64_t)author_id);
+		stmt_insert.bind(3, (int64_t)author_id2);
 		stmt_insert.bind(4, entry);
 		stmt_insert.bind(5, int64_t(u8count(str)));
 		stmt_insert.bind(6, 0);
@@ -760,7 +770,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		Str diff_json;
 		str_diff_serialize(diff_json, diff);
 		stmt_backup_insert.bind(1, time_new_str);
-		stmt_backup_insert.bind(2, (int64_t)author_id);
+		stmt_backup_insert.bind(2, (int64_t)author_id2);
 		stmt_backup_insert.bind(3, entry);
 		stmt_backup_insert.bind(4, (int64_t)str.size());
 		stmt_backup_insert.bind(5, hash);
@@ -777,12 +787,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		SQLite::Statement stmt_insert3(db_rw,
 			R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?,?,5,?);)");
 		stmt_insert3.bind(1, entry);
-		stmt_insert3.bind(2, (int64_t)author_id);
+		stmt_insert3.bind(2, (int64_t)author_id2);
 		stmt_insert3.bind(3, hash); // last_backup
 		stmt_insert3.exec(); stmt_insert3.reset();
 
 		// update "authors.contrib", add 5min
-		stmt_update4.bind(1, (int64_t)author_id);
+		stmt_update4.bind(1, (int64_t)author_id2);
 		stmt_update4.exec(); stmt_update4.reset();
 		return;
 	}
@@ -817,7 +827,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	bool replace = false; // replace the last backup
 	time_t time = std::time(nullptr);
 	time_t time_new = time;
-	if (author_id == author_id_last) {
+	if (author_id2 == author_id_last) {
 		if (time <= time_last) {
 			replace = true;
 			time_new = time_last;
@@ -867,11 +877,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			R"(UPDATE "entry_authors" SET "last_backup"=? WHERE "entry"=? AND "author"=?;)");
 		stmt_update5.bind(1, hash); // last_backup
 		stmt_update5.bind(2, entry);
-		stmt_update5.bind(3, (int64_t)author_id);
+		stmt_update5.bind(3, (int64_t)author_id2);
 		Long changed = stmt_update5.exec();
 		if (changed != 1) {
 			if (changed != 0) throw scan_err(SLS_WHERE);
-			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id);
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id2);
 			stmt_insert5.bind(3, hash);
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
@@ -886,14 +896,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		time_new_str = time_t2str(time_new, "%Y%m%d%H%M");
 		stmt_insert.bind(1, hash);
 		stmt_insert.bind(2, time_new_str);
-		stmt_insert.bind(3, (int64_t)author_id);
+		stmt_insert.bind(3, (int64_t)author_id2);
 		stmt_insert.bind(4, entry);
 		stmt_insert.bind(5, (int64_t)char_add);
 		stmt_insert.bind(6, (int64_t)char_del);
 		stmt_insert.bind(7, hash_last);
 		stmt_insert.exec(); stmt_insert.reset();
 
-		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id
+		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id2
 			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
 		db_log_print(sb);
 
@@ -902,7 +912,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		Str diff_json;
 		str_diff_serialize(diff_json, diff);
 		stmt_backup_insert.bind(1, time_new_str);
-		stmt_backup_insert.bind(2, (int64_t)author_id);
+		stmt_backup_insert.bind(2, (int64_t)author_id2);
 		stmt_backup_insert.bind(3, entry);
 		stmt_backup_insert.bind(4, (int64_t)str.size());
 		stmt_backup_insert.bind(5, hash);
@@ -913,11 +923,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		// update "entry_authors", add 5min
 		stmt_update3.bind(1, hash); // last_backup
 		stmt_update3.bind(2, entry);
-		stmt_update3.bind(3, (int64_t)author_id);
+		stmt_update3.bind(3, (int64_t)author_id2);
 		Long changed = stmt_update3.exec();
 		if (changed != 1) {
 			if (changed != 0) throw scan_err(SLS_WHERE);
-			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id);
+			stmt_insert5.bind(1, entry); stmt_insert5.bind(2, (int64_t)author_id2);
 			stmt_insert5.bind(3, hash);
 			stmt_insert5.exec(); stmt_insert5.reset();
 		}
@@ -925,7 +935,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		db_log_print(u8"更新 entry_authors.contrib += 5 和 entry_authors.last_backup");
 
 		// update "authors.contrib", add 5min
-		stmt_update4.bind(1, (int64_t)author_id);
+		stmt_update4.bind(1, (int64_t)author_id2);
 		if (stmt_update4.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update4.reset();
 		db_log_print(u8"更新 authors.contrib += 5");
