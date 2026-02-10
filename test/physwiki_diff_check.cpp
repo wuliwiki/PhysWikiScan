@@ -109,6 +109,10 @@ static int run_for_group(const fs::path &dir, const GroupInfo &group)
 int main()
 {
 	fs::path dir = "/mnt/g/github/PhysWiki-backup";
+	if (!fs::exists(dir)) {
+		std::cerr << "Backup directory not found, skipping diff check." << std::endl;
+		return 0;
+	}
 	std::map<std::string, GroupInfo> groups;
 	for (const auto &entry : fs::directory_iterator(dir)) {
 		if (!entry.is_regular_file())
@@ -141,8 +145,8 @@ int main()
 	});
 
 	if (candidates.empty()) {
-		std::cerr << "No groups with at least two files found." << std::endl;
-		return 1;
+		std::cerr << "No groups with at least two files found, skipping." << std::endl;
+		return 0;
 	}
 	if (candidates.size() > 100)
 		candidates.resize(100);

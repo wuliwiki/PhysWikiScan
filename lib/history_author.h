@@ -1,6 +1,18 @@
 #pragma once
 #include "sqlite_db.h"
+#include "backup_db.h"
 #include "../SLISC/str/str_diff_patch.h"
+
+inline Str backup_db_path()
+{
+	return gv::path_data + "PhysWiki-backup.db";
+}
+
+inline void backup_db_require(Str_I path)
+{
+	if (!file_exist(path))
+		throw internal_err(u8"备份数据库不存在：" + path);
+}
 
 // calculate author list of an entry, based on "entry_authors" table (already using aka)
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
@@ -125,24 +137,23 @@ inline void db_update_authors(SQLite::Database &db)
 	cout << "done!" << endl;
 }
 
-// update db "authors" and "history" table from backup files
-// assuming all backup files already named after "authors.aka" if applicable
+// update db "authors" and "history" table from backup database
 inline void db_update_author_history(SQLite::Database &db_rw)
 {
-	vecStr fnames;
-	unordered_map<Str, Long> new_authors;
+	unordered_map<Long, Str> new_authors;
 	unordered_map<Long, Long> author_contrib;
-	Str author, sha1, time, entry;
-	Str path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
-	file_list_ext(fnames, path, "tex", false);
-	cout << "updating sqlite database \"history\" table (" << fnames.size()
-		 << " backup) ..." << endl; cout.flush();
+	Str sha1, time, entry;
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+	cout << "updating sqlite database \"history\" table from backup database..." << endl;
 
 	// update "history" table
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
 
-	//            hash        time author entry  file-exist
+	//            hash        time author entry  record-exist
 	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
 	while (stmt_select.executeStep()) {
 		Long author_id = stmt_select.getColumn(2).getInt64();
@@ -150,27 +161,23 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 				make_tuple(stmt_select.getColumn(1).getString(),
 						   author_id , stmt_select.getColumn(3).getString(), false);
 	}
+	stmt_select.reset();
 
 	cout << "there are already " << db_history.size() << " backup (history) records in database." << endl;
 
-	Long author_id_max = -1;
 	vecLong db_author_ids0;
 	vecStr db_author_names0;
 	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "name" FROM "authors")");
 	while (stmt_select2.executeStep()) {
 		db_author_ids0.push_back(stmt_select2.getColumn(0).getInt64());
-		author_id_max = max(author_id_max, db_author_ids0.back());
 		db_author_names0.push_back(stmt_select2.getColumn(1));
 	}
 	stmt_select2.reset();
 
 	cout << "there are already " << db_author_ids0.size() << " author records in database." << endl;
 	unordered_map<Long, Str> db_id_to_author;
-	unordered_map<Str, Long> db_author_to_id;
-	for (Long i = 0; i < size(db_author_ids0); ++i) {
+	for (Long i = 0; i < size(db_author_ids0); ++i)
 		db_id_to_author[db_author_ids0[i]] = db_author_names0[i];
-		db_author_to_id[db_author_names0[i]] = db_author_ids0[i];
-	}
 
 	db_author_ids0.clear(); db_author_names0.clear();
 	db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
@@ -194,60 +201,32 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_backup(db_backup,
+		R"(SELECT "timestamp", "author_id", "article_id", "hash" FROM "backup_files";)");
 
-	Str fpath;
-
-	for (Long i = 0; i < size(fnames); ++i) {
-		auto &fname = fnames[i];
-		fpath = path + fname + ".tex";
-		read(sb, fpath); CRLF_to_LF(sb);
-		sha1 = sha1sum(sb).substr(0, 16);
+	while (stmt_backup.executeStep()) {
+		time = stmt_backup.getColumn(0).getString();
+		Long authorID = stmt_backup.getColumn(1).getInt64();
+		entry = stmt_backup.getColumn(2).getString();
+		sha1 = stmt_backup.getColumn(3).getString();
 		bool sha1_exist = db_history.count(sha1);
 
-		// fname = YYYYMMDDHHMM_authorID_entry
-		time = fname.substr(0, 12);
-		Long ind = (Long)fname.rfind('_');
-		entry = fname.substr(ind+1);
-		author = fname.substr(13, ind-13);
-		Long authorID;
-
-		// check if editor is still saving using old `YYYYMMDDHHMM_author_entry` format
-		Bool use_author_name = true;
-		if (str2int(authorID, author) == size(author)) {
-			// SQLite::Statement stmt_select4(db_rw, R"(SELECT 1 FROM "authors" WHERE "id"=)" + author);
-			// if (stmt_select4.executeStep())
-			use_author_name = false;
-		}
-
-		if (use_author_name) {
-			// editor is still saving using old `YYYYMMDDHHMM_author_entry` format for now
-			// TODO: delete this block after editor use `YYYYMMDDHHMM_authorID_entry` format
-			if (db_author_to_id.count(author))
-				authorID = db_author_to_id[author];
-			else if (new_authors.count(author))
-				authorID = new_authors[author];
-			else {
-				authorID = ++author_id_max;
-				clear(sb) << u8"备份文件中的作者不在数据库中（将添加）： " << author << " ID: " << author_id_max;
-				db_log_print(sb);
-				new_authors[author] = author_id_max;
-				stmt_insert_auth.bind(1, int64_t(author_id_max));
-				stmt_insert_auth.bind(2, author);
-				stmt_insert_auth.exec();
-				stmt_insert_auth.reset();
-			}
-			// rename to new format
-			fname = time; fname << '_' << to_string(authorID) << '_' << entry;
-			clear(sb) << path << fname << ".tex";
-			clear(sb1) << "移动文件 " << fpath << " -> " << sb;
-			scan_log_warn(sb1);
-			file_move(sb, fpath);
+		if (!db_id_to_author.count(authorID)) {
+			Str name = to_string(authorID);
+			clear(sb) << u8"备份数据库中的作者不在数据库中（将添加）： ID: " << authorID;
+			db_log_print(sb);
+			new_authors[authorID] = name;
+			stmt_insert_auth.bind(1, (int64_t)authorID);
+			stmt_insert_auth.bind(2, name);
+			stmt_insert_auth.exec();
+			stmt_insert_auth.reset();
+			db_id_to_author[authorID] = name;
 		}
 
 		author_contrib[authorID] += 5;
 		if (entries.count(entry) == 0 &&
 			entries_deleted_inserted.count(entry) == 0) {
-			scan_log_warn(u8"内部警告：备份文件中的文章不在数据库中（将模拟编辑器添加）： " + entry);
+			scan_log_warn(u8"内部警告：备份数据库中的文章不在数据库中（将模拟编辑器添加）： " + entry);
 			stmt_insert_entry.bind(1, entry);
 			stmt_insert_entry.exec(); stmt_insert_entry.reset();
 			entries_deleted_inserted.insert(entry);
@@ -256,18 +235,18 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		if (sha1_exist) {
 			auto &time_author_entry_fexist = db_history[sha1];
 			if (get<0>(time_author_entry_fexist) != time) {
-				clear(sb) << u8"备份 " + fname + u8" 信息与数据库中的时间不同， 数据库中为（将不更新）： " +
+				clear(sb) << u8"备份记录信息与数据库中的时间不同， 数据库中为（将不更新）： " +
 							 get<0>(time_author_entry_fexist);
 				db_log_print(sb);
 			}
 			if (get<1>(time_author_entry_fexist) != authorID) {
-				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的作者不同， 数据库中为（将不更新）： "
+				clear(sb) << u8"备份记录信息与数据库中的作者不同， 数据库中为（将不更新）： "
 					<< to_string(get<1>(time_author_entry_fexist)) << '.'
 					<< db_id_to_author[get<1>(time_author_entry_fexist)];
 				db_log_print(sb);
 			}
 			if (get<2>(time_author_entry_fexist) != entry) {
-				clear(sb) << u8"备份 " << fname << u8" 信息与数据库中的文件名不同， 数据库中为（将不更新）： "
+				clear(sb) << u8"备份记录信息与数据库中的文件名不同， 数据库中为（将不更新）： "
 					<< get<2>(time_author_entry_fexist);
 				db_log_print(sb);
 			}
@@ -280,7 +259,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			if (stmt_select4.executeStep()) {
 				const Str &db_hash = stmt_select4.getColumn(0);
 				clear(sb) << u8"检测到数据库的 history 表格的 hash 改变（将更新）："
-								 << db_hash << " -> " << sha1 << ' ' << fname;
+								 << db_hash << " -> " << sha1 << ' ' << entry;
 				db_log_print(sb);
 				stmt_update.bind(1, sha1);
 				stmt_update.bind(2, db_hash);
@@ -288,7 +267,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 				stmt_update.reset();
 			}
 			else {
-				clear(sb) << u8"数据库的 history 表格中不存在备份文件（将添加）：" << sha1 << " " << fname;
+				clear(sb) << u8"数据库的 history 表格中不存在备份记录（将添加）：" << sha1 << " " << entry;
 				db_log_print(sb);
 				stmt_insert.bind(1, sha1);
 				stmt_insert.bind(2, time);
@@ -302,11 +281,12 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 			stmt_select4.reset();
 		}
 	}
+	stmt_backup.reset();
 
 	for (auto &row : db_history) {
 		if (!get<3>(row.second)) {
-			clear(sb) << u8"数据库 history 中文件不存在（将删除）：" << row.first << ", " << get<0>(row.second) << ", " <<
-				 get<1>(row.second) << ", " << get<2>(row.second);
+			clear(sb) << u8"数据库 history 中记录不存在于备份数据库（将删除）：" << row.first << ", "
+				 << get<0>(row.second) << ", " << get<1>(row.second) << ", " << get<2>(row.second);
 			db_log_print(sb);
 			stmt_delete.bind(1, row.first); stmt_delete.exec(); stmt_delete.reset();
 		}
@@ -314,7 +294,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 	cout << "\ndone." << endl;
 
 	for (auto &new_author : new_authors)
-		cout << u8"新作者： " << new_author.second << ". " << new_author.first << endl;
+		cout << u8"新作者： " << new_author.first << ". " << new_author.second << endl;
 
 	cout << "\nupdating author contribution..." << endl;
 
@@ -325,7 +305,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		stmt_select3.bind(1, (int64_t)e.first); // authors.id
 		if (!stmt_select3.executeStep()) throw internal_err(SLS_WHERE);
 		if (gv::is_wiki && stmt_select3.getColumn(0).getInt64() >= 0)
-			throw internal_err(u8"所有备份文件必须转换成 authors.aka 的！");
+			throw internal_err(u8"所有备份记录必须转换成 authors.aka 的！");
 		stmt_select3.reset();
 		// update authors.contrib
 		stmt_contrib.bind(1, (int64_t)e.second); // authors.contrib
@@ -423,72 +403,116 @@ inline void db_get_history(vecStr_O history_hash, Str_I entry, SQLite::Database 
 // `redo_all = false` will only update "history.add/del=-1;" case
 inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) {
 	cout << "calculating history.add/del..." << endl;
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
 	SQLite::Statement stmt_select(db_rw, R"(SELECT "id" FROM "entries";)");
 	vecStr entries;
 	while (stmt_select.executeStep())
 		entries.push_back(stmt_select.getColumn(0));
 
-	SQLite::Statement stmt_select2(db_rw,
-		R"(SELECT "hash", "time", "author", "add", "del" FROM "history"
-			WHERE "entry"=? ORDER BY "time";)");
-	Str fname_old, fname, str, str_old;
+	struct BackupRec {
+		int64_t id = 0;
+		int64_t prev_ver = 0;
+		bool prev_null = true;
+		Str hash;
+		Str diff_json;
+	};
+
+	SQLite::Statement stmt_backup(db_backup,
+		R"(SELECT "id", "prev_ver", "hash", "diff" FROM "backup_files" WHERE "article_id"=?;)");
+
 	unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
 	for (auto &entry : entries) {
-		fname_old.clear(); fname.clear();
-		stmt_select2.bind(1, entry);
-		bool fname_exist = true;
-		while (stmt_select2.executeStep()) {
-			if (fname_exist) fname_old = fname;
-			fname = "../PhysWiki-backup/";
-			fname << stmt_select2.getColumn(1).getString() << '_';
-			fname << to_string(stmt_select2.getColumn(2).getInt64()) << '_';
-			fname << entry << ".tex";
-			if (!file_exist(fname)) {
-				fname_exist = false; continue;
+		stmt_backup.bind(1, entry);
+		vector<BackupRec> recs;
+		while (stmt_backup.executeStep()) {
+			BackupRec rec;
+			rec.id = stmt_backup.getColumn(0).getInt64();
+			rec.prev_null = stmt_backup.getColumn(1).isNull();
+			rec.prev_ver = rec.prev_null ? 0 : stmt_backup.getColumn(1).getInt64();
+			rec.hash = stmt_backup.getColumn(2).getString();
+			rec.diff_json = stmt_backup.getColumn(3).getString();
+			recs.push_back(std::move(rec));
+		}
+		stmt_backup.reset();
+		if (recs.empty())
+			continue;
+
+		unordered_map<int64_t, size_t> id_index;
+		unordered_map<int64_t, int64_t> next_map;
+		int64_t head_id = 0;
+		for (size_t i = 0; i < recs.size(); ++i) {
+			const auto &rec = recs[i];
+			id_index[rec.id] = i;
+			if (rec.prev_null) {
+				if (head_id != 0)
+					throw internal_err(u8"backup_files 记录出现多个首版本：" + entry);
+				head_id = rec.id;
 			}
-			fname_exist = true;
-			const Str &hash = stmt_select2.getColumn(0);
-			read(str, fname); CRLF_to_LF(str);
-			if (fname_old.empty()) // first backup
-				hist_add_del[hash] = make_pair(u8count(str), 0);
 			else {
-				Long db_add = stmt_select2.getColumn(3).getInt64();
-				Long db_del = stmt_select2.getColumn(4).getInt64();
-				if (!redo_all && db_add != -1 && db_del != -1)
-					continue;
-				auto &e = hist_add_del[hash];
-				Long &add = e.first, &del = e.second;
-				cout << fname << endl;
-				read(str_old, fname_old);
-				// compare str and str_old
-				str_add_del(add, del, str_old, str);
-//				static vector<tuple<size_t, size_t, Str>> diff;
-//				str_diff(diff, str_old, str, true);
+				if (next_map.count(rec.prev_ver))
+					throw internal_err(u8"backup_files 记录出现分叉：" + entry);
+				next_map[rec.prev_ver] = rec.id;
 			}
 		}
-		stmt_select2.reset();
+		if (head_id == 0)
+			throw internal_err(u8"backup_files 记录未找到首版本：" + entry);
+
+		Str current, prev;
+		bool first = true;
+		int64_t cur = head_id;
+		while (cur != 0) {
+			auto &rec = recs[id_index[cur]];
+			vector<tuple<size_t, size_t, Str>> diff;
+			str_diff_deserialize(diff, rec.diff_json);
+			backup_apply_diff(current, diff);
+
+			Long add = 0, del = 0;
+			if (first) {
+				add = u8count(current);
+				del = 0;
+				first = false;
+			}
+			else {
+				str_add_del(add, del, prev, current);
+			}
+			hist_add_del[rec.hash] = make_pair(add, del);
+			prev = current;
+
+			auto it = next_map.find(cur);
+			cur = (it == next_map.end()) ? 0 : it->second;
+		}
 	}
 
 	// update db "history.add/del"
 	cout << "\n\nupdating db history.add/del..." << endl;
-	SQLite::Statement stmt_update(db_rw,
-		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)");
+	SQLite::Statement stmt_update(db_rw, redo_all ?
+		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=?;)" :
+		R"(UPDATE "history" SET "add"=?, "del"=? WHERE "hash"=? AND "add"=-1 AND "del"=-1;)");
 	for (auto &e : hist_add_del) {
 		auto &hash = e.first;
 		auto &add_del = e.second;
 		stmt_update.bind(1, (int64_t)add_del.first);
 		stmt_update.bind(2, (int64_t)add_del.second);
 		stmt_update.bind(3, hash);
-		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_update.exec();
 		stmt_update.reset();
 	}
 	cout << "committing transaction..." << endl;
 	cout << "done." << endl;
 }
 
-// simulate 5min backup rule, by renaming backup files
+// simulate 5min backup rule, by updating backup timestamps
 inline void history_normalize(SQLite::Database &db_rw)
 {
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READWRITE);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
 	SQLite::Statement stmt_select(db_rw,
 		R"(SELECT "entry", "author", "time", "hash" FROM "history" WHERE "hash" <> '';)");
 	//            entry                author     time         hash  time2 (new time, or "" for nothing, "d" to delete)
@@ -554,14 +578,22 @@ inline void history_normalize(SQLite::Database &db_rw)
 		}
 	}
 
-	// remove or rename files, and update db
-	SQLite::Statement stmt_select2(db_rw,
-		R"(SELECT "author", "entry" FROM "history" WHERE "hash"=?;)");
+	// update db and backup database
 	SQLite::Statement stmt_update(db_rw,
 		R"(UPDATE "history" SET "time"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw,
 		R"(DELETE FROM "history" WHERE "hash"=?;)");
-	Str fname, fname_new;
+	SQLite::Statement stmt_backup_select(db_backup,
+		R"(SELECT "id", "prev_ver" FROM "backup_files"
+		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
+	SQLite::Statement stmt_backup_next(db_backup,
+		R"(SELECT "id" FROM "backup_files" WHERE "prev_ver"=?;)");
+	SQLite::Statement stmt_backup_update_time(db_backup,
+		R"(UPDATE "backup_files" SET "timestamp"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_backup_update_link(db_backup,
+		R"(UPDATE "backup_files" SET "prev_ver"=?, "diff"=? WHERE "id"=?;)");
+	SQLite::Statement stmt_backup_delete(db_backup,
+		R"(DELETE FROM "backup_files" WHERE "id"=?;)");
 	for (auto &e5 : entry_author_time_hash_time2) {
 		for (auto &e4: e5.second) {
 			for (auto &time_hash_time2: e4.second) {
@@ -570,30 +602,61 @@ inline void history_normalize(SQLite::Database &db_rw)
 					continue;
 				auto &time = time_hash_time2.first;
 				auto &hash = time_hash_time2.second.first;
+				Long authorID;
+				if (str2int(authorID, e4.first) != size(e4.first))
+					throw internal_err(u8"history.author 非整数: " + e4.first);
+				const Str &entry = e5.first;
 
-				// rename or rename backup file, update db
-				stmt_select2.bind(1, hash);
-				if (!stmt_select2.executeStep())
-					throw internal_err(SLS_WHERE);
-				Long authorID = stmt_select2.getColumn(0).getInt64();
-				const Str &entry = stmt_select2.getColumn(1).getString();
-				stmt_select2.reset();
-				fname = "../PhysWiki-backup/" + time;
-				fname << '_' << authorID << '_' << entry << ".tex";
+				stmt_backup_select.bind(1, time);
+				stmt_backup_select.bind(2, (int64_t)authorID);
+				stmt_backup_select.bind(3, entry);
+				if (!stmt_backup_select.executeStep())
+					throw internal_err(u8"backup_files 中找不到备份记录：" + entry + " " + time);
+				const int64_t backup_id = stmt_backup_select.getColumn(0).getInt64();
+				const bool prev_null = stmt_backup_select.getColumn(1).isNull();
+				const int64_t prev_id = prev_null ? 0 : stmt_backup_select.getColumn(1).getInt64();
+				stmt_backup_select.reset();
 				if (time2 == "d") {
-					cout << "rm " << fname << endl;
-					file_remove(fname);
-					// db
+					vector<int64_t> next_ids;
+					stmt_backup_next.bind(1, backup_id);
+					while (stmt_backup_next.executeStep())
+						next_ids.push_back(stmt_backup_next.getColumn(0).getInt64());
+					stmt_backup_next.reset();
+					if (next_ids.size() > 1)
+						throw internal_err(u8"backup_files 出现多个后继记录：" + entry + " " + time);
+
+					if (!next_ids.empty()) {
+						const int64_t next_id = next_ids.front();
+						Str prev_content = (prev_id == 0) ? Str() : backup_restore_str_by_id(prev_id, db_backup);
+						Str next_content = backup_restore_str_by_id(next_id, db_backup);
+						vector<tuple<size_t, size_t, Str>> diff;
+						str_diff(diff, prev_content, next_content);
+						Str diff_json;
+						str_diff_serialize(diff_json, diff);
+						if (prev_id == 0)
+							stmt_backup_update_link.bind(1);
+						else
+							stmt_backup_update_link.bind(1, prev_id);
+						stmt_backup_update_link.bind(2, diff_json);
+						stmt_backup_update_link.bind(3, next_id);
+						if (stmt_backup_update_link.exec() != 1) throw internal_err(SLS_WHERE);
+						stmt_backup_update_link.reset();
+					}
+
+					stmt_backup_delete.bind(1, backup_id);
+					if (stmt_backup_delete.exec() != 1) throw internal_err(SLS_WHERE);
+					stmt_backup_delete.reset();
+
 					stmt_delete.bind(1, hash);
 					if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
 					stmt_delete.reset();
 				}
 				else {
-					fname_new = "../PhysWiki-backup/" + time2;
-					fname_new << '_' << authorID << '_' << entry << ".tex";
-					cout << "mv " << fname << ' ' << fname_new << endl;
-					file_move(fname_new, fname);
-					// db
+					stmt_backup_update_time.bind(1, time2);
+					stmt_backup_update_time.bind(2, backup_id);
+					if (stmt_backup_update_time.exec() != 1) throw internal_err(SLS_WHERE);
+					stmt_backup_update_time.reset();
+
 					stmt_update.bind(1, time2);
 					stmt_update.bind(2, hash);
 					if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
@@ -605,7 +668,7 @@ inline void history_normalize(SQLite::Database &db_rw)
 	db_update_history_last(db_rw);
 }
 
-// backup an entry to PhysWiki-backup
+// backup an entry to the backup database
 // use author.aka if available
 inline void arg_backup(Str_I entry, Long_I author_id, SQLite::Database &db_rw)
 {
@@ -623,10 +686,22 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_insert5(db_rw,
 		R"(INSERT OR REPLACE INTO "entry_authors" ("entry", "author", "contrib", "last_backup") VALUES (?, ?, 5, ?);)");
 
+	Str backup_path = backup_db_path();
+	backup_db_require(backup_path);
+	SQLite::Database db_backup(backup_path, SQLite::OPEN_READWRITE);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	SQLite::Statement stmt_backup_select(db_backup,
+		R"(SELECT "id", "prev_ver" FROM "backup_files"
+		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
+	SQLite::Statement stmt_backup_insert(db_backup,
+		R"(INSERT INTO "backup_files" ("timestamp", "author_id", "article_id", "size", "hash", "prev_ver", "diff")
+		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
+	SQLite::Statement stmt_backup_update(db_backup,
+		R"(UPDATE "backup_files" SET "size"=?, "hash"=?, "diff"=? WHERE "id"=?;)");
+
 	Str str; // content of entry
 	Str time_new_str;
-	Str backup_path = gv::path_in + (gv::is_wiki ? "../PhysWiki-backup/" : "backup/");
-	ensure_dir(backup_path);
 
 	// get hash, check existence
 	clear(sb) << gv::path_in;
@@ -637,6 +712,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	if (str.empty())
 		db_log_print(u8"--backup 忽略空文件：" + entry);
 	CRLF_to_LF(str);
+	if (!is_valid(str))
+		throw scan_err(u8"备份失败，文件不是合法 UTF-8：" + entry);
 	Str hash = sha1sum(str).substr(0, 16);
 
 	// check if hash exist
@@ -647,12 +724,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		Long db_author_id = stmt_select2.getColumn(1).getInt64();
 		const Str &db_entry = stmt_select2.getColumn(2);
 		stmt_select2.reset();
-		clear(sb) << "要备份的文件 hash 已经存在（将忽略）： "
-			<< db_time_str << '_' << db_author_id << '_' << db_entry << ".tex"
+		clear(sb) << "要备份的内容 hash 已经存在（将忽略）： "
+			<< db_time_str << '_' << db_author_id << '_' << db_entry
 			<< " hash=" << hash;
 		SLS_WARN(sb);
 		if (db_entry != entry)
-			throw scan_err(u8"已存在的备份文件属于另一篇文章（这不可能，因为标题 entries.caption 禁止重复，不同文章的内容不可能一样）");
+			throw scan_err(u8"已存在的备份记录属于另一篇文章（这不可能，因为标题 entries.caption 禁止重复，不同文章的内容不可能一样）");
 		return;
 	}
 	stmt_select2.reset();
@@ -662,6 +739,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	if (!stmt_select.executeStep())
 		throw internal_err(u8"arg_backup(): 找不到要备份的文章：" + entry);
 	const Str &hash_last = stmt_select.getColumn(0); // entries.last_backup
+	stmt_select.reset();
 
 	// check if is the first backup
 	if (hash_last.empty()) {
@@ -677,15 +755,23 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_insert.bind(7, "");
 		stmt_insert.exec(); stmt_insert.reset();
 
+		vector<tuple<size_t, size_t, Str>> diff;
+		str_diff(diff, Str(), str);
+		Str diff_json;
+		str_diff_serialize(diff_json, diff);
+		stmt_backup_insert.bind(1, time_new_str);
+		stmt_backup_insert.bind(2, (int64_t)author_id);
+		stmt_backup_insert.bind(3, entry);
+		stmt_backup_insert.bind(4, (int64_t)str.size());
+		stmt_backup_insert.bind(5, hash);
+		stmt_backup_insert.bind(6);
+		stmt_backup_insert.bind(7, diff_json);
+		stmt_backup_insert.exec(); stmt_backup_insert.reset();
+
 		stmt_update2.bind(1, hash);
 		stmt_update2.bind(2, entry);
 		if (stmt_update2.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update2.reset();
-		clear(sb) << backup_path
-			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
-		if (file_exist(sb))
-			scan_log_warn(u8"第一次备份的文件已存在（将覆盖）：" + sb);
-		write(str, sb);
 
 		// insert into "entry_authors", contrib 5min
 		SQLite::Statement stmt_insert3(db_rw,
@@ -715,10 +801,19 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	Long author_id_last = stmt_select2.getColumn(1).getInt64();
 	if (stmt_select2.getColumn(2).getString() != entry)
 		throw scan_err(SLS_WHERE);
-	const Str &hash_last_last = stmt_select2.getColumn(3);
 	stmt_select2.reset();
 
-	// calculate `time_new_str` in current backup file name
+	stmt_backup_select.bind(1, time_last_str);
+	stmt_backup_select.bind(2, (int64_t)author_id_last);
+	stmt_backup_select.bind(3, entry);
+	if (!stmt_backup_select.executeStep())
+		throw internal_err(u8"backup_files 中找不到备份记录：" + entry + " " + time_last_str);
+	const int64_t last_backup_id = stmt_backup_select.getColumn(0).getInt64();
+	const bool prev_null = stmt_backup_select.getColumn(1).isNull();
+	const int64_t prev_backup_id = prev_null ? 0 : stmt_backup_select.getColumn(1).getInt64();
+	stmt_backup_select.reset();
+
+	// calculate `time_new_str` in current backup time
 	bool replace = false; // replace the last backup
 	time_t time = std::time(nullptr);
 	time_t time_new = time;
@@ -737,21 +832,11 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			time_new = time_last + 1;
 	}
 
-	Str str2;
 	Long char_add, char_del;
 
 	if (replace) { // replace last (latest) backup
-		// calculate char add/del
-		stmt_select2.bind(1, hash_last_last);
-		if (!stmt_select2.executeStep())
-			throw internal_err(SLS_WHERE);
-		const Str &time_last_last_str = stmt_select2.getColumn(0);
-		Long author_id_last_last = stmt_select2.getColumn(1).getInt64();
-		stmt_select2.reset();
-		clear(sb) << backup_path
-			<< time_last_last_str << '_' << author_id_last_last << '_' << entry << ".tex";
-		read(str2, sb);
-		str_add_del(char_add, char_del, str2, str);
+		Str prev_content = (prev_backup_id == 0) ? Str() : backup_restore_str_by_id(prev_backup_id, db_backup);
+		str_add_del(char_add, char_del, prev_content, str);
 
 		// update db
 		SQLite::Statement stmt_update(db_rw,
@@ -766,12 +851,16 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			char_add << ", del = " << char_del;
 		db_log_print(sb);
 
-		// replace last (latest) backup
-		clear(sb) << backup_path
-			<< time_last_str << '_' << author_id_last << '_' << entry << ".tex";
-		if (!file_exist(sb))
-			SLS_WARN(u8"数据库中备份文件不存在：" + sb);
-		write(str, sb);
+		vector<tuple<size_t, size_t, Str>> diff;
+		str_diff(diff, prev_content, str);
+		Str diff_json;
+		str_diff_serialize(diff_json, diff);
+		stmt_backup_update.bind(1, (int64_t)str.size());
+		stmt_backup_update.bind(2, hash);
+		stmt_backup_update.bind(3, diff_json);
+		stmt_backup_update.bind(4, last_backup_id);
+		if (stmt_backup_update.exec() != 1) throw internal_err(SLS_WHERE);
+		stmt_backup_update.reset();
 
 		// update "entry_authors.last_backup"
 		SQLite::Statement stmt_update5(db_rw,
@@ -790,11 +879,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		db_log_print(u8"更新 entry_authors.last_backup");
 	}
 	else { // !replace  (new backup)
-		// calculate char add/del
-		clear(sb) << backup_path
-			<< time_last_str << '_' << author_id_last << '_' << entry << ".tex";
-		read(str2, sb);
-		str_add_del(char_add, char_del, str2, str);
+		Str prev_content = backup_restore_str_by_id(last_backup_id, db_backup);
+		str_add_del(char_add, char_del, prev_content, str);
 
 		// update db
 		time_new_str = time_t2str(time_new, "%Y%m%d%H%M");
@@ -811,12 +897,18 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
 		db_log_print(sb);
 
-		// write new file
-		clear(sb) << backup_path
-			<< time_new_str << '_' << author_id << '_' << entry << ".tex";
-		if (file_exist(sb))
-			SLS_WARN(u8"要备份的文件已经存在（将覆盖）：" + sb);
-		write(str, sb);
+		vector<tuple<size_t, size_t, Str>> diff;
+		str_diff(diff, prev_content, str);
+		Str diff_json;
+		str_diff_serialize(diff_json, diff);
+		stmt_backup_insert.bind(1, time_new_str);
+		stmt_backup_insert.bind(2, (int64_t)author_id);
+		stmt_backup_insert.bind(3, entry);
+		stmt_backup_insert.bind(4, (int64_t)str.size());
+		stmt_backup_insert.bind(5, hash);
+		stmt_backup_insert.bind(6, last_backup_id);
+		stmt_backup_insert.bind(7, diff_json);
+		stmt_backup_insert.exec(); stmt_backup_insert.reset();
 
 		// update "entry_authors", add 5min
 		stmt_update3.bind(1, hash); // last_backup
@@ -849,10 +941,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 }
 
 // --history
-// update db "history" table from backup files
+// update db "history" table from backup database
 inline void arg_history(SQLite::Database &db_rw)
 {
 		db_update_author_history(db_rw);
 		db_update_authors(db_rw);
 }
-

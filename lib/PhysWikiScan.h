@@ -1125,11 +1125,15 @@ inline void arg_delete_cleanup(SQLite::Database &db_rw, unique_ptr<SQLite::Datab
 inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw, unique_ptr<SQLite::Database> &db_read_wiki)
 {
 	vecStr history_hash, figures, figs_dangling;
+	Str backup_db_file = backup_db_path();
+	backup_db_require(backup_db_file);
+	SQLite::Database db_backup(backup_db_file, SQLite::OPEN_READWRITE);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
 	SQLite::Statement stmt_select0(db_rw, R"(SELECT "deleted" FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select1(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_backup_delete(db_backup, R"(DELETE FROM "backup_files" WHERE "article_id"=?;)");
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");
@@ -1155,28 +1159,22 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw, unique_p
 			arg_delete({entry}, db_rw, db_read_wiki, true);
 		arg_delete_figs_hard(figures, db_rw);
 
-		// delete all history records and files
+		// delete all history records and backup records
 		db_get_history(history_hash, entry, db_rw);
 		stmt_update.bind(1, entry);
 		if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
 		stmt_update.reset();
 		if (!history_hash.empty()) {
-			cout << "deleting " << history_hash.size() << " history (files and db)." << endl;
+			cout << "deleting " << history_hash.size() << " history (db)." << endl;
 			for (auto &hash: history_hash) {
-				stmt_select2.bind(1, hash);
-				if (!stmt_select2.executeStep())
-					throw internal_err(SLS_WHERE);
-				if (entry != stmt_select2.getColumn(2).getString())
-					throw internal_err(SLS_WHERE);
-				clear(sb) << "../PhysWiki-backup/" << stmt_select2.getColumn(0).getString() << '_'
-					<< stmt_select2.getColumn(1).getInt64() << '_' << entry << ".tex";
-				stmt_select2.reset();
 				stmt_delete.bind(1, hash);
 				if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
 				stmt_delete.reset();
-				file_remove(sb);
 			}
 		}
+		stmt_backup_delete.bind(1, entry);
+		stmt_backup_delete.exec();
+		stmt_backup_delete.reset();
 
 		// delete from entries
 		try {

@@ -72,8 +72,8 @@ struct BackupInfo {
 int main()
 {
 	const std::string dir = "/mnt/g/github/PhysWiki-backup/";
-	const std::string sql_path = dir + "PhysWiki-backup.sql";
-	const std::string db_path = dir + "PhysWiki-backup.db";
+	const std::string sql_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.sql";
+	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
 
 	if (!file_exist(sql_path)) {
 		std::cerr << "SQL schema not found: " << sql_path << '\n';

@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 	try {
 		setenv("SQLITE_TMPDIR", "/tmp", 1);
 		const std::string dir = "/mnt/g/github/PhysWiki-backup/";
-		const std::string db_path = dir + "PhysWiki-backup.db";
+		const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
 
 		if (!file_exist(db_path)) {
 			std::cerr << "Database not found: " << db_path << '\n';
