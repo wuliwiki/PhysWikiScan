@@ -1,7 +1,7 @@
 #pragma once
 #include "sqlite_db.h"
 #include "backup_db.h"
-#include "../SLISC/str/str_diff_patch.h"
+#include "../SLISC/str/str_diff_patch2.h"
 
 inline Str backup_db_path()
 {
@@ -202,7 +202,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "history" SET "hash"=? WHERE "hash"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_backup(db_backup,
-		R"(SELECT "timestamp", "author_id", "article_id", "hash" FROM "backup_files";)");
+		R"(SELECT "time", "author", "entry", "hash" FROM "backup_files";)");
 
 	while (stmt_backup.executeStep()) {
 		time = stmt_backup.getColumn(0).getString();
@@ -415,14 +415,14 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 
 	struct BackupRec {
 		int64_t id = 0;
-		int64_t prev_ver = 0;
-		bool prev_null = true;
+		int64_t last_id = 0;
+		bool last_null = true;
 		Str hash;
 		Str diff_json;
 	};
 
 	SQLite::Statement stmt_backup(db_backup,
-		R"(SELECT "id", "prev_ver", "hash", "diff" FROM "backup_files" WHERE "article_id"=?;)");
+		R"(SELECT "id", "last_id", "hash", "diff" FROM "backup_files" WHERE "entry"=?;)");
 
 	unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
 	for (auto &entry : entries) {
@@ -431,8 +431,8 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 		while (stmt_backup.executeStep()) {
 			BackupRec rec;
 			rec.id = stmt_backup.getColumn(0).getInt64();
-			rec.prev_null = stmt_backup.getColumn(1).isNull();
-			rec.prev_ver = rec.prev_null ? 0 : stmt_backup.getColumn(1).getInt64();
+			rec.last_null = stmt_backup.getColumn(1).isNull();
+			rec.last_id = rec.last_null ? 0 : stmt_backup.getColumn(1).getInt64();
 			rec.hash = stmt_backup.getColumn(2).getString();
 			rec.diff_json = stmt_backup.getColumn(3).getString();
 			recs.push_back(std::move(rec));
@@ -447,15 +447,15 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 		for (size_t i = 0; i < recs.size(); ++i) {
 			const auto &rec = recs[i];
 			id_index[rec.id] = i;
-			if (rec.prev_null) {
+			if (rec.last_null) {
 				if (head_id != 0)
 					throw internal_err(u8"backup_files 记录出现多个首版本：" + entry);
 				head_id = rec.id;
 			}
 			else {
-				if (next_map.count(rec.prev_ver))
+				if (next_map.count(rec.last_id))
 					throw internal_err(u8"backup_files 记录出现分叉：" + entry);
-				next_map[rec.prev_ver] = rec.id;
+				next_map[rec.last_id] = rec.id;
 			}
 		}
 		if (head_id == 0)
@@ -584,14 +584,14 @@ inline void history_normalize(SQLite::Database &db_rw)
 	SQLite::Statement stmt_delete(db_rw,
 		R"(DELETE FROM "history" WHERE "hash"=?;)");
 	SQLite::Statement stmt_backup_select(db_backup,
-		R"(SELECT "id", "prev_ver" FROM "backup_files"
-		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
+		R"(SELECT "id", "last_id" FROM "backup_files"
+		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_backup_next(db_backup,
-		R"(SELECT "id" FROM "backup_files" WHERE "prev_ver"=?;)");
+		R"(SELECT "id" FROM "backup_files" WHERE "last_id"=?;)");
 	SQLite::Statement stmt_backup_update_time(db_backup,
-		R"(UPDATE "backup_files" SET "timestamp"=? WHERE "id"=?;)");
+		R"(UPDATE "backup_files" SET "time"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_backup_update_link(db_backup,
-		R"(UPDATE "backup_files" SET "prev_ver"=?, "diff"=? WHERE "id"=?;)");
+		R"(UPDATE "backup_files" SET "last_id"=?, "diff"=? WHERE "id"=?;)");
 	SQLite::Statement stmt_backup_delete(db_backup,
 		R"(DELETE FROM "backup_files" WHERE "id"=?;)");
 	for (auto &e5 : entry_author_time_hash_time2) {
@@ -613,8 +613,8 @@ inline void history_normalize(SQLite::Database &db_rw)
 				if (!stmt_backup_select.executeStep())
 					throw internal_err(u8"backup_files 中找不到备份记录：" + entry + " " + time);
 				const int64_t backup_id = stmt_backup_select.getColumn(0).getInt64();
-				const bool prev_null = stmt_backup_select.getColumn(1).isNull();
-				const int64_t prev_id = prev_null ? 0 : stmt_backup_select.getColumn(1).getInt64();
+				const bool last_null = stmt_backup_select.getColumn(1).isNull();
+				const int64_t last_id = last_null ? 0 : stmt_backup_select.getColumn(1).getInt64();
 				stmt_backup_select.reset();
 				if (time2 == "d") {
 					vector<int64_t> next_ids;
@@ -627,16 +627,16 @@ inline void history_normalize(SQLite::Database &db_rw)
 
 					if (!next_ids.empty()) {
 						const int64_t next_id = next_ids.front();
-						Str prev_content = (prev_id == 0) ? Str() : backup_restore_str_by_id(prev_id, db_backup);
+						Str prev_content = (last_id == 0) ? Str() : backup_restore_str_by_id(last_id, db_backup);
 						Str next_content = backup_restore_str_by_id(next_id, db_backup);
 						vector<tuple<size_t, size_t, Str>> diff;
 						str_diff(diff, prev_content, next_content);
 						Str diff_json;
 						str_diff_serialize(diff_json, diff);
-						if (prev_id == 0)
+						if (last_id == 0)
 							stmt_backup_update_link.bind(1);
 						else
-							stmt_backup_update_link.bind(1, prev_id);
+							stmt_backup_update_link.bind(1, last_id);
 						stmt_backup_update_link.bind(2, diff_json);
 						stmt_backup_update_link.bind(3, next_id);
 						if (stmt_backup_update_link.exec() != 1) throw internal_err(SLS_WHERE);
@@ -692,10 +692,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	db_backup.exec("PRAGMA busy_timeout = 3000;");
 
 	SQLite::Statement stmt_backup_select(db_backup,
-		R"(SELECT "id", "prev_ver" FROM "backup_files"
-		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
+		R"(SELECT "id", "last_id" FROM "backup_files"
+		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
 	SQLite::Statement stmt_backup_insert(db_backup,
-		R"(INSERT INTO "backup_files" ("timestamp", "author_id", "article_id", "size", "hash", "prev_ver", "diff")
+		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
 		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_backup_update(db_backup,
 		R"(UPDATE "backup_files" SET "size"=?, "hash"=?, "diff"=? WHERE "id"=?;)");

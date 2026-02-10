@@ -1133,7 +1133,7 @@ inline void arg_delete_hard(vecStr_IO entries, SQLite::Database &db_rw, unique_p
 	SQLite::Statement stmt_select1(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_update(db_rw, R"(UPDATE "entries" SET "last_backup"='' WHERE "id"=?;)");
 	SQLite::Statement stmt_delete(db_rw, R"(DELETE FROM "history" WHERE "hash"=?;)");
-	SQLite::Statement stmt_backup_delete(db_backup, R"(DELETE FROM "backup_files" WHERE "article_id"=?;)");
+	SQLite::Statement stmt_backup_delete(db_backup, R"(DELETE FROM "backup_files" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete0(db_rw, R"(DELETE FROM "entries" WHERE "id"=?;)");
 	SQLite::Statement stmt_select3(db_rw, R"(SELECT "id" FROM "figures" WHERE "entry"=?;)");
 	SQLite::Statement stmt_delete1(db_rw, R"(DELETE FROM "figures" WHERE "id"=?;)");

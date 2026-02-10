@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <unordered_set>
 #include <vector>
 
 using namespace slisc;
@@ -36,7 +37,7 @@ static std::string basename_only(const std::string &path)
 	return path.substr(pos + 1);
 }
 
-static bool parse_filename(const std::string &name, std::string &timestamp, std::string &author, std::string &article)
+static bool parse_filename(const std::string &name, std::string &time, int64_t &author, std::string &entry)
 {
 	if (name.size() < 5 || name.substr(name.size() - 4) != ".tex")
 		return false;
@@ -44,35 +45,35 @@ static bool parse_filename(const std::string &name, std::string &timestamp, std:
 	size_t pos2 = name.rfind('_');
 	if (pos1 == std::string::npos || pos1 == pos2)
 		return false;
-	timestamp = name.substr(0, pos1);
-	author = name.substr(pos1 + 1, pos2 - pos1 - 1);
-	article = name.substr(pos2 + 1, name.size() - pos2 - 1 - 4);
-	if (timestamp.size() != 12 || author.empty() || article.empty())
+	time = name.substr(0, pos1);
+	std::string author_str = name.substr(pos1 + 1, pos2 - pos1 - 1);
+	entry = name.substr(pos2 + 1, name.size() - pos2 - 1 - 4);
+	if (time.size() != 12 || author_str.empty() || entry.empty())
 		return false;
-	for (char c : timestamp) {
+	for (char c : time) {
 		if (c < '0' || c > '9')
 			return false;
 	}
-	for (char c : author) {
+	for (char c : author_str) {
 		if (c < '0' || c > '9')
 			return false;
 	}
+	author = std::stoll(author_str);
 	return true;
 }
 
 struct BackupInfo {
 	std::string path;
 	std::string filename;
-	std::string timestamp;
-	std::string author;
-	int64_t author_id = 0;
-	std::string article;
+	std::string time;
+	int64_t author = 0;
+	std::string entry;
 };
 
 int main()
 {
 	const std::string dir = "/mnt/g/github/PhysWiki-backup/";
-	const std::string sql_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.sql";
+	const std::string sql_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup-template.sql";
 	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
 
 	if (!file_exist(sql_path)) {
@@ -81,6 +82,10 @@ int main()
 	}
 	if (file_exist(db_path))
 		file_remove(db_path);
+	if (file_exist(db_path + "-wal"))
+		file_remove(db_path + "-wal");
+	if (file_exist(db_path + "-shm"))
+		file_remove(db_path + "-shm");
 
 	std::string schema;
 	if (!read_file(sql_path, schema)) {
@@ -89,24 +94,30 @@ int main()
 	}
 
 	std::map<std::string, std::vector<BackupInfo>> groups;
+	std::unordered_set<std::string> seen_keys;
 	std::vector<std::string> delete_paths;
 	vecStr fnames;
 	file_list(fnames, dir);
 	for (const auto &name_full : fnames) {
 		std::string name = basename_only(name_full);
-		std::string timestamp, author, article;
-		if (!parse_filename(name, timestamp, author, article))
+		std::string time, entry;
+		int64_t author = 0;
+		if (!parse_filename(name, time, author, entry))
 			continue;
+		std::string key = time + "|" + std::to_string(author) + "|" + entry;
+		if (!seen_keys.insert(key).second) {
+			std::cerr << "Duplicate backup entry detected, skipping: " << name << '\n';
+			continue;
+		}
 		BackupInfo info;
 		info.filename = name;
 		info.path = name_full;
 		if (name_full.find('/') == std::string::npos && name_full.find('\\') == std::string::npos)
 			info.path = dir + name_full;
-		info.timestamp = timestamp;
+		info.time = time;
 		info.author = author;
-		info.author_id = std::stoll(author);
-		info.article = article;
-		groups[article].push_back(info);
+		info.entry = entry;
+		groups[entry].push_back(info);
 		delete_paths.push_back(info.path);
 	}
 
@@ -116,21 +127,21 @@ int main()
 	db.exec(schema);
 
 	SQLite::Statement insert_stmt(db,
-		R"(INSERT INTO "backup_files" ("timestamp", "author_id", "article_id", "size", "hash", "prev_ver", "diff")
+		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
 		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement select_stmt(db,
-		R"(SELECT "id", "prev_ver", "size", "hash", "diff" FROM "backup_files"
-		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
+		R"(SELECT "id", "last_id", "size", "hash", "diff" FROM "backup_files"
+		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
 
 	SQLite::Transaction txn(db);
 	size_t inserted = 0;
 	for (auto &kv : groups) {
 		auto &files = kv.second;
 		std::sort(files.begin(), files.end(), [](const BackupInfo &a, const BackupInfo &b) {
-			if (a.timestamp != b.timestamp)
-				return a.timestamp < b.timestamp;
-			if (a.author_id != b.author_id)
-				return a.author_id < b.author_id;
+			if (a.time != b.time)
+				return a.time < b.time;
+			if (a.author != b.author)
+				return a.author < b.author;
 			return a.filename < b.filename;
 		});
 
@@ -155,9 +166,9 @@ int main()
 
 			const std::string hash = sha1sum(content).substr(0, 16);
 
-			insert_stmt.bind(1, info.timestamp);
-			insert_stmt.bind(2, info.author_id);
-			insert_stmt.bind(3, info.article);
+			insert_stmt.bind(1, info.time);
+			insert_stmt.bind(2, info.author);
+			insert_stmt.bind(3, info.entry);
 			insert_stmt.bind(4, static_cast<int64_t>(content.size()));
 			insert_stmt.bind(5, hash);
 			if (prev_id == 0) {
@@ -182,10 +193,10 @@ int main()
 	for (auto &kv : groups) {
 		auto &files = kv.second;
 		std::sort(files.begin(), files.end(), [](const BackupInfo &a, const BackupInfo &b) {
-			if (a.timestamp != b.timestamp)
-				return a.timestamp < b.timestamp;
-			if (a.author_id != b.author_id)
-				return a.author_id < b.author_id;
+			if (a.time != b.time)
+				return a.time < b.time;
+			if (a.author != b.author)
+				return a.author < b.author;
 			return a.filename < b.filename;
 		});
 		std::string prev_content;
@@ -202,29 +213,29 @@ int main()
 				return 1;
 			}
 
-			select_stmt.bind(1, info.timestamp);
-			select_stmt.bind(2, info.author_id);
-			select_stmt.bind(3, info.article);
+			select_stmt.bind(1, info.time);
+			select_stmt.bind(2, info.author);
+			select_stmt.bind(3, info.entry);
 			if (!select_stmt.executeStep()) {
 				std::cerr << "Missing db record for " << info.filename << '\n';
 				return 1;
 			}
 			const int64_t id_db = select_stmt.getColumn(0).getInt64();
-			const bool prev_null = select_stmt.getColumn(1).isNull();
-			const int64_t prev_db = prev_null ? 0 : select_stmt.getColumn(1).getInt64();
+			const bool last_null = select_stmt.getColumn(1).isNull();
+			const int64_t last_db = last_null ? 0 : select_stmt.getColumn(1).getInt64();
 			const int64_t size_db = select_stmt.getColumn(2).getInt64();
 			const std::string hash_db = select_stmt.getColumn(3).getString();
 			const std::string diff_db = select_stmt.getColumn(4).getString();
 			select_stmt.reset();
 
 			if (prev_id == 0) {
-				if (!prev_null) {
-					std::cerr << "Unexpected prev_ver for " << info.filename << '\n';
+				if (!last_null) {
+					std::cerr << "Unexpected last_id for " << info.filename << '\n';
 					return 1;
 				}
 			}
-			else if (prev_db != prev_id) {
-				std::cerr << "prev_ver mismatch for " << info.filename << '\n';
+			else if (last_db != prev_id) {
+				std::cerr << "last_id mismatch for " << info.filename << '\n';
 				return 1;
 			}
 

@@ -10,14 +10,14 @@
 
 struct BackupRecord {
 	int64_t id = 0;
-	Str timestamp;
-	int64_t author_id = 0;
-	Str article_id;
+	Str time;
+	int64_t author = 0;
+	Str entry;
 	int64_t size = 0;
 	Str hash;
 	Str diff_json;
-	int64_t prev_ver = 0;
-	bool prev_null = true;
+	int64_t last_id = 0;
+	bool last_null = true;
 };
 
 inline void backup_apply_diff(Str_O out, const vector<tuple<size_t, size_t, Str>> &diff)
@@ -29,19 +29,19 @@ inline void backup_apply_diff(Str_O out, const vector<tuple<size_t, size_t, Str>
 inline bool backup_load_record(BackupRecord &rec, SQLite::Database &db, int64_t id)
 {
 	SQLite::Statement stmt(db,
-		R"(SELECT "id", "timestamp", "author_id", "article_id", "size", "hash", "prev_ver", "diff"
+		R"(SELECT "id", "time", "author", "entry", "size", "hash", "last_id", "diff"
 		   FROM "backup_files" WHERE "id"=?;)");
 	stmt.bind(1, id);
 	if (!stmt.executeStep())
 		return false;
 	rec.id = stmt.getColumn(0).getInt64();
-	rec.timestamp = stmt.getColumn(1).getString();
-	rec.author_id = stmt.getColumn(2).getInt64();
-	rec.article_id = stmt.getColumn(3).getString();
+	rec.time = stmt.getColumn(1).getString();
+	rec.author = stmt.getColumn(2).getInt64();
+	rec.entry = stmt.getColumn(3).getString();
 	rec.size = stmt.getColumn(4).getInt64();
 	rec.hash = stmt.getColumn(5).getString();
-	rec.prev_null = stmt.getColumn(6).isNull();
-	rec.prev_ver = rec.prev_null ? 0 : stmt.getColumn(6).getInt64();
+	rec.last_null = stmt.getColumn(6).isNull();
+	rec.last_id = rec.last_null ? 0 : stmt.getColumn(6).getInt64();
 	rec.diff_json = stmt.getColumn(7).getString();
 	return true;
 }
@@ -58,9 +58,9 @@ inline Str backup_restore_str_by_id(int64_t id, SQLite::Database &db)
 		if (!backup_load_record(rec, db, cur))
 			throw runtime_error("backup_restore_str_by_id(): missing record");
 		chain.push_back(rec);
-		if (rec.prev_null)
+		if (rec.last_null)
 			break;
-		cur = rec.prev_ver;
+		cur = rec.last_id;
 	}
 
 	Str content;
@@ -82,14 +82,14 @@ inline Str backup_restore_str_by_id(int64_t id, SQLite::Database &db)
 	return content;
 }
 
-inline Str backup_restore_str(Str_I timestamp, int64_t author_id, Str_I article_id, SQLite::Database &db)
+inline Str backup_restore_str(Str_I time, int64_t author, Str_I entry, SQLite::Database &db)
 {
 	SQLite::Statement stmt(db,
 		R"(SELECT "id" FROM "backup_files"
-		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
-	stmt.bind(1, timestamp);
-	stmt.bind(2, author_id);
-	stmt.bind(3, article_id);
+		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
+	stmt.bind(1, time);
+	stmt.bind(2, author);
+	stmt.bind(3, entry);
 	if (!stmt.executeStep())
 		throw runtime_error("backup_restore_str(): record not found");
 	const int64_t id = stmt.getColumn(0).getInt64();
@@ -107,33 +107,33 @@ inline Str backup_diff_json_by_id(int64_t id1, int64_t id2, SQLite::Database &db
 	return json;
 }
 
-inline Str backup_add_record(int64_t author_id, Str_I article_id, Str_I new_ver, SQLite::Database &db)
+inline Str backup_add_record(int64_t author, Str_I entry, Str_I new_ver, SQLite::Database &db)
 {
 	if (!is_valid(new_ver))
 		throw runtime_error("backup_add_record(): invalid UTF-8");
 
-	Str timestamp = time_str("%Y%m%d%H%M");
+	Str time = time_str("%Y%m%d%H%M");
 	SQLite::Statement stmt_exist(db,
 		R"(SELECT 1 FROM "backup_files"
-		   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=? LIMIT 1;)");
+		   WHERE "time"=? AND "author"=? AND "entry"=? LIMIT 1;)");
 	while (true) {
-		stmt_exist.bind(1, timestamp);
-		stmt_exist.bind(2, author_id);
-		stmt_exist.bind(3, article_id);
+		stmt_exist.bind(1, time);
+		stmt_exist.bind(2, author);
+		stmt_exist.bind(3, entry);
 		bool exists = stmt_exist.executeStep();
 		stmt_exist.reset();
 		if (!exists)
 			break;
-		time_t t = str2time_t(timestamp);
+		time_t t = str2time_t(time);
 		t += 60;
-		timestamp = time_t2str(t, "%Y%m%d%H%M");
+		time = time_t2str(t, "%Y%m%d%H%M");
 	}
 
 	SQLite::Statement stmt_last(db,
 		R"(SELECT "id" FROM "backup_files"
-		   WHERE "article_id"=?
-		   ORDER BY "timestamp" DESC, "author_id" DESC LIMIT 1;)");
-	stmt_last.bind(1, article_id);
+		   WHERE "entry"=?
+		   ORDER BY "time" DESC, "author" DESC LIMIT 1;)");
+	stmt_last.bind(1, entry);
 	int64_t prev_id = 0;
 	Str prev_content;
 	if (stmt_last.executeStep()) {
@@ -148,11 +148,11 @@ inline Str backup_add_record(int64_t author_id, Str_I article_id, Str_I new_ver,
 
 	const Str hash = sha1sum(new_ver).substr(0, 16);
 	SQLite::Statement insert_stmt(db,
-		R"(INSERT INTO "backup_files" ("timestamp", "author_id", "article_id", "size", "hash", "prev_ver", "diff")
+		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
 		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
-	insert_stmt.bind(1, timestamp);
-	insert_stmt.bind(2, author_id);
-	insert_stmt.bind(3, article_id);
+	insert_stmt.bind(1, time);
+	insert_stmt.bind(2, author);
+	insert_stmt.bind(3, entry);
 	insert_stmt.bind(4, static_cast<int64_t>(new_ver.size()));
 	insert_stmt.bind(5, hash);
 	if (prev_id == 0)
@@ -161,5 +161,5 @@ inline Str backup_add_record(int64_t author_id, Str_I article_id, Str_I new_ver,
 		insert_stmt.bind(6, prev_id);
 	insert_stmt.bind(7, diff_json);
 	insert_stmt.exec();
-	return timestamp;
+	return time;
 }

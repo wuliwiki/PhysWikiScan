@@ -28,7 +28,7 @@ static bool write_file(const std::string &path, const std::string &data)
 	return out.good();
 }
 
-static bool parse_filename(const std::string &name, std::string &timestamp, int64_t &author_id, std::string &article)
+static bool parse_filename(const std::string &name, std::string &time, int64_t &author, std::string &entry)
 {
 	if (name.size() < 5 || name.substr(name.size() - 4) != ".tex")
 		return false;
@@ -36,49 +36,49 @@ static bool parse_filename(const std::string &name, std::string &timestamp, int6
 	size_t pos2 = name.rfind('_');
 	if (pos1 == std::string::npos || pos1 == pos2)
 		return false;
-	timestamp = name.substr(0, pos1);
-	std::string author = name.substr(pos1 + 1, pos2 - pos1 - 1);
-	article = name.substr(pos2 + 1, name.size() - pos2 - 1 - 4);
-	if (timestamp.size() != 12 || author.empty() || article.empty())
+	time = name.substr(0, pos1);
+	std::string author_str = name.substr(pos1 + 1, pos2 - pos1 - 1);
+	entry = name.substr(pos2 + 1, name.size() - pos2 - 1 - 4);
+	if (time.size() != 12 || author_str.empty() || entry.empty())
 		return false;
-	for (char c : timestamp) {
+	for (char c : time) {
 		if (c < '0' || c > '9')
 			return false;
 	}
-	for (char c : author) {
+	for (char c : author_str) {
 		if (c < '0' || c > '9')
 			return false;
 	}
-	author_id = std::stoll(author);
+	author = std::stoll(author_str);
 	return true;
 }
 
 struct Record {
 	int64_t id = 0;
-	std::string timestamp;
-	int64_t author_id = 0;
+	std::string time;
+	int64_t author = 0;
 	int64_t size = 0;
 	std::string hash;
 	std::string diff_json;
-	int64_t prev_ver = 0;
-	bool prev_null = true;
+	int64_t last_id = 0;
+	bool last_null = true;
 };
 
 static bool load_record(SQLite::Database &db, int64_t id, Record &rec)
 {
 	SQLite::Statement stmt(db,
-		R"(SELECT "id", "timestamp", "author_id", "size", "hash", "prev_ver", "diff"
+		R"(SELECT "id", "time", "author", "size", "hash", "last_id", "diff"
 		   FROM "backup_files" WHERE "id"=?;)");
 	stmt.bind(1, id);
 	if (!stmt.executeStep())
 		return false;
 	rec.id = stmt.getColumn(0).getInt64();
-	rec.timestamp = stmt.getColumn(1).getString();
-	rec.author_id = stmt.getColumn(2).getInt64();
+	rec.time = stmt.getColumn(1).getString();
+	rec.author = stmt.getColumn(2).getInt64();
 	rec.size = stmt.getColumn(3).getInt64();
 	rec.hash = stmt.getColumn(4).getString();
-	rec.prev_null = stmt.getColumn(5).isNull();
-	rec.prev_ver = rec.prev_null ? 0 : stmt.getColumn(5).getInt64();
+	rec.last_null = stmt.getColumn(5).isNull();
+	rec.last_id = rec.last_null ? 0 : stmt.getColumn(5).getInt64();
 	rec.diff_json = stmt.getColumn(6).getString();
 	return true;
 }
@@ -112,19 +112,19 @@ int main(int argc, char **argv)
 
 		size_t restored = 0;
 		if (argc >= 3 && std::string(argv[1]) == "checkout") {
-			std::string timestamp;
-			int64_t author_id = 0;
-			std::string article;
-			if (!parse_filename(argv[2], timestamp, author_id, article)) {
+			std::string time;
+			int64_t author = 0;
+			std::string entry;
+			if (!parse_filename(argv[2], time, author, entry)) {
 				std::cerr << "Invalid filename: " << argv[2] << '\n';
 				return 1;
 			}
 			SQLite::Statement stmt(*db,
 				R"(SELECT "id", "size", "hash" FROM "backup_files"
-				   WHERE "timestamp"=? AND "author_id"=? AND "article_id"=?;)");
-			stmt.bind(1, timestamp);
-			stmt.bind(2, author_id);
-			stmt.bind(3, article);
+				   WHERE "time"=? AND "author"=? AND "entry"=?;)");
+			stmt.bind(1, time);
+			stmt.bind(2, author);
+			stmt.bind(3, entry);
 			if (!stmt.executeStep()) {
 				std::cerr << "Record not found for " << argv[2] << '\n';
 				return 1;
@@ -142,9 +142,9 @@ int main(int argc, char **argv)
 					return 1;
 				}
 				chain.push_back(rec);
-				if (rec.prev_null)
+				if (rec.last_null)
 					break;
-				cur = rec.prev_ver;
+				cur = rec.last_id;
 			}
 
 			std::string content;
@@ -173,26 +173,26 @@ int main(int argc, char **argv)
 		}
 		else {
 			SQLite::Statement stmt_article(*db,
-				R"(SELECT "article_id" FROM "backup_files" GROUP BY "article_id" ORDER BY "article_id" ASC;)");
+				R"(SELECT "entry" FROM "backup_files" GROUP BY "entry" ORDER BY "entry" ASC;)");
 			while (stmt_article.executeStep()) {
 				const std::string article = stmt_article.getColumn(0).getString();
 				SQLite::Statement stmt(*db,
-					R"(SELECT "id", "timestamp", "author_id", "size", "hash", "prev_ver", "diff"
+					R"(SELECT "id", "time", "author", "size", "hash", "last_id", "diff"
 					   FROM "backup_files"
-					   WHERE "article_id"=?
-					   ORDER BY "timestamp" ASC, "author_id" ASC;)");
+					   WHERE "entry"=?
+					   ORDER BY "time" ASC, "author" ASC;)");
 				stmt.bind(1, article);
 
 				std::vector<Record> records;
 				while (stmt.executeStep()) {
 					Record rec;
 					rec.id = stmt.getColumn(0).getInt64();
-					rec.timestamp = stmt.getColumn(1).getString();
-					rec.author_id = stmt.getColumn(2).getInt64();
+					rec.time = stmt.getColumn(1).getString();
+					rec.author = stmt.getColumn(2).getInt64();
 					rec.size = stmt.getColumn(3).getInt64();
 					rec.hash = stmt.getColumn(4).getString();
-					rec.prev_null = stmt.getColumn(5).isNull();
-					rec.prev_ver = rec.prev_null ? 0 : stmt.getColumn(5).getInt64();
+					rec.last_null = stmt.getColumn(5).isNull();
+					rec.last_id = rec.last_null ? 0 : stmt.getColumn(5).getInt64();
 					rec.diff_json = stmt.getColumn(6).getString();
 					records.push_back(rec);
 				}
@@ -206,14 +206,14 @@ int main(int argc, char **argv)
 
 				for (size_t i = 0; i < records.size(); ++i) {
 					if (i == 0) {
-						if (!records[i].prev_null) {
-							std::cerr << "First version has prev_ver for " << article << '\n';
+						if (!records[i].last_null) {
+							std::cerr << "First version has last_id for " << article << '\n';
 							return 1;
 						}
 					}
-					else if (records[i].prev_ver != records[i - 1].id) {
-						std::cerr << "prev_ver mismatch order for " << article << " @ "
-								  << records[i].timestamp << '\n';
+					else if (records[i].last_id != records[i - 1].id) {
+						std::cerr << "last_id mismatch order for " << article << " @ "
+								  << records[i].time << '\n';
 						return 1;
 					}
 
@@ -227,9 +227,9 @@ int main(int argc, char **argv)
 						}
 						chain.push_back(it->second);
 						const Record &rec = records[it->second];
-						if (rec.prev_null)
+						if (rec.last_null)
 							break;
-						cur = rec.prev_ver;
+						cur = rec.last_id;
 					}
 
 					std::string content;
@@ -242,18 +242,18 @@ int main(int argc, char **argv)
 
 					if (records[i].size != static_cast<int64_t>(content.size())) {
 						std::cerr << "Size mismatch for " << article << " @ "
-								  << records[i].timestamp << '\n';
+								  << records[i].time << '\n';
 						return 1;
 					}
 					const std::string hash = sha1sum(content).substr(0, 16);
 					if (hash != records[i].hash) {
 						std::cerr << "Hash mismatch for " << article << " @ "
-								  << records[i].timestamp << '\n';
+								  << records[i].time << '\n';
 						return 1;
 					}
 
-					std::string filename = records[i].timestamp + "_" + std::to_string(records[i].author_id)
-						+ "_" + article + ".tex";
+					std::string filename = records[i].time + "_" + std::to_string(records[i].author)
+					+ "_" + article + ".tex";
 					if (!write_file(dir + filename, content)) {
 						std::cerr << "Failed to write " << filename << '\n';
 						return 1;
