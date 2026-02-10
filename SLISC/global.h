@@ -43,6 +43,7 @@
 #include <cstdint>
 #include <cstdarg>
 #include <functional>
+#include <memory>
 #include <utility>
 #include <cassert>
 #include <cerrno>
