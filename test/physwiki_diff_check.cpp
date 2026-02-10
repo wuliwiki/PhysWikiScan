@@ -1,164 +1,161 @@
-#include "SLISC/str/str_diff_patch2.h"
+#include "../SLISC/str/str.h"
+#include "../SLISC/str/str_diff_patch2.h"
+#include "../SLISC/util/sha1sum.h"
 
+#include <SQLiteCpp/Database.h>
+#include <SQLiteCpp/Statement.h>
 #include <algorithm>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <map>
+#include <memory>
 #include <vector>
 
-namespace fs = std::filesystem;
 using namespace slisc;
 
-static bool read_file(const fs::path &path, Str &out)
-{
-	std::ifstream in(path, std::ios::binary);
-	if (!in)
-		return false;
-	out.assign((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-	return true;
-}
-
-static void write_file(const fs::path &path, Str_I data)
-{
-	std::ofstream out(path, std::ios::binary);
-	SLS_ASSERT(out.good());
-	out.write(data.data(), static_cast<std::streamsize>(data.size()));
-}
-
-static Str apply_diff(Str_I src, const vector<tuple<size_t, size_t, Str>> &diff)
-{
-	Str out = src;
-	for (auto it = diff.rbegin(); it != diff.rend(); ++it)
-		out.replace(get<0>(*it), get<1>(*it), get<2>(*it));
-	return out;
-}
-
-static bool extract_suffix(const std::string &name, std::string &suffix)
-{
-	if (name.size() < 5 || name.substr(name.size() - 4) != ".tex")
-		return false;
-	const size_t pos = name.rfind('_');
-	if (pos == std::string::npos || pos + 1 >= name.size() - 4)
-		return false;
-	suffix = name.substr(pos + 1, name.size() - 4 - (pos + 1));
-	return true;
-}
-
 struct GroupInfo {
-	std::string suffix;
-	std::vector<fs::path> files;
-	size_t max_size = 0;
+	std::string entry;
+	int64_t max_size = 0;
+	int64_t count = 0;
 };
 
-static int run_for_group(const fs::path &dir, const GroupInfo &group)
+struct Record {
+	int64_t id = 0;
+	std::string time;
+	int64_t author = 0;
+	int64_t size = 0;
+	std::string hash;
+	bool last_null = true;
+	int64_t last_id = 0;
+	std::string diff_json;
+};
+
+static void apply_diff(Str_O out, const vector<tuple<size_t, size_t, Str>> &diff)
 {
-	std::cout << "Processing _" << group.suffix << ".tex (max " << group.max_size << " bytes)" << std::endl;
-	const auto &files = group.files;
-	Str current;
-	if (!read_file(files.front(), current)) {
-		std::cerr << "Failed to read " << files.front() << "\n";
-		return 1;
-	}
-	if (!is_valid(current)) {
-		std::cerr << "Invalid UTF-8 in " << files.front() << "\n";
-		return 1;
-	}
-
-	for (size_t i = 0; i + 1 < files.size(); ++i) {
-		Str target;
-		if (!read_file(files[i + 1], target)) {
-			std::cerr << "Failed to read " << files[i + 1] << "\n";
-			return 1;
-		}
-		if (!is_valid(target)) {
-			std::cerr << "Invalid UTF-8 in " << files[i + 1] << "\n";
-			return 1;
-		}
-		vector<tuple<size_t, size_t, Str>> diff;
-		str_diff(diff, current, target);
-		Str serialized;
-		str_diff_serialize(serialized, diff);
-		fs::path diff_path = dir / (files[i].stem().string() + "-" + files[i + 1].stem().string() + ".json");
-		write_file(diff_path, serialized);
-		vector<tuple<size_t, size_t, Str>> decoded;
-		str_diff_deserialize(decoded, serialized);
-		Str patched = apply_diff(current, decoded);
-		if (patched != target) {
-			std::cerr << "Mismatch after applying diff for group " << group.suffix << ":\n";
-			std::cerr << files[i] << "\n" << files[i + 1] << "\n";
-			return 1;
-		}
-		current.swap(patched);
-	}
-
-	Str last;
-	if (!read_file(files.back(), last)) {
-		std::cerr << "Failed to read " << files.back() << "\n";
-		return 1;
-	}
-	if (current != last) {
-		std::cerr << "Final reconstruction mismatch for group " << group.suffix << "\n";
-		return 1;
-	}
-
-	std::cout << "Verified " << files.size() << " files for _" << group.suffix << ".tex" << std::endl;
-	return 0;
+	for (auto it = diff.rbegin(); it != diff.rend(); ++it)
+		out.replace(get<0>(*it), get<1>(*it), get<2>(*it));
 }
 
 int main()
 {
-	fs::path dir = "/mnt/g/github/PhysWiki-backup";
-	if (!fs::exists(dir)) {
-		std::cerr << "Backup directory not found, skipping diff check." << std::endl;
-		return 0;
-	}
-	std::map<std::string, GroupInfo> groups;
-	for (const auto &entry : fs::directory_iterator(dir)) {
-		if (!entry.is_regular_file())
-			continue;
-		const std::string name = entry.path().filename().string();
-		std::string suffix;
-		if (!extract_suffix(name, suffix))
-			continue;
-		if (suffix == "AU" || suffix == "llvmIR")
-			continue;
-		auto &group = groups[suffix];
-		group.suffix = suffix;
-		group.files.push_back(entry.path());
-		const auto size = static_cast<size_t>(entry.file_size());
-		if (size > group.max_size)
-			group.max_size = size;
+	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
+	if (!file_exist(db_path)) {
+		std::cerr << "Database not found: " << db_path << '\n';
+		return 1;
 	}
 
-	std::vector<GroupInfo> candidates;
-	for (auto &kv : groups) {
-		auto &group = kv.second;
-		if (group.files.size() < 2)
-			continue;
-		candidates.push_back(group);
+	std::unique_ptr<SQLite::Database> db;
+	try {
+		const std::string db_uri = "file:" + db_path + "?immutable=1";
+		db.reset(new SQLite::Database(db_uri, SQLite::OPEN_READONLY | SQLite::OPEN_URI));
 	}
-	std::sort(candidates.begin(), candidates.end(), [](const GroupInfo &a, const GroupInfo &b) {
+	catch (const std::exception &) {
+		db.reset(new SQLite::Database(db_path, SQLite::OPEN_READONLY));
+	}
+	db->exec("PRAGMA temp_store = MEMORY;");
+
+	std::vector<GroupInfo> groups;
+	SQLite::Statement stmt_group(*db,
+		R"(SELECT "entry", MAX("size"), COUNT(*) FROM "backup_files" GROUP BY "entry";)");
+	while (stmt_group.executeStep()) {
+		GroupInfo info;
+		info.entry = stmt_group.getColumn(0).getString();
+		info.max_size = stmt_group.getColumn(1).getInt64();
+		info.count = stmt_group.getColumn(2).getInt64();
+		if (info.count >= 2)
+			groups.push_back(info);
+	}
+
+	if (groups.empty()) {
+		std::cerr << "No entries with at least two versions, skipping." << std::endl;
+		return 0;
+	}
+
+	std::sort(groups.begin(), groups.end(), [](const GroupInfo &a, const GroupInfo &b) {
 		if (a.max_size != b.max_size)
 			return a.max_size < b.max_size;
-		return a.suffix < b.suffix;
+		return a.entry < b.entry;
 	});
+	if (groups.size() > 100)
+		groups.resize(100);
 
-	if (candidates.empty()) {
-		std::cerr << "No groups with at least two files found, skipping." << std::endl;
-		return 0;
+	size_t processed = 0;
+	for (const auto &group : groups) {
+		SQLite::Statement stmt(*db,
+			R"(SELECT "id", "time", "author", "size", "hash", "last_id", "diff"
+			   FROM "backup_files"
+			   WHERE "entry"=?
+			   ORDER BY "time" ASC, "author" ASC;)");
+		stmt.bind(1, group.entry);
+
+		std::vector<Record> records;
+		while (stmt.executeStep()) {
+			Record rec;
+			rec.id = stmt.getColumn(0).getInt64();
+			rec.time = stmt.getColumn(1).getString();
+			rec.author = stmt.getColumn(2).getInt64();
+			rec.size = stmt.getColumn(3).getInt64();
+			rec.hash = stmt.getColumn(4).getString();
+			rec.last_null = stmt.getColumn(5).isNull();
+			rec.last_id = rec.last_null ? 0 : stmt.getColumn(5).getInt64();
+			rec.diff_json = stmt.getColumn(6).getString();
+			records.push_back(rec);
+		}
+		if (records.size() < 2)
+			continue;
+
+		Str current;
+		for (size_t i = 0; i < records.size(); ++i) {
+			const auto &rec = records[i];
+			if (i == 0) {
+				if (!rec.last_null) {
+					std::cerr << "First version has last_id for " << group.entry << '\n';
+					return 1;
+				}
+			}
+			else if (rec.last_id != records[i - 1].id) {
+				std::cerr << "last_id mismatch for " << group.entry << " @ " << rec.time << '\n';
+				return 1;
+			}
+
+			vector<tuple<size_t, size_t, Str>> diff;
+			str_diff_deserialize(diff, rec.diff_json);
+			Str reconstructed = current;
+			apply_diff(reconstructed, diff);
+
+			if (rec.size != static_cast<int64_t>(reconstructed.size())) {
+				std::cerr << "Size mismatch for " << group.entry << " @ " << rec.time << '\n';
+				return 1;
+			}
+			const Str hash = sha1sum(reconstructed).substr(0, 16);
+			if (hash != rec.hash) {
+				std::cerr << "Hash mismatch for " << group.entry << " @ " << rec.time << '\n';
+				return 1;
+			}
+			if (!is_valid(reconstructed)) {
+				std::cerr << "Invalid UTF-8 for " << group.entry << " @ " << rec.time << '\n';
+				return 1;
+			}
+
+			vector<tuple<size_t, size_t, Str>> diff_check;
+			str_diff(diff_check, current, reconstructed);
+			Str serialized;
+			str_diff_serialize(serialized, diff_check);
+			vector<tuple<size_t, size_t, Str>> decoded;
+			str_diff_deserialize(decoded, serialized);
+			Str patched = current;
+			apply_diff(patched, decoded);
+			if (patched != reconstructed) {
+				std::cerr << "Diff apply mismatch for " << group.entry << " @ " << rec.time << '\n';
+				return 1;
+			}
+
+			current.swap(reconstructed);
+		}
+
+		++processed;
+		if (processed % 10 == 0)
+			std::cout << "Checked " << processed << " groups..." << std::endl;
 	}
-	if (candidates.size() > 100)
-		candidates.resize(100);
 
-	for (auto &group : candidates) {
-		auto &files = group.files;
-		std::sort(files.begin(), files.end());
-		int rc = run_for_group(dir, group);
-		if (rc != 0)
-			return rc;
-	}
-
-	std::cout << "Processed " << candidates.size() << " groups." << std::endl;
+	std::cout << "Processed " << processed << " groups." << std::endl;
 	return 0;
 }

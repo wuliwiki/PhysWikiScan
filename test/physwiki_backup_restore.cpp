@@ -1,6 +1,7 @@
 #include "../SLISC/str/str.h"
 #include "../SLISC/str/str_diff_patch2.h"
 #include "../SLISC/util/sha1sum.h"
+#include "../SLISC/file/file.h"
 
 #include <SQLiteCpp/Database.h>
 #include <SQLiteCpp/Statement.h>
@@ -87,8 +88,27 @@ int main(int argc, char **argv)
 {
 	try {
 		setenv("SQLITE_TMPDIR", "/tmp", 1);
-		const std::string dir = "/mnt/g/github/PhysWiki-backup/";
 		const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
+		std::string out_dir = path2dir(db_path) + "PhysWiki-backup-files/";
+
+		std::vector<std::string> args;
+		for (int i = 1; i < argc; ++i) {
+			std::string arg = argv[i];
+			if (arg == "--out") {
+				if (i + 1 >= argc) {
+					std::cerr << "Missing value for --out\n";
+					return 1;
+				}
+				out_dir = argv[++i];
+				if (!out_dir.empty() && out_dir.back() != '/')
+					out_dir.push_back('/');
+			}
+			else {
+				args.push_back(arg);
+			}
+		}
+
+		ensure_dir(out_dir);
 
 		if (!file_exist(db_path)) {
 			std::cerr << "Database not found: " << db_path << '\n';
@@ -111,12 +131,16 @@ int main(int argc, char **argv)
 		db->exec("PRAGMA temp_store = MEMORY;");
 
 		size_t restored = 0;
-		if (argc >= 3 && std::string(argv[1]) == "checkout") {
+		if (!args.empty() && args[0] == "checkout") {
+			if (args.size() != 2) {
+				std::cerr << "Usage: physwiki_backup_restore [--out <dir>] checkout <file>\n";
+				return 1;
+			}
 			std::string time;
 			int64_t author = 0;
 			std::string entry;
-			if (!parse_filename(argv[2], time, author, entry)) {
-				std::cerr << "Invalid filename: " << argv[2] << '\n';
+			if (!parse_filename(args[1], time, author, entry)) {
+				std::cerr << "Invalid filename: " << args[1] << '\n';
 				return 1;
 			}
 			SQLite::Statement stmt(*db,
@@ -126,7 +150,7 @@ int main(int argc, char **argv)
 			stmt.bind(2, author);
 			stmt.bind(3, entry);
 			if (!stmt.executeStep()) {
-				std::cerr << "Record not found for " << argv[2] << '\n';
+				std::cerr << "Record not found for " << args[1] << '\n';
 				return 1;
 			}
 			const int64_t target_id = stmt.getColumn(0).getInt64();
@@ -156,20 +180,25 @@ int main(int argc, char **argv)
 			}
 
 			if (target_size != static_cast<int64_t>(content.size())) {
-				std::cerr << "Size mismatch for " << argv[2] << '\n';
+				std::cerr << "Size mismatch for " << args[1] << '\n';
 				return 1;
 			}
 			const std::string hash = sha1sum(content).substr(0, 16);
 			if (hash != target_hash) {
-				std::cerr << "Hash mismatch for " << argv[2] << '\n';
+				std::cerr << "Hash mismatch for " << args[1] << '\n';
 				return 1;
 			}
 
-			if (!write_file(dir + std::string(argv[2]), content)) {
-				std::cerr << "Failed to write " << argv[2] << '\n';
+			const std::string out_path = out_dir + args[1];
+			if (!write_file(out_path, content)) {
+				std::cerr << "Failed to write " << out_path << '\n';
 				return 1;
 			}
-			std::cout << "Restored " << argv[2] << '\n';
+			std::cout << "Restored " << args[1] << " -> " << out_path << '\n';
+		}
+		else if (!args.empty()) {
+			std::cerr << "Usage: physwiki_backup_restore [--out <dir>] [checkout <file>]\n";
+			return 1;
 		}
 		else {
 			SQLite::Statement stmt_article(*db,
@@ -253,9 +282,10 @@ int main(int argc, char **argv)
 					}
 
 					std::string filename = records[i].time + "_" + std::to_string(records[i].author)
-					+ "_" + article + ".tex";
-					if (!write_file(dir + filename, content)) {
-						std::cerr << "Failed to write " << filename << '\n';
+						+ "_" + article + ".tex";
+					const std::string out_path = out_dir + filename;
+					if (!write_file(out_path, content)) {
+						std::cerr << "Failed to write " << out_path << '\n';
 						return 1;
 					}
 

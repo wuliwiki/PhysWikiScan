@@ -70,9 +70,15 @@ struct BackupInfo {
 	std::string entry;
 };
 
-int main()
+int main(int argc, char **argv)
 {
-	const std::string dir = "/mnt/g/github/PhysWiki-backup/";
+	if (argc < 2) {
+		std::cerr << "Usage: physwiki_backup_db <backup_dir>\n";
+		return 1;
+	}
+	std::string dir = argv[1];
+	if (!dir.empty() && dir.back() != '/' && dir.back() != '\\')
+		dir.push_back('/');
 	const std::string sql_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup-template.sql";
 	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
 
