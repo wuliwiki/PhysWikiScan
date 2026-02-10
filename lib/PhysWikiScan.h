@@ -15,6 +15,7 @@
 #include "tex_tidy.h"
 #include "statistics.h"
 #include "google_trans.h"
+#include "backup_db.h"
 
 // trim "\n" and " " on both sides
 // remove unnecessary "\n"
