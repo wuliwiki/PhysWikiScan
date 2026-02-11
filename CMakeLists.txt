@@ -55,5 +55,4 @@ add_executable(PhysWikiScan main.cpp)
 target_link_libraries(PhysWikiScan SQLiteCpp SQLiteCpp-sqlite3 dl)
 
 # local test utilities
-add_subdirectory(SLISC/str)
 add_subdirectory(test)

@@ -14,6 +14,7 @@ inline void backup_db_require(Str_I path)
 		throw internal_err(u8"备份数据库不存在：" + path);
 }
 
+// find the next backup record id (throws if more than one)
 inline int64_t backup_next_id(int64_t id, SQLite::Database &db_backup)
 {
 	SQLite::Statement stmt(db_backup,
@@ -29,6 +30,7 @@ inline int64_t backup_next_id(int64_t id, SQLite::Database &db_backup)
 	return next_id;
 }
 
+// relink a next record to a new predecessor and verify recovery unchanged
 inline void backup_relink_next(SQLite::Database &db_backup, int64_t next_id, int64_t new_last_id,
 	Str_I prev_content)
 {
@@ -53,6 +55,7 @@ inline void backup_relink_next(SQLite::Database &db_backup, int64_t next_id, int
 		throw internal_err(u8"backup_files 重新链接后内容变化：id=" + num2str((Long)next_id));
 }
 
+// delete a backup record, relinking its successor if needed
 inline void backup_delete_record(SQLite::Database &db_backup, int64_t backup_id)
 {
 	BackupRecord rec;
@@ -70,6 +73,7 @@ inline void backup_delete_record(SQLite::Database &db_backup, int64_t backup_id)
 	if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
 }
 
+// replace an existing backup version and keep the chain consistent
 inline void backup_replace_version(SQLite::Database &db_backup, int64_t backup_id, Str_I new_content,
 	Str_I new_hash = Str(), const Str *prev_content_override = nullptr)
 {
@@ -112,6 +116,7 @@ inline void backup_replace_version(SQLite::Database &db_backup, int64_t backup_i
 		backup_relink_next(db_backup, next_id, backup_id, new_content);
 }
 
+// insert a backup version between prev and next (or append if next_id==0)
 inline int64_t backup_insert_version_between(SQLite::Database &db_backup, Str_I entry, Str_I time,
 	int64_t author, Str_I content, int64_t prev_id, int64_t next_id, Str_I hash = Str())
 {
@@ -179,6 +184,7 @@ inline int64_t backup_insert_version_between(SQLite::Database &db_backup, Str_I 
 	return new_id;
 }
 
+// insert a backup version directly before an existing record
 inline int64_t backup_insert_version_before(SQLite::Database &db_backup, int64_t next_id, Str_I time,
 	int64_t author, Str_I content, Str_I hash = Str())
 {
@@ -189,6 +195,7 @@ inline int64_t backup_insert_version_before(SQLite::Database &db_backup, int64_t
 	return backup_insert_version_between(db_backup, next_rec.entry, time, author, content, prev_id, next_id, hash);
 }
 
+// append a backup version at the end of an entry chain
 inline int64_t backup_append_version(SQLite::Database &db_backup, Str_I entry, int64_t prev_id, Str_I time,
 	int64_t author, Str_I content, Str_I hash = Str())
 {
