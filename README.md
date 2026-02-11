@@ -24,7 +24,8 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * `--autoref 文章 eq 8` 查找 `contents/文章.tex` 文章的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_文章_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
 * `--autoref-dry 文章 eq 8` 和上一条一模一样， 除了不会真的给文章文件添加 label。
 * `--backup 文章 作者id` 把 `contents/文章.tex` 备份到 `data/backup.db`（表 `backup_files`）， 若 hash 已经在数据库中则不备份并输出 `exist 已存在的记录 history.id`。 同一文章同一作者，若距离上次备份超过 30 分钟，则使用当前时间， 否则增加到上次备份时间加五分钟的整数倍，若已经存在则覆盖该记录。 如果新增了记录，就会在 stdout 输出 `added 时间_作者id_文章 history.id`； 若替换了记录，就会输出 `replaced 时间_作者id_文章 history.id`。
-* `--backup-recover 文件名` 从 `data/backup.db` 恢复单个备份文件到 `../PhysWiki-backup/文件名`。 若文件已存在且内容一致则跳过，内容不同则警告并保留原文件。
+* `--backup-recover [文件名]` 从 `data/backup.db` 恢复备份文件到 `../PhysWiki-backup/`：不带参数则恢复全部；带文件名则恢复单个 `../PhysWiki-backup/文件名`。 若文件已存在且内容一致则跳过，内容不同则警告并保留原文件。
+* `--backup-recover-entry 文章` 从 `data/backup.db` 恢复该文章的所有备份版本到 `../PhysWiki-backup/`。
 * `--bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `--delete 文章1 文章2 ...` 相当于先把文章除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否文章本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除文章文件。
 * `--delete-cleanup` （`--delete` 本身就要求包含这些功能）删除数据库中已删除词条的 label，ref 等残留记录，删除 online/changed 中的相关文件。

@@ -582,6 +582,30 @@ inline void backup_list_tex_files(vecStr_O names, Str_I dir)
 #endif
 }
 
+// return 0: written, 1: already exists (match), -1: exists but differs
+inline int backup_write_recovered_file(Str_I backup_dir, Str_I name, Str_I content, bool verbose)
+{
+	Str out_path = backup_dir + name;
+	if (file_exist(out_path)) {
+		Str existing;
+		read(existing, out_path);
+		CRLF_to_LF(existing);
+		if (existing == content) {
+			if (verbose)
+				cout << "backup file already exists: " << out_path << endl;
+			return 1;
+		}
+		clear(sb) << u8"备份文件已存在且内容不同（将保留文件）： " << out_path;
+		scan_log_warn(sb);
+		return -1;
+	}
+
+	write(content, out_path);
+	if (verbose)
+		cout << "backup file recovered: " << out_path << endl;
+	return 0;
+}
+
 inline void backup_recover_tex_file(Str_I filename)
 {
 	Str name = filename;
@@ -611,22 +635,152 @@ inline void backup_recover_tex_file(Str_I filename)
 		throw internal_err(Str(e.what()) + SLS_WHERE);
 	}
 
-	Str out_path = backup_dir + name;
-	if (file_exist(out_path)) {
-		Str existing;
-		read(existing, out_path);
-		CRLF_to_LF(existing);
-		if (existing == content) {
-			cout << "backup file already exists: " << out_path << endl;
-			return;
+	backup_write_recovered_file(backup_dir, name, content, true);
+}
+
+inline bool backup_recover_entry_versions(Str_I entry, SQLite::Database &db_backup, Str_I backup_dir,
+	Long &written, Long &matched, Long &mismatch)
+{
+	struct BackupChainRec {
+		int64_t id = 0;
+		Str time;
+		Long author = 0;
+		Str hash;
+		int64_t size = 0;
+		Str diff_json;
+		int64_t last_id = 0;
+		bool last_null = true;
+	};
+
+	vector<BackupChainRec> recs;
+	SQLite::Statement stmt(db_backup,
+		R"(SELECT "id", "time", "author", "hash", "size", "diff", "last_id"
+		   FROM "backup_files" WHERE "entry"=?;)");
+	stmt.bind(1, entry);
+	while (stmt.executeStep()) {
+		BackupChainRec rec;
+		rec.id = stmt.getColumn(0).getInt64();
+		rec.time = stmt.getColumn(1).getString();
+		rec.author = stmt.getColumn(2).getInt64();
+		rec.hash = stmt.getColumn(3).getString();
+		rec.size = stmt.getColumn(4).getInt64();
+		rec.diff_json = stmt.getColumn(5).getString();
+		rec.last_null = stmt.getColumn(6).isNull();
+		rec.last_id = rec.last_null ? 0 : stmt.getColumn(6).getInt64();
+		recs.push_back(std::move(rec));
+	}
+	stmt.reset();
+
+	if (recs.empty())
+		return false;
+
+	unordered_map<int64_t, size_t> id_index;
+	unordered_map<int64_t, int64_t> next_map;
+	int64_t head_id = 0;
+	for (size_t i = 0; i < recs.size(); ++i)
+		id_index[recs[i].id] = i;
+	for (size_t i = 0; i < recs.size(); ++i) {
+		const auto &rec = recs[i];
+		if (rec.last_null) {
+			if (head_id != 0)
+				throw internal_err(u8"backup_files 记录出现多个首版本：" + entry);
+			head_id = rec.id;
 		}
-		clear(sb) << u8"备份文件已存在且内容不同（将保留文件）： " << out_path;
-		scan_log_warn(sb);
+		else {
+			if (!id_index.count(rec.last_id)) {
+				clear(sb) << u8"backup_files 记录 last_id 不存在： entry=" << entry
+					<< ", id=" << rec.id << ", last_id=" << rec.last_id;
+				throw internal_err(sb);
+			}
+			if (next_map.count(rec.last_id)) {
+				clear(sb) << u8"backup_files 记录出现分叉： " << entry << ", last_id=" << rec.last_id;
+				throw internal_err(sb);
+			}
+			next_map[rec.last_id] = rec.id;
+		}
+	}
+	if (head_id == 0)
+		throw internal_err(u8"backup_files 记录未找到首版本：" + entry);
+
+	Str content;
+	int64_t cur = head_id;
+	while (cur != 0) {
+		auto &rec = recs[id_index[cur]];
+		vector<tuple<size_t, size_t, Str>> diff;
+		str_diff_deserialize(diff, rec.diff_json);
+		backup_apply_diff(content, diff);
+
+		if (rec.size != (int64_t)content.size()) {
+			clear(sb) << u8"backup_files size 校验失败： entry=" << entry
+				<< ", id=" << rec.id << ", size=" << rec.size << ", got=" << content.size();
+			throw internal_err(sb);
+		}
+		Str hash = sha1sum(content).substr(0, 16);
+		if (hash != rec.hash) {
+			clear(sb) << u8"backup_files hash 校验失败： entry=" << entry
+				<< ", id=" << rec.id << ", hash=" << rec.hash << ", got=" << hash;
+			throw internal_err(sb);
+		}
+
+		Str name = rec.time + "_" + num2str(rec.author) + "_" + entry + ".tex";
+		int res = backup_write_recovered_file(backup_dir, name, content, false);
+		if (res == 0)
+			++written;
+		else if (res > 0)
+			++matched;
+		else
+			++mismatch;
+
+		auto it_next = next_map.find(cur);
+		cur = (it_next == next_map.end()) ? 0 : it_next->second;
+	}
+	return true;
+}
+
+inline void backup_recover_entry(Str_I entry)
+{
+	const Str backup_dir = "../PhysWiki-backup/";
+	if (!dir_exist(backup_dir))
+		throw internal_err(u8"备份文件夹不存在：" + backup_dir);
+
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	Long written = 0, matched = 0, mismatch = 0;
+	if (!backup_recover_entry_versions(entry, db_backup, backup_dir, written, matched, mismatch)) {
+		cout << "no backup records for entry: " << entry << endl;
 		return;
 	}
+	cout << "backup recover entry done. written=" << written
+		 << ", existed=" << matched << ", mismatched=" << mismatch << endl;
+}
 
-	write(content, out_path);
-	cout << "backup file recovered: " << out_path << endl;
+inline void backup_recover_all()
+{
+	const Str backup_dir = "../PhysWiki-backup/";
+	if (!dir_exist(backup_dir))
+		throw internal_err(u8"备份文件夹不存在：" + backup_dir);
+
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	SQLite::Statement stmt_entry(db_backup,
+		R"(SELECT "entry" FROM "backup_files" GROUP BY "entry" ORDER BY "entry" ASC;)");
+	Long written = 0, matched = 0, mismatch = 0;
+	Long entries = 0;
+	while (stmt_entry.executeStep()) {
+		const Str entry = stmt_entry.getColumn(0).getString();
+		if (backup_recover_entry_versions(entry, db_backup, backup_dir, written, matched, mismatch))
+			++entries;
+	}
+	stmt_entry.reset();
+	cout << "backup recover done. entries=" << entries
+		 << ", written=" << written << ", existed=" << matched
+		 << ", mismatched=" << mismatch << endl;
 }
 
 // read ../PhysWiki-backup/*.tex and update backup db + scan.db history
