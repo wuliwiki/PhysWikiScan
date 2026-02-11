@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 {
 	try {
 		setenv("SQLITE_TMPDIR", "/tmp", 1);
-		const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
+		const std::string db_path = "/mnt/g/github/PhysWikiScan/data/backup.db";
 		std::string out_dir = path2dir(db_path) + "PhysWiki-backup-files/";
 
 		std::vector<std::string> args;

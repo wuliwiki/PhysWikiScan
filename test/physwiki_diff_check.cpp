@@ -36,7 +36,7 @@ static void apply_diff(Str_O out, const vector<tuple<size_t, size_t, Str>> &diff
 
 int main()
 {
-	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/PhysWiki-backup.db";
+	const std::string db_path = "/mnt/g/github/PhysWikiScan/data/backup.db";
 	if (!file_exist(db_path)) {
 		std::cerr << "Database not found: " << db_path << '\n';
 		return 1;

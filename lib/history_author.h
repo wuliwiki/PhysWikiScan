@@ -9,7 +9,7 @@
 
 inline Str backup_db_path()
 {
-	return gv::path_data + "PhysWiki-backup.db";
+	return gv::path_data + "backup.db";
 }
 
 inline void backup_db_require(Str_I path)
@@ -923,10 +923,10 @@ inline void backup_update_db_from_tex_files(SQLite::Database &db_rw)
 	cout << "backup db update done." << endl;
 }
 
-// check PhysWiki-backup.db integrity
+// check backup.db integrity
 inline void backup_check()
 {
-	cout << "checking PhysWiki-backup.db..." << endl;
+	cout << "checking backup.db..." << endl;
 	Str path = backup_db_path();
 	backup_db_require(path);
 	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
