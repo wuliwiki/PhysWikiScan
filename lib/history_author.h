@@ -2,6 +2,10 @@
 #include "sqlite_db.h"
 #include "backup_db.h"
 #include "../SLISC/str/str_diff_patch2.h"
+#include "../SLISC/file/file.h"
+#ifndef _WIN32
+#include <dirent.h>
+#endif
 
 inline Str backup_db_path()
 {
@@ -532,6 +536,497 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 	}
 	cout << "committing transaction..." << endl;
 	cout << "done." << endl;
+}
+
+inline bool backup_parse_tex_filename(Str_I name, Str_O time, Long &author, Str_O entry)
+{
+	if (name.size() < 5 || name.substr(name.size() - 4) != ".tex")
+		return false;
+	Long pos1 = (Long)name.find('_');
+	Long pos2 = (Long)name.rfind('_');
+	if (pos1 < 0 || pos2 < 0 || pos1 == pos2)
+		return false;
+	time = name.substr(0, pos1);
+	Str author_str = name.substr(pos1 + 1, pos2 - pos1 - 1);
+	entry = name.substr(pos2 + 1, name.size() - pos2 - 1 - 4);
+	if (time.size() != 12 || author_str.empty() || entry.empty())
+		return false;
+	for (auto c : time) {
+		if (c < '0' || c > '9')
+			return false;
+	}
+	if (str2int(author, author_str) != size(author_str))
+		return false;
+	return true;
+}
+
+inline void backup_list_tex_files(vecStr_O names, Str_I dir)
+{
+	names.clear();
+#ifdef _WIN32
+	file_list_ext(names, dir, ".tex", true);
+#else
+	DIR *dp = opendir(dir.c_str());
+	if (!dp)
+		throw internal_err(u8"无法打开备份文件夹：" + dir);
+	dirent *entry = nullptr;
+	while ((entry = readdir(dp)) != nullptr) {
+		Str name = entry->d_name;
+		if (name == "." || name == "..")
+			continue;
+		if (name.size() >= 4 && name.substr(name.size() - 4) == ".tex")
+			names.push_back(name);
+	}
+	closedir(dp);
+	std::sort(names.begin(), names.end());
+#endif
+}
+
+// read ../PhysWiki-backup/*.tex and update backup db + scan.db history
+inline void backup_update_db_from_tex_files(SQLite::Database &db_rw)
+{
+	const Str backup_dir = "../PhysWiki-backup/";
+	if (!dir_exist(backup_dir))
+		throw internal_err(u8"备份文件夹不存在：" + backup_dir);
+
+	vecStr tex_names;
+	backup_list_tex_files(tex_names, backup_dir);
+	if (tex_names.empty()) {
+		cout << "no backup tex files found." << endl;
+		return;
+	}
+
+	struct TexBackupFile {
+		Str name;
+		Str path;
+		Str time;
+		Long author = 0;
+		Str entry;
+		Str content;
+		Str hash;
+		int64_t size = 0;
+	};
+
+	unordered_map<Str, vector<TexBackupFile>> entry_files;
+	for (auto &name : tex_names) {
+		TexBackupFile rec;
+		rec.name = name;
+		rec.path = backup_dir + name;
+		if (!backup_parse_tex_filename(name, rec.time, rec.author, rec.entry)) {
+			scan_log_warn(u8"备份文件名格式错误（将忽略）： " + name);
+			continue;
+		}
+		read(rec.content, rec.path);
+		CRLF_to_LF(rec.content);
+		if (!is_valid(rec.content)) {
+			scan_log_warn(u8"备份文件不是合法 UTF-8（将忽略）： " + name);
+			continue;
+		}
+		rec.size = (int64_t)rec.content.size();
+		rec.hash = sha1sum(rec.content).substr(0, 16);
+		entry_files[rec.entry].push_back(std::move(rec));
+	}
+
+	if (entry_files.empty()) {
+		cout << "no valid backup tex files found." << endl;
+		return;
+	}
+
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READWRITE);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	SQLite::Transaction trans_backup(db_backup);
+	SQLite::Transaction trans_scan(db_rw);
+
+	SQLite::Statement stmt_hash(db_backup,
+		R"(SELECT "id", "time", "author", "entry", "size" FROM "backup_files" WHERE "hash"=?;)");
+	SQLite::Statement stmt_time(db_backup,
+		R"(SELECT "id", "hash", "size" FROM "backup_files"
+		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
+	SQLite::Statement stmt_entry(db_backup,
+		R"(SELECT "id", "time", "author", "hash", "size", "last_id" FROM "backup_files" WHERE "entry"=?;)");
+
+	SQLite::Statement stmt_author(db_rw, R"(SELECT "name" FROM "authors" WHERE "id"=?;)");
+	SQLite::Statement stmt_author_insert(db_rw,
+		R"(INSERT OR REPLACE INTO "authors" ("id", "name") VALUES (?, ?);)");
+	SQLite::Statement stmt_entry_exist(db_rw, R"(SELECT 1 FROM "entries" WHERE "id"=?;)");
+	SQLite::Statement stmt_entry_insert(db_rw,
+		R"(INSERT OR REPLACE INTO "entries" ("id", "deleted") VALUES (?, 1);)");
+	SQLite::Statement stmt_hist_hash(db_rw,
+		R"(SELECT "time", "author", "entry" FROM "history" WHERE "hash"=?;)");
+	SQLite::Statement stmt_hist_time(db_rw,
+		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
+	SQLite::Statement stmt_hist_insert(db_rw,
+		R"(INSERT INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
+
+	auto ensure_history = [&](const TexBackupFile &file_rec) {
+		stmt_author.bind(1, (int64_t)file_rec.author);
+		if (!stmt_author.executeStep()) {
+			stmt_author.reset();
+			stmt_author_insert.bind(1, (int64_t)file_rec.author);
+			stmt_author_insert.bind(2, to_string(file_rec.author));
+			stmt_author_insert.exec();
+			stmt_author_insert.reset();
+		}
+		else {
+			stmt_author.reset();
+		}
+
+		stmt_entry_exist.bind(1, file_rec.entry);
+		if (!stmt_entry_exist.executeStep()) {
+			stmt_entry_exist.reset();
+			stmt_entry_insert.bind(1, file_rec.entry);
+			stmt_entry_insert.exec();
+			stmt_entry_insert.reset();
+		}
+		else {
+			stmt_entry_exist.reset();
+		}
+
+		stmt_hist_hash.bind(1, file_rec.hash);
+		if (stmt_hist_hash.executeStep()) {
+			const Str db_time = stmt_hist_hash.getColumn(0).getString();
+			Long db_author = stmt_hist_hash.getColumn(1).getInt64();
+			const Str db_entry = stmt_hist_hash.getColumn(2).getString();
+			stmt_hist_hash.reset();
+			if (db_time != file_rec.time || db_author != file_rec.author || db_entry != file_rec.entry) {
+				clear(sb) << u8"history 记录与备份文件信息不一致（将忽略）： hash=" << file_rec.hash
+					<< ", db=" << db_time << '_' << db_author << '_' << db_entry
+					<< ", file=" << file_rec.time << '_' << file_rec.author << '_' << file_rec.entry;
+				scan_log_warn(sb);
+			}
+			return;
+		}
+		stmt_hist_hash.reset();
+
+		stmt_hist_time.bind(1, file_rec.time);
+		stmt_hist_time.bind(2, (int64_t)file_rec.author);
+		stmt_hist_time.bind(3, file_rec.entry);
+		if (stmt_hist_time.executeStep()) {
+			clear(sb) << u8"history 已存在不同 hash（将忽略）： "
+				<< file_rec.time << '_' << file_rec.author << '_' << file_rec.entry
+				<< " db_hash=" << stmt_hist_time.getColumn(0).getString()
+				<< ", file_hash=" << file_rec.hash;
+			scan_log_warn(sb);
+			stmt_hist_time.reset();
+			return;
+		}
+		stmt_hist_time.reset();
+
+		stmt_hist_insert.bind(1, file_rec.hash);
+		stmt_hist_insert.bind(2, file_rec.time);
+		stmt_hist_insert.bind(3, (int64_t)file_rec.author);
+		stmt_hist_insert.bind(4, file_rec.entry);
+		stmt_hist_insert.exec();
+		stmt_hist_insert.reset();
+	};
+
+	for (auto &entry_pair : entry_files) {
+		auto &files = entry_pair.second;
+		sort(files.begin(), files.end(), [](const TexBackupFile &a, const TexBackupFile &b) {
+			if (a.time != b.time)
+				return a.time < b.time;
+			return a.author < b.author;
+		});
+
+		struct BackupChainRec {
+			int64_t id = 0;
+			Str time;
+			Long author = 0;
+			Str hash;
+			int64_t size = 0;
+			int64_t last_id = 0;
+			bool last_null = true;
+		};
+
+		unordered_map<int64_t, BackupChainRec> recs;
+		unordered_map<int64_t, int64_t> next_map;
+		int64_t head_id = 0;
+
+		stmt_entry.bind(1, entry_pair.first);
+		while (stmt_entry.executeStep()) {
+			BackupChainRec rec;
+			rec.id = stmt_entry.getColumn(0).getInt64();
+			rec.time = stmt_entry.getColumn(1).getString();
+			rec.author = stmt_entry.getColumn(2).getInt64();
+			rec.hash = stmt_entry.getColumn(3).getString();
+			rec.size = stmt_entry.getColumn(4).getInt64();
+			rec.last_null = stmt_entry.getColumn(5).isNull();
+			rec.last_id = rec.last_null ? 0 : stmt_entry.getColumn(5).getInt64();
+			recs[rec.id] = rec;
+		}
+		stmt_entry.reset();
+
+		for (auto &pair : recs) {
+			const BackupChainRec &rec = pair.second;
+			if (rec.last_null) {
+				if (head_id != 0)
+					throw internal_err(u8"backup_files 记录出现多个首版本：" + entry_pair.first);
+				head_id = rec.id;
+			}
+			else {
+				auto it_last = recs.find(rec.last_id);
+				if (it_last == recs.end()) {
+					clear(sb) << u8"backup_files 记录 last_id 不存在： entry=" << entry_pair.first
+						<< ", id=" << rec.id << ", last_id=" << rec.last_id;
+					throw internal_err(sb);
+				}
+				if (next_map.count(rec.last_id)) {
+					clear(sb) << u8"backup_files 记录出现分叉： entry=" << entry_pair.first
+						<< ", last_id=" << rec.last_id;
+					throw internal_err(sb);
+				}
+				next_map[rec.last_id] = rec.id;
+			}
+		}
+
+		if (!recs.empty() && head_id == 0)
+			throw internal_err(u8"backup_files 记录未找到首版本：" + entry_pair.first);
+
+		for (auto &file_rec : files) {
+			bool delete_file = false;
+			bool update_history = false;
+
+			stmt_hash.bind(1, file_rec.hash);
+			if (stmt_hash.executeStep()) {
+				const int64_t db_id = stmt_hash.getColumn(0).getInt64();
+				const Str db_time = stmt_hash.getColumn(1).getString();
+				Long db_author = stmt_hash.getColumn(2).getInt64();
+				const Str db_entry = stmt_hash.getColumn(3).getString();
+				const int64_t db_size = stmt_hash.getColumn(4).getInt64();
+				stmt_hash.reset();
+				if (db_time == file_rec.time && db_author == file_rec.author &&
+					db_entry == file_rec.entry && db_size == file_rec.size) {
+					delete_file = true;
+					update_history = true;
+				}
+				else {
+					clear(sb) << u8"备份文件信息与数据库不一致（将保留文件）： file="
+						<< file_rec.name << ", db_id=" << db_id
+						<< ", db=" << db_time << '_' << db_author << '_' << db_entry
+						<< ", file=" << file_rec.time << '_' << file_rec.author << '_' << file_rec.entry;
+					scan_log_warn(sb);
+				}
+			}
+			else {
+				stmt_hash.reset();
+				stmt_time.bind(1, file_rec.time);
+				stmt_time.bind(2, (int64_t)file_rec.author);
+				stmt_time.bind(3, file_rec.entry);
+				if (stmt_time.executeStep()) {
+					clear(sb) << u8"backup_files 已存在不同 hash（将保留文件）： "
+						<< file_rec.time << '_' << file_rec.author << '_' << file_rec.entry
+						<< ", db_hash=" << stmt_time.getColumn(1).getString()
+						<< ", file_hash=" << file_rec.hash;
+					scan_log_warn(sb);
+					stmt_time.reset();
+				}
+				else {
+					stmt_time.reset();
+					int64_t prev_id = 0;
+					int64_t next_id = head_id;
+					int64_t cur = head_id;
+					while (cur != 0) {
+						auto &cur_rec = recs[cur];
+						bool before = (cur_rec.time < file_rec.time) ||
+							(cur_rec.time == file_rec.time && cur_rec.author <= file_rec.author);
+						if (!before)
+							break;
+						prev_id = cur;
+						auto it_next = next_map.find(cur);
+						cur = (it_next == next_map.end()) ? 0 : it_next->second;
+					}
+					next_id = cur;
+					int64_t new_id = backup_insert_version_between(db_backup, file_rec.entry, file_rec.time,
+						(int64_t)file_rec.author, file_rec.content, prev_id, next_id, file_rec.hash);
+
+					BackupChainRec new_rec;
+					new_rec.id = new_id;
+					new_rec.time = file_rec.time;
+					new_rec.author = file_rec.author;
+					new_rec.hash = file_rec.hash;
+					new_rec.size = file_rec.size;
+					new_rec.last_id = prev_id;
+					new_rec.last_null = (prev_id == 0);
+					recs[new_id] = new_rec;
+					if (prev_id == 0)
+						head_id = new_id;
+					else
+						next_map[prev_id] = new_id;
+					if (next_id != 0)
+						next_map[new_id] = next_id;
+
+					delete_file = true;
+					update_history = true;
+				}
+			}
+
+			if (update_history)
+				ensure_history(file_rec);
+			if (delete_file)
+				file_remove(file_rec.path);
+		}
+	}
+
+	db_update_history_last(db_rw);
+	trans_backup.commit();
+	trans_scan.commit();
+	cout << "backup db update done." << endl;
+}
+
+// check PhysWiki-backup.db integrity
+inline void backup_check()
+{
+	cout << "checking PhysWiki-backup.db..." << endl;
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	struct BackupCheckRec {
+		int64_t id = 0;
+		Str time;
+		Str entry;
+		int64_t size = 0;
+		Str hash;
+		Str diff_json;
+		int64_t last_id = 0;
+		bool last_null = true;
+	};
+
+	unordered_map<int64_t, BackupCheckRec> recs;
+	unordered_map<Str, vector<int64_t>> entry_ids;
+	SQLite::Statement stmt(db_backup,
+		R"(SELECT "id", "time", "entry", "size", "hash", "diff", "last_id" FROM "backup_files";)");
+	while (stmt.executeStep()) {
+		BackupCheckRec rec;
+		rec.id = stmt.getColumn(0).getInt64();
+		rec.time = stmt.getColumn(1).getString();
+		rec.entry = stmt.getColumn(2).getString();
+		rec.size = stmt.getColumn(3).getInt64();
+		rec.hash = stmt.getColumn(4).getString();
+		rec.diff_json = stmt.getColumn(5).getString();
+		rec.last_null = stmt.getColumn(6).isNull();
+		rec.last_id = rec.last_null ? 0 : stmt.getColumn(6).getInt64();
+		if (recs.count(rec.id))
+			throw internal_err(u8"backup_files 出现重复 id：" + num2str((Long)rec.id));
+		recs[rec.id] = rec;
+		entry_ids[rec.entry].push_back(rec.id);
+	}
+	stmt.reset();
+
+	if (recs.empty()) {
+		cout << "backup_files is empty." << endl;
+		return;
+	}
+
+	unordered_map<int64_t, int64_t> next_map;
+	unordered_map<Str, vector<int64_t>> entry_heads;
+	for (auto &pair : recs) {
+		const BackupCheckRec &rec = pair.second;
+		if (rec.last_null) {
+			entry_heads[rec.entry].push_back(rec.id);
+			continue;
+		}
+		auto it_last = recs.find(rec.last_id);
+		if (it_last == recs.end()) {
+			clear(sb) << u8"backup_files 记录 last_id 不存在： entry=" << rec.entry
+				<< ", id=" << rec.id << ", last_id=" << rec.last_id;
+			throw internal_err(sb);
+		}
+		if (it_last->second.entry != rec.entry) {
+			clear(sb) << u8"backup_files 记录跨文章链接： entry=" << rec.entry
+				<< ", id=" << rec.id << ", last_id=" << rec.last_id
+				<< ", last_entry=" << it_last->second.entry;
+			throw internal_err(sb);
+		}
+		auto it_next = next_map.find(rec.last_id);
+		if (it_next != next_map.end()) {
+			clear(sb) << u8"backup_files 记录出现分叉： entry=" << rec.entry
+				<< ", last_id=" << rec.last_id << ", id1=" << it_next->second
+				<< ", id2=" << rec.id;
+			throw internal_err(sb);
+		}
+		next_map[rec.last_id] = rec.id;
+	}
+
+	for (auto &entry_pair : entry_ids) {
+		const Str &entry = entry_pair.first;
+		auto it_head = entry_heads.find(entry);
+		if (it_head == entry_heads.end()) {
+			throw internal_err(u8"backup_files 记录未找到首版本：" + entry);
+		}
+		if (it_head->second.size() > 1) {
+			clear(sb) << u8"backup_files 记录出现多个首版本：" << entry;
+			throw internal_err(sb);
+		}
+	}
+
+	unordered_set<int64_t> visited;
+	for (auto &entry_pair : entry_ids) {
+		const Str &entry = entry_pair.first;
+		const int64_t head_id = entry_heads[entry].front();
+		int64_t cur = head_id;
+		Str content;
+		bool has_prev_time = false;
+		time_t prev_time = 0;
+		while (cur != 0) {
+			if (visited.count(cur)) {
+				clear(sb) << u8"backup_files 链表出现环： entry=" << entry << ", id=" << cur;
+				throw internal_err(sb);
+			}
+			visited.insert(cur);
+			auto &rec = recs[cur];
+			time_t cur_time = 0;
+			try {
+				cur_time = str2time_t(rec.time);
+			}
+			catch (const std::exception &e) {
+				throw internal_err(Str(e.what()) + SLS_WHERE);
+			}
+			if (has_prev_time && cur_time < prev_time) {
+				clear(sb) << u8"backup_files 时间顺序错误： entry=" << entry
+					<< ", id=" << rec.id << ", time=" << rec.time;
+				throw internal_err(sb);
+			}
+			prev_time = cur_time;
+			has_prev_time = true;
+
+			vector<tuple<size_t, size_t, Str>> diff;
+			str_diff_deserialize(diff, rec.diff_json);
+			backup_apply_diff(content, diff);
+			if (rec.size != (int64_t)content.size()) {
+				clear(sb) << u8"backup_files size 校验失败： entry=" << entry
+					<< ", id=" << rec.id << ", size=" << rec.size
+					<< ", got=" << content.size();
+				throw internal_err(sb);
+			}
+			Str hash = sha1sum(content).substr(0, 16);
+			if (hash != rec.hash) {
+				clear(sb) << u8"backup_files hash 校验失败： entry=" << entry
+					<< ", id=" << rec.id << ", hash=" << rec.hash
+					<< ", got=" << hash;
+				throw internal_err(sb);
+			}
+
+			auto it_next = next_map.find(cur);
+			cur = (it_next == next_map.end()) ? 0 : it_next->second;
+		}
+	}
+
+	if (visited.size() != recs.size()) {
+		for (auto &pair : recs) {
+			if (!visited.count(pair.first)) {
+				clear(sb) << u8"backup_files 出现孤立记录： entry=" << pair.second.entry
+					<< ", id=" << pair.second.id;
+				throw internal_err(sb);
+			}
+		}
+	}
+
+	cout << "backup database check done." << endl;
 }
 
 // simulate 5min backup rule, by updating backup timestamps
