@@ -13,6 +13,8 @@ data/*.txt
 data/*.matt
 *.db
 *.db-journal
+*.db-shm
+*.db-wal
 *.sql
 !data/scan-template.sql
 cmake-build-physwikiscan/

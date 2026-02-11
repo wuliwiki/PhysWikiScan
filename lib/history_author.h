@@ -582,6 +582,53 @@ inline void backup_list_tex_files(vecStr_O names, Str_I dir)
 #endif
 }
 
+inline void backup_recover_tex_file(Str_I filename)
+{
+	Str name = filename;
+	Long pos = max((Long)name.rfind('/'), (Long)name.rfind('\\'));
+	if (pos >= 0)
+		name = name.substr(pos + 1);
+
+	Str time, entry;
+	Long author = 0;
+	if (!backup_parse_tex_filename(name, time, author, entry))
+		throw internal_err(u8"备份文件名格式错误：" + name);
+
+	const Str backup_dir = "../PhysWiki-backup/";
+	if (!dir_exist(backup_dir))
+		throw internal_err(u8"备份文件夹不存在：" + backup_dir);
+
+	Str path = backup_db_path();
+	backup_db_require(path);
+	SQLite::Database db_backup(path, SQLite::OPEN_READONLY);
+	db_backup.exec("PRAGMA busy_timeout = 3000;");
+
+	Str content;
+	try {
+		content = backup_restore_str(time, author, entry, db_backup);
+	}
+	catch (const std::exception &e) {
+		throw internal_err(Str(e.what()) + SLS_WHERE);
+	}
+
+	Str out_path = backup_dir + name;
+	if (file_exist(out_path)) {
+		Str existing;
+		read(existing, out_path);
+		CRLF_to_LF(existing);
+		if (existing == content) {
+			cout << "backup file already exists: " << out_path << endl;
+			return;
+		}
+		clear(sb) << u8"备份文件已存在且内容不同（将保留文件）： " << out_path;
+		scan_log_warn(sb);
+		return;
+	}
+
+	write(content, out_path);
+	cout << "backup file recovered: " << out_path << endl;
+}
+
 // read ../PhysWiki-backup/*.tex and update backup db + scan.db history
 inline void backup_update_db_from_tex_files(SQLite::Database &db_rw)
 {
@@ -1026,7 +1073,7 @@ inline void backup_check()
 		}
 	}
 
-	cout << "backup database check done." << endl;
+	cout << "backup database check done. records=" << recs.size() << endl;
 }
 
 // simulate 5min backup rule, by updating backup timestamps

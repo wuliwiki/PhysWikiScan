@@ -405,6 +405,9 @@ int main(int argc, const char *argv[]) {
 		else if (args[0] == "--update-backup-db-from-tex-files" && args.size() == 1) {
 			backup_update_db_from_tex_files(db_rw);
 		}
+		else if (args[0] == "--backup-recover" && args.size() == 2) {
+			backup_recover_tex_file(args[1]);
+		}
 		else if (args[0] == "--backup" && args.size() == 3) {
 			SQLite::Transaction transaction(db_rw);
 			arg_backup(args[1], str2Int(args[2]), db_rw);

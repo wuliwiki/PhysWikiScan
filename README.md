@@ -24,6 +24,7 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * `--autoref 文章 eq 8` 查找 `contents/文章.tex` 文章的网页公式序号 `8` 是否定义了 `\label{xxx}`。 如果 label 不存在， 就试图对被引用的公式插入唯一的 `\label{eq_文章_*}`， 把 label `xxx` 输出到命令行再另起一行输出 `added`， 更新数据库。 如果 label 已经存在， 就直接把 label 输出到命令行且输出 `exist`。 该功能一般被编辑器的 “引用” 按钮调用。
 * `--autoref-dry 文章 eq 8` 和上一条一模一样， 除了不会真的给文章文件添加 label。
 * `--backup 文章 作者id` 把 `contents/文章.tex` 备份到 `data/PhysWiki-backup.db`（表 `backup_files`）， 若 hash 已经在数据库中则不备份并输出 `exist 已存在的记录 history.id`。 同一文章同一作者，若距离上次备份超过 30 分钟，则使用当前时间， 否则增加到上次备份时间加五分钟的整数倍，若已经存在则覆盖该记录。 如果新增了记录，就会在 stdout 输出 `added 时间_作者id_文章 history.id`； 若替换了记录，就会输出 `replaced 时间_作者id_文章 history.id`。
+* `--backup-recover 文件名` 从 `data/PhysWiki-backup.db` 恢复单个备份文件到 `../PhysWiki-backup/文件名`。 若文件已存在且内容一致则跳过，内容不同则警告并保留原文件。
 * `--bib` 通过 `bibliography.tex` 生成文献列表 `bibliography.html`， 更新数据库。
 * `--delete 文章1 文章2 ...` 相当于先把文章除了前两行的注释外的内容都清空，编译一次（如果其定义的标签等被引用，就会报错）。 然后检查是否文章本身被别处 `\upref`， 如果有就报错。 确保和最后一次备份的 hash 相同， 否则就增加一个备份。 最后更新 `entries.deleted`， 删除文章文件。
 * `--delete-cleanup` （`--delete` 本身就要求包含这些功能）删除数据库中已删除词条的 label，ref 等残留记录，删除 online/changed 中的相关文件。
@@ -44,6 +45,8 @@ PhysWikiScan 是小时百科 wuli.wiki 文章编辑器后台负责把 latex 转�
 * `--stat yyyymmddhhmm yyyymmddhhmm` 统计一段时间内所有作者的贡献详情
 * `--author-char-stat yyyymmddhhmm yyyymmddhhmm 用户名` 统计某个作者在某段时间内（包括）的字符数增减（数据库 history.add/del）
 * `--history-normalize` 有时候编辑器不到 5 分钟就会产生备份（并非 bug）， 该功能在备份数据库中删除或调整时间以模拟 5 分钟备份， 半小时不编辑重新开始计时。
+* `--backup-check` 校验 `data/PhysWiki-backup.db` 的 hash/size， 每篇文章的链表时间顺序、单链表结构，以及是否存在孤立记录。
+* `--update-backup-db-from-tex-files` 读取 `../PhysWiki-backup/*.tex` 写入 `data/PhysWiki-backup.db` 并更新 `scan.db` 的 `history`。 若数据库已有完全匹配记录则删除文件，否则警告并保留文件。
 * `--fix-db` 重新生成数据库中标记为【生成】的数据（用于 debug）。
 * `--migrate-db /path/data1.db /path/data2.db` 用于把某个旧的数据库迁移到新格式的数据库中， `data2.db` 将被覆盖。
 * `--migrate-user-db` 用于把 `../user-notes/用户名/cmd_data/scan.db` 转换为 `../user-notes/note-template/cmd_data/scan.db` 的格式。
