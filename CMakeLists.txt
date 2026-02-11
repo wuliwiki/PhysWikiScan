@@ -51,6 +51,9 @@ else()
 endif()
 
 add_executable(PhysWikiScan main.cpp)
+set_target_properties(PhysWikiScan PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
 
 target_link_libraries(PhysWikiScan SQLiteCpp SQLiteCpp-sqlite3 dl)
 

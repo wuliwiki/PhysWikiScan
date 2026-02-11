@@ -153,28 +153,15 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 	db_backup.exec("PRAGMA busy_timeout = 3000;");
 	cout << "updating sqlite database \"history\" table from backup database..." << endl;
 
-	// update "history" table
-	SQLite::Statement stmt_select(db_rw,
-		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
-
-	//            hash        time author entry  record-exist
-	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
-	while (stmt_select.executeStep()) {
-		Long author_id = stmt_select.getColumn(2).getInt64();
-		db_history[stmt_select.getColumn(0)] =
-				make_tuple(stmt_select.getColumn(1).getString(),
-						   author_id , stmt_select.getColumn(3).getString(), false);
-	}
-	stmt_select.reset();
-
-	cout << "there are already " << db_history.size() << " backup (history) records in database." << endl;
-
 	vecLong db_author_ids0;
 	vecStr db_author_names0;
-	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "name" FROM "authors")");
+	unordered_map<Long, Long> author_aka;
+	SQLite::Statement stmt_select2(db_rw, R"(SELECT "id", "name", "aka" FROM "authors")");
 	while (stmt_select2.executeStep()) {
-		db_author_ids0.push_back(stmt_select2.getColumn(0).getInt64());
+		Long author_id = stmt_select2.getColumn(0).getInt64();
+		db_author_ids0.push_back(author_id);
 		db_author_names0.push_back(stmt_select2.getColumn(1));
+		author_aka[author_id] = stmt_select2.getColumn(2).getInt64();
 	}
 	stmt_select2.reset();
 
@@ -185,6 +172,66 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 
 	db_author_ids0.clear(); db_author_names0.clear();
 	db_author_ids0.shrink_to_fit(); db_author_names0.shrink_to_fit();
+
+	auto resolve_author = [&](Long author_id) {
+		Long cur = author_id;
+		for (int i = 0; i < 8; ++i) {
+			auto it = author_aka.find(cur);
+			if (it == author_aka.end())
+				break;
+			Long aka = it->second;
+			if (aka < 0 || aka == cur)
+				break;
+			cur = aka;
+		}
+		return cur;
+	};
+
+	// update "history" table
+	SQLite::Statement stmt_select(db_rw,
+		R"(SELECT "hash", "time", "author", "entry" FROM "history" WHERE "hash" <> '';)");
+	SQLite::Statement stmt_history_select(db_rw,
+		R"(SELECT "hash" FROM "history" WHERE "time"=? AND "author"=? AND "entry"=?;)");
+	SQLite::Statement stmt_history_author(db_rw,
+		R"(UPDATE "history" SET "author"=? WHERE "hash"=?;)");
+
+	//            hash        time author entry  record-exist
+	unordered_map<Str,  tuple<Str, Long,  Str,   bool>> db_history;
+	while (stmt_select.executeStep()) {
+		const Str hash = stmt_select.getColumn(0).getString();
+		const Str time_str = stmt_select.getColumn(1).getString();
+		Long author_id = stmt_select.getColumn(2).getInt64();
+		const Str entry_str = stmt_select.getColumn(3).getString();
+		Long author_id2 = resolve_author(author_id);
+		if (author_id2 != author_id) {
+			stmt_history_select.bind(1, time_str);
+			stmt_history_select.bind(2, (int64_t)author_id2);
+			stmt_history_select.bind(3, entry_str);
+			if (stmt_history_select.executeStep()) {
+				const Str hash_exist = stmt_history_select.getColumn(0).getString();
+				if (hash_exist != hash) {
+					clear(sb) << u8"history.author 与 authors.aka 冲突（将忽略更新）： hash=" << hash
+						<< ", time=" << time_str << ", entry=" << entry_str
+						<< ", author=" << author_id << ", aka=" << author_id2
+						<< ", existing_hash=" << hash_exist;
+					scan_log_warn(sb);
+				}
+			}
+			else {
+				stmt_history_author.bind(1, (int64_t)author_id2);
+				stmt_history_author.bind(2, hash);
+				if (stmt_history_author.exec() != 1) throw internal_err(SLS_WHERE);
+				stmt_history_author.reset();
+			}
+			stmt_history_select.reset();
+			author_id = author_id2;
+		}
+
+		db_history[hash] = make_tuple(time_str, author_id, entry_str, false);
+	}
+	stmt_select.reset();
+
+	cout << "there are already " << db_history.size() << " backup (history) records in database." << endl;
 
 	SQLite::Statement stmt_insert(db_rw,
 		R"(INSERT OR REPLACE INTO "history" ("hash", "time", "author", "entry") VALUES (?, ?, ?, ?);)");
@@ -210,7 +257,7 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 
 	while (stmt_backup.executeStep()) {
 		time = stmt_backup.getColumn(0).getString();
-		Long authorID = stmt_backup.getColumn(1).getInt64();
+		Long authorID = resolve_author(stmt_backup.getColumn(1).getInt64());
 		entry = stmt_backup.getColumn(2).getString();
 		sha1 = stmt_backup.getColumn(3).getString();
 		bool sha1_exist = db_history.count(sha1);
@@ -239,19 +286,28 @@ inline void db_update_author_history(SQLite::Database &db_rw)
 		if (sha1_exist) {
 			auto &time_author_entry_fexist = db_history[sha1];
 			if (get<0>(time_author_entry_fexist) != time) {
-				clear(sb) << u8"备份记录信息与数据库中的时间不同， 数据库中为（将不更新）： " +
-							 get<0>(time_author_entry_fexist);
+				clear(sb) << u8"备份记录时间与数据库不同（将不更新）： hash=" << sha1
+					<< ", backup_time=" << time
+					<< ", db_time=" << get<0>(time_author_entry_fexist)
+					<< ", entry=" << entry
+					<< ", author=" << authorID;
 				db_log_print(sb);
 			}
 			if (get<1>(time_author_entry_fexist) != authorID) {
-				clear(sb) << u8"备份记录信息与数据库中的作者不同， 数据库中为（将不更新）： "
-					<< to_string(get<1>(time_author_entry_fexist)) << '.'
-					<< db_id_to_author[get<1>(time_author_entry_fexist)];
+				clear(sb) << u8"备份记录作者与数据库不同（将不更新）： hash=" << sha1
+					<< ", backup_author=" << authorID
+					<< ", db_author=" << to_string(get<1>(time_author_entry_fexist)) << '.'
+					<< db_id_to_author[get<1>(time_author_entry_fexist)]
+					<< ", time=" << time
+					<< ", entry=" << entry;
 				db_log_print(sb);
 			}
 			if (get<2>(time_author_entry_fexist) != entry) {
-				clear(sb) << u8"备份记录信息与数据库中的文件名不同， 数据库中为（将不更新）： "
-					<< get<2>(time_author_entry_fexist);
+				clear(sb) << u8"备份记录文章名与数据库不同（将不更新）： hash=" << sha1
+					<< ", backup_entry=" << entry
+					<< ", db_entry=" << get<2>(time_author_entry_fexist)
+					<< ", time=" << time
+					<< ", author=" << authorID;
 				db_log_print(sb);
 			}
 			get<3>(time_author_entry_fexist) = true;
