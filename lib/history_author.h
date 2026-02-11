@@ -14,6 +14,187 @@ inline void backup_db_require(Str_I path)
 		throw internal_err(u8"备份数据库不存在：" + path);
 }
 
+inline int64_t backup_next_id(int64_t id, SQLite::Database &db_backup)
+{
+	SQLite::Statement stmt(db_backup,
+		R"(SELECT "id" FROM "backup_files" WHERE "last_id"=?;)");
+	stmt.bind(1, id);
+	int64_t next_id = 0;
+	while (stmt.executeStep()) {
+		int64_t candidate = stmt.getColumn(0).getInt64();
+		if (next_id != 0)
+			throw internal_err(u8"backup_files 出现多个后继记录：id=" + num2str((Long)id));
+		next_id = candidate;
+	}
+	return next_id;
+}
+
+inline void backup_relink_next(SQLite::Database &db_backup, int64_t next_id, int64_t new_last_id,
+	Str_I prev_content)
+{
+	Str next_content = backup_restore_str_by_id(next_id, db_backup);
+	vector<tuple<size_t, size_t, Str>> diff;
+	str_diff(diff, prev_content, next_content);
+	Str diff_json;
+	str_diff_serialize(diff_json, diff);
+
+	SQLite::Statement stmt_update(db_backup,
+		R"(UPDATE "backup_files" SET "last_id"=?, "diff"=? WHERE "id"=?;)");
+	if (new_last_id == 0)
+		stmt_update.bind(1);
+	else
+		stmt_update.bind(1, new_last_id);
+	stmt_update.bind(2, diff_json);
+	stmt_update.bind(3, next_id);
+	if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+
+	Str next_content_after = backup_restore_str_by_id(next_id, db_backup);
+	if (next_content_after != next_content)
+		throw internal_err(u8"backup_files 重新链接后内容变化：id=" + num2str((Long)next_id));
+}
+
+inline void backup_delete_record(SQLite::Database &db_backup, int64_t backup_id)
+{
+	BackupRecord rec;
+	if (!backup_load_record(rec, db_backup, backup_id))
+		throw internal_err(u8"backup_files 中找不到记录：id=" + num2str((Long)backup_id));
+
+	const int64_t next_id = backup_next_id(backup_id, db_backup);
+	const Str prev_content = rec.last_null ? Str() : backup_restore_str_by_id(rec.last_id, db_backup);
+	if (next_id != 0)
+		backup_relink_next(db_backup, next_id, rec.last_null ? 0 : rec.last_id, prev_content);
+
+	SQLite::Statement stmt_delete(db_backup,
+		R"(DELETE FROM "backup_files" WHERE "id"=?;)");
+	stmt_delete.bind(1, backup_id);
+	if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
+}
+
+inline void backup_replace_version(SQLite::Database &db_backup, int64_t backup_id, Str_I new_content,
+	Str_I new_hash = Str(), const Str *prev_content_override = nullptr)
+{
+	if (!is_valid(new_content))
+		throw internal_err(u8"backup_replace_version(): invalid UTF-8");
+
+	BackupRecord rec;
+	if (!backup_load_record(rec, db_backup, backup_id))
+		throw internal_err(u8"backup_replace_version(): record not found");
+
+	Str prev_content_store;
+	const Str *prev_content = prev_content_override;
+	if (!prev_content) {
+		if (!rec.last_null)
+			prev_content_store = backup_restore_str_by_id(rec.last_id, db_backup);
+		prev_content = &prev_content_store;
+	}
+
+	Str hash = new_hash;
+	if (hash.empty())
+		hash = sha1sum(new_content).substr(0, 16);
+	else if (hash != sha1sum(new_content).substr(0, 16))
+		throw internal_err(u8"backup_replace_version(): hash mismatch");
+
+	vector<tuple<size_t, size_t, Str>> diff;
+	str_diff(diff, *prev_content, new_content);
+	Str diff_json;
+	str_diff_serialize(diff_json, diff);
+
+	SQLite::Statement stmt_update(db_backup,
+		R"(UPDATE "backup_files" SET "size"=?, "hash"=?, "diff"=? WHERE "id"=?;)");
+	stmt_update.bind(1, (int64_t)new_content.size());
+	stmt_update.bind(2, hash);
+	stmt_update.bind(3, diff_json);
+	stmt_update.bind(4, backup_id);
+	if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
+
+	const int64_t next_id = backup_next_id(backup_id, db_backup);
+	if (next_id != 0)
+		backup_relink_next(db_backup, next_id, backup_id, new_content);
+}
+
+inline int64_t backup_insert_version_between(SQLite::Database &db_backup, Str_I entry, Str_I time,
+	int64_t author, Str_I content, int64_t prev_id, int64_t next_id, Str_I hash = Str())
+{
+	if (!is_valid(content))
+		throw internal_err(u8"backup_insert_version_between(): invalid UTF-8");
+
+	if (next_id != 0) {
+		BackupRecord next_rec;
+		if (!backup_load_record(next_rec, db_backup, next_id))
+			throw internal_err(u8"backup_insert_version_between(): next record not found");
+		if (next_rec.entry != entry)
+			throw internal_err(u8"backup_insert_version_between(): entry mismatch");
+		const int64_t expected_prev = next_rec.last_null ? 0 : next_rec.last_id;
+		if (expected_prev != prev_id)
+			throw internal_err(u8"backup_insert_version_between(): prev_id mismatch");
+	}
+	else if (prev_id == 0) {
+		SQLite::Statement stmt_exist(db_backup,
+			R"(SELECT 1 FROM "backup_files" WHERE "entry"=? LIMIT 1;)");
+		stmt_exist.bind(1, entry);
+		if (stmt_exist.executeStep())
+			throw internal_err(u8"backup_insert_version_between(): entry already has records");
+	}
+	else {
+		const int64_t existing_next = backup_next_id(prev_id, db_backup);
+		if (existing_next != 0)
+			throw internal_err(u8"backup_insert_version_between(): prev_id is not tail");
+		BackupRecord prev_rec;
+		if (!backup_load_record(prev_rec, db_backup, prev_id))
+			throw internal_err(u8"backup_insert_version_between(): prev record not found");
+		if (prev_rec.entry != entry)
+			throw internal_err(u8"backup_insert_version_between(): entry mismatch");
+	}
+
+	Str prev_content = (prev_id == 0) ? Str() : backup_restore_str_by_id(prev_id, db_backup);
+	vector<tuple<size_t, size_t, Str>> diff;
+	str_diff(diff, prev_content, content);
+	Str diff_json;
+	str_diff_serialize(diff_json, diff);
+
+	Str final_hash = hash;
+	if (final_hash.empty())
+		final_hash = sha1sum(content).substr(0, 16);
+	else if (final_hash != sha1sum(content).substr(0, 16))
+		throw internal_err(u8"backup_insert_version_between(): hash mismatch");
+
+	SQLite::Statement stmt_insert(db_backup,
+		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
+		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
+	stmt_insert.bind(1, time);
+	stmt_insert.bind(2, author);
+	stmt_insert.bind(3, entry);
+	stmt_insert.bind(4, (int64_t)content.size());
+	stmt_insert.bind(5, final_hash);
+	if (prev_id == 0)
+		stmt_insert.bind(6);
+	else
+		stmt_insert.bind(6, prev_id);
+	stmt_insert.bind(7, diff_json);
+	stmt_insert.exec();
+
+	const int64_t new_id = db_backup.getLastInsertRowid();
+	if (next_id != 0)
+		backup_relink_next(db_backup, next_id, new_id, content);
+	return new_id;
+}
+
+inline int64_t backup_insert_version_before(SQLite::Database &db_backup, int64_t next_id, Str_I time,
+	int64_t author, Str_I content, Str_I hash = Str())
+{
+	BackupRecord next_rec;
+	if (!backup_load_record(next_rec, db_backup, next_id))
+		throw internal_err(u8"backup_insert_version_before(): next record not found");
+	const int64_t prev_id = next_rec.last_null ? 0 : next_rec.last_id;
+	return backup_insert_version_between(db_backup, next_rec.entry, time, author, content, prev_id, next_id, hash);
+}
+
+inline int64_t backup_append_version(SQLite::Database &db_backup, Str_I entry, int64_t prev_id, Str_I time,
+	int64_t author, Str_I content, Str_I hash = Str())
+{
+	return backup_insert_version_between(db_backup, entry, time, author, content, prev_id, 0, hash);
+}
+
 // calculate author list of an entry, based on "entry_authors" table (already using aka)
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
@@ -413,6 +594,9 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 	while (stmt_select.executeStep())
 		entries.push_back(stmt_select.getColumn(0));
 
+	SQLite::Statement stmt_history(db_rw,
+		R"(SELECT "hash", "add", "del" FROM "history" WHERE "entry"=?;)");
+
 	struct BackupRec {
 		int64_t id = 0;
 		int64_t last_id = 0;
@@ -426,6 +610,17 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 
 	unordered_map<Str, pair<Long, Long>> hist_add_del; // backup hash -> (add, del)
 	for (auto &entry : entries) {
+		unordered_map<Str, pair<Long, Long>> history_add_del;
+		if (!redo_all) {
+			stmt_history.bind(1, entry);
+			while (stmt_history.executeStep()) {
+				history_add_del[stmt_history.getColumn(0)] =
+					make_pair(stmt_history.getColumn(1).getInt64(),
+							  stmt_history.getColumn(2).getInt64());
+			}
+			stmt_history.reset();
+		}
+
 		stmt_backup.bind(1, entry);
 		vector<BackupRec> recs;
 		while (stmt_backup.executeStep()) {
@@ -470,16 +665,27 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 			str_diff_deserialize(diff, rec.diff_json);
 			backup_apply_diff(current, diff);
 
-			Long add = 0, del = 0;
-			if (first) {
-				add = u8count(current);
-				del = 0;
-				first = false;
+			bool need_add_del = redo_all;
+			if (!redo_all) {
+				auto it_hist = history_add_del.find(rec.hash);
+				if (it_hist != history_add_del.end())
+					need_add_del = (it_hist->second.first == -1 || it_hist->second.second == -1);
+				else
+					need_add_del = false;
 			}
-			else {
-				str_add_del(add, del, prev, current);
+
+			if (need_add_del) {
+				Long add = 0, del = 0;
+				if (first) {
+					add = u8count(current);
+					del = 0;
+				}
+				else {
+					str_add_del(add, del, prev, current);
+				}
+				hist_add_del[rec.hash] = make_pair(add, del);
 			}
-			hist_add_del[rec.hash] = make_pair(add, del);
+			first = false;
 			prev = current;
 
 			auto it = next_map.find(cur);
@@ -586,14 +792,8 @@ inline void history_normalize(SQLite::Database &db_rw)
 	SQLite::Statement stmt_backup_select(db_backup,
 		R"(SELECT "id", "last_id" FROM "backup_files"
 		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
-	SQLite::Statement stmt_backup_next(db_backup,
-		R"(SELECT "id" FROM "backup_files" WHERE "last_id"=?;)");
 	SQLite::Statement stmt_backup_update_time(db_backup,
 		R"(UPDATE "backup_files" SET "time"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_backup_update_link(db_backup,
-		R"(UPDATE "backup_files" SET "last_id"=?, "diff"=? WHERE "id"=?;)");
-	SQLite::Statement stmt_backup_delete(db_backup,
-		R"(DELETE FROM "backup_files" WHERE "id"=?;)");
 	for (auto &e5 : entry_author_time_hash_time2) {
 		for (auto &e4: e5.second) {
 			for (auto &time_hash_time2: e4.second) {
@@ -613,39 +813,9 @@ inline void history_normalize(SQLite::Database &db_rw)
 				if (!stmt_backup_select.executeStep())
 					throw internal_err(u8"backup_files 中找不到备份记录：" + entry + " " + time);
 				const int64_t backup_id = stmt_backup_select.getColumn(0).getInt64();
-				const bool last_null = stmt_backup_select.getColumn(1).isNull();
-				const int64_t last_id = last_null ? 0 : stmt_backup_select.getColumn(1).getInt64();
 				stmt_backup_select.reset();
 				if (time2 == "d") {
-					vector<int64_t> next_ids;
-					stmt_backup_next.bind(1, backup_id);
-					while (stmt_backup_next.executeStep())
-						next_ids.push_back(stmt_backup_next.getColumn(0).getInt64());
-					stmt_backup_next.reset();
-					if (next_ids.size() > 1)
-						throw internal_err(u8"backup_files 出现多个后继记录：" + entry + " " + time);
-
-					if (!next_ids.empty()) {
-						const int64_t next_id = next_ids.front();
-						Str prev_content = (last_id == 0) ? Str() : backup_restore_str_by_id(last_id, db_backup);
-						Str next_content = backup_restore_str_by_id(next_id, db_backup);
-						vector<tuple<size_t, size_t, Str>> diff;
-						str_diff(diff, prev_content, next_content);
-						Str diff_json;
-						str_diff_serialize(diff_json, diff);
-						if (last_id == 0)
-							stmt_backup_update_link.bind(1);
-						else
-							stmt_backup_update_link.bind(1, last_id);
-						stmt_backup_update_link.bind(2, diff_json);
-						stmt_backup_update_link.bind(3, next_id);
-						if (stmt_backup_update_link.exec() != 1) throw internal_err(SLS_WHERE);
-						stmt_backup_update_link.reset();
-					}
-
-					stmt_backup_delete.bind(1, backup_id);
-					if (stmt_backup_delete.exec() != 1) throw internal_err(SLS_WHERE);
-					stmt_backup_delete.reset();
+					backup_delete_record(db_backup, backup_id);
 
 					stmt_delete.bind(1, hash);
 					if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
@@ -704,11 +874,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	SQLite::Statement stmt_backup_select(db_backup,
 		R"(SELECT "id", "last_id" FROM "backup_files"
 		   WHERE "time"=? AND "author"=? AND "entry"=?;)");
-	SQLite::Statement stmt_backup_insert(db_backup,
-		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
-		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
-	SQLite::Statement stmt_backup_update(db_backup,
-		R"(UPDATE "backup_files" SET "size"=?, "hash"=?, "diff"=? WHERE "id"=?;)");
 
 	Str str; // content of entry
 	Str time_new_str;
@@ -764,19 +929,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		stmt_insert.bind(6, 0);
 		stmt_insert.bind(7, "");
 		stmt_insert.exec(); stmt_insert.reset();
-
-		vector<tuple<size_t, size_t, Str>> diff;
-		str_diff(diff, Str(), str);
-		Str diff_json;
-		str_diff_serialize(diff_json, diff);
-		stmt_backup_insert.bind(1, time_new_str);
-		stmt_backup_insert.bind(2, (int64_t)author_id2);
-		stmt_backup_insert.bind(3, entry);
-		stmt_backup_insert.bind(4, (int64_t)str.size());
-		stmt_backup_insert.bind(5, hash);
-		stmt_backup_insert.bind(6);
-		stmt_backup_insert.bind(7, diff_json);
-		stmt_backup_insert.exec(); stmt_backup_insert.reset();
+		backup_append_version(db_backup, entry, 0, time_new_str, (int64_t)author_id2, str, hash);
 
 		stmt_update2.bind(1, hash);
 		stmt_update2.bind(2, entry);
@@ -860,17 +1013,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		clear(sb) << u8"更新 history： " << hash_last << " -> " << hash << ", add = " <<
 			char_add << ", del = " << char_del;
 		db_log_print(sb);
-
-		vector<tuple<size_t, size_t, Str>> diff;
-		str_diff(diff, prev_content, str);
-		Str diff_json;
-		str_diff_serialize(diff_json, diff);
-		stmt_backup_update.bind(1, (int64_t)str.size());
-		stmt_backup_update.bind(2, hash);
-		stmt_backup_update.bind(3, diff_json);
-		stmt_backup_update.bind(4, last_backup_id);
-		if (stmt_backup_update.exec() != 1) throw internal_err(SLS_WHERE);
-		stmt_backup_update.reset();
+		backup_replace_version(db_backup, last_backup_id, str, hash, &prev_content);
 
 		// update "entry_authors.last_backup"
 		SQLite::Statement stmt_update5(db_rw,
@@ -906,19 +1049,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 		clear(sb) << u8"插入新的 history 记录： hash=" << hash << ", time=" << time_new_str << ", author=" << author_id2
 			<< ", entry=" << entry << ", add=" << char_add << ", del=" << char_del << ", last=" << hash_last;
 		db_log_print(sb);
-
-		vector<tuple<size_t, size_t, Str>> diff;
-		str_diff(diff, prev_content, str);
-		Str diff_json;
-		str_diff_serialize(diff_json, diff);
-		stmt_backup_insert.bind(1, time_new_str);
-		stmt_backup_insert.bind(2, (int64_t)author_id2);
-		stmt_backup_insert.bind(3, entry);
-		stmt_backup_insert.bind(4, (int64_t)str.size());
-		stmt_backup_insert.bind(5, hash);
-		stmt_backup_insert.bind(6, last_backup_id);
-		stmt_backup_insert.bind(7, diff_json);
-		stmt_backup_insert.exec(); stmt_backup_insert.reset();
+		backup_append_version(db_backup, entry, last_backup_id, time_new_str,
+			(int64_t)author_id2, str, hash);
 
 		// update "entry_authors", add 5min
 		stmt_update3.bind(1, hash); // last_backup

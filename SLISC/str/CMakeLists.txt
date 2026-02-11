@@ -1,5 +1,0 @@
-add_executable(str_diff_patch2_test str_diff_patch2_test.cpp)
-set_target_properties(str_diff_patch2_test PROPERTIES
-	CXX_STANDARD 17
-	CXX_STANDARD_REQUIRED YES
-)

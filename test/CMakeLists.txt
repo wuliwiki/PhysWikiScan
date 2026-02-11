@@ -21,3 +21,10 @@ set_target_properties(physwiki_backup_restore PROPERTIES
 	CXX_STANDARD 11
 	CXX_STANDARD_REQUIRED YES
 )
+
+add_executable(str_diff_patch2_test str_diff_patch2_test.cpp)
+target_include_directories(str_diff_patch2_test PRIVATE ${PROJECT_SOURCE_DIR}/SLISC/str)
+set_target_properties(str_diff_patch2_test PROPERTIES
+	CXX_STANDARD 17
+	CXX_STANDARD_REQUIRED YES
+)
