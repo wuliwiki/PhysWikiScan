@@ -14,194 +14,6 @@ inline void backup_db_require(Str_I path)
 		throw internal_err(u8"备份数据库不存在：" + path);
 }
 
-// find the next backup record id (throws if more than one)
-inline int64_t backup_next_id(int64_t id, SQLite::Database &db_backup)
-{
-	SQLite::Statement stmt(db_backup,
-		R"(SELECT "id" FROM "backup_files" WHERE "last_id"=?;)");
-	stmt.bind(1, id);
-	int64_t next_id = 0;
-	while (stmt.executeStep()) {
-		int64_t candidate = stmt.getColumn(0).getInt64();
-		if (next_id != 0)
-			throw internal_err(u8"backup_files 出现多个后继记录：id=" + num2str((Long)id));
-		next_id = candidate;
-	}
-	return next_id;
-}
-
-// relink a next record to a new predecessor and verify recovery unchanged
-inline void backup_relink_next(SQLite::Database &db_backup, int64_t next_id, int64_t new_last_id,
-	Str_I prev_content)
-{
-	Str next_content = backup_restore_str_by_id(next_id, db_backup);
-	vector<tuple<size_t, size_t, Str>> diff;
-	str_diff(diff, prev_content, next_content);
-	Str diff_json;
-	str_diff_serialize(diff_json, diff);
-
-	SQLite::Statement stmt_update(db_backup,
-		R"(UPDATE "backup_files" SET "last_id"=?, "diff"=? WHERE "id"=?;)");
-	if (new_last_id == 0)
-		stmt_update.bind(1);
-	else
-		stmt_update.bind(1, new_last_id);
-	stmt_update.bind(2, diff_json);
-	stmt_update.bind(3, next_id);
-	if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
-
-	Str next_content_after = backup_restore_str_by_id(next_id, db_backup);
-	if (next_content_after != next_content)
-		throw internal_err(u8"backup_files 重新链接后内容变化：id=" + num2str((Long)next_id));
-}
-
-// delete a backup record, relinking its successor if needed
-inline void backup_delete_record(SQLite::Database &db_backup, int64_t backup_id)
-{
-	BackupRecord rec;
-	if (!backup_load_record(rec, db_backup, backup_id))
-		throw internal_err(u8"backup_files 中找不到记录：id=" + num2str((Long)backup_id));
-
-	const int64_t next_id = backup_next_id(backup_id, db_backup);
-	const Str prev_content = rec.last_null ? Str() : backup_restore_str_by_id(rec.last_id, db_backup);
-	if (next_id != 0)
-		backup_relink_next(db_backup, next_id, rec.last_null ? 0 : rec.last_id, prev_content);
-
-	SQLite::Statement stmt_delete(db_backup,
-		R"(DELETE FROM "backup_files" WHERE "id"=?;)");
-	stmt_delete.bind(1, backup_id);
-	if (stmt_delete.exec() != 1) throw internal_err(SLS_WHERE);
-}
-
-// replace an existing backup version and keep the chain consistent
-inline void backup_replace_version(SQLite::Database &db_backup, int64_t backup_id, Str_I new_content,
-	Str_I new_hash = Str(), const Str *prev_content_override = nullptr)
-{
-	if (!is_valid(new_content))
-		throw internal_err(u8"backup_replace_version(): invalid UTF-8");
-
-	BackupRecord rec;
-	if (!backup_load_record(rec, db_backup, backup_id))
-		throw internal_err(u8"backup_replace_version(): record not found");
-
-	Str prev_content_store;
-	const Str *prev_content = prev_content_override;
-	if (!prev_content) {
-		if (!rec.last_null)
-			prev_content_store = backup_restore_str_by_id(rec.last_id, db_backup);
-		prev_content = &prev_content_store;
-	}
-
-	Str hash = new_hash;
-	if (hash.empty())
-		hash = sha1sum(new_content).substr(0, 16);
-	else if (hash != sha1sum(new_content).substr(0, 16))
-		throw internal_err(u8"backup_replace_version(): hash mismatch");
-
-	vector<tuple<size_t, size_t, Str>> diff;
-	str_diff(diff, *prev_content, new_content);
-	Str diff_json;
-	str_diff_serialize(diff_json, diff);
-
-	SQLite::Statement stmt_update(db_backup,
-		R"(UPDATE "backup_files" SET "size"=?, "hash"=?, "diff"=? WHERE "id"=?;)");
-	stmt_update.bind(1, (int64_t)new_content.size());
-	stmt_update.bind(2, hash);
-	stmt_update.bind(3, diff_json);
-	stmt_update.bind(4, backup_id);
-	if (stmt_update.exec() != 1) throw internal_err(SLS_WHERE);
-
-	const int64_t next_id = backup_next_id(backup_id, db_backup);
-	if (next_id != 0)
-		backup_relink_next(db_backup, next_id, backup_id, new_content);
-}
-
-// insert a backup version between prev and next (or append if next_id==0)
-inline int64_t backup_insert_version_between(SQLite::Database &db_backup, Str_I entry, Str_I time,
-	int64_t author, Str_I content, int64_t prev_id, int64_t next_id, Str_I hash = Str())
-{
-	if (!is_valid(content))
-		throw internal_err(u8"backup_insert_version_between(): invalid UTF-8");
-
-	if (next_id != 0) {
-		BackupRecord next_rec;
-		if (!backup_load_record(next_rec, db_backup, next_id))
-			throw internal_err(u8"backup_insert_version_between(): next record not found");
-		if (next_rec.entry != entry)
-			throw internal_err(u8"backup_insert_version_between(): entry mismatch");
-		const int64_t expected_prev = next_rec.last_null ? 0 : next_rec.last_id;
-		if (expected_prev != prev_id)
-			throw internal_err(u8"backup_insert_version_between(): prev_id mismatch");
-	}
-	else if (prev_id == 0) {
-		SQLite::Statement stmt_exist(db_backup,
-			R"(SELECT 1 FROM "backup_files" WHERE "entry"=? LIMIT 1;)");
-		stmt_exist.bind(1, entry);
-		if (stmt_exist.executeStep())
-			throw internal_err(u8"backup_insert_version_between(): entry already has records");
-	}
-	else {
-		const int64_t existing_next = backup_next_id(prev_id, db_backup);
-		if (existing_next != 0)
-			throw internal_err(u8"backup_insert_version_between(): prev_id is not tail");
-		BackupRecord prev_rec;
-		if (!backup_load_record(prev_rec, db_backup, prev_id))
-			throw internal_err(u8"backup_insert_version_between(): prev record not found");
-		if (prev_rec.entry != entry)
-			throw internal_err(u8"backup_insert_version_between(): entry mismatch");
-	}
-
-	Str prev_content = (prev_id == 0) ? Str() : backup_restore_str_by_id(prev_id, db_backup);
-	vector<tuple<size_t, size_t, Str>> diff;
-	str_diff(diff, prev_content, content);
-	Str diff_json;
-	str_diff_serialize(diff_json, diff);
-
-	Str final_hash = hash;
-	if (final_hash.empty())
-		final_hash = sha1sum(content).substr(0, 16);
-	else if (final_hash != sha1sum(content).substr(0, 16))
-		throw internal_err(u8"backup_insert_version_between(): hash mismatch");
-
-	SQLite::Statement stmt_insert(db_backup,
-		R"(INSERT INTO "backup_files" ("time", "author", "entry", "size", "hash", "last_id", "diff")
-		   VALUES (?, ?, ?, ?, ?, ?, ?);)");
-	stmt_insert.bind(1, time);
-	stmt_insert.bind(2, author);
-	stmt_insert.bind(3, entry);
-	stmt_insert.bind(4, (int64_t)content.size());
-	stmt_insert.bind(5, final_hash);
-	if (prev_id == 0)
-		stmt_insert.bind(6);
-	else
-		stmt_insert.bind(6, prev_id);
-	stmt_insert.bind(7, diff_json);
-	stmt_insert.exec();
-
-	const int64_t new_id = db_backup.getLastInsertRowid();
-	if (next_id != 0)
-		backup_relink_next(db_backup, next_id, new_id, content);
-	return new_id;
-}
-
-// insert a backup version directly before an existing record
-inline int64_t backup_insert_version_before(SQLite::Database &db_backup, int64_t next_id, Str_I time,
-	int64_t author, Str_I content, Str_I hash = Str())
-{
-	BackupRecord next_rec;
-	if (!backup_load_record(next_rec, db_backup, next_id))
-		throw internal_err(u8"backup_insert_version_before(): next record not found");
-	const int64_t prev_id = next_rec.last_null ? 0 : next_rec.last_id;
-	return backup_insert_version_between(db_backup, next_rec.entry, time, author, content, prev_id, next_id, hash);
-}
-
-// append a backup version at the end of an entry chain
-inline int64_t backup_append_version(SQLite::Database &db_backup, Str_I entry, int64_t prev_id, Str_I time,
-	int64_t author, Str_I content, Str_I hash = Str())
-{
-	return backup_insert_version_between(db_backup, entry, time, author, content, prev_id, 0, hash);
-}
-
 // calculate author list of an entry, based on "entry_authors" table (already using aka)
 inline Str db_get_author_list(Str_I entry, SQLite::Database &db_read)
 {
@@ -673,13 +485,17 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 			backup_apply_diff(current, diff);
 
 			bool need_add_del = redo_all;
-			if (!redo_all) {
-				auto it_hist = history_add_del.find(rec.hash);
-				if (it_hist != history_add_del.end())
-					need_add_del = (it_hist->second.first == -1 || it_hist->second.second == -1);
-				else
-					need_add_del = false;
-			}
+				if (!redo_all) {
+					auto it_hist = history_add_del.find(rec.hash);
+					if (it_hist != history_add_del.end())
+						need_add_del = (it_hist->second.first == -1 || it_hist->second.second == -1);
+					else {
+						clear(sb) << u8"内部警告：history 表缺少记录（将忽略）： entry=" << entry
+							<< ", hash=" << rec.hash << ", backup_id=" << rec.id;
+						scan_log_warn(sb);
+						need_add_del = false;
+					}
+				}
 
 			if (need_add_del) {
 				Long add = 0, del = 0;
