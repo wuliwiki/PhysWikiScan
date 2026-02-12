@@ -433,6 +433,63 @@ inline void last_next_buttons(Str_IO html, Str_I entry, Str_I title, Bool_I in_m
 		throw internal_err(u8"\"PhysWikiNextTitle\" 在 entry_template.html 中数量不对");
 }
 
+// escape a string for JSON content in html script
+inline void json_escape(Str_O out, Str_I in)
+{
+	out.clear();
+	for (auto c : in) {
+		switch (c) {
+		case '\\': out += "\\\\"; break;
+		case '\"': out += "\\\""; break;
+		case '\n': out += "\\n"; break;
+		case '\r': out += "\\r"; break;
+		case '\t': out += "\\t"; break;
+		case '<': out += "\\u003c"; break;
+		case '>': out += "\\u003e"; break;
+		case '&': out += "\\u0026"; break;
+		default: out += c;
+		}
+	}
+}
+
+// convert db file hash + file name to website file URL (e.g. ../files/hash.ext)
+inline void file_hash_name_to_url(Str_O url, Str_I hash, Str_I name)
+{
+	Long ind = name.find_last_of('.');
+	clear(url) << "../files/" << hash;
+	if (ind > 0 && ind < size(name) - 1) {
+		url << '.' << name.substr(ind + 1);
+	}
+}
+
+// get all article attachments from db and serialize to json array
+inline void entry_attachments_json(Str_O json, Str_I entry, SQLite::Database &db_read)
+{
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT ef."file", f."name" FROM "entry_files" ef)"
+		R"( JOIN "files" f ON f."hash" = ef."file" )"
+		R"( WHERE ef."entry" = ? ORDER BY f."name" ASC, ef."file" ASC;)");
+	stmt_select.bind(1, entry);
+
+	Str hash, name, url, url_esc, name_esc, item;
+	bool first = true;
+	json = "[";
+	while (stmt_select.executeStep()) {
+		hash = stmt_select.getColumn(0).getString();
+		name = stmt_select.getColumn(1).getString();
+		file_hash_name_to_url(url, hash, name);
+		json_escape(url_esc, url);
+		json_escape(name_esc, name);
+		if (!first)
+			json += ',';
+		first = false;
+		clear(item) << "{\"url\":\"" << url_esc << "\",\"name\":\"" << name_esc << "\"}";
+		json += item;
+	}
+	json += ']';
+	stmt_select.reset();
+}
+
 // generate html from a single tex
 // output title from first line comment
 // use `clear=true` to only keep the first few commented metadata of the tex file
@@ -604,6 +661,10 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 		throw internal_err(u8"\"PhysWikiHTMLbody\" 在 entry_template.html 中数量不对");
 	if (replace(html, "PhysWikiEntry", entry) != 6)
 		throw internal_err(u8"\"PhysWikiEntry\" 在 entry_template.html 中数量不对");
+	Str attachments_json;
+	entry_attachments_json(attachments_json, entry, db_read);
+	if (replace(html, "PhysWikiAttachmentData", attachments_json) != 1)
+		throw internal_err(u8"\"PhysWikiAttachmentData\" 在 entry_template.html 中数量不对");
 
 	last_next_buttons(html, entry, title, in_main, last_entry, next_entry, db_read);
 
