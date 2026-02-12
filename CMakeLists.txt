@@ -26,11 +26,56 @@ add_compile_options(-fmax-errors=5)
 include_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/include)
 include_directories(${PROJECT_SOURCE_DIR}/deps/nlohmann_json/include)
 
-# choose the suitable OS
-# link_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu18.04/)
-# link_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu20.04/)
-link_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu22.04/)
-# link_directories(${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-arm64-mac/)
+# choose a compatible prebuilt SQLiteCpp library directory
+set(SQLITECPP_LIB_DIR "")
+if(APPLE)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+        set(SQLITECPP_LIB_DIR ${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-arm64-mac/)
+    endif()
+elseif(UNIX AND NOT APPLE)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
+        set(SQLITECPP_LIB_18 ${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu18.04/)
+        set(SQLITECPP_LIB_20 ${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu20.04/)
+        set(SQLITECPP_LIB_22 ${PROJECT_SOURCE_DIR}/deps/SQLiteCpp/lib-x64-ubuntu22.04/)
+
+        execute_process(
+            COMMAND getconf GNU_LIBC_VERSION
+            OUTPUT_VARIABLE GLIBC_VERSION_STR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+        string(REGEX MATCH "[0-9]+\\.[0-9]+" GLIBC_VERSION ${GLIBC_VERSION_STR})
+
+        if(GLIBC_VERSION)
+            if(GLIBC_VERSION VERSION_GREATER_EQUAL "2.35" AND EXISTS ${SQLITECPP_LIB_22})
+                set(SQLITECPP_LIB_DIR ${SQLITECPP_LIB_22})
+            elseif(GLIBC_VERSION VERSION_GREATER_EQUAL "2.31" AND EXISTS ${SQLITECPP_LIB_20})
+                set(SQLITECPP_LIB_DIR ${SQLITECPP_LIB_20})
+            elseif(EXISTS ${SQLITECPP_LIB_18})
+                set(SQLITECPP_LIB_DIR ${SQLITECPP_LIB_18})
+            endif()
+            message(STATUS "检测到 glibc ${GLIBC_VERSION}，使用 SQLiteCpp 库目录：${SQLITECPP_LIB_DIR}")
+        endif()
+
+        if(NOT SQLITECPP_LIB_DIR)
+            if(EXISTS ${SQLITECPP_LIB_18})
+                set(SQLITECPP_LIB_DIR ${SQLITECPP_LIB_18})
+                message(WARNING "未检测到 glibc 版本，回退到：${SQLITECPP_LIB_DIR}")
+            endif()
+        endif()
+    endif()
+endif()
+
+if(NOT SQLITECPP_LIB_DIR)
+    message(FATAL_ERROR "无法自动匹配 SQLiteCpp 预编译库，请手动设置 link_directories")
+endif()
+
+link_directories(${SQLITECPP_LIB_DIR})
+find_package(Threads REQUIRED)
+set(THREAD_LIBS Threads::Threads)
+if(UNIX AND NOT APPLE)
+    list(APPEND THREAD_LIBS pthread)
+endif()
 
 # Address Sanitizer
 if(OPT_ASAN AND UNIX AND NOT APPLE AND ${CMAKE_CXX_COMPILER} STREQUAL "g++")
@@ -55,7 +100,7 @@ set_target_properties(PhysWikiScan PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
-target_link_libraries(PhysWikiScan SQLiteCpp SQLiteCpp-sqlite3 dl)
+target_link_libraries(PhysWikiScan SQLiteCpp SQLiteCpp-sqlite3 ${THREAD_LIBS} dl)
 
 # local test utilities
 add_subdirectory(test)

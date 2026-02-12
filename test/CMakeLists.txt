@@ -1,6 +1,10 @@
 add_executable(physwiki_diff_check physwiki_diff_check.cpp)
 target_include_directories(physwiki_diff_check PRIVATE ${PROJECT_SOURCE_DIR})
-target_link_libraries(physwiki_diff_check SQLiteCpp sqlite3 dl)
+set(THREAD_LIBS Threads::Threads)
+if(UNIX AND NOT APPLE)
+	list(APPEND THREAD_LIBS pthread)
+endif()
+target_link_libraries(physwiki_diff_check SQLiteCpp SQLiteCpp-sqlite3 ${THREAD_LIBS} dl)
 set_target_properties(physwiki_diff_check PROPERTIES
 	CXX_STANDARD 11
 	CXX_STANDARD_REQUIRED YES
