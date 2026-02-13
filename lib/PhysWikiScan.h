@@ -452,11 +452,44 @@ inline void json_escape(Str_O out, Str_I in)
 	}
 }
 
-// convert db file hash + file name to website file URL (e.g. ../files/hash.ext)
+// get file base URL from gv::url
+// e.g. ".../online/" / ".../changed/" / ".../en/online/" / ".../en/changed/" -> ".../files/"
+// fallback uses relative "../files/" from current gv::url
+inline void files_base_url(Str_O files_url)
+{
+	files_url = gv::url;
+	if (files_url.empty()) {
+		files_url = "../files/";
+		return;
+	}
+	if (files_url.back() != '/')
+		files_url += '/';
+
+	auto replace_suffix = [&](Str_I suffix) -> bool {
+		if (size(files_url) >= size(suffix) &&
+			files_url.compare(size(files_url) - size(suffix), size(suffix), suffix) == 0) {
+			files_url.resize(size(files_url) - size(suffix));
+			files_url += "/files/";
+			return true;
+		}
+		return false;
+	};
+
+	if (replace_suffix("/en/online/") || replace_suffix("/en/changed/")
+		|| replace_suffix("/online/") || replace_suffix("/changed/")) {
+		return;
+	}
+
+	files_url += "../files/";
+}
+
+// convert db file hash + file name to website file URL
 inline void file_hash_name_to_url(Str_O url, Str_I hash, Str_I name)
 {
+	Str files_url;
 	Long ind = name.find_last_of('.');
-	clear(url) << "../files/" << hash;
+	files_base_url(files_url);
+	clear(url) << files_url << hash;
 	if (ind > 0 && ind < size(name) - 1) {
 		url << '.' << name.substr(ind + 1);
 	}

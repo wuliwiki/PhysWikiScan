@@ -49,7 +49,7 @@ public:
 inline void scan_log(Str_I str, bool print_time = false)
 {
 	static const Str log_file = "scan_log.txt";
-	static Str str1, time_str;
+	static Str str1, str_to_write, time_str;
 
 	// write to file
 	ofstream file(log_file, std::ios::app);
@@ -66,10 +66,13 @@ inline void scan_log(Str_I str, bool print_time = false)
 		while (str[ind] == '\n') ++ind;
 		str1 = str;
 		str1.insert(ind, time_str);
-		file << str1 << endl;
+		str_to_write = str1;
 	}
 	else
-		file << str << endl;
+		str_to_write = str;
+	if (!is_valid(str_to_write))
+		str_to_write = replace_invalid(str_to_write, Char32(0xFFFD));
+	file << str_to_write << endl;
 	file.close();
 }
 
@@ -117,9 +120,15 @@ inline void scan_log_limit()
 	}
 	read(sb, log_file);
 	if (size(sb) > size_max) {
-		Long ind = find(sb, '\n', size(sb)-size_min);
-		if (ind > 0) {
-			write(sb.substr(ind + 1), log_file);
+		Long start = find(sb, '\n', size(sb)-size_min);
+		if (start >= 0)
+			start += 1;
+		else
+			start = size(sb) - size_min;
+		if (start > 0 && start < size(sb)) {
+			while (start < size(sb) && !is_char8_start(sb, start))
+				++start;
+			write(sb.substr(start), log_file);
 		}
 	}
 }
