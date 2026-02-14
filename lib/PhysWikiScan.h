@@ -523,6 +523,44 @@ inline void entry_attachments_json(Str_O json, Str_I entry, SQLite::Database &db
 	stmt_select.reset();
 }
 
+// replace \file{name.ext} with attachment download icon link
+inline Long file_cmd(Str_IO str, Str_I entry, SQLite::Database &db_read)
+{
+	SQLite::Statement stmt_select(db_read,
+		R"(SELECT ef."file", f."name" FROM "entry_files" ef)"
+		R"( JOIN "files" f ON f."hash" = ef."file" )"
+		R"( WHERE ef."entry" = ? AND (f."name" = ? OR ef."file" = ?) LIMIT 1;)");
+	stmt_select.bind(1, entry);
+
+	Long ind0 = 0, N = 0;
+	Str file_name, hash, db_name, url;
+	while (1) {
+		ind0 = find_command(str, "file", ind0);
+		if (ind0 < 0)
+			return N;
+		command_arg(file_name, str, ind0, 0, true, true);
+		if (file_name.empty())
+			throw scan_err(u8"\\file{} 参数不能为空");
+		stmt_select.bind(2, file_name);
+		stmt_select.bind(3, file_name);
+		if (!stmt_select.executeStep()) {
+			stmt_select.reset();
+			throw scan_err(u8"\\file{} 引用的附件未找到（可填附件文件名或 hash）：" + file_name);
+		}
+		hash = stmt_select.getColumn(0).getString();
+		db_name = stmt_select.getColumn(1).getString();
+		stmt_select.reset();
+		file_hash_name_to_url(url, hash, db_name);
+
+		Long ind1 = skip_command(str, ind0, 1);
+		clear(sb) << "<a href=\"" << url << "\" download=\"" << db_name
+			<< "\" title=\"下载附件\"><i class=\"fa fa-download\" style=\"color:rgb(33,150,243)\"></i></a>";
+		str.replace(ind0, ind1 - ind0, sb);
+		ind0 += size(sb);
+		++N;
+	}
+}
+
 // generate html from a single tex
 // output title from first line comment
 // use `clear=true` to only keep the first few commented metadata of the tex file
@@ -536,7 +574,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Str_I entry, Bool_I clear, vecStr_I rules, SQLite::Database &db_read,
 	unique_ptr<SQLite::Database> &db_read_wiki // wiki db when compiling user note
 ) {
-	Str str;
+	Str str, cite_list, footnote_list;
 	read(str, gv::path_in + "contents/" + entry + ".tex"); // read tex file
 	if (str.back() != '\n')
 		str += '\n';
@@ -659,6 +697,7 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	equation_tag(str, "equation"); equation_tag(str, "align"); equation_tag(str, "gather");
 	// itemize and enumerate
 	itemize(str); enumerate(str);
+	cite_env(cite_list, str);
 	// process table environments
 	table(str, is_eng);
 	// process example and exercise environments
@@ -678,8 +717,11 @@ inline void PhysWikiOnline1(Str_O html, Bool_O update_db, unordered_set<Str> &im
 	Command2Tag("textsl", "<i>", "</i>", str);
 	pay2div(str); // deal with "\pay" "\paid" pseudo command
 	href(str); // hyperlinks
-	footnote(str, entry, gv::url); // footnote
-	cite(bib_order, str, entry, db_read); // citation
+	file_cmd(str, entry, db_read);
+	footnote_env(footnote_list, str);
+	Long Nfoot = footnote(str, entry, gv::url, footnote_list, true); // footnote
+	bool has_footnote_section = (Nfoot > 0 || !footnote_list.empty());
+	cite(bib_order, str, entry, db_read, cite_list, !has_footnote_section); // citation
 	// delete redundent commands
 	replace(str, "\\dfracH", "");
 	// remove spaces around chinese punctuations

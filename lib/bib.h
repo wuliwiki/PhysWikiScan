@@ -93,7 +93,9 @@ inline void db_update_bib(vecStr_I bib_labels, vecStr_I bib_details, SQLite::Dat
 // generate local bib list
 inline void cite(
 	unordered_map<Str,Long> &bib_order, // bibID -> order of first appearance
-	Str_IO str, Str_I entry, SQLite::Database &db_read)
+	Str_IO str, Str_I entry, SQLite::Database &db_read,
+	Str_I cite_block = "",
+	Bool_I add_hr_before_title = false)
 {
 	bib_order.clear();
 	SQLite::Statement stmt_select(db_read,
@@ -120,24 +122,61 @@ inline void cite(
 		sb << ">[" << order << "]</a> ";
 		str.replace(ind0, ind1 - ind0, sb);
 	}
-	// generate local bib list
-	if (!bib_order.empty()) {
-		Str detail;
-		vector<const Str *> bibId_sorted(bib_order.size());
-		str << "\n<hr><p>\n";
-		for (auto &e : bib_order)
-			bibId_sorted[e.second-1] = &e.first;
-		for (Long i = 0; i < size(bibId_sorted); ++i) {
-			Long order = i+1;
-			stmt_select.bind(1, *bibId_sorted[i]);
-			if (!stmt_select.executeStep())
-				throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
-			detail = stmt_select.getColumn(0).getString();
-			stmt_select.reset();
-			href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
-			str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
-				<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+
+	// replace \cite{} in cite_block
+	Str cite_block2 = cite_block;
+	if (!cite_block2.empty()) {
+		ind0 = 0;
+		while (1) {
+			ind0 = find_command(cite_block2, "cite", ind0);
+			if (ind0 < 0)
+				break;
+			command_arg(bib_id, cite_block2, ind0);
+			bool is_new = false;
+			if (!bib_order.count(bib_id)) {
+				bib_order[bib_id] = (order = bib_order.size() + 1);
+				is_new = true;
+			}
+			else
+				order = bib_order[bib_id];
+			Long ind1 = skip_command(cite_block2, ind0, 1);
+			clear(sb) << " <a href=\"" << gv::url << entry << ".html#bib" << order << '"';
+			if (is_new) sb << " id=\"bret" << order << '"';
+			sb << ">[" << order << "]</a> ";
+			cite_block2.replace(ind0, ind1 - ind0, sb);
 		}
+	}
+
+	// generate local cite block and bib list
+	if (!bib_order.empty() || !cite_block.empty()) {
+		Str detail;
+		vector<const Str *> bibId_sorted;
+		if (add_hr_before_title)
+			str += R"(
+<hr style="border:0; border-top:1px solid #aaa; width:95%; margin:34px auto 28px auto; border-radius:0;">
+)";
+		str += u8"\n<h2 class = \"w3-text-indigo\"><b>参考文献</b></h2>\n";
+		str += "<p style=\"margin-top:0; margin-bottom:0;\">\n";
+		if (!cite_block2.empty())
+			str += cite_block2;
+
+		if (!bib_order.empty()) {
+			bibId_sorted.resize(bib_order.size());
+			for (auto &e : bib_order)
+				bibId_sorted[e.second-1] = &e.first;
+			for (Long i = 0; i < size(bibId_sorted); ++i) {
+				Long order = i+1;
+				stmt_select.bind(1, *bibId_sorted[i]);
+				if (!stmt_select.executeStep())
+					throw scan_err(u8"文献 label 未找到（请检查并编译 bibliography.tex）：" + bib_id);
+				detail = stmt_select.getColumn(0).getString();
+				stmt_select.reset();
+				href(detail); Command2Tag("textsl", "<i>", "</i>", detail);
+				str << "<a href = \"" << gv::url << entry << ".html#bret" << order << "\" id=\"bib"
+					<< order << "\">[" << order << "] <b>^</b></a> " << detail << "<br>\n";
+			}
+		}
+		str += "</p>";
 	}
 }
 

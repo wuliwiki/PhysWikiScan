@@ -417,15 +417,166 @@ inline Long enumerate(Str_IO str)
 	return N;
 }
 
+// process cite environments
+// remove cite environment in `str`, output html list in `str_cite`
+inline Long cite_env(Str_O str_cite, Str_IO str)
+{
+	Long i{}, j{}, N{}, Nitem{}, ind0{}, ind1{};
+	Intvs intvIn, intvOut;
+	vecLong indItem; // positions of each "\item"
+	Str str1, str2;
+	const Str bullet_prefix = R"(<span style="visibility:hidden;">[1]&nbsp;</span>•&nbsp;)";
+	str_cite.clear();
+	N = find_env(intvIn, str, "cite");
+	find_env(intvOut, str, "cite", 'o');
+	for (i = N - 1; i >= 0; --i) {
+		// delete paragraph tags
+		ind0 = intvIn.L(i);
+		while (true) {
+			ind0 = find(str, u8"<p>　　", ind0);
+			if (ind0 < 0 || ind0 > intvIn.R(i))
+				break;
+			str.erase(ind0, 5); intvIn.R(i) -= 5; intvOut.R(i) -= 5;
+		}
+		ind0 = intvIn.L(i);
+		while (true) {
+			ind0 = find(str, "</p>", ind0);
+			if (ind0 < 0 || ind0 > intvIn.R(i))
+				break;
+			str.erase(ind0, 4); intvIn.R(i) -= 4; intvOut.R(i) -= 4;
+		}
+
+		// convert current cite environment to html
+		str1 = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
+		trim(str1, " \n");
+		str2.clear();
+		indItem.resize(0); ind0 = 0;
+		while (true) {
+			ind0 = find(str1, "\\item", ind0);
+			if (ind0 < 0) break;
+			if (ind0 + 5 >= size(str1)
+				|| (str1[ind0 + 5] != ' ' && str1[ind0 + 5] != '\n'))
+				throw scan_err(u8"\\item 命令后面必须有空格或回车！");
+			indItem.push_back(ind0); ind0 += 5;
+		}
+		Nitem = size(indItem);
+		if (Nitem == 0) {
+			if (!str1.empty())
+				str2 << bullet_prefix << str1 << "<br>\n";
+		}
+		else {
+			for (j = 0; j < Nitem; ++j) {
+				ind0 = indItem[j] + 5;
+				ind1 = (j == Nitem - 1 ? size(str1) : indItem[j + 1]);
+				sb = str1.substr(ind0, ind1 - ind0);
+				trim(sb, " \n");
+				if (!sb.empty())
+					str2 << bullet_prefix << sb << "<br>\n";
+			}
+		}
+		if (!str2.empty()) {
+			if (str_cite.empty())
+				str_cite = str2;
+			else
+				str_cite = str2 + str_cite;
+		}
+
+		// remove cite environment from main body
+		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
+	}
+	return N;
+}
+
+// process footnote environments
+// remove footnote environment in `str`, output footnote html lines in `str_footnote`
+inline Long footnote_env(Str_O str_footnote, Str_IO str)
+{
+	Long i{}, j{}, N{}, Nitem{}, ind0{}, ind1{};
+	Intvs intvIn, intvOut;
+	vecLong indItem; // positions of each "\item"
+	Str str1, str2;
+	const Str bullet_prefix = R"(<span style="visibility:hidden;">1.&nbsp;</span>•&nbsp;)";
+	str_footnote.clear();
+	N = find_env(intvIn, str, "footnote");
+	find_env(intvOut, str, "footnote", 'o');
+	for (i = N - 1; i >= 0; --i) {
+		// delete paragraph tags
+		ind0 = intvIn.L(i);
+		while (true) {
+			ind0 = find(str, u8"<p>　　", ind0);
+			if (ind0 < 0 || ind0 > intvIn.R(i))
+				break;
+			str.erase(ind0, 5); intvIn.R(i) -= 5; intvOut.R(i) -= 5;
+		}
+		ind0 = intvIn.L(i);
+		while (true) {
+			ind0 = find(str, "</p>", ind0);
+			if (ind0 < 0 || ind0 > intvIn.R(i))
+				break;
+			str.erase(ind0, 4); intvIn.R(i) -= 4; intvOut.R(i) -= 4;
+		}
+
+		// convert current footnote environment to html lines
+		str1 = str.substr(intvIn.L(i), intvIn.R(i) - intvIn.L(i) + 1);
+		trim(str1, " \n");
+		str2.clear();
+		indItem.resize(0); ind0 = 0;
+		while (true) {
+			ind0 = find(str1, "\\item", ind0);
+			if (ind0 < 0) break;
+			if (ind0 + 5 >= size(str1)
+				|| (str1[ind0 + 5] != ' ' && str1[ind0 + 5] != '\n'))
+				throw scan_err(u8"\\item 命令后面必须有空格或回车！");
+			indItem.push_back(ind0); ind0 += 5;
+		}
+		Nitem = size(indItem);
+		if (Nitem == 0) {
+			if (!str1.empty())
+				str2 << bullet_prefix << str1 << "<br>\n";
+		}
+		else {
+			for (j = 0; j < Nitem; ++j) {
+				ind0 = indItem[j] + 5;
+				ind1 = (j == Nitem - 1 ? size(str1) : indItem[j + 1]);
+				sb = str1.substr(ind0, ind1 - ind0);
+				trim(sb, " \n");
+				if (!sb.empty())
+					str2 << bullet_prefix << sb << "<br>\n";
+			}
+		}
+		if (!str2.empty()) {
+			if (str_footnote.empty())
+				str_footnote = str2;
+			else
+				str_footnote = str2 + str_footnote;
+		}
+
+		// remove footnote environment from main body
+		str.erase(intvOut.L(i), intvOut.R(i) - intvOut.L(i) + 1);
+	}
+	return N;
+}
+
 // process \footnote{}, return number of \footnote{} found
-inline Long footnote(Str_IO str, Str_I entry, Str_I url)
+inline Long footnote(Str_IO str, Str_I entry, Str_I url, Str_I footnote_block = "",
+	Bool_I add_hr_before_title = true)
 {
 	Long ind0 = 0, N = 0;
 	Str idNo;
 	ind0 = find_command(str, "footnote", ind0);
-	if (ind0 < 0)
+	if (ind0 < 0 && footnote_block.empty())
 		return 0;
-	str += "\n<hr><p>\n";
+	if (add_hr_before_title)
+		str += R"(
+<hr style="border:0; border-top:1px solid #aaa; width:95%; margin:34px auto 28px auto; border-radius:0;">
+)";
+	str += "<p style=\"margin-top:0; margin-bottom:0;\">\n";
+	if (!footnote_block.empty())
+		str += footnote_block;
+	if (ind0 < 0) {
+		str += "</p>";
+		return 0;
+	}
 	while (true) {
 		++N;
 		num2str(idNo, N);

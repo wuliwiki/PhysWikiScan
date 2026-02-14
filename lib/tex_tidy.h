@@ -89,7 +89,7 @@ inline void limit_env_cmd(Str_I str)
 		"enumerate", "lstlisting", "example", "exercise", "lemma", "theorem", "definition",
 		"corollary", "matrix", "pmatrix", "vmatrix", "table", "tabular", "cases", "array",
 		"case", "Bmatrix", "bmatrix", /*"eqnarray", "eqnarray*", "multline", "multline*",
-		"smallmatrix",*/ "subarray", "Vmatrix", "issues", "CD"};
+		"smallmatrix",*/ "subarray", "Vmatrix", "issues", "cite", "footnote", "CD"};
 
 	Str env;
 	Long ind0 = -1;

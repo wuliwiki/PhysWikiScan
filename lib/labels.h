@@ -571,7 +571,7 @@ inline Long equation_tag(Str_IO str, Str_I nameEnv)
 		Long iname, width = page_width - 35;
 		if (index_in_env(iname, intvEnvOut.L(i), { "example", "exercise", "definition", "theorem", "lemma", "corollary"}, str))
 			width -= 40;
-		if (index_in_env(iname, intvEnvOut.L(i), { "itemize", "enumerate" }, str))
+		if (index_in_env(iname, intvEnvOut.L(i), { "itemize", "enumerate", "cite" }, str))
 			width -= 40;
 		Str strLeft = R"(<div class="eq"><div class = "w3-cell" style = "width:)";
 		strLeft << width << "px\">\n\\begin{" << nameEnv << '}';
