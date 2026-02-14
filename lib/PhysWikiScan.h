@@ -523,7 +523,7 @@ inline void entry_attachments_json(Str_O json, Str_I entry, SQLite::Database &db
 	stmt_select.reset();
 }
 
-// replace \file{name.ext} with attachment download icon link
+// replace \file{name.ext} or \file{text}{name.ext} with attachment download icon link
 inline Long file_cmd(Str_IO str, Str_I entry, SQLite::Database &db_read)
 {
 	SQLite::Statement stmt_select(db_read,
@@ -533,14 +533,24 @@ inline Long file_cmd(Str_IO str, Str_I entry, SQLite::Database &db_read)
 	stmt_select.bind(1, entry);
 
 	Long ind0 = 0, N = 0;
-	Str file_name, hash, db_name, url;
+	Str arg0, arg1, file_name, link_text, hash, db_name, url;
 	while (1) {
 		ind0 = find_command(str, "file", ind0);
 		if (ind0 < 0)
 			return N;
-		command_arg(file_name, str, ind0, 0, true, true);
-		if (file_name.empty())
+		command_arg(arg0, str, ind0, 0, true, true);
+		if (arg0.empty())
 			throw scan_err(u8"\\file{} 参数不能为空");
+		if (command_arg(arg1, str, ind0, 1, true, true) < 0) {
+			file_name = arg0;
+			link_text.clear();
+		}
+		else {
+			link_text = arg0;
+			file_name = arg1;
+		}
+		if (file_name.empty())
+			throw scan_err(u8"\\file{}{} 第二个参数不能为空");
 		stmt_select.bind(2, file_name);
 		stmt_select.bind(3, file_name);
 		if (!stmt_select.executeStep()) {
@@ -552,9 +562,12 @@ inline Long file_cmd(Str_IO str, Str_I entry, SQLite::Database &db_read)
 		stmt_select.reset();
 		file_hash_name_to_url(url, hash, db_name);
 
-		Long ind1 = skip_command(str, ind0, 1);
+		Long ind1 = skip_command(str, ind0, (link_text.empty() ? 1 : 2));
 		clear(sb) << "<a href=\"" << url << "\" download=\"" << db_name
-			<< "\" title=\"下载附件\"><i class=\"fa fa-download\" style=\"color:rgb(33,150,243)\"></i></a>";
+			<< "\" title=\"下载附件\">";
+		if (!link_text.empty())
+			sb << link_text << "&nbsp;";
+		sb << "<i class=\"fa fa-download\" style=\"color:rgb(33,150,243)\"></i></a>";
 		str.replace(ind0, ind1 - ind0, sb);
 		ind0 += size(sb);
 		++N;
