@@ -564,7 +564,7 @@ inline void history_add_del_all(SQLite::Database &db_rw, bool redo_all = false) 
 					del = 0;
 				}
 				else {
-					str_add_del(add, del, prev, current);
+					str_add_del(add, del, prev, current, "recycle/");
 				}
 				hist_add_del[rec.hash] = make_pair(add, del);
 			}
@@ -1574,7 +1574,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 
 	if (replace) { // replace last (latest) backup
 		Str prev_content = (prev_backup_id == 0) ? Str() : backup_restore_str_by_id(prev_backup_id, db_backup);
-		str_add_del(char_add, char_del, prev_content, str);
+		str_add_del(char_add, char_del, prev_content, str, "recycle/");
 
 		// update db
 		SQLite::Statement stmt_update(db_rw,
@@ -1608,7 +1608,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?);)");
 	}
 	else { // !replace  (new backup)
 		Str prev_content = backup_restore_str_by_id(last_backup_id, db_backup);
-		str_add_del(char_add, char_del, prev_content, str);
+		str_add_del(char_add, char_del, prev_content, str, "recycle/");
 
 		// update db
 		time_new_str = time_t2str(time_new, "%Y%m%d%H%M");

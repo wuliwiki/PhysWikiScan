@@ -285,7 +285,7 @@ inline void migrate_user_db() {
 
 // `git diff --no-index --word-diff-regex=. file1.tex file2.tex`
 // then search for each `{+..+}` and `{-..-}`
-inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new)
+inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new, Str tmp_path = "")
 {
 	std::regex rm_s(u8"\\s");
 	add = del = 0;
@@ -310,9 +310,9 @@ inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new)
 	}
 
 	// replace "{+", "+}", "[-", "-]" to avoid conflict
-	static const Str file1 = "file_add_del_tmp_file1.txt",
-		file2 = "file_add_del_tmp_file2.txt",
-		file_diff = "file_add_del_git_diff_output.txt";
+	static const Str file1 = tmp_path + "file_add_del_tmp_file1.txt",
+		file2 = tmp_path + "file_add_del_tmp_file2.txt",
+		file_diff = tmp_path + "file_add_del_git_diff_output.txt";
 	replace(str_old, "{+", u8"{➕"); replace(str_old, "+}", u8"➕}");
 	replace(str_old, "[-", u8"[➖"); replace(str_old, "-]", u8"➖]");
 	write(str_old, file1);
