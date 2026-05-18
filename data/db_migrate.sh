@@ -1,3 +1,4 @@
+set -e
 ./db_dump.sh
 mv data/scan.db data/scan-old.db
 ./db_init.sh

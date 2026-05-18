@@ -1,3 +1,4 @@
+set -e
 rm -f scan.db
 sqlite3 scan.db < scan.sql
 echo please run:

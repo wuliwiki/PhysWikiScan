@@ -1,3 +1,4 @@
+set -e
 sqlite3 backup.db .dump > backup.sql
 ./sql-stab.py backup.sql
 cp stable-backup.sql backup.sql

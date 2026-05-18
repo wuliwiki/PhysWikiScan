@@ -1,3 +1,4 @@
+set -e
 sqlite3 scan.db .dump > scan.sql
 sed -i '/^INSERT INTO occupied /d' scan.sql
 ./sql-stab.py scan.sql
