@@ -422,6 +422,13 @@ inline Str u8(Char32_I c) {
 	return utf8;
 }
 
+// fix the few illegal utf8 bytes in a string
+inline std::string sanitize_utf8(const std::string& input) {
+    std::string output;
+    utf8::replace_invalid(input.begin(), input.end(), std::back_inserter(output));
+    return output;
+}
+
 // recycle
 // ref: https://stackoverflow.com/questions/1366068/whats-the-complete-range-for-chinese-characters-in-unicode
 // inline bool is_chinese(Char32_I c)

@@ -331,6 +331,10 @@ inline void str_add_del(Long_O add, Long_O del, Str str_old, Str str_new, Str tm
 #endif
 	if (str.empty()) return;
 	// parse git output, find addition
+	if (!utf8::is_valid(str)) {
+		scan_log_warn(u8"内部警告：git diff 输出了非 utf-8 字符");
+		str = sanitize_utf8(str);
+	}
 	Long ind = -1;
 	while (1) {
 		ind = find(str, "{+", ind+1);
